@@ -16,6 +16,11 @@ interface ChatMessage {
   content: string;
 }
 
+export interface Suggestion {
+  label: string;
+  prompt: string;
+}
+
 // Enhanced system prompt for PREMIUM, PROFESSIONAL designs
 const ENHANCED_SYSTEM_PROMPT = `You are an ELITE web developer and UI/UX designer creating STUNNING, PROFESSIONAL applications.
 
@@ -134,24 +139,46 @@ Here's what I'm building:
 
 Now I'll start building..."`;
 
-// System prompt for generating a short project name
-const PROJECT_NAME_SYSTEM_PROMPT = `You are a creative naming assistant. Generate a SHORT, CATCHY 2-letter project code/name based on the user's project description.
+// System prompt for generating a short project name (2 words)
+const PROJECT_NAME_SYSTEM_PROMPT = `You are a creative naming assistant. Generate a SHORT, CATCHY 2-WORD project name based on the user's project description.
 
 RULES:
-1. Return ONLY 2 uppercase letters
-2. The letters should relate to the project (e.g., "RW" for Restaurant Website, "EC" for E-commerce)
-3. No explanation, no extra text, just 2 letters
-4. Make it memorable and relevant
+1. Return ONLY 2 words separated by a space
+2. The words should relate to the project theme
+3. Make it catchy, memorable, and professional
+4. No explanation, no extra text, just 2 words
+5. Use Title Case (first letter of each word capitalized)
 
 Examples:
-- Restaurant Website → RW
-- Portfolio Site → PS
-- Blog Platform → BP
-- E-commerce Store → ES
-- Task Manager → TM
-- Social Network → SN`;
+- Restaurant Website → Gourmet Hub
+- Portfolio Site → Creative Canvas
+- Blog Platform → Story Flow
+- E-commerce Store → Shop Swift
+- Task Manager → Task Master
+- Social Network → Connect Hub
+- Fitness App → Fit Track
+- Recipe App → Chef's Corner`;
 
-// Generate short project name (2 letters)
+// System prompt for generating suggestions
+const SUGGESTIONS_SYSTEM_PROMPT = `You are a helpful assistant that generates feature suggestions for a project.
+
+Based on the project description and current state, generate 4 useful suggestions that the user might want to add or improve.
+
+RULES:
+1. Return ONLY valid JSON array with 4 objects
+2. Each object must have "label" (short display text, 2-4 words) and "prompt" (the full request to send)
+3. Make suggestions relevant and actionable
+4. Focus on common next steps users forget or might want
+
+Response format (JSON only, no markdown):
+[
+  {"label": "Add Dark Mode", "prompt": "Add a dark mode toggle that saves preference to localStorage"},
+  {"label": "Improve SEO", "prompt": "Add meta tags, Open Graph tags, and improve SEO optimization"},
+  {"label": "Add Animations", "prompt": "Add smooth page transitions and micro-interactions using Framer Motion"},
+  {"label": "Mobile Menu", "prompt": "Add a responsive mobile hamburger menu with smooth animations"}
+]`;
+
+// Generate short project name (2 words)
 export async function generateProjectName(prompt: string): Promise<string> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -171,16 +198,16 @@ export async function generateProjectName(prompt: string): Promise<string> {
     });
 
     if (!response.ok) {
-      // Generate fallback name from first letters of words
+      // Generate fallback name from first 2 significant words
       const words = prompt.split(/\s+/).filter(w => w.length > 2);
       if (words.length >= 2) {
-        return (words[0][0] + words[1][0]).toUpperCase();
+        return words.slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
       }
-      return prompt.slice(0, 2).toUpperCase();
+      return 'New Project';
     }
 
     if (!response.body) {
-      return prompt.slice(0, 2).toUpperCase();
+      return 'New Project';
     }
 
     const reader = response.body.getReader();
@@ -219,17 +246,111 @@ export async function generateProjectName(prompt: string): Promise<string> {
       }
     }
 
-    // Extract only letters and return first 2 uppercase
-    const letters = fullResponse.replace(/[^a-zA-Z]/g, '').toUpperCase();
-    return letters.slice(0, 2) || prompt.slice(0, 2).toUpperCase();
+    // Clean and return the 2-word name
+    const cleaned = fullResponse.trim().replace(/[^a-zA-Z\s]/g, '').trim();
+    const words = cleaned.split(/\s+/).filter(w => w.length > 0);
+    if (words.length >= 2) {
+      return words.slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+    return cleaned || 'New Project';
   } catch (error) {
     console.error('Project name generation error:', error);
-    // Fallback: use first letters of words
+    // Fallback: use first 2 words from prompt
     const words = prompt.split(/\s+/).filter(w => w.length > 2);
     if (words.length >= 2) {
-      return (words[0][0] + words[1][0]).toUpperCase();
+      return words.slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     }
-    return prompt.slice(0, 2).toUpperCase();
+    return 'New Project';
+  }
+}
+
+// Generate suggestions after project completion
+export async function generateSuggestions(projectDescription: string): Promise<Suggestion[]> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  const defaultSuggestions: Suggestion[] = [
+    { label: "Add Dark Mode", prompt: "Add a dark mode toggle that saves user preference" },
+    { label: "Improve Mobile", prompt: "Improve the mobile responsiveness and add a hamburger menu" },
+    { label: "Add Animations", prompt: "Add smooth animations and transitions using Framer Motion" },
+    { label: "SEO Optimization", prompt: "Add meta tags and improve SEO for better search rankings" },
+  ];
+
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: `Project description: ${projectDescription}. Generate 4 relevant feature suggestions.` }],
+        projectType: 'vite',
+        mode: 'suggestions',
+      }),
+    });
+
+    if (!response.ok) {
+      return defaultSuggestions;
+    }
+
+    if (!response.body) {
+      return defaultSuggestions;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullResponse = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      
+      let newlineIndex: number;
+      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+        let line = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + 1);
+
+        if (line.endsWith('\r')) line = line.slice(0, -1);
+        if (line.startsWith(':') || line.trim() === '') continue;
+        if (!line.startsWith('data: ')) continue;
+
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === '[DONE]') continue;
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) {
+            fullResponse += content;
+          }
+        } catch {
+          buffer = line + '\n' + buffer;
+          break;
+        }
+      }
+    }
+
+    // Try to parse the suggestions JSON
+    try {
+      const jsonMatch = fullResponse.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const suggestions = JSON.parse(jsonMatch[0]) as Suggestion[];
+        if (Array.isArray(suggestions) && suggestions.length > 0) {
+          return suggestions.slice(0, 4);
+        }
+      }
+    } catch {
+      console.error('Failed to parse suggestions JSON');
+    }
+
+    return defaultSuggestions;
+  } catch (error) {
+    console.error('Suggestions generation error:', error);
+    return defaultSuggestions;
   }
 }
 
@@ -698,271 +819,110 @@ export function parseAIResponse(response: string): {
   // PRIORITY 3: Extract code blocks with explicit file paths (```tsx // src/App.tsx)
   const codeBlockRegex = /```(\w+)?\s*(?:\/\/\s*)?(\S+\.\w+)\n([\s\S]*?)```/g;
   let match;
-  const codeRanges: { start: number; end: number }[] = [];
-  
+
   while ((match = codeBlockRegex.exec(response)) !== null) {
+    const language = match[1] || 'typescript';
     const path = match[2];
-    const content = match[3];
+    const content = match[3].trim();
     
-    // Only accept valid file paths, not generic file-N names
-    if (path && !path.startsWith('file-') && path.includes('.')) {
+    if (path && content) {
       const name = path.split('/').pop() || path;
-      const language = match[1] || getLanguageFromPath(path);
-      
-      files[path] = { name, path, content, language };
+      files[path] = {
+        name,
+        path,
+        content,
+        language: getLanguageFromPath(path),
+      };
       fileList.push(path);
-      codeRanges.push({ start: match.index, end: match.index + match[0].length });
     }
   }
 
-  // Extract explanation from non-code text
-  if (codeRanges.length > 0) {
-    const explanationParts: string[] = [];
-    let lastEnd = 0;
-    for (const range of codeRanges) {
-      if (range.start > lastEnd) {
-        explanationParts.push(response.slice(lastEnd, range.start));
-      }
-      lastEnd = range.end;
-    }
-    if (lastEnd < response.length) {
-      explanationParts.push(response.slice(lastEnd));
-    }
-    explanation = explanationParts.join(' ').replace(/\s+/g, ' ').trim();
-  }
-
-  // If still no files, try one more pattern for JSON-like content
-  if (fileList.length === 0 && cleanedResponse.includes('"files"')) {
-    // Last resort: extract any valid file content we can find
-    const simpleFileMatch = cleanedResponse.match(/"files"\s*:\s*\{([\s\S]*)\}/);
-    if (simpleFileMatch) {
-      const fileContent = simpleFileMatch[1];
-      const pathMatches = fileContent.matchAll(/"([^"]+\.[a-z]+)":\s*"((?:[^"\\]|\\.)*)"/gi);
-      
-      for (const pm of pathMatches) {
-        const path = pm[1];
-        let content = pm[2]
-          .replace(/\\n/g, '\n')
-          .replace(/\\t/g, '\t')
-          .replace(/\\"/g, '"')
-          .replace(/\\\\/g, '\\');
-        
-        if (!path.startsWith('file-')) {
-          const name = path.split('/').pop() || path;
-          files[path] = {
-            name,
-            path,
-            content,
-            language: getLanguageFromPath(path),
-          };
-          fileList.push(path);
-        }
-      }
-    }
+  // Extract explanation text (everything before first code block or JSON)
+  const firstCodeIndex = Math.min(
+    response.indexOf('```') !== -1 ? response.indexOf('```') : response.length,
+    response.indexOf('{"files"') !== -1 ? response.indexOf('{"files"') : response.length
+  );
+  if (firstCodeIndex > 0) {
+    explanation = response.slice(0, firstCodeIndex).trim();
   }
 
   return { files, explanation, fileList };
 }
 
+// Helper function to get language from file path
 function getLanguageFromPath(path: string): string {
   const ext = path.split('.').pop()?.toLowerCase();
-  const langMap: Record<string, string> = {
-    tsx: 'typescript',
-    ts: 'typescript',
-    jsx: 'javascript',
-    js: 'javascript',
-    css: 'css',
-    html: 'html',
-    json: 'json',
-    md: 'markdown',
-  };
-  return langMap[ext || ''] || 'plaintext';
+  switch (ext) {
+    case 'tsx': return 'tsx';
+    case 'ts': return 'typescript';
+    case 'jsx': return 'jsx';
+    case 'js': return 'javascript';
+    case 'css': return 'css';
+    case 'html': return 'html';
+    case 'json': return 'json';
+    case 'md': return 'markdown';
+    default: return 'plaintext';
+  }
 }
 
-// Generate a default Vite project structure
-export function generateDefaultViteProject(projectName: string): Record<string, ProjectFile> {
-  const files: Record<string, ProjectFile> = {};
-  
-  const addFile = (path: string, content: string) => {
-    const name = path.split('/').pop() || path;
-    files[path] = {
-      name,
-      path,
-      content,
-      language: getLanguageFromPath(path),
-    };
-  };
-
-  // IMPORTANT: Generate index.css FIRST
-  addFile('src/index.css', `@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222 47% 11%;
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  --primary: 221 83% 53%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222 47% 11%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
-  --accent: 210 40% 96%;
-  --accent-foreground: 222 47% 11%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
-  --ring: 221 83% 53%;
-  --radius: 0.5rem;
-}
-
-.dark {
-  --background: 222 47% 11%;
-  --foreground: 210 40% 98%;
-  --card: 222 47% 11%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222 47% 11%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 217 91% 60%;
-  --primary-foreground: 222 47% 11%;
-  --secondary: 217 33% 17%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217 33% 17%;
-  --muted-foreground: 215 20% 65%;
-  --accent: 217 33% 17%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 63% 31%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217 33% 17%;
-  --input: 217 33% 17%;
-  --ring: 224 76% 48%;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-}`);
-
-  // Generate tailwind.config.ts SECOND
-  addFile('tailwind.config.ts', `/** @type {import('tailwindcss').Config} */
-export default {
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
-  darkMode: "class",
-  theme: {
-    extend: {
-      colors: {
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        card: "hsl(var(--card))",
-        "card-foreground": "hsl(var(--card-foreground))",
-        popover: "hsl(var(--popover))",
-        "popover-foreground": "hsl(var(--popover-foreground))",
-        primary: "hsl(var(--primary))",
-        "primary-foreground": "hsl(var(--primary-foreground))",
-        secondary: "hsl(var(--secondary))",
-        "secondary-foreground": "hsl(var(--secondary-foreground))",
-        muted: "hsl(var(--muted))",
-        "muted-foreground": "hsl(var(--muted-foreground))",
-        accent: "hsl(var(--accent))",
-        "accent-foreground": "hsl(var(--accent-foreground))",
-        destructive: "hsl(var(--destructive))",
-        "destructive-foreground": "hsl(var(--destructive-foreground))",
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-      },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
+// Generate default Vite project files
+export function generateDefaultViteProject(): Record<string, ProjectFile> {
+  const files: Record<string, ProjectFile> = {
+    'package.json': {
+      name: 'package.json',
+      path: 'package.json',
+      language: 'json',
+      content: JSON.stringify({
+        name: "vite-react-app",
+        private: true,
+        version: "0.0.0",
+        type: "module",
+        scripts: {
+          dev: "vite",
+          build: "tsc && vite build",
+          preview: "vite preview"
+        },
+        dependencies: {
+          "react": "^18.2.0",
+          "react-dom": "^18.2.0",
+          "framer-motion": "^10.16.4",
+          "lucide-react": "^0.294.0"
+        },
+        devDependencies: {
+          "@types/react": "^18.2.0",
+          "@types/react-dom": "^18.2.0",
+          "@vitejs/plugin-react": "^4.2.0",
+          "autoprefixer": "^10.4.16",
+          "postcss": "^8.4.31",
+          "tailwindcss": "^3.3.5",
+          "typescript": "^5.2.2",
+          "vite": "^5.0.0"
+        }
+      }, null, 2)
     },
-  },
-  plugins: [],
-}`);
-
-  addFile('package.json', JSON.stringify({
-    name: projectName.toLowerCase().replace(/\s+/g, '-'),
-    private: true,
-    version: "0.0.0",
-    type: "module",
-    scripts: {
-      dev: "vite",
-      build: "tsc && vite build",
-      preview: "vite preview"
-    },
-    dependencies: {
-      react: "^18.3.1",
-      "react-dom": "^18.3.1",
-      "framer-motion": "^10.16.4",
-      "lucide-react": "^0.284.0"
-    },
-    devDependencies: {
-      "@types/react": "^18.3.5",
-      "@types/react-dom": "^18.3.0",
-      "@vitejs/plugin-react": "^4.3.1",
-      "autoprefixer": "^10.4.16",
-      "postcss": "^8.4.31",
-      "tailwindcss": "^3.3.3",
-      typescript: "^5.5.4",
-      vite: "^5.4.2"
-    }
-  }, null, 2));
-
-  addFile('vite.config.ts', `import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-export default defineConfig({
-  plugins: [react()],
-})`);
-
-  addFile('tsconfig.json', JSON.stringify({
-    compilerOptions: {
-      target: "ES2020",
-      useDefineForClassFields: true,
-      lib: ["ES2020", "DOM", "DOM.Iterable"],
-      module: "ESNext",
-      skipLibCheck: true,
-      moduleResolution: "bundler",
-      allowImportingTsExtensions: true,
-      resolveJsonModule: true,
-      isolatedModules: true,
-      noEmit: true,
-      jsx: "react-jsx",
-      strict: true,
-      noUnusedLocals: true,
-      noUnusedParameters: true,
-      noFallthroughCasesInSwitch: true
-    },
-    include: ["src"]
-  }, null, 2));
-
-  addFile('index.html', `<!DOCTYPE html>
+    'index.html': {
+      name: 'index.html',
+      path: 'index.html',
+      language: 'html',
+      content: `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${projectName}</title>
+    <title>Vite + React + TS</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
-</html>`);
-
-  addFile('src/main.tsx', `import React from 'react'
+</html>`
+    },
+    'src/main.tsx': {
+      name: 'main.tsx',
+      path: 'src/main.tsx',
+      language: 'tsx',
+      content: `import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
@@ -971,23 +931,102 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
-)`);
+)`
+    },
+    'src/App.tsx': {
+      name: 'App.tsx',
+      path: 'src/App.tsx',
+      language: 'tsx',
+      content: `import { motion } from 'framer-motion';
 
-  addFile('src/App.tsx', `function App() {
+function App() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-foreground mb-4">${projectName}</h1>
-        <p className="text-muted-foreground">Edit src/App.tsx to get started</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center"
+      >
+        <h1 className="text-5xl font-bold text-white mb-4">Welcome to Rocket! 🚀</h1>
+        <p className="text-xl text-blue-200">Start building something amazing</p>
+      </motion.div>
     </div>
   )
 }
 
-export default App`);
+export default App`
+    },
+    'src/index.css': {
+      name: 'index.css',
+      path: 'src/index.css',
+      language: 'css',
+      content: `@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}`
+    },
+    'tailwind.config.ts': {
+      name: 'tailwind.config.ts',
+      path: 'tailwind.config.ts',
+      language: 'typescript',
+      content: `/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}`
+    },
+    'vite.config.ts': {
+      name: 'vite.config.ts',
+      path: 'vite.config.ts',
+      language: 'typescript',
+      content: `import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+})`
+    },
+    'tsconfig.json': {
+      name: 'tsconfig.json',
+      path: 'tsconfig.json',
+      language: 'json',
+      content: JSON.stringify({
+        compilerOptions: {
+          target: "ES2020",
+          useDefineForClassFields: true,
+          lib: ["ES2020", "DOM", "DOM.Iterable"],
+          module: "ESNext",
+          skipLibCheck: true,
+          moduleResolution: "bundler",
+          allowImportingTsExtensions: true,
+          resolveJsonModule: true,
+          isolatedModules: true,
+          noEmit: true,
+          jsx: "react-jsx",
+          strict: true,
+          noUnusedLocals: true,
+          noUnusedParameters: true,
+          noFallthroughCasesInSwitch: true
+        },
+        include: ["src"],
+        references: [{ path: "./tsconfig.node.json" }]
+      }, null, 2)
+    }
+  };
 
   return files;
 }
-
-// Export the prompts for edge function use
-export { ENHANCED_SYSTEM_PROMPT, EXPLANATION_SYSTEM_PROMPT, STATUS_SYSTEM_PROMPT };
