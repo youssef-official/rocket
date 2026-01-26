@@ -521,7 +521,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  const showEmptyState = messages.length === 0 && !isGenerating;
+  const showEmptyState = messages.length === 0 && !isGenerating && !generationPhase;
 
   const lastAssistantIndex = messages.reduce((last, msg, i) => 
     msg.role === 'assistant' ? i : last, -1);
