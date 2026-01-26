@@ -290,7 +290,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header - Bolt Style */}
-      <header className="h-14 border-b border-border flex items-center justify-between px-4 bg-card">
+      <header className="h-14 flex items-center justify-between px-4 bg-card">
         {/* Left Section */}
         <div className="flex items-center gap-4">
           {/* Logo - Clickable to go home */}
