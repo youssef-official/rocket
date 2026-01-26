@@ -4,6 +4,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { ProjectFile, ChatMessage } from '@/types';
 import { toast } from '@/hooks/use-toast';
 
+interface FileActivity {
+  name: string;
+  status: 'editing' | 'done';
+  action: 'edited' | 'created';
+}
+
 export interface ProjectVersion {
   id: string;
   projectId: string;
@@ -12,6 +18,7 @@ export interface ProjectVersion {
   name?: string;
   files: Record<string, ProjectFile>;
   chatMessages: ChatMessage[];
+  actionsTaken?: FileActivity[];
   createdAt: string;
 }
 
@@ -42,6 +49,7 @@ export function useVersions(projectId: string | null) {
         name: v.name,
         files: v.files as Record<string, ProjectFile>,
         chatMessages: v.chat_messages as ChatMessage[],
+        actionsTaken: v.actions_taken as FileActivity[] | undefined,
         createdAt: v.created_at,
       }));
 
@@ -56,7 +64,8 @@ export function useVersions(projectId: string | null) {
   const createVersion = useCallback(async (
     files: Record<string, ProjectFile>,
     chatMessages: ChatMessage[],
-    name?: string
+    name?: string,
+    actionsTaken?: FileActivity[]
   ): Promise<ProjectVersion | null> => {
     if (!user || !projectId) return null;
 
@@ -82,6 +91,7 @@ export function useVersions(projectId: string | null) {
           name: name || `Version ${nextVersion}`,
           files: files as any,
           chat_messages: chatMessages as any,
+          actions_taken: actionsTaken as any || [],
         }])
         .select()
         .single();
@@ -96,6 +106,7 @@ export function useVersions(projectId: string | null) {
         name: data.name ?? undefined,
         files: data.files as unknown as Record<string, ProjectFile>,
         chatMessages: data.chat_messages as unknown as ChatMessage[],
+        actionsTaken: data.actions_taken as unknown as FileActivity[] | undefined,
         createdAt: data.created_at,
       };
 

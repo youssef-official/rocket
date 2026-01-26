@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Plus, Clock, Trash2, Copy, ExternalLink, MoreVertical, 
@@ -25,15 +25,15 @@ interface ProjectsSectionProps {
   onNewProject: () => void;
 }
 
-export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
+export const ProjectsSection = forwardRef<HTMLElement, ProjectsSectionProps>(({
   projects,
   loading,
   onOpenProject,
   onDeleteProject,
   onForkProject,
   onNewProject,
-}) => {
-  const [menuOpenId, setMenuOpenId] = React.useState<string | null>(null);
+}, ref) => {
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -192,4 +192,6 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
       </div>
     </section>
   );
-};
+});
+
+ProjectsSection.displayName = 'ProjectsSection';

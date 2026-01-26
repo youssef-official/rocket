@@ -29,6 +29,14 @@ interface GenerationPhase {
   summary?: string;
 }
 
+// Message with associated version and activities
+interface MessageWithMeta {
+  message: ChatMessage;
+  versionNumber?: number;
+  activities?: FileActivity[];
+  plan?: string[];
+}
+
 interface ChatViewProps {
   messages: ChatMessage[];
   onSendMessage: (content: string, isChat?: boolean, imageUrl?: string) => void;
@@ -96,6 +104,20 @@ const cleanAIMessage = (content: string): string => {
   return cleaned;
 };
 
+// Extract "What I'm Building" section from message
+const extractBuildingPlan = (content: string): string[] => {
+  const planMatch = content.match(/\*?\*?What I['']m Building:?\*?\*?\s*([\s\S]*?)(?=\*\*|Now I['']ll|$)/i);
+  if (!planMatch) return [];
+  
+  const planText = planMatch[1];
+  const lines = planText.split('\n')
+    .filter(line => /^\d+\.|^•|^\*|^-/.test(line.trim()))
+    .map(line => line.replace(/^\d+\.\s*|^•\s*|^\*\s*|^-\s*/, '').trim())
+    .filter(line => line.length > 0);
+  
+  return lines;
+};
+
 export const ChatView: React.FC<ChatViewProps> = ({ 
   messages, 
   onSendMessage, 
@@ -112,7 +134,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onSelectVersion
 }) => {
   const [input, setInput] = useState('');
-  const [showFileList, setShowFileList] = useState(true);
+  const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({});
   const [isChatMode, setIsChatMode] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<{ file: File; preview: string } | null>(null);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
@@ -213,11 +235,27 @@ export const ChatView: React.FC<ChatViewProps> = ({
     setInput(suggestion.prompt);
   };
 
-  // Render File Activity Panel - Lovable/Bolt style with actions
-  const renderFileActivityPanel = (files: FileActivity[], isLive: boolean = false) => {
+  // Toggle activities for a specific message
+  const toggleActivities = (messageId: string) => {
+    setExpandedActivities(prev => ({
+      ...prev,
+      [messageId]: !prev[messageId]
+    }));
+  };
+
+  // Match messages to versions
+  const getVersionForMessageIndex = (msgIndex: number): ProjectVersion | undefined => {
+    // Find the version that was created after this message
+    const messagesUpToHere = messages.slice(0, msgIndex + 1);
+    const versionNumber = Math.floor(messagesUpToHere.filter(m => m.role === 'assistant').length);
+    return versions.find(v => v.versionNumber === versionNumber);
+  };
+
+  // Render File Activity Panel for a specific message
+  const renderFileActivityPanelForMessage = (messageId: string, files: FileActivity[], isLive: boolean = false) => {
     if (files.length === 0) return null;
 
-    // Count actions
+    const isExpanded = expandedActivities[messageId] ?? true;
     const actionsCount = files.length;
 
     return (
@@ -228,7 +266,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       >
         {/* Header - Actions taken */}
         <button
-          onClick={() => setShowFileList(!showFileList)}
+          onClick={() => toggleActivities(messageId)}
           className="w-full flex items-center justify-between py-2 transition-colors group"
         >
           <div className="flex items-center gap-2">
@@ -241,12 +279,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <span className="text-white/80 font-medium">{actionsCount}</span> actions taken
             </span>
           </div>
-          <ChevronDown className={`w-4 h-4 text-white/40 transition-transform ${showFileList ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 text-white/40 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
         </button>
 
         {/* File List - Expandable */}
         <AnimatePresence>
-          {showFileList && (
+          {isExpanded && (
             <motion.div 
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
@@ -318,7 +356,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Thinking Indicator - Simple without card
+  // Render Thinking Indicator - Icon + Timer only
   const renderThinkingIndicator = () => {
     if (!generationPhase || generationPhase.phase !== 'thinking') return null;
 
@@ -337,18 +375,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
           />
         </div>
         <span className="text-sm font-medium text-white/80">
-          Thought for {generationPhase.thinkingTime || 0}s
+          {generationPhase.thinkingTime || 0}s
         </span>
       </motion.div>
     );
   };
 
-  // Render Plan Section with bullet points
-  const renderPlanSection = () => {
-    if (!generationPhase?.plan || generationPhase.plan.length === 0) return null;
+  // Render Plan Section with bullet points (for current generation only)
+  const renderPlanSection = (plan?: string[]) => {
+    const planToShow = plan || generationPhase?.plan;
+    if (!planToShow || planToShow.length === 0) return null;
 
-    const completedSteps = generationPhase.completedSteps || [];
-    const currentStep = generationPhase.currentStep;
+    const completedSteps = generationPhase?.completedSteps || [];
+    const currentStep = generationPhase?.currentStep;
 
     return (
       <motion.div 
@@ -358,7 +397,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       >
         <p className="text-sm font-medium text-white mb-3">What I'm Building:</p>
         <ul className="space-y-2 pl-1">
-          {generationPhase.plan.map((step, i) => {
+          {planToShow.map((step, i) => {
             const isCompleted = completedSteps.includes(i);
             const isCurrent = currentStep === i;
 
@@ -387,9 +426,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Status Message (during generation) - Only show when NOT in plan view
+  // Render Status Message (during generation)
   const renderStatusMessage = () => {
-    // Don't show separate status if we're showing plan (status is shown inline in plan)
     if (generationPhase?.plan && generationPhase.plan.length > 0) return null;
     if (!generationPhase?.status && !statusMessage) return null;
     if (!isGenerating && !generationPhase?.status) return null;
@@ -413,78 +451,54 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Summary Section - Success message + Version Cards
-  const renderSummarySection = () => {
-    if (!generationPhase?.summary) return null;
+  // Render Version Card for a specific message
+  const renderVersionCard = (version: ProjectVersion, isActive: boolean) => {
+    return (
+      <motion.button
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+        onClick={() => onSelectVersion?.(version)}
+        className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
+          isActive 
+            ? 'bg-primary/10 border border-primary/30 hover:border-primary/50' 
+            : 'bg-[#2a2a2a] border border-white/10 hover:border-white/20'
+        }`}
+      >
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+          isActive ? 'bg-primary/20 text-primary' : 'bg-white/10 text-white/60'
+        }`}>
+          <Bookmark className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-white truncate">
+            {version.name || `Version ${version.versionNumber}`}
+          </p>
+          <p className={`text-xs mt-0.5 ${isActive ? 'text-primary/70' : 'text-white/40'}`}>
+            Version {version.versionNumber}{isActive && ' • Active'}
+          </p>
+        </div>
+      </motion.button>
+    );
+  };
 
-    // Get the latest version for display
-    const latestVersion = versions.length > 0 ? versions[0] : null;
-    const activeVersion = currentVersion 
-      ? versions.find(v => v.versionNumber === currentVersion) 
-      : latestVersion;
-
+  // Render Success message + Version card for completed generation
+  const renderCompletionBlock = (version?: ProjectVersion, isActive?: boolean) => {
     return (
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="mt-4 space-y-3"
       >
-        {/* Success message */}
+        {/* Success message - WHITE text */}
         <div className="flex items-center gap-2 py-2">
-          <CheckCircle2 className="w-5 h-5 text-green-400" />
-          <span className="text-sm text-green-400 font-medium">The website is now ready and built successfully!</span>
+          <CheckCircle2 className="w-5 h-5 text-white/80" />
+          <span className="text-sm text-white font-medium">The website is now ready and built successfully!</span>
         </div>
 
-        {/* Version Card - Active version with blue accent */}
-        {activeVersion && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            onClick={() => onSelectVersion?.(activeVersion)}
-            className="w-full flex items-center gap-3 p-3 rounded-xl text-left bg-primary/10 border border-primary/30 hover:border-primary/50 transition-all"
-          >
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/20 text-primary flex-shrink-0">
-              <Bookmark className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
-                {activeVersion.name || `Version ${activeVersion.versionNumber}`}
-              </p>
-              <p className="text-xs text-primary/70 mt-0.5">
-                Version {activeVersion.versionNumber} • Active
-              </p>
-            </div>
-          </motion.button>
-        )}
-
-        {/* Previous Versions - Compact */}
-        {versions.length > 1 && (
-          <div className="space-y-1.5">
-            {versions.slice(1, 3).map((version) => (
-              <motion.button
-                key={version.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                whileHover={{ scale: 1.01 }}
-                onClick={() => onSelectVersion?.(version)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all ${
-                  currentVersion === version.versionNumber
-                    ? 'bg-primary/10 border border-primary/30'
-                    : 'bg-transparent hover:bg-white/5'
-                }`}
-              >
-                <div className="w-5 h-5 rounded-md flex items-center justify-center bg-white/5 text-white/40 flex-shrink-0 text-[10px] font-bold">
-                  v{version.versionNumber}
-                </div>
-                <p className="text-xs text-white/50 truncate flex-1">
-                  {version.name || `Version ${version.versionNumber}`}
-                </p>
-              </motion.button>
-            ))}
-          </div>
-        )}
+        {/* Version Card */}
+        {version && renderVersionCard(version, isActive || false)}
       </motion.div>
     );
   };
@@ -499,7 +513,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-2 mb-3 overflow-x-auto no-scrollbar"
+        className="flex items-center gap-2 mb-3 flex-nowrap overflow-x-auto no-scrollbar"
       >
         {displaySuggestions.map((suggestion, i) => (
           <motion.button
@@ -519,8 +533,26 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
   const showEmptyState = messages.length === 0 && !isGenerating && !generationPhase;
 
-  const lastAssistantIndex = messages.reduce((last, msg, i) => 
-    msg.role === 'assistant' ? i : last, -1);
+  // Group messages with their associated versions
+  const getMessagesWithVersions = (): { msg: ChatMessage; version?: ProjectVersion; isLastAssistant: boolean; msgIndex: number }[] => {
+    const result: { msg: ChatMessage; version?: ProjectVersion; isLastAssistant: boolean; msgIndex: number }[] = [];
+    let assistantCount = 0;
+    const lastAssistantIndex = messages.reduce((last, msg, i) => msg.role === 'assistant' ? i : last, -1);
+    
+    messages.forEach((msg, msgIndex) => {
+      if (msg.role === 'assistant') {
+        assistantCount++;
+        const version = versions.find(v => v.versionNumber === assistantCount);
+        result.push({ msg, version, isLastAssistant: msgIndex === lastAssistantIndex, msgIndex });
+      } else {
+        result.push({ msg, version: undefined, isLastAssistant: false, msgIndex });
+      }
+    });
+    
+    return result;
+  };
+
+  const messagesWithVersions = getMessagesWithVersions();
 
   return (
     <div className="relative w-full h-full flex flex-col overflow-hidden bg-[#252525]">
@@ -536,15 +568,26 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </div>
         ) : (
           <>
-            {messages.map((msg, msgIndex) => {
+            {messagesWithVersions.map(({ msg, version, isLastAssistant, msgIndex }) => {
               const isUser = msg.role === 'user';
-              const isLastAssistant = msgIndex === lastAssistantIndex;
 
               const cleanedContent = !isUser ? cleanAIMessage(msg.content) : null;
               const hasContent = isUser || (cleanedContent && cleanedContent.length > 0);
+              
+              // Extract plan from this message
+              const messagePlan = !isUser ? extractBuildingPlan(msg.content) : [];
+              
+              // Get activities for this version from stored data
+              const versionActivities: FileActivity[] = version?.actionsTaken 
+                ? (version.actionsTaken as unknown as FileActivity[]) 
+                : [];
+              
+              // Check if this version is the currently active one
+              const isActiveVersion = currentVersion === version?.versionNumber || 
+                (!currentVersion && version?.versionNumber === versions[0]?.versionNumber);
 
               return (
-                <div key={msg.id} className={`flex w-full justify-start`}>
+                <div key={msg.id} className="flex w-full justify-start">
                   {isUser ? (
                     <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm text-[15px] break-words whitespace-pre-wrap overflow-hidden bg-[#2a2a2a] text-white ml-auto">
                       {msg.imageUrl && (
@@ -573,14 +616,60 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           </div>
                         )}
 
+                        {/* Always show plan for this message if it exists */}
+                        {messagePlan.length > 0 && !isLastAssistant && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-4"
+                          >
+                            <p className="text-sm font-medium text-white mb-3">What I'm Building:</p>
+                            <ul className="space-y-2 pl-1">
+                              {messagePlan.map((step, i) => (
+                                <motion.li
+                                  key={i}
+                                  className="flex items-start gap-2"
+                                >
+                                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-green-400" />
+                                  <span className="text-sm leading-relaxed text-green-400">{step}</span>
+                                </motion.li>
+                              ))}
+                            </ul>
+                          </motion.div>
+                        )}
+
+                        {/* Show current generation UI only for last assistant message */}
                         {isLastAssistant && !isChatMode && (
                           <>
                             {renderThinkingIndicator()}
-                            {renderPlanSection()}
+                            {generationPhase?.plan && generationPhase.plan.length > 0 && renderPlanSection()}
                             {renderStatusMessage()}
-                            {fileActivities.length > 0 && renderFileActivityPanel(fileActivities, isGenerating)}
-                            {renderSummarySection()}
+                            {isGenerating && fileActivities.length > 0 && renderFileActivityPanelForMessage(msg.id, fileActivities, true)}
                           </>
+                        )}
+
+                        {/* Show stored activities for completed versions */}
+                        {versionActivities.length > 0 && !isGenerating && (
+                          renderFileActivityPanelForMessage(msg.id, versionActivities, false)
+                        )}
+
+                        {/* Show version card for each assistant message that has a version */}
+                        {version && !isGenerating && (
+                          renderCompletionBlock(version, isActiveVersion)
+                        )}
+
+                        {/* Show current generation completion for last message */}
+                        {isLastAssistant && generationPhase?.phase === 'complete' && !version && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-4 space-y-3"
+                          >
+                            <div className="flex items-center gap-2 py-2">
+                              <CheckCircle2 className="w-5 h-5 text-white/80" />
+                              <span className="text-sm text-white font-medium">The website is now ready and built successfully!</span>
+                            </div>
+                          </motion.div>
                         )}
                       </div>
                     </div>
@@ -589,16 +678,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               );
             })}
 
-            {isGenerating && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
-              <div className="flex w-full justify-start">
-                <div className="w-full flex flex-col min-w-0">
-                  <div className="-mt-2">
-                    {renderStatusMessage()}
-                  </div>
-                </div>
-              </div>
-            )}
-
+            {/* Show generation UI when generating and no assistant message yet */}
             {isGenerating && (messages.length === 0 || messages[messages.length - 1].role !== 'assistant') && (
               <div className="flex w-full justify-start">
                 <div className="w-full flex flex-col min-w-0">
@@ -612,8 +692,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     {renderThinkingIndicator()}
                     {renderPlanSection()}
                     {renderStatusMessage()}
-                    {fileActivities.length > 0 && renderFileActivityPanel(fileActivities, true)}
-                    {renderSummarySection()}
+                    {fileActivities.length > 0 && renderFileActivityPanelForMessage('live', fileActivities, true)}
                   </div>
                 </div>
               </div>

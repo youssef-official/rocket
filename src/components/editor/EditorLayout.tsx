@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Code2, Eye, LogOut, Settings, HelpCircle, CreditCard, Palette,
+  Code2, Eye, LogOut, Settings, HelpCircle, CreditCard, Moon, Sun,
   ChevronDown, Download, Home, ArrowLeft, Clock, Pencil, Eye as EyeIcon,
   Github, ExternalLink, FolderOpen
 } from 'lucide-react';
@@ -86,15 +86,24 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProjectMenu, setShowProjectMenu] = useState(false);
   const [chatWidth, setChatWidth] = useState(450);
+  const [theme, setTheme] = useState<'dark' | 'light' | 'system'>('system');
   
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number | null>(null);
   const [showHomeDialog, setShowHomeDialog] = useState(false);
   const isResizing = useRef(false);
   const prevIsGenerating = useRef(isGenerating);
   const versionCreatedForSession = useRef(false);
+  const lastFileActivitiesRef = useRef<FileActivity[]>([]);
 
   // Versions hook
   const { versions, fetchVersions, createVersion } = useVersions(project?.id || null);
+
+  // Track file activities for version
+  useEffect(() => {
+    if (fileActivities.length > 0) {
+      lastFileActivitiesRef.current = [...fileActivities];
+    }
+  }, [fileActivities]);
 
   // Fetch versions when project changes
   useEffect(() => {
@@ -104,7 +113,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   }, [project?.id, fetchVersions]);
 
-  // Auto-create version when generation completes
+  // Auto-create version when generation completes - WITH actions_taken
   useEffect(() => {
     const wasGenerating = prevIsGenerating.current;
     const nowNotGenerating = !isGenerating;
@@ -127,7 +136,13 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             versionNumber
           );
           
-          await createVersion(project.files, messages, versionName);
+          // Save version with actions_taken
+          await createVersion(
+            project.files, 
+            messages, 
+            versionName, 
+            lastFileActivitiesRef.current.length > 0 ? lastFileActivitiesRef.current : undefined
+          );
           setCurrentVersionNumber(null);
           versionCreatedForSession.current = true;
         };
@@ -143,11 +158,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     prevIsGenerating.current = isGenerating;
   }, [isGenerating, messages, project?.files, project?.description, project?.name, createVersion, versions.length, isChatMode]);
 
-  // Handle version selection
+  // Handle version selection - VIEW ONLY (no restore)
   const handleSelectVersion = (version: ProjectVersion) => {
     setCurrentVersionNumber(version.versionNumber);
+    // Update files and switch to preview to show that version
     if (onVersionRestore) {
-      onVersionRestore(version.files, version.chatMessages);
+      onVersionRestore(version.files, messages); // Keep messages, just change files for preview
     }
   };
 
@@ -235,10 +251,35 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
   const displayMessages = messages;
 
-  // Apply dark mode always
+  // Apply theme
   useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
+    const applyTheme = () => {
+      if (theme === 'system') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.classList.toggle('dark', prefersDark);
+      } else {
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+      }
+    };
+    
+    applyTheme();
+    
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handler = () => applyTheme();
+      mediaQuery.addEventListener('change', handler);
+      return () => mediaQuery.removeEventListener('change', handler);
+    }
+  }, [theme]);
+
+  // Toggle theme
+  const toggleTheme = () => {
+    setTheme(prev => {
+      if (prev === 'dark') return 'light';
+      if (prev === 'light') return 'system';
+      return 'dark';
+    });
+  };
 
   // State for mobile view
   const [mobilePanel, setMobilePanel] = useState<'chat' | 'preview' | 'code'>('preview');
@@ -247,9 +288,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const displayProjectName = project?.generatedName || project?.name || 'Untitled Project';
 
   return (
-    <div className="h-screen flex flex-col bg-[#1a1a1a]">
+    <div className="h-screen flex flex-col bg-background">
       {/* Header - Bolt Style */}
-      <header className="h-14 border-b border-white/10 flex items-center justify-between px-4 bg-[#1e1e1e]">
+      <header className="h-14 border-b border-border flex items-center justify-between px-4 bg-card">
         {/* Left Section */}
         <div className="flex items-center gap-4">
           {/* Logo - Clickable to go home */}
@@ -260,18 +301,18 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             />
           </button>
 
-          <div className="h-6 w-px bg-white/10" />
+          <div className="h-6 w-px bg-border" />
 
           {/* Project Name - Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowProjectMenu(!showProjectMenu)}
-              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
+              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-accent transition-colors"
             >
-              <span className="text-base font-bold text-white truncate max-w-[280px]">
+              <span className="text-base font-bold text-foreground truncate max-w-[280px]">
                 {displayProjectName}
               </span>
-              <ChevronDown className="w-4 h-4 text-white/50" />
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </button>
 
             <AnimatePresence>
@@ -285,32 +326,32 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute left-0 top-full mt-2 w-56 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-xl overflow-hidden z-[9999]"
+                    className="absolute left-0 top-full mt-2 w-56 bg-card border border-border rounded-lg shadow-xl overflow-hidden z-[9999]"
                   >
                     <button
                       onClick={() => {
                         setShowProjectMenu(false);
                         onViewDashboard?.();
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white"
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground"
                     >
-                      <FolderOpen className="w-4 h-4 text-white/50" />
+                      <FolderOpen className="w-4 h-4 text-muted-foreground" />
                       <span>Open recent project</span>
-                      <ChevronDown className="w-3 h-3 text-white/40 ml-auto -rotate-90" />
+                      <ChevronDown className="w-3 h-3 text-muted-foreground ml-auto -rotate-90" />
                     </button>
                     <button
                       onClick={() => setShowProjectMenu(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white border-t border-white/5"
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border"
                     >
-                      <Clock className="w-4 h-4 text-white/50" />
+                      <Clock className="w-4 h-4 text-muted-foreground" />
                       <span>Version history</span>
-                      <ChevronDown className="w-3 h-3 text-white/40 ml-auto -rotate-90" />
+                      <ChevronDown className="w-3 h-3 text-muted-foreground ml-auto -rotate-90" />
                     </button>
                     <button
                       onClick={() => setShowProjectMenu(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white border-t border-white/5"
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border"
                     >
-                      <Pencil className="w-4 h-4 text-white/50" />
+                      <Pencil className="w-4 h-4 text-muted-foreground" />
                       <span>Rename...</span>
                     </button>
                     <button
@@ -318,16 +359,16 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                         handleDownload();
                         setShowProjectMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white border-t border-white/5"
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border"
                     >
-                      <Download className="w-4 h-4 text-white/50" />
+                      <Download className="w-4 h-4 text-muted-foreground" />
                       <span>Export</span>
-                      <ChevronDown className="w-3 h-3 text-white/40 ml-auto -rotate-90" />
+                      <ChevronDown className="w-3 h-3 text-muted-foreground ml-auto -rotate-90" />
                     </button>
-                    <div className="flex items-center gap-3 px-4 py-3 border-t border-white/5">
-                      <EyeIcon className="w-4 h-4 text-white/50" />
-                      <span className="text-sm text-white">Visibility</span>
-                      <span className="text-xs text-white/40 ml-auto">Private</span>
+                    <div className="flex items-center gap-3 px-4 py-3 border-t border-border">
+                      <EyeIcon className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-foreground">Visibility</span>
+                      <span className="text-xs text-muted-foreground ml-auto">Private</span>
                     </div>
                   </motion.div>
                 </>
@@ -336,14 +377,14 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </div>
         </div>
 
-        {/* Center - View Toggle (Bolt Style) */}
-        <div className="hidden md:flex items-center bg-[#2a2a2a] rounded-full p-1 border border-white/10">
+        {/* Center - View Toggle (Bolt Style) - Shifted left */}
+        <div className="hidden md:flex items-center bg-secondary rounded-full p-1 border border-border -ml-16">
           <button
             onClick={() => setCurrentView('preview')}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
               currentView === 'preview'
-                ? 'bg-white/10 text-white'
-                : 'text-white/50 hover:text-white/70'
+                ? 'bg-accent text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
@@ -352,8 +393,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             onClick={() => setCurrentView('code')}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
               currentView === 'code'
-                ? 'bg-white/10 text-white'
-                : 'text-white/50 hover:text-white/70'
+                ? 'bg-accent text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <Code2 className="w-3.5 h-3.5" />
@@ -365,7 +406,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           {/* Open in New Tab */}
           <button
             onClick={() => window.open(window.location.href, '_blank')}
-            className="p-2 rounded-lg hover:bg-white/5 transition-colors text-white/70 hover:text-white"
+            className="p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
             title="Open in new tab"
           >
             <ExternalLink className="w-4 h-4" />
@@ -375,14 +416,14 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           <button
             onClick={handleDownload}
             disabled={!project || Object.keys(project.files).length === 0}
-            className="p-2 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50 text-white/70 hover:text-white"
+            className="p-2 rounded-lg hover:bg-accent transition-colors disabled:opacity-50 text-muted-foreground hover:text-foreground"
             title="Download ZIP"
           >
             <Github className="w-4 h-4" />
           </button>
 
           {/* Share Button */}
-          <button className="flex items-center gap-2 px-4 py-1.5 bg-[#2a2a2a] border border-white/10 rounded-lg text-sm text-white hover:bg-white/5 transition-colors">
+          <button className="flex items-center gap-2 px-4 py-1.5 bg-secondary border border-border rounded-lg text-sm text-foreground hover:bg-accent transition-colors">
             Share
           </button>
 
@@ -411,40 +452,49 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute right-0 top-full mt-2 w-56 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-xl overflow-hidden z-[9999]"
+                    className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-lg shadow-xl overflow-hidden z-[9999]"
                   >
                     <button
                       onClick={() => setShowUserMenu(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white"
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground"
                     >
-                      <Settings className="w-4 h-4 text-white/50" />
+                      <Settings className="w-4 h-4 text-muted-foreground" />
                       <span>Settings</span>
                     </button>
                     <button
                       onClick={() => setShowUserMenu(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white border-t border-white/5"
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border"
                     >
-                      <HelpCircle className="w-4 h-4 text-white/50" />
+                      <HelpCircle className="w-4 h-4 text-muted-foreground" />
                       <span>Help</span>
                     </button>
                     <button
                       onClick={() => setShowUserMenu(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white border-t border-white/5"
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border"
                     >
-                      <CreditCard className="w-4 h-4 text-white/50" />
+                      <CreditCard className="w-4 h-4 text-muted-foreground" />
                       <span>Subscription</span>
                     </button>
+                    {/* Theme Toggle */}
                     <button
-                      onClick={() => setShowUserMenu(false)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white border-t border-white/5"
+                      onClick={() => {
+                        toggleTheme();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border"
                     >
-                      <Palette className="w-4 h-4 text-white/50" />
+                      {theme === 'dark' ? (
+                        <Moon className="w-4 h-4 text-muted-foreground" />
+                      ) : theme === 'light' ? (
+                        <Sun className="w-4 h-4 text-muted-foreground" />
+                      ) : (
+                        <Settings className="w-4 h-4 text-muted-foreground" />
+                      )}
                       <span>Theme</span>
-                      <ChevronDown className="w-3 h-3 text-white/40 ml-auto -rotate-90" />
+                      <span className="text-xs text-muted-foreground ml-auto capitalize">{theme}</span>
                     </button>
                     <button
                       onClick={() => signOut()}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 text-red-400 transition-colors border-t border-white/5"
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-destructive/10 text-destructive transition-colors border-t border-border"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Sign out</span>
@@ -457,104 +507,121 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         </div>
       </header>
 
-      {/* Mobile Panel Selector */}
-      <div className="md:hidden flex items-center justify-center gap-1 p-2 border-b border-white/10 bg-[#1e1e1e]">
-        <button
-          onClick={() => setMobilePanel('chat')}
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-            mobilePanel === 'chat' ? 'bg-primary text-primary-foreground' : 'bg-[#2a2a2a] text-white/70'
-          }`}
-        >
-          Chat
-        </button>
-        <button
-          onClick={() => setMobilePanel('preview')}
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-            mobilePanel === 'preview' ? 'bg-primary text-primary-foreground' : 'bg-[#2a2a2a] text-white/70'
-          }`}
-        >
-          Preview
-        </button>
-        <button
-          onClick={() => setMobilePanel('code')}
-          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-            mobilePanel === 'code' ? 'bg-primary text-primary-foreground' : 'bg-[#2a2a2a] text-white/70'
-          }`}
-        >
-          Code
-        </button>
-      </div>
-
-      {/* Main Content - Desktop */}
-      <div className="flex-1 hidden md:flex overflow-hidden">
-        {/* Chat Panel - Bolt Style */}
-        <motion.div
-          animate={{ width: chatWidth }}
-          className="border-r border-white/10 flex-shrink-0 overflow-hidden bg-[#252525]"
-        >
-          <ChatView
-            messages={displayMessages}
-            onSendMessage={onSendMessage}
-            isGenerating={isGenerating}
-            fileActivities={fileActivities}
-            generationPhase={generationPhase}
-            statusMessage={statusMessage}
-            onStop={onStop}
-            currentVersion={currentVersionNumber}
-            onImageUpload={handleImageUpload}
-            suggestions={suggestions}
-            versions={versions}
-            onSelectVersion={handleSelectVersion}
-          />
-        </motion.div>
-
-        {/* Resize Handle */}
-        <div
-          onMouseDown={handleResizeStart}
-          className="w-1 bg-white/10 hover:bg-primary/50 cursor-col-resize transition-colors flex-shrink-0"
-        />
-
-        {/* Right Panel - Code or Preview */}
-        <div className="flex-1 overflow-hidden bg-white">
-          <AnimatePresence mode="wait">
-            {currentView === 'code' && (
-              <motion.div key="code" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
-                <CodeView files={project?.files || {}} selectedFile={selectedFile} onSelectFile={setSelectedFile} onUpdateFile={handleUpdateFile} streamingContent={streamingContent} isGenerating={isGenerating} />
-              </motion.div>
-            )}
-            {currentView === 'preview' && (
-              <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
-                <PreviewView files={project?.files || {}} projectType={project?.projectType || 'vite'} isLoading={isGenerating} />
-              </motion.div>
-            )}
-          </AnimatePresence>
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Mobile Bottom Navigation */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-card border-t border-border flex items-center justify-around z-50">
+          <button
+            onClick={() => setMobilePanel('chat')}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${
+              mobilePanel === 'chat' ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            <Code2 className="w-5 h-5" />
+            <span className="text-xs">Chat</span>
+          </button>
+          <button
+            onClick={() => setMobilePanel('preview')}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${
+              mobilePanel === 'preview' ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            <Eye className="w-5 h-5" />
+            <span className="text-xs">Preview</span>
+          </button>
+          <button
+            onClick={() => setMobilePanel('code')}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${
+              mobilePanel === 'code' ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            <Code2 className="w-5 h-5" />
+            <span className="text-xs">Code</span>
+          </button>
         </div>
-      </div>
 
-      {/* Main Content - Mobile */}
-      <div className="flex-1 md:hidden overflow-hidden">
-        {mobilePanel === 'chat' && (
-          <ChatView
-            messages={displayMessages}
-            onSendMessage={onSendMessage}
-            isGenerating={isGenerating}
-            fileActivities={fileActivities}
-            generationPhase={generationPhase}
-            statusMessage={statusMessage}
-            onStop={onStop}
-            currentVersion={currentVersionNumber}
-            onImageUpload={handleImageUpload}
-            suggestions={suggestions}
-            versions={versions}
-            onSelectVersion={handleSelectVersion}
+        {/* Desktop Layout */}
+        <div className="hidden md:flex flex-1 overflow-hidden">
+          {/* Chat Panel */}
+          <div 
+            className="flex-shrink-0 border-r border-border"
+            style={{ width: chatWidth }}
+          >
+            <ChatView
+              messages={displayMessages}
+              onSendMessage={onSendMessage}
+              isGenerating={isGenerating}
+              fileActivities={fileActivities}
+              generationPhase={generationPhase}
+              onStop={onStop}
+              statusMessage={statusMessage}
+              currentVersion={currentVersion}
+              onImageUpload={handleImageUpload}
+              suggestions={suggestions}
+              versions={versions}
+              onSelectVersion={handleSelectVersion}
+            />
+          </div>
+
+          {/* Resize Handle */}
+          <div
+            className="w-1 bg-transparent hover:bg-primary/50 cursor-col-resize transition-colors"
+            onMouseDown={handleResizeStart}
           />
-        )}
-        {mobilePanel === 'preview' && (
-          <PreviewView files={project?.files || {}} projectType={project?.projectType || 'vite'} isLoading={isGenerating} />
-        )}
-        {mobilePanel === 'code' && (
-          <CodeView files={project?.files || {}} selectedFile={selectedFile} onSelectFile={setSelectedFile} onUpdateFile={handleUpdateFile} streamingContent={streamingContent} isGenerating={isGenerating} />
-        )}
+
+          {/* Main Panel - Code/Preview */}
+          <div className="flex-1 overflow-hidden">
+            {currentView === 'preview' ? (
+              <PreviewView 
+                files={project?.files || {}} 
+                projectType={project?.projectType || 'vite'}
+                isLoading={isGenerating}
+              />
+            ) : (
+              <CodeView
+                files={project?.files || {}}
+                selectedFile={selectedFile}
+                onSelectFile={setSelectedFile}
+                onUpdateFile={handleUpdateFile}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Layout */}
+        <div className="md:hidden flex-1 overflow-hidden pb-14">
+          {mobilePanel === 'chat' && (
+            <ChatView
+              messages={displayMessages}
+              onSendMessage={onSendMessage}
+              isGenerating={isGenerating}
+              fileActivities={fileActivities}
+              generationPhase={generationPhase}
+              onStop={onStop}
+              statusMessage={statusMessage}
+              currentVersion={currentVersion}
+              onImageUpload={handleImageUpload}
+              suggestions={suggestions}
+              versions={versions}
+              onSelectVersion={handleSelectVersion}
+            />
+          )}
+          {mobilePanel === 'preview' && (
+            <PreviewView 
+              files={project?.files || {}} 
+              projectType={project?.projectType || 'vite'}
+              isLoading={isGenerating}
+            />
+          )}
+          {mobilePanel === 'code' && (
+            <CodeView
+              files={project?.files || {}}
+              selectedFile={selectedFile}
+              onSelectFile={setSelectedFile}
+              onUpdateFile={handleUpdateFile}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
