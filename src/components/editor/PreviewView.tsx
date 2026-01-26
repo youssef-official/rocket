@@ -322,13 +322,13 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
   // For Vite/React projects - White background preview
   return (
     <div className={`flex flex-col h-full bg-white ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
-      {/* Toolbar - Light theme */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setViewMode('desktop')}
             className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'desktop' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
+              viewMode === 'desktop' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-secondary/50'
             }`}
           >
             <Monitor className="w-4 h-4" />
@@ -336,7 +336,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
           <button
             onClick={() => setViewMode('mobile')}
             className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'mobile' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
+              viewMode === 'mobile' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-secondary/50'
             }`}
           >
             <Smartphone className="w-4 h-4" />
@@ -346,14 +346,14 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
         <div className="flex items-center gap-2">
           <button
             onClick={refresh}
-            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+            className="p-2 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
             title="Refresh preview"
           >
             <RotateCcw className="w-4 h-4" />
           </button>
           <button
             onClick={toggleFullscreen}
-            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+            className="p-2 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
             title="Fullscreen"
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
