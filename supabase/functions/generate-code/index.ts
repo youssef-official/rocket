@@ -247,6 +247,23 @@ RULES:
 
 Example:
 [{"label": "Add Dark Mode", "prompt": "Add a dark mode toggle"}, {"label": "Improve SEO", "prompt": "Add meta tags for SEO"}]`;
+
+// Version name generation prompt
+const VERSION_NAME_PROMPT = `You are a creative naming assistant. Generate a SHORT, CATCHY 2-4 word name for a version/update based on what was built.
+
+RULES:
+1. Return ONLY 2-4 words max
+2. Make it descriptive of what was built
+3. Make it catchy and professional
+4. No explanation, just the name
+5. Use Title Case
+
+Examples:
+- Restaurant Website → "Restaurant Launch"
+- Added dark mode → "Dark Mode Update"
+- Created dashboard → "Dashboard Build"
+- Added contact form → "Contact Added"`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -277,6 +294,9 @@ serve(async (req) => {
         break;
       case 'suggestions':
         systemPrompt = SUGGESTIONS_PROMPT;
+        break;
+      case 'version-name':
+        systemPrompt = VERSION_NAME_PROMPT;
         break;
       case 'code':
       default:

@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, ChevronUp, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Snowflake, Lightbulb, ListOrdered, Zap, FileText, MessageCircle, History } from 'lucide-react';
+import { Send, Loader2, ChevronDown, ChevronUp, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Snowflake, Lightbulb, ListOrdered, Zap, FileText, MessageCircle, Bookmark } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '@/types';
+import type { ProjectVersion } from '@/hooks/useVersions';
 import rocketLogo from '@/assets/rocket-logo.png';
 
 interface FileActivity {
@@ -40,7 +41,8 @@ interface ChatViewProps {
   currentVersion?: number | null;
   onImageUpload?: (file: File) => Promise<string | null>;
   suggestions?: Suggestion[];
-  onOpenVersions?: () => void;
+  versions?: ProjectVersion[];
+  onSelectVersion?: (version: ProjectVersion) => void;
 }
 
 // Get file icon based on extension
@@ -106,7 +108,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
   currentVersion,
   onImageUpload,
   suggestions = [],
-  onOpenVersions
+  versions = [],
+  onSelectVersion
 }) => {
   const [input, setInput] = useState('');
   const [showFileList, setShowFileList] = useState(true);
@@ -393,23 +396,73 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Summary Section
+  // Render Summary Section with Version Card
   const renderSummarySection = () => {
     if (!generationPhase?.summary) return null;
+
+    // Get the latest version for display
+    const latestVersion = versions.length > 0 ? versions[0] : null;
+    const activeVersion = currentVersion 
+      ? versions.find(v => v.versionNumber === currentVersion) 
+      : latestVersion;
 
     return (
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-4 rounded-lg overflow-hidden border border-green-500/30 bg-green-500/10"
+        className="mt-4 space-y-3"
       >
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-green-500/20">
-          <FileText className="w-4 h-4 text-green-400" />
-          <span className="text-sm font-medium text-green-400">Summary</span>
-        </div>
-        <div className="px-4 py-3">
-          <p className="text-sm text-white/80">{generationPhase.summary}</p>
-        </div>
+        {/* Version Card - Bolt Style */}
+        {activeVersion && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            onClick={() => onSelectVersion?.(activeVersion)}
+            className="w-full flex items-center gap-3 p-3 rounded-xl text-left bg-[#2a2a2a] border border-primary/30 hover:border-primary/50 transition-all shadow-lg shadow-primary/5"
+          >
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/20 text-primary flex-shrink-0">
+              <Bookmark className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">
+                {activeVersion.name || `Version ${activeVersion.versionNumber}`}
+              </p>
+              <p className="text-xs text-white/40 mt-0.5">
+                Version {activeVersion.versionNumber}
+              </p>
+            </div>
+          </motion.button>
+        )}
+
+        {/* Show all versions if more than 1 */}
+        {versions.length > 1 && (
+          <div className="space-y-2">
+            <p className="text-xs text-white/40 px-1">Previous Versions</p>
+            {versions.slice(1, 4).map((version) => (
+              <motion.button
+                key={version.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                whileHover={{ scale: 1.01 }}
+                onClick={() => onSelectVersion?.(version)}
+                className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-all ${
+                  currentVersion === version.versionNumber
+                    ? 'bg-[#2a2a2a] border border-white/20'
+                    : 'bg-[#252525] border border-white/5 hover:border-white/10'
+                }`}
+              >
+                <div className="w-6 h-6 rounded-md flex items-center justify-center bg-white/5 text-white/50 flex-shrink-0 text-[10px] font-bold">
+                  v{version.versionNumber}
+                </div>
+                <p className="text-xs text-white/60 truncate flex-1">
+                  {version.name || `Version ${version.versionNumber}`}
+                </p>
+              </motion.button>
+            ))}
+          </div>
+        )}
       </motion.div>
     );
   };
@@ -668,18 +721,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   <span>Chat</span>
                 </button>
 
-                {/* Versions Button */}
-                {onOpenVersions && (
-                  <button 
-                    type="button"
-                    onClick={onOpenVersions}
-                    className="flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
-                  >
-                    <History className="w-3.5 h-3.5" />
-                    <span>v{currentVersion || 1}</span>
-                  </button>
-                )}
-
+                {/* Version Button Removed - now shown as cards after summary */}
               </div>
 
               <div className="flex items-center gap-1">
