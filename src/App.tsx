@@ -8,6 +8,7 @@ import { AuthPage } from "@/components/auth/AuthPage";
 import { HomePage } from "@/components/home/HomePage";
 import { EditorLayout } from "@/components/editor/EditorLayout";
 import { ProjectsDashboard } from "@/components/dashboard/ProjectsDashboard";
+import { ThemeInitializer } from "@/components/shared/ThemeInitializer";
 import { useProjects } from "@/hooks/useProjects";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -688,10 +689,7 @@ const AppContent = () => {
     clearMessages 
   } = useChatMessages(currentProjectId);
 
-  // Apply dark mode ONLY
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
+  // Theme is handled globally via ThemeInitializer + user toggles
 
   // Sync local project with DB project
   useEffect(() => {
@@ -857,6 +855,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
+        <ThemeInitializer />
         <Toaster />
         <Sonner />
         <BrowserRouter>

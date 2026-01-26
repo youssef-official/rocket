@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User as UserIcon, Settings, LogOut, Moon, Sun, Monitor } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '@/types';
+import { useThemePreference } from '@/hooks/useThemePreference';
 
 interface UserMenuDropdownProps {
   user: User;
@@ -10,41 +11,10 @@ interface UserMenuDropdownProps {
 
 export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOut }) => {
   const [showMenu, setShowMenu] = useState(false);
-  const [theme, setTheme] = useState<'dark' | 'light' | 'system'>('system');
+  const { theme, cycleTheme } = useThemePreference();
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-
-  // Apply theme
-  useEffect(() => {
-    const applyTheme = () => {
-      if (theme === 'system') {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.classList.toggle('dark', prefersDark);
-      } else {
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-      }
-    };
-    
-    applyTheme();
-    
-    if (theme === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handler = () => applyTheme();
-      mediaQuery.addEventListener('change', handler);
-      return () => mediaQuery.removeEventListener('change', handler);
-    }
-  }, [theme]);
-
-  const toggleTheme = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setTheme(prev => {
-      if (prev === 'dark') return 'light';
-      if (prev === 'light') return 'system';
-      return 'dark';
-    });
-  };
 
   const getThemeIcon = () => {
     if (theme === 'dark') return <Moon className="w-4 h-4" />;
@@ -112,7 +82,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
       <button
         type="button"
         onClick={() => setShowMenu(!showMenu)}
-        className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-colors"
+        className="w-9 h-9 rounded-full bg-accent flex items-center justify-center hover:opacity-90 transition-opacity"
       >
         <UserIcon className="w-5 h-5 text-white" />
       </button>
@@ -123,7 +93,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          <div className="w-52 bg-[#1c1c1c] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+          <div className="w-52 bg-card border border-border rounded-xl shadow-2xl overflow-hidden">
             <div className="p-3 border-b border-white/10">
               <p className="text-sm font-medium text-white truncate">{user.email}</p>
               <p className="text-xs text-white/60">Free Plan</p>
@@ -132,19 +102,23 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
               {/* Theme Toggle */}
               <button
                 type="button"
-                onClick={toggleTheme}
-                className="w-full flex items-center justify-between px-3 py-2 text-white/80 hover:bg-white/10 rounded-lg transition-colors text-sm cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  cycleTheme();
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 text-foreground hover:bg-accent rounded-lg transition-colors text-sm cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   {getThemeIcon()}
                   Theme
                 </div>
-                <span className="text-xs text-white/50">{getThemeLabel()}</span>
+                <span className="text-xs text-muted-foreground">{getThemeLabel()}</span>
               </button>
               <button
                 type="button"
                 onClick={handleSettings}
-                className="w-full flex items-center gap-2 px-3 py-2 text-white/80 hover:bg-white/10 rounded-lg transition-colors text-sm cursor-pointer"
+                className="w-full flex items-center gap-2 px-3 py-2 text-foreground hover:bg-accent rounded-lg transition-colors text-sm cursor-pointer"
               >
                 <Settings className="w-4 h-4" />
                 Account Settings
@@ -152,7 +126,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors text-sm cursor-pointer"
+                className="w-full flex items-center gap-2 px-3 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors text-sm cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
                 Sign Out
