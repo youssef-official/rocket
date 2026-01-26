@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Code2, Eye, LogOut, Settings, HelpCircle, CreditCard, Moon, Sun,
   ChevronDown, Download, Home, ArrowLeft, Clock, Pencil, Eye as EyeIcon,
-  Github, FolderOpen
+  Github, FolderOpen, Upload
 } from 'lucide-react';
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
 import { VisualEditMode } from './VisualEditMode';
+import { GitHubConnectDialog, VercelDeployDialog } from './IntegrationDialogs';
 import { RocketLogo } from '@/components/shared/RocketLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVersions, type ProjectVersion } from '@/hooks/useVersions';
@@ -17,6 +18,7 @@ import type { ProjectData, ChatMessage, ViewType, ProjectFile } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
+import vercelLogo from '@/assets/logos/vercel.svg';
 
 interface FileActivity {
   name: string;
@@ -92,13 +94,17 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number | null>(null);
   const [showHomeDialog, setShowHomeDialog] = useState(false);
   const [showVisualEdit, setShowVisualEdit] = useState(false);
+  const [showGitHubDialog, setShowGitHubDialog] = useState(false);
+  const [showVercelDialog, setShowVercelDialog] = useState(false);
+  const [connectedRepoUrl, setConnectedRepoUrl] = useState<string | null>(null);
+  const [deployedUrl, setDeployedUrl] = useState<string | null>(null);
   const isResizing = useRef(false);
   const prevIsGenerating = useRef(isGenerating);
   const versionCreatedForSession = useRef(false);
   const lastFileActivitiesRef = useRef<FileActivity[]>([]);
 
   // Versions hook
-  const { versions, fetchVersions, createVersion } = useVersions(project?.id || null);
+  const { versions, fetchVersions, createVersion, rollbackToVersion } = useVersions(project?.id || null);
 
   // Track file activities for version
   useEffect(() => {
@@ -168,6 +174,15 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       onVersionRestore(version.files, messages); // Keep messages, just change files for preview
     }
   };
+
+  // Handle version rollback
+  const handleRollback = useCallback(async (versionNumber: number) => {
+    const result = await rollbackToVersion(versionNumber);
+    if (result && onVersionRestore) {
+      onVersionRestore(result.files, result.messages);
+      setCurrentVersionNumber(null);
+    }
+  }, [rollbackToVersion, onVersionRestore]);
 
   // Handle image upload to Supabase storage
   const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
@@ -450,14 +465,42 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
         {/* Right Section */}
         <div className="flex items-center gap-2">
-          {/* GitHub Icon */}
+          {/* GitHub Button */}
+          <button
+            onClick={() => setShowGitHubDialog(true)}
+            disabled={!project || Object.keys(project.files).length === 0}
+            className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
+              connectedRepoUrl 
+                ? 'bg-emerald-500/10 text-emerald-500' 
+                : 'hover:bg-accent text-muted-foreground hover:text-foreground'
+            }`}
+            title={connectedRepoUrl ? 'Connected to GitHub' : 'Connect to GitHub'}
+          >
+            <Github className="w-4 h-4" />
+          </button>
+
+          {/* Vercel Button */}
+          <button
+            onClick={() => setShowVercelDialog(true)}
+            disabled={!project || Object.keys(project.files).length === 0}
+            className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
+              deployedUrl 
+                ? 'bg-emerald-500/10 text-emerald-500' 
+                : 'hover:bg-accent text-muted-foreground hover:text-foreground'
+            }`}
+            title={deployedUrl ? 'Deployed to Vercel' : 'Deploy to Vercel'}
+          >
+            <img src={vercelLogo} alt="Vercel" className="w-4 h-4 dark:invert" />
+          </button>
+
+          {/* Download ZIP */}
           <button
             onClick={handleDownload}
             disabled={!project || Object.keys(project.files).length === 0}
             className="p-2 rounded-lg hover:bg-accent transition-colors disabled:opacity-50 text-muted-foreground hover:text-foreground"
             title="Download ZIP"
           >
-            <Github className="w-4 h-4" />
+            <Download className="w-4 h-4" />
           </button>
 
           {/* Share Button */}
@@ -465,8 +508,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             Share
           </button>
 
-          {/* Publish Button - White text, bold */}
-          <button className="flex items-center gap-2 px-4 py-1.5 bg-white text-black rounded-lg text-sm font-bold hover:opacity-90 transition-colors">
+          {/* Publish Button */}
+          <button 
+            onClick={() => setShowVercelDialog(true)}
+            className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors"
+          >
+            <Upload className="w-4 h-4" />
             Publish
           </button>
 
@@ -598,6 +645,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               suggestions={suggestions}
               versions={versions}
               onSelectVersion={handleSelectVersion}
+              onRollback={handleRollback}
             />
           </div>
 
@@ -642,6 +690,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               suggestions={suggestions}
               versions={versions}
               onSelectVersion={handleSelectVersion}
+              onRollback={handleRollback}
             />
           )}
           {mobilePanel === 'preview' && (
@@ -661,6 +710,23 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           )}
         </div>
       </div>
+
+      {/* Integration Dialogs */}
+      <GitHubConnectDialog
+        open={showGitHubDialog}
+        onOpenChange={setShowGitHubDialog}
+        projectName={project?.name || 'untitled-project'}
+        projectFiles={project?.files || {}}
+        onConnected={setConnectedRepoUrl}
+      />
+
+      <VercelDeployDialog
+        open={showVercelDialog}
+        onOpenChange={setShowVercelDialog}
+        projectName={project?.name || 'untitled-project'}
+        projectFiles={project?.files || {}}
+        onDeployed={setDeployedUrl}
+      />
     </div>
   );
 };

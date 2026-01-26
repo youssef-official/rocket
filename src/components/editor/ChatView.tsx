@@ -51,6 +51,7 @@ interface ChatViewProps {
   suggestions?: Suggestion[];
   versions?: ProjectVersion[];
   onSelectVersion?: (version: ProjectVersion) => void;
+  onRollback?: (versionNumber: number) => Promise<void>;
 }
 
 // Get file icon based on extension
@@ -136,7 +137,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onImageUpload,
   suggestions = [],
   versions = [],
-  onSelectVersion
+  onSelectVersion,
+  onRollback
 }) => {
   const [input, setInput] = useState('');
   const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({});
@@ -144,6 +146,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [uploadedImage, setUploadedImage] = useState<{ file: File; preview: string } | null>(null);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [rollbackVersionId, setRollbackVersionId] = useState<number | null>(null);
+  const [isRollingBack, setIsRollingBack] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -465,35 +469,66 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
+  // Handle rollback action
+  const handleRollbackClick = async () => {
+    if (rollbackVersionId === null) return;
+    setIsRollingBack(true);
+    try {
+      await onRollback?.(rollbackVersionId);
+    } finally {
+      setIsRollingBack(false);
+      setRollbackVersionId(null);
+    }
+  };
+
   // Render Version Card for a specific message
-  const renderVersionCard = (version: ProjectVersion, isActive: boolean) => {
+  const renderVersionCard = (version: ProjectVersion, isActive: boolean, isLatest: boolean = false) => {
     return (
-      <motion.button
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
-        onClick={() => onSelectVersion?.(version)}
-        className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
-          isActive 
-            ? 'bg-primary/10 border border-primary/30 hover:border-primary/50' 
-            : 'bg-secondary border border-border hover:border-foreground/20'
-        }`}
-      >
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-          isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
-        }`}>
-          <Bookmark className="w-4 h-4" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">
-            {version.name || `Version ${version.versionNumber}`}
-          </p>
-          <p className={`text-xs mt-0.5 ${isActive ? 'text-primary/70' : 'text-muted-foreground'}`}>
-            Version {version.versionNumber}{isActive && ' • Active'}
-          </p>
-        </div>
-      </motion.button>
+      <div className="relative group">
+        <motion.button
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          onClick={() => onSelectVersion?.(version)}
+          className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
+            isActive 
+              ? 'bg-primary/10 border border-primary/30 hover:border-primary/50' 
+              : 'bg-secondary border border-border hover:border-foreground/20'
+          }`}
+        >
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+            isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+          }`}>
+            <Bookmark className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">
+              {version.name || `Version ${version.versionNumber}`}
+            </p>
+            <p className={`text-xs mt-0.5 ${isActive ? 'text-primary/70' : 'text-muted-foreground'}`}>
+              Version {version.versionNumber}{isActive && ' • Active'}
+            </p>
+          </div>
+
+          {/* Rollback button - only for non-latest versions */}
+          {!isLatest && onRollback && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setRollbackVersionId(version.versionNumber);
+              }}
+              className="p-2 rounded-lg bg-destructive/10 text-destructive opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20"
+              title="Rollback to this version"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+            </button>
+          )}
+        </motion.button>
+      </div>
     );
   };
 
@@ -511,7 +546,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         </div>
 
         {/* Version Card */}
-        {version && renderVersionCard(version, isActive || false)}
+        {version && renderVersionCard(version, isActive || false, versions.length > 0 && version.versionNumber === Math.max(...versions.map(v => v.versionNumber)))}
       </motion.div>
     );
   };
@@ -869,6 +904,54 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Rollback Confirmation Dialog */}
+      {rollbackVersionId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card border border-border rounded-xl p-6 max-w-md mx-4 shadow-2xl"
+          >
+            <h3 className="text-lg font-semibold text-foreground mb-2">Are you sure?</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              This will restore your project to <strong>Version {rollbackVersionId}</strong>.
+              <br /><br />
+              <span className="text-destructive font-medium">
+                Warning: All versions after this point will be permanently deleted. This action cannot be undone.
+              </span>
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setRollbackVersionId(null)}
+                className="px-4 py-2 text-sm font-medium text-foreground bg-secondary hover:bg-secondary/80 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRollbackClick}
+                disabled={isRollingBack}
+                className="px-4 py-2 text-sm font-medium text-destructive-foreground bg-destructive hover:bg-destructive/90 rounded-lg transition-colors flex items-center gap-2"
+              >
+                {isRollingBack ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Rolling back...
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                      <path d="M3 3v5h5"/>
+                    </svg>
+                    Rollback
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
