@@ -216,6 +216,20 @@ RULES:
 
 You are chatting with a developer working on a React/TypeScript project. Help them with their questions!`;
 
+// Project name generation prompt
+const PROJECT_NAME_PROMPT = `You are a creative naming assistant. Generate a SHORT, CATCHY 2-letter project code/name.
+
+RULES:
+1. Return ONLY 2 uppercase letters
+2. The letters should relate to the project
+3. No explanation, no extra text, just 2 letters
+
+Examples:
+- Restaurant Website → RW
+- Portfolio Site → PS
+- E-commerce Store → ES
+- Task Manager → TM`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -240,6 +254,9 @@ serve(async (req) => {
         break;
       case 'chat':
         systemPrompt = CHAT_ONLY_PROMPT;
+        break;
+      case 'project-name':
+        systemPrompt = PROJECT_NAME_PROMPT;
         break;
       case 'code':
       default:

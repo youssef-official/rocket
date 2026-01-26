@@ -16,7 +16,8 @@ import {
   parseAIResponse, 
   generateDefaultViteProject,
   generateExplanation,
-  stopGeneration
+  stopGeneration,
+  generateProjectName
 } from "@/services/aiService";
 import type { ProjectData, ChatMessage, ProjectFile } from "@/types";
 import { toast } from "@/hooks/use-toast";
@@ -97,6 +98,23 @@ const ProjectEditorRoute = () => {
         
         const prompt = localProject.description || '';
         
+        // Step 0: Generate project name first
+        setStatusMessage('Generating project name...');
+        setGenerationPhase({ phase: 'planning', message: 'Generating project name...' });
+        
+        let generatedName = '';
+        try {
+          generatedName = await generateProjectName(prompt);
+          // Update project name in database
+          await updateProject(localProject.id, { 
+            name: generatedName,
+          });
+          setLocalProject(prev => prev ? { ...prev, name: generatedName } : null);
+        } catch (e) {
+          console.error('Failed to generate project name:', e);
+          generatedName = prompt.slice(0, 2).toUpperCase();
+        }
+        
         // Add user message
         await addMessage('user', prompt);
         setIsGenerating(true);
@@ -134,6 +152,11 @@ const ProjectEditorRoute = () => {
             .filter(line => line.length > 0)
             .slice(0, 6);
           
+          // Save plan to database
+          await updateProject(localProject.id, {
+            description: prompt,
+          });
+          
           setGenerationPhase({ 
             phase: 'thinking', 
             message: 'Thinking complete!', 
@@ -148,12 +171,12 @@ const ProjectEditorRoute = () => {
 
           // Step 2: Generate code
           if (isCancelled.current) return;
-          setStatusMessage('Setting up project structure...');
+          setStatusMessage('Creating design system...');
           setGenerationPhase(prev => ({ 
             ...prev!,
             phase: 'generating', 
             message: 'Generating code files...',
-            status: 'Setting up project structure...'
+            status: 'Creating design system...'
           }));
           
           let fullResponse = '';
@@ -349,12 +372,12 @@ const ProjectEditorRoute = () => {
 
       // Step 2: Generate code (goes to code view, not shown in chat)
       if (isCancelled.current) return;
-      setStatusMessage('Setting up project structure...');
+      setStatusMessage('Creating components...');
       setGenerationPhase(prev => ({ 
         ...prev!,
         phase: 'generating', 
         message: 'Generating code files...',
-        status: 'Setting up project structure...'
+        status: 'Creating components...'
       }));
       
       const conversationHistory = [
