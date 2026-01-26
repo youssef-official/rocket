@@ -1,0 +1,132 @@
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import type { ProjectFile, ChatMessage } from '@/types';
+import { toast } from '@/hooks/use-toast';
+
+export interface ProjectVersion {
+  id: string;
+  projectId: string;
+  userId: string;
+  versionNumber: number;
+  name?: string;
+  files: Record<string, ProjectFile>;
+  chatMessages: ChatMessage[];
+  createdAt: string;
+}
+
+export function useVersions(projectId: string | null) {
+  const { user } = useAuth();
+  const [versions, setVersions] = useState<ProjectVersion[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchVersions = useCallback(async () => {
+    if (!user || !projectId) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('project_versions')
+        .select('*')
+        .eq('project_id', projectId)
+        .eq('user_id', user.id)
+        .order('version_number', { ascending: false });
+
+      if (error) throw error;
+
+      const mapped: ProjectVersion[] = (data || []).map((v: any) => ({
+        id: v.id,
+        projectId: v.project_id,
+        userId: v.user_id,
+        versionNumber: v.version_number,
+        name: v.name,
+        files: v.files as Record<string, ProjectFile>,
+        chatMessages: v.chat_messages as ChatMessage[],
+        createdAt: v.created_at,
+      }));
+
+      setVersions(mapped);
+    } catch (error) {
+      console.error('Error fetching versions:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, projectId]);
+
+  const createVersion = useCallback(async (
+    files: Record<string, ProjectFile>,
+    chatMessages: ChatMessage[],
+    name?: string
+  ): Promise<ProjectVersion | null> => {
+    if (!user || !projectId) return null;
+
+    try {
+      // Get current max version number
+      const { data: existing } = await supabase
+        .from('project_versions')
+        .select('version_number')
+        .eq('project_id', projectId)
+        .order('version_number', { ascending: false })
+        .limit(1);
+
+      const nextVersion = existing && existing.length > 0 
+        ? (existing[0] as any).version_number + 1 
+        : 1;
+
+      const { data, error } = await supabase
+        .from('project_versions')
+        .insert([{
+          project_id: projectId,
+          user_id: user.id,
+          version_number: nextVersion,
+          name: name || `Version ${nextVersion}`,
+          files: files as any,
+          chat_messages: chatMessages as any,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newVersion: ProjectVersion = {
+        id: data.id,
+        projectId: data.project_id,
+        userId: data.user_id,
+        versionNumber: data.version_number,
+        name: data.name ?? undefined,
+        files: data.files as unknown as Record<string, ProjectFile>,
+        chatMessages: data.chat_messages as unknown as ChatMessage[],
+        createdAt: data.created_at,
+      };
+
+      setVersions(prev => [newVersion, ...prev]);
+      
+      toast({
+        title: 'Version saved',
+        description: `Version ${nextVersion} created successfully`,
+      });
+
+      return newVersion;
+    } catch (error) {
+      console.error('Error creating version:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save version',
+        variant: 'destructive',
+      });
+      return null;
+    }
+  }, [user, projectId]);
+
+  const getVersion = useCallback((versionNumber: number): ProjectVersion | undefined => {
+    return versions.find(v => v.versionNumber === versionNumber);
+  }, [versions]);
+
+  return {
+    versions,
+    loading,
+    fetchVersions,
+    createVersion,
+    getVersion,
+  };
+}

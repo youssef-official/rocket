@@ -1,0 +1,639 @@
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, useParams, useNavigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthPage } from "@/components/auth/AuthPage";
+import { HomePage } from "@/components/home/HomePage";
+import { EditorLayout } from "@/components/editor/EditorLayout";
+import { ProjectsDashboard } from "@/components/dashboard/ProjectsDashboard";
+import { useProjects } from "@/hooks/useProjects";
+import { useChatMessages } from "@/hooks/useChatMessages";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { 
+  streamAICodeGeneration, 
+  parseAIResponse, 
+  generateDefaultViteProject,
+  generateExplanation,
+  stopGeneration
+} from "@/services/aiService";
+import type { ProjectData, ChatMessage, ProjectFile } from "@/types";
+import { toast } from "@/hooks/use-toast";
+
+const queryClient = new QueryClient();
+
+interface FileActivity {
+  name: string;
+  status: 'editing' | 'done';
+  action: 'edited' | 'created';
+}
+
+interface GenerationPhase {
+  phase: 'planning' | 'designing' | 'generating' | 'complete';
+  message: string;
+}
+
+// Project Editor wrapper component for route /projects/:id
+const ProjectEditorRoute = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const { projects, loading: projectsLoading, updateProject, getProject } = useProjects();
+  
+  const [localProject, setLocalProject] = useState<ProjectData | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
+  const [fileActivities, setFileActivities] = useState<FileActivity[]>([]);
+  const [generationPhase, setGenerationPhase] = useState<GenerationPhase | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string>('');
+  const [currentVersion, setCurrentVersion] = useState<number | null>(null);
+  const [hasStartedGeneration, setHasStartedGeneration] = useState(false);
+  const [isChatMode, setIsChatMode] = useState(false);
+  const isCancelled = useRef(false);
+
+  // Use chat messages hook for persistence
+  const { 
+    messages, 
+    addMessage, 
+    setMessages, 
+    clearMessages 
+  } = useChatMessages(id || null);
+
+  // Load project from database
+  useEffect(() => {
+    if (id && !projectsLoading && projects.length > 0) {
+      const dbProject = projects.find(p => p.id === id);
+      if (dbProject) {
+        setLocalProject({
+          id: dbProject.id,
+          name: dbProject.name,
+          description: dbProject.description,
+          projectType: dbProject.projectType,
+          files: dbProject.files,
+          isPublished: dbProject.isPublished,
+          publishedSlug: dbProject.publishedSlug,
+          createdAt: dbProject.createdAt,
+          updatedAt: dbProject.updatedAt,
+        });
+      } else {
+        // Project not found, redirect to home
+        navigate('/');
+      }
+    }
+  }, [id, projects, projectsLoading, navigate]);
+
+  // Auto-start generation for new projects (description = prompt, no messages yet)
+  useEffect(() => {
+    if (localProject && !hasStartedGeneration && messages.length === 0 && localProject.description) {
+      // This is a newly created project, start generation
+      const startInitialGeneration = async () => {
+        setHasStartedGeneration(true);
+        isCancelled.current = false;
+        
+        const prompt = localProject.description || '';
+        
+        // Add user message
+        await addMessage('user', prompt);
+        setIsGenerating(true);
+        setStreamingContent('');
+        setFileActivities([]);
+        setStatusMessage('Analyzing your request...');
+        setGenerationPhase({ phase: 'planning', message: 'Analyzing your request...' });
+
+        try {
+          // Step 1: Generate explanation
+          setStatusMessage('Designing the experience...');
+          setGenerationPhase({ phase: 'designing', message: 'Designing the experience...' });
+          
+          let explanation = '';
+          try {
+            explanation = await generateExplanation(prompt, localProject.projectType);
+          } catch (e) {
+            explanation = "I'll create something amazing for you!";
+          }
+          
+          if (isCancelled.current) return;
+          
+          // Add the explanation message (without duplication)
+          await addMessage('assistant', explanation);
+
+          // Step 2: Generate code
+          if (isCancelled.current) return;
+          setStatusMessage('Setting up project structure...');
+          setGenerationPhase({ phase: 'generating', message: 'Generating code files...' });
+          
+          let fullResponse = '';
+          
+          await streamAICodeGeneration(
+            [{ role: 'user', content: prompt }],
+            localProject.projectType,
+            {
+              onChunk: (chunk) => {
+                if (isCancelled.current) return;
+                fullResponse += chunk;
+                setStreamingContent(fullResponse);
+              },
+              onComplete: async (response) => {
+                if (isCancelled.current) return;
+                
+                const { files, fileList } = parseAIResponse(response);
+                
+                const activities = fileList.map(name => ({
+                  name,
+                  status: 'done' as const,
+                  action: 'created' as const
+                }));
+                setFileActivities(activities);
+                
+                const finalFiles = Object.keys(files).length > 0 
+                  ? { ...localProject.files, ...files }
+                  : localProject.files;
+
+                await updateProject(localProject.id, { files: finalFiles });
+                setLocalProject(prev => prev ? { ...prev, files: finalFiles } : null);
+                setIsGenerating(false);
+                setStreamingContent('');
+                setStatusMessage('');
+                setCurrentVersion(1);
+                setGenerationPhase({ phase: 'complete', message: 'Project ready!' });
+              },
+              onError: async (error) => {
+                console.error('AI error:', error);
+                await addMessage('assistant', `I encountered an error: ${error.message}. I've created a starter template for you.`);
+                setIsGenerating(false);
+                setStreamingContent('');
+                setStatusMessage('');
+                setGenerationPhase(null);
+                setFileActivities([]);
+              },
+              onFileStart: (fileName) => {
+                if (isCancelled.current) return;
+                setFileActivities(prev => {
+                  const exists = prev.find(f => f.name === fileName);
+                  if (exists) {
+                    return prev.map(f => f.name === fileName ? { ...f, status: 'editing' as const } : { ...f, status: 'done' as const });
+                  }
+                  const updated = prev.map(f => ({ ...f, status: 'done' as const }));
+                  return [...updated, { name: fileName, status: 'editing' as const, action: 'created' as const }];
+                });
+              },
+              onStatusUpdate: (status) => {
+                if (isCancelled.current) return;
+                setStatusMessage(status);
+              },
+            }
+          );
+        } catch (error) {
+          if (isCancelled.current) return;
+          console.error('Generation error:', error);
+          await addMessage('assistant', "I'm working on your project with the starter template!");
+          setIsGenerating(false);
+          setStreamingContent('');
+          setStatusMessage('');
+          setGenerationPhase(null);
+          setFileActivities([]);
+        }
+      };
+      
+      startInitialGeneration();
+    }
+  }, [localProject, messages, hasStartedGeneration, addMessage, updateProject]);
+
+  const handleVersionRestore = useCallback((files: Record<string, ProjectFile>, restoredMessages: ChatMessage[]) => {
+    if (localProject) {
+      setLocalProject(prev => prev ? { ...prev, files } : null);
+      setMessages(restoredMessages);
+    }
+  }, [localProject, setMessages]);
+
+  const handleStopGeneration = useCallback(() => {
+    isCancelled.current = true;
+    stopGeneration();
+    setIsGenerating(false);
+    setStatusMessage('');
+    setGenerationPhase({ phase: 'complete', message: 'Generation stopped.' });
+    toast({
+      title: 'Generation Stopped',
+      description: 'Code generation was cancelled.',
+    });
+  }, []);
+
+  const handleSendMessage = useCallback(async (content: string, isChatOnly: boolean = false, imageUrl?: string) => {
+    if (!localProject) return;
+
+    isCancelled.current = false;
+
+    // Add user message immediately with image if present
+    await addMessage('user', content, imageUrl);
+    
+    // If chat-only mode, just respond conversationally without code generation
+    if (isChatOnly) {
+      setIsChatMode(true);
+      setIsGenerating(true);
+      setStatusMessage('Thinking...');
+      
+      try {
+        const { generateChatResponse } = await import('@/services/aiService');
+        const response = await generateChatResponse(content, messages);
+        await addMessage('assistant', response);
+      } catch (error) {
+        await addMessage('assistant', "I'm here to help! Ask me anything about your project or web development.");
+      }
+      
+      setIsGenerating(false);
+      setStatusMessage('');
+      return;
+    }
+
+    // Build mode - generate code
+    setIsChatMode(false);
+
+    // Build mode - generate code
+    setIsGenerating(true);
+    setStreamingContent('');
+    setFileActivities([]);
+    setStatusMessage('Analyzing your request...');
+    setGenerationPhase({ phase: 'planning', message: 'Analyzing your request...' });
+
+    try {
+      // Step 1: Generate explanation first (shown in chat)
+      if (isCancelled.current) return;
+      setStatusMessage('Designing the experience...');
+      setGenerationPhase({ phase: 'designing', message: 'Designing the experience...' });
+      
+      let explanation = '';
+      try {
+        explanation = await generateExplanation(content, localProject.projectType);
+      } catch (e) {
+        explanation = "I'll make those changes for you!";
+      }
+      
+      if (isCancelled.current) return;
+      
+      // Add the explanation message
+      const explanationMessage = explanation + '\n\n**Now I\'ll start building...**';
+      await addMessage('assistant', explanationMessage);
+
+      // Step 2: Generate code (goes to code view, not shown in chat)
+      if (isCancelled.current) return;
+      setStatusMessage('Setting up project structure...');
+      setGenerationPhase({ phase: 'generating', message: 'Generating code files...' });
+      
+      const conversationHistory = [
+        ...messages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        { role: 'user' as const, content },
+      ];
+
+      let fullResponse = '';
+
+      // Pass existing file list so AI knows what files exist and can do targeted edits
+      const existingFilesList = Object.keys(localProject.files);
+      
+      await streamAICodeGeneration(
+        conversationHistory,
+        localProject.projectType,
+        {
+          onChunk: (chunk) => {
+            if (isCancelled.current) return;
+            fullResponse += chunk;
+            setStreamingContent(fullResponse);
+          },
+          onComplete: async (response) => {
+            if (isCancelled.current) return;
+            
+            const { files: newFiles, fileList } = parseAIResponse(response);
+
+            // Update file activities
+            const activities = fileList.map(name => ({
+              name,
+              status: 'done' as const,
+              action: (localProject.files[name] ? 'edited' : 'created') as 'edited' | 'created'
+            }));
+            setFileActivities(activities);
+
+            if (Object.keys(newFiles).length > 0) {
+              const mergedFiles = { ...localProject.files, ...newFiles };
+              await updateProject(localProject.id, { files: mergedFiles });
+              setLocalProject(prev => prev ? { ...prev, files: mergedFiles } : null);
+            }
+
+            setIsGenerating(false);
+            setStreamingContent('');
+            setStatusMessage('');
+            setCurrentVersion(prev => (prev || 0) + 1);
+            setGenerationPhase({ phase: 'complete', message: 'Changes applied!' });
+          },
+          onError: async (error) => {
+            await addMessage('assistant', `Sorry, I encountered an error: ${error.message}`);
+            setIsGenerating(false);
+            setStreamingContent('');
+            setStatusMessage('');
+            setGenerationPhase(null);
+            setFileActivities([]);
+          },
+          onFileStart: (fileName) => {
+            if (isCancelled.current) return;
+            setFileActivities(prev => {
+              const exists = prev.find(f => f.name === fileName);
+              if (exists) {
+                return prev.map(f => f.name === fileName ? { ...f, status: 'editing' as const } : { ...f, status: 'done' as const });
+              }
+              const updated = prev.map(f => ({ ...f, status: 'done' as const }));
+              const action = localProject.files[fileName] ? 'edited' : 'created';
+              return [...updated, { name: fileName, status: 'editing' as const, action: action as 'edited' | 'created' }];
+            });
+          },
+          onStatusUpdate: (status) => {
+            if (isCancelled.current) return;
+            setStatusMessage(status);
+          },
+        },
+        existingFilesList
+      );
+    } catch (error) {
+      if (isCancelled.current) return;
+      console.error('Generation error:', error);
+      setIsGenerating(false);
+      setStreamingContent('');
+      setStatusMessage('');
+      setGenerationPhase(null);
+      setFileActivities([]);
+    }
+  }, [localProject, messages, updateProject, addMessage]);
+
+  const handleUpdateProject = useCallback((updates: Partial<ProjectData>) => {
+    if (!localProject) return;
+    
+    setLocalProject(prev => prev ? { ...prev, ...updates } : null);
+    
+    const dbUpdates: Partial<{ name: string; description: string; files: Record<string, ProjectFile> }> = {};
+    if (updates.name) dbUpdates.name = updates.name;
+    if (updates.description) dbUpdates.description = updates.description;
+    if (updates.files) dbUpdates.files = updates.files;
+    
+    if (Object.keys(dbUpdates).length > 0) {
+      updateProject(localProject.id, dbUpdates);
+    }
+  }, [localProject, updateProject]);
+
+  if (authLoading || projectsLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-foreground border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!localProject) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-foreground mb-2">Loading project...</h2>
+          <div className="w-8 h-8 border-4 border-foreground border-t-transparent rounded-full animate-spin mx-auto" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <EditorLayout
+      project={localProject}
+      messages={messages}
+      onSendMessage={handleSendMessage}
+      isGenerating={isGenerating}
+      onNewProject={() => navigate('/')}
+      onUpdateProject={handleUpdateProject}
+      onViewDashboard={() => navigate('/dashboard')}
+      streamingContent={streamingContent}
+      onVersionRestore={handleVersionRestore}
+      onGoHome={() => navigate('/')}
+      fileActivities={fileActivities}
+      generationPhase={generationPhase}
+      statusMessage={statusMessage}
+      onStop={handleStopGeneration}
+      currentVersion={currentVersion}
+      isChatMode={isChatMode}
+    />
+  );
+};
+
+const AppContent = () => {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { 
+    projects, 
+    loading: projectsLoading, 
+    createProject, 
+    updateProject, 
+    deleteProject, 
+    forkProject,
+    getProject 
+  } = useProjects();
+  
+  const [showAuth, setShowAuth] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [localProject, setLocalProject] = useState<ProjectData | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
+  const [fileActivities, setFileActivities] = useState<FileActivity[]>([]);
+  const [generationPhase, setGenerationPhase] = useState<GenerationPhase | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string>('');
+  const [currentVersion, setCurrentVersion] = useState<number | null>(null);
+  const isCancelled = useRef(false);
+
+  // Use chat messages hook for persistence
+  const { 
+    messages, 
+    addMessage, 
+    setMessages, 
+    clearMessages 
+  } = useChatMessages(currentProjectId);
+
+  // Apply dark mode ONLY
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+  }, []);
+
+  // Sync local project with DB project
+  useEffect(() => {
+    if (currentProjectId && !localProject) {
+      const dbProject = projects.find(p => p.id === currentProjectId);
+      if (dbProject) {
+        setLocalProject({
+          id: dbProject.id,
+          name: dbProject.name,
+          description: dbProject.description,
+          projectType: dbProject.projectType,
+          files: dbProject.files,
+          isPublished: dbProject.isPublished,
+          publishedSlug: dbProject.publishedSlug,
+          createdAt: dbProject.createdAt,
+          updatedAt: dbProject.updatedAt,
+        });
+      }
+    }
+  }, [currentProjectId, projects, localProject]);
+
+  const handleVersionRestore = useCallback((files: Record<string, ProjectFile>, restoredMessages: ChatMessage[]) => {
+    if (localProject) {
+      setLocalProject(prev => prev ? { ...prev, files } : null);
+      setMessages(restoredMessages);
+    }
+  }, [localProject, setMessages]);
+
+  const handleStopGeneration = useCallback(() => {
+    isCancelled.current = true;
+    stopGeneration();
+    setIsGenerating(false);
+    setStatusMessage('');
+    setGenerationPhase({ phase: 'complete', message: 'Generation stopped.' });
+    toast({
+      title: 'Generation Stopped',
+      description: 'Code generation was cancelled.',
+    });
+  }, []);
+
+  const handleStartBuilding = useCallback(async (prompt: string, projectType: 'vite' | 'html') => {
+    if (!user) return;
+
+    isCancelled.current = false;
+
+    // Create project in DB first
+    const projectName = prompt.slice(0, 50) || 'New Project';
+    const defaultFiles = projectType === 'vite' 
+      ? generateDefaultViteProject(projectName) 
+      : {};
+    
+    const newProject = await createProject(projectName, projectType, defaultFiles, prompt);
+    
+    if (!newProject) {
+      toast({
+        title: 'Error',
+        description: 'Failed to create project',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Navigate to project page
+    navigate(`/projects/${newProject.id}`);
+  }, [user, createProject, navigate]);
+
+  const handleOpenProject = useCallback((id: string) => {
+    navigate(`/projects/${id}`);
+  }, [navigate]);
+
+  const handleNewProject = useCallback(() => {
+    setCurrentProjectId(null);
+    setLocalProject(null);
+    clearMessages();
+    setCurrentVersion(null);
+    navigate('/');
+  }, [clearMessages, navigate]);
+
+  // Loading state
+  if (authLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-foreground border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Handle build attempt - require login if not authenticated
+  const handleBuildAttempt = async (prompt: string, projectType: 'vite' | 'html') => {
+    if (!user) {
+      setShowAuth(true);
+      return;
+    }
+    await handleStartBuilding(prompt, projectType);
+  };
+
+  // Show auth page only if explicitly requested
+  if (showAuth && !user) {
+    return <AuthPage onSuccess={() => setShowAuth(false)} />;
+  }
+
+  // Home view
+  return (
+    <HomePage 
+      onStartBuilding={handleBuildAttempt}
+      onViewDashboard={() => navigate('/dashboard')}
+      onOpenProject={handleOpenProject}
+      onDeleteProject={deleteProject}
+      onForkProject={async (id) => {
+        const forked = await forkProject(id);
+        if (forked) {
+          handleOpenProject(forked.id);
+        }
+      }}
+      onShowAuth={() => setShowAuth(true)}
+      projects={projects.map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        projectType: p.projectType,
+        isPublished: p.isPublished,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      }))}
+      projectsLoading={projectsLoading}
+    />
+  );
+};
+
+// Dashboard wrapper
+const DashboardRoute = () => {
+  const navigate = useNavigate();
+  const { projects, loading, deleteProject, forkProject } = useProjects();
+
+  return (
+    <ProjectsDashboard
+      projects={projects.map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        projectType: p.projectType,
+        isPublished: p.isPublished,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      }))}
+      onNewProject={() => navigate('/')}
+      onOpenProject={(id) => navigate(`/projects/${id}`)}
+      onDeleteProject={deleteProject}
+      onForkProject={async (id) => {
+        const forked = await forkProject(id);
+        if (forked) {
+          navigate(`/projects/${forked.id}`);
+        }
+      }}
+    />
+  );
+};
+
+import { Pricing } from "@/pages/Pricing";
+import { Docs } from "@/pages/Docs";
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<AuthPage onSuccess={() => window.location.href = '/'} />} />
+            <Route path="/dashboard" element={<DashboardRoute />} />
+            <Route path="/projects/:id" element={<ProjectEditorRoute />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/docs" element={<Docs />} />
+            <Route path="/" element={<AppContent />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
+
+export default App;

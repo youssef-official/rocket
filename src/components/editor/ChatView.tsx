@@ -1,0 +1,629 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Send, Loader2, Sparkles, ChevronDown, ChevronUp, Plus, StopCircle, Pencil, Check, Code2, FileCode, FileType, File, FileJson, CheckCircle2, GitBranch, Image as ImageIcon, X, Mic, Wand2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import type { ChatMessage } from '@/types';
+
+interface FileActivity {
+  name: string;
+  status: 'editing' | 'done';
+  action: 'edited' | 'created';
+}
+
+interface GenerationPhase {
+  phase: 'planning' | 'designing' | 'generating' | 'complete';
+  message: string;
+}
+
+interface ChatViewProps {
+  messages: ChatMessage[];
+  onSendMessage: (content: string, isChat?: boolean, imageUrl?: string) => void;
+  isGenerating: boolean;
+  fileActivities?: FileActivity[];
+  generationPhase?: GenerationPhase | null;
+  currentFile?: string | null;
+  onStop?: () => void;
+  statusMessage?: string;
+  currentVersion?: number | null;
+  onImageUpload?: (file: File) => Promise<string | null>;
+}
+
+// Get file icon based on extension
+const getFileIcon = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'tsx':
+    case 'ts':
+      return <Code2 className="w-4 h-4 text-blue-500" />;
+    case 'jsx':
+    case 'js':
+      return <FileCode className="w-4 h-4 text-yellow-500" />;
+    case 'css':
+      return <FileType className="w-4 h-4 text-purple-500" />;
+    case 'html':
+      return <File className="w-4 h-4 text-orange-500" />;
+    case 'json':
+      return <FileJson className="w-4 h-4 text-green-500" />;
+    default:
+      return <File className="w-4 h-4 text-muted-foreground" />;
+  }
+};
+
+// AGGRESSIVE cleaning - remove ALL JSON/code from AI messages
+const cleanAIMessage = (content: string): string => {
+  // If it's pure JSON starting with { - return empty
+  if (content.trim().startsWith('{') && (content.includes('"files"') || content.includes('"src/'))) {
+    return "";
+  }
+  
+  let cleaned = content;
+  
+  // Remove duplicate "Now I'll start building..." lines
+  cleaned = cleaned.replace(/(\*?\*?Now I['']ll start building\.{2,3}\*?\*?\s*){2,}/gi, 'Now I\'ll start building...\n\n');
+  
+  // Remove all code blocks (```...```)
+  cleaned = cleaned.replace(/```[\s\S]*?```/g, '');
+  
+  // Remove any JSON object patterns
+  cleaned = cleaned.replace(/\{\s*"files"\s*:\s*\{[\s\S]*$/g, '');
+  cleaned = cleaned.replace(/\{\s*"[^"]+"\s*:\s*"[\s\S]*$/g, '');
+  cleaned = cleaned.replace(/"src\/[^"]+"\s*:\s*"[^"]*"/g, '');
+  
+  // Remove lines that look like JSON content
+  cleaned = cleaned.split('\n').filter(line => {
+    const trimmed = line.trim();
+    // Skip lines that look like JSON
+    if (trimmed.startsWith('"src/') || trimmed.startsWith('"package.json"') || 
+        trimmed.startsWith('"tailwind.config') || trimmed.startsWith('"vite.config') ||
+        trimmed.startsWith('"index.html"') || trimmed.startsWith('"tsconfig')) {
+      return false;
+    }
+    if (trimmed.startsWith('{') && trimmed.includes('"files"')) return false;
+    if (trimmed === '{' || trimmed === '}' || trimmed === '",') return false;
+    return true;
+  }).join('\n');
+  
+  // Clean up excessive whitespace
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
+  
+  return cleaned;
+};
+
+export const ChatView: React.FC<ChatViewProps> = ({ 
+  messages, 
+  onSendMessage, 
+  isGenerating,
+  fileActivities = [],
+  generationPhase,
+  currentFile,
+  onStop,
+  statusMessage,
+  currentVersion,
+  onImageUpload
+}) => {
+  const [input, setInput] = useState('');
+  const [showFileList, setShowFileList] = useState(true);
+  const chatMode = false; // Always in build mode - chat mode removed
+  const [uploadedImage, setUploadedImage] = useState<{ file: File; preview: string } | null>(null);
+  const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag and drop handlers
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragging false if we're leaving the container
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files[0] && files[0].type.startsWith('image/')) {
+      const file = files[0];
+      const preview = URL.createObjectURL(file);
+      setUploadedImage({ file, preview });
+    }
+  };
+
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, [messages, isGenerating, fileActivities, generationPhase, statusMessage]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 128)}px`;
+    }
+  }, [input]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim() && !isGenerating) {
+      let imageUrl: string | undefined;
+      
+      // Upload image if present
+      if (uploadedImage && onImageUpload) {
+        const url = await onImageUpload(uploadedImage.file);
+        if (url) {
+          imageUrl = url;
+        }
+      }
+      
+      onSendMessage(input.trim(), chatMode, imageUrl);
+      setInput('');
+      setUploadedImage(null);
+      if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const preview = URL.createObjectURL(file);
+      setUploadedImage({ file, preview });
+    }
+    setShowPlusMenu(false);
+  };
+
+  const removeUploadedImage = () => {
+    if (uploadedImage) {
+      URL.revokeObjectURL(uploadedImage.preview);
+      setUploadedImage(null);
+    }
+  };
+
+  // Render File Activity Panel - Improved design like the reference image
+  const renderFileActivityPanel = (files: FileActivity[], isLive: boolean = false) => {
+    if (files.length === 0) return null;
+
+    const completedFiles = files.filter(f => f.status === 'done');
+    const inProgressFiles = files.filter(f => f.status === 'editing');
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-4 rounded-xl overflow-hidden border border-border bg-card"
+      >
+        {/* Header */}
+        <button
+          onClick={() => setShowFileList(!showFileList)}
+          className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-secondary/50"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-foreground">
+              Files ({files.length})
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {showFileList ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
+        </button>
+
+        {/* File List */}
+        <AnimatePresence>
+          {showFileList && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="border-t border-border/50 overflow-hidden"
+            >
+              {files.map((file, i) => {
+                const isEditing = file.status === 'editing';
+                
+                return (
+                  <motion.div
+                    key={file.name}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    className={`flex items-center gap-3 px-4 py-2.5 transition-all ${
+                      isEditing ? 'bg-primary/5' : ''
+                    } ${i !== files.length - 1 ? 'border-b border-border/30' : ''}`}
+                  >
+                    {/* Status Icon */}
+                    {isEditing ? (
+                      <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    )}
+
+                    {/* File Icon */}
+                    {getFileIcon(file.name)}
+
+                    {/* File Name */}
+                    <span className="text-sm font-mono text-foreground flex-1 truncate">
+                      {file.name}
+                    </span>
+
+                    {/* Status Label */}
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      isEditing 
+                        ? 'bg-primary/20 text-primary' 
+                        : 'bg-green-500/20 text-green-500'
+                    }`}>
+                      {isEditing ? 'Editing' : 'Completed'}
+                    </span>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    );
+  };
+
+  // Render Generation Progress Steps - like the reference image
+  const renderGenerationProgress = () => {
+    if (!isGenerating || fileActivities.length === 0) return null;
+
+    // Group files by status for progress display
+    const steps = [
+      { name: 'Setup & Configuration', done: fileActivities.some(f => f.name.includes('package.json') || f.name.includes('tailwind')) },
+      { name: 'Core Components', done: fileActivities.some(f => f.name.includes('components/')) },
+      { name: 'Pages & Routes', done: fileActivities.some(f => f.name.includes('pages/')) },
+      { name: 'Styling & Assets', done: fileActivities.some(f => f.name.includes('.css') || f.name.includes('index.html')) },
+    ].filter(step => step.done);
+
+    if (steps.length === 0) return null;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-2 mb-4"
+      >
+        {steps.map((step, i) => (
+          <div key={step.name} className="flex items-center gap-3 text-sm">
+            <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+            <span className="text-foreground">{step.name}</span>
+            <span className="text-green-500 text-xs ml-auto">Completed</span>
+          </div>
+        ))}
+        {isGenerating && (
+          <div className="flex items-center gap-3 text-sm">
+            <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
+            <span className="text-foreground">Generating more files...</span>
+          </div>
+        )}
+      </motion.div>
+    );
+  };
+
+  // Render Status Message (during generation)
+  const renderStatusMessage = () => {
+    if (!statusMessage || !isGenerating) return null;
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-3 px-4 py-3 rounded-xl glass-card"
+      >
+        <div className="relative">
+          <Sparkles className="w-5 h-5 text-primary" />
+        </div>
+        <span className="text-sm font-medium text-foreground flex-1">
+          {statusMessage}
+        </span>
+        <Loader2 className="w-4 h-4 animate-spin text-primary" />
+      </motion.div>
+    );
+  };
+
+  // Render Generation Summary - version badge
+  const renderGenerationSummary = () => {
+    if (!currentVersion) return null;
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-4"
+      >
+        <div className="flex items-center gap-2 px-3 py-2 glass-card rounded-lg w-fit">
+          <GitBranch className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium text-foreground">Version {currentVersion}</span>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Check if we should show the empty state
+  const showEmptyState = messages.length === 0 && !isGenerating;
+
+  // Find the last AI message index
+  const lastAssistantIndex = messages.reduce((last, msg, i) => 
+    msg.role === 'assistant' ? i : last, -1);
+
+  return (
+    <div className="relative w-full h-full flex flex-col overflow-hidden bg-background">
+      {/* Messages Area */}
+      <div ref={containerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-6 min-h-0">
+        {showEmptyState ? (
+          <div className="flex flex-col items-center justify-center h-full text-center opacity-70">
+            <div className="w-16 h-16 glass-card rounded-2xl flex items-center justify-center mb-4">
+              <Sparkles className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold mb-1 text-foreground">Rocket Builder</h3>
+            <p className="text-muted-foreground">Describe your project</p>
+            <p className="text-xs mt-2 text-muted-foreground">Vite + React + TypeScript</p>
+          </div>
+        ) : (
+          <>
+            {messages.map((msg, msgIndex) => {
+              const isUser = msg.role === 'user';
+              const isLastAssistant = msgIndex === lastAssistantIndex;
+
+              // Clean AI message to remove any leaked JSON/code
+              const cleanedContent = !isUser ? cleanAIMessage(msg.content) : null;
+              const hasContent = isUser || (cleanedContent && cleanedContent.length > 0);
+
+              return (
+                <div key={msg.id} className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  {isUser ? (
+                    // User message - gray card style (no blue) with image support
+                    <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-br-sm shadow-sm text-[15px] break-words whitespace-pre-wrap overflow-hidden bg-secondary text-foreground">
+                      {/* Show image if attached */}
+                      {msg.imageUrl && (
+                        <div className="mb-2">
+                          <img 
+                            src={msg.imageUrl} 
+                            alt="Attached" 
+                            className="max-w-full max-h-48 rounded-lg object-cover"
+                          />
+                        </div>
+                      )}
+                      {msg.content}
+                    </div>
+                  ) : (
+                    // AI message - with integrated file activities for last message
+                    <div className="max-w-[95%] flex flex-col min-w-0 w-full">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-7 h-7 glass-icon rounded-full flex items-center justify-center">
+                          <Sparkles className="w-4 h-4 text-primary" />
+                        </div>
+                        <span className="text-foreground text-xs font-bold">Rocket</span>
+                      </div>
+                      <div className="pl-9 break-words overflow-hidden w-full">
+                        {hasContent && cleanedContent && (
+                          <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-ul:text-foreground">
+                            <ReactMarkdown>{cleanedContent}</ReactMarkdown>
+                          </div>
+                        )}
+
+                        {/* Show generation progress for build mode */}
+                        {isLastAssistant && !chatMode && isGenerating && renderGenerationProgress()}
+                        
+                        {/* Show file activities and version badge INSIDE the last assistant message */}
+                        {/* Only show file activities in build mode (not chat mode) */}
+                        {isLastAssistant && !chatMode && (
+                          <>
+                            {fileActivities.length > 0 && renderFileActivityPanel(fileActivities, isGenerating)}
+                            {!isGenerating && currentVersion && renderGenerationSummary()}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Live Generation Status - shown when AI is generating and last message is assistant */}
+            {isGenerating && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
+              <div className="flex w-full justify-start">
+                <div className="max-w-[95%] flex flex-col min-w-0 w-full">
+                  <div className="pl-9 -mt-2">
+                    {renderStatusMessage()}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Show standalone status when no assistant message yet */}
+            {isGenerating && (messages.length === 0 || messages[messages.length - 1].role !== 'assistant') && (
+              <div className="flex w-full justify-start">
+                <div className="max-w-[95%] flex flex-col min-w-0 w-full">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 glass-icon rounded-full flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                    </div>
+                    <span className="text-foreground text-xs font-bold">Rocket</span>
+                  </div>
+                  <div className="pl-9 space-y-4">
+                    {renderStatusMessage()}
+                    {fileActivities.length > 0 && renderFileActivityPanel(fileActivities, true)}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Input Area - Lovable Style Dark Bar with Drag & Drop */}
+      <div 
+        className={`shrink-0 p-4 pt-2 bg-background transition-colors ${isDragging ? 'bg-primary/5' : ''}`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        {/* Drag overlay */}
+        {isDragging && (
+          <div className="absolute inset-0 z-10 bg-primary/10 border-2 border-dashed border-primary rounded-2xl flex items-center justify-center pointer-events-none">
+            <div className="text-primary font-medium flex items-center gap-2">
+              <ImageIcon className="w-5 h-5" />
+              <span>Drop image here</span>
+            </div>
+          </div>
+        )}
+
+        {/* Uploaded Image Preview */}
+        {uploadedImage && (
+          <div className="mb-3 flex items-center gap-2 max-w-3xl mx-auto">
+            <div className="relative">
+              <img 
+                src={uploadedImage.preview} 
+                alt="Upload preview" 
+                className="h-16 w-16 object-cover rounded-lg border border-border"
+              />
+              <button
+                onClick={removeUploadedImage}
+                className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-white rounded-full flex items-center justify-center"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+            <span className="text-sm text-muted-foreground">{uploadedImage.file.name}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          {/* Dark input bar - rounded 2xl corners */}
+          <div className="max-w-3xl mx-auto bg-card border border-border rounded-2xl shadow-lg overflow-hidden">
+            {/* Text Input Row - taller */}
+            <div className="px-4 py-4">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask Rocket to build anything..."
+                disabled={isGenerating}
+                className="w-full bg-transparent resize-none max-h-40 text-[15px] outline-none text-foreground placeholder-muted-foreground leading-relaxed"
+                rows={3}
+                style={{ minHeight: '60px' }}
+              />
+            </div>
+            
+            {/* Bottom Bar with buttons */}
+            <div className="flex items-center justify-between px-2 py-1.5 border-t border-border/50">
+              <div className="flex items-center gap-1">
+                {/* Plus Menu Button */}
+                <div className="relative">
+                  <button 
+                    type="button"
+                    onClick={() => setShowPlusMenu(!showPlusMenu)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  >
+                    <Plus className={`w-4 h-4 transition-transform ${showPlusMenu ? 'rotate-45' : ''}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {showPlusMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute bottom-full left-0 mb-2 bg-popover rounded-xl overflow-hidden shadow-xl z-50 border border-border"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors w-full text-left text-foreground"
+                        >
+                          <ImageIcon className="w-4 h-4 text-primary" />
+                          <span className="text-sm">Upload Image</span>
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Visual edits button - always active since chat mode is removed */}
+                <button 
+                  type="button"
+                  className="h-7 px-2.5 rounded-md flex items-center gap-1.5 text-xs font-medium transition-all bg-primary/20 text-primary border border-primary/30"
+                >
+                  <Wand2 className="w-3 h-3" />
+                  <span>Visual edits</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1">
+                {/* Audio button (decorative) */}
+                <button 
+                  type="button"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  title="Voice input (coming soon)"
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
+
+                {/* Send/Stop button */}
+                {isGenerating ? (
+                  <button 
+                    type="button"
+                    onClick={onStop}
+                    className="w-8 h-8 rounded-full bg-destructive/20 text-destructive hover:bg-destructive hover:text-white flex items-center justify-center shrink-0 transition-all"
+                  >
+                    <StopCircle className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <motion.button
+                    type="submit"
+                    disabled={!input.trim()}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                      input.trim()
+                        ? 'bg-primary text-primary-foreground hover:opacity-90'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </motion.button>
+                )}
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
