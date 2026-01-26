@@ -84,6 +84,7 @@ export type Database = {
       }
       project_versions: {
         Row: {
+          actions_taken: Json | null
           chat_messages: Json
           created_at: string
           files: Json
@@ -94,6 +95,7 @@ export type Database = {
           version_number: number
         }
         Insert: {
+          actions_taken?: Json | null
           chat_messages?: Json
           created_at?: string
           files?: Json
@@ -104,6 +106,7 @@ export type Database = {
           version_number: number
         }
         Update: {
+          actions_taken?: Json | null
           chat_messages?: Json
           created_at?: string
           files?: Json
