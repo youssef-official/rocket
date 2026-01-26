@@ -264,7 +264,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   }, []);
 
   // Handle visual edit save - create a new version
-  const handleVisualEditSave = async (changes: { elementId: string; newText: string; newStyles: any }[]) => {
+  const handleVisualEditSave = (changes: { elementId: string; newContent: string; newStyles: any; position?: { x: number; y: number } }[]) => {
     console.log('Visual edit changes:', changes);
     // For now, just close visual edit mode
     // In a full implementation, this would update the project files
