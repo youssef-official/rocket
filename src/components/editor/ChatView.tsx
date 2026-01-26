@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, Sparkles, ChevronDown, ChevronUp, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, GitBranch, Image as ImageIcon, X, HelpCircle, Users, Snowflake, ChevronRight } from 'lucide-react';
+import { Send, Loader2, Sparkles, ChevronDown, ChevronUp, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Snowflake, Lightbulb, ListOrdered, Zap, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '@/types';
 
@@ -11,8 +11,12 @@ interface FileActivity {
 }
 
 interface GenerationPhase {
-  phase: 'planning' | 'designing' | 'generating' | 'complete';
+  phase: 'thinking' | 'planning' | 'generating' | 'complete';
   message: string;
+  thinkingTime?: number;
+  plan?: string[];
+  status?: string;
+  summary?: string;
 }
 
 interface ChatViewProps {
@@ -267,9 +271,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Status Message (during generation)
-  const renderStatusMessage = () => {
-    if (!statusMessage || !isGenerating) return null;
+  // Render Thinking Indicator
+  const renderThinkingIndicator = () => {
+    if (!generationPhase || generationPhase.phase !== 'thinking') return null;
 
     return (
       <motion.div 
@@ -278,12 +282,93 @@ export const ChatView: React.FC<ChatViewProps> = ({
         className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#2a2a2a] border border-white/10"
       >
         <div className="relative">
-          <Sparkles className="w-5 h-5 text-primary" />
+          <Lightbulb className="w-5 h-5 text-yellow-400" />
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ repeat: Infinity, duration: 1.5 }}
+            className="absolute inset-0 rounded-full bg-yellow-400/20"
+          />
         </div>
         <span className="text-sm font-medium text-white/80 flex-1">
-          {statusMessage}
+          Thought for {generationPhase.thinkingTime || 0}s
         </span>
-        <Loader2 className="w-4 h-4 animate-spin text-primary" />
+      </motion.div>
+    );
+  };
+
+  // Render Plan Section
+  const renderPlanSection = () => {
+    if (!generationPhase?.plan || generationPhase.plan.length === 0) return null;
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-4 rounded-lg overflow-hidden border border-white/10 bg-[#2a2a2a]"
+      >
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
+          <ListOrdered className="w-4 h-4 text-blue-400" />
+          <span className="text-sm font-medium text-white">What I'm Building:</span>
+        </div>
+        <div className="px-4 py-3 space-y-2">
+          {generationPhase.plan.map((step, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="flex items-start gap-3"
+            >
+              <span className="text-primary font-bold text-sm">{i + 1}.</span>
+              <span className="text-sm text-white/80">{step}</span>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Render Status Message (during generation)
+  const renderStatusMessage = () => {
+    if (!generationPhase?.status && !statusMessage) return null;
+    if (!isGenerating && !generationPhase?.status) return null;
+
+    const currentStatus = generationPhase?.status || statusMessage;
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#2a2a2a] border border-white/10"
+      >
+        <div className="relative">
+          <Zap className="w-5 h-5 text-primary" />
+        </div>
+        <span className="text-sm font-medium text-white/80 flex-1">
+          {currentStatus}
+        </span>
+        {isGenerating && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+      </motion.div>
+    );
+  };
+
+  // Render Summary Section
+  const renderSummarySection = () => {
+    if (!generationPhase?.summary) return null;
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-4 rounded-lg overflow-hidden border border-green-500/30 bg-green-500/10"
+      >
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-green-500/20">
+          <FileText className="w-4 h-4 text-green-400" />
+          <span className="text-sm font-medium text-green-400">Summary</span>
+        </div>
+        <div className="px-4 py-3">
+          <p className="text-sm text-white/80">{generationPhase.summary}</p>
+        </div>
       </motion.div>
     );
   };
@@ -348,7 +433,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
                         {isLastAssistant && !chatMode && (
                           <>
+                            {renderThinkingIndicator()}
+                            {renderPlanSection()}
+                            {renderStatusMessage()}
                             {fileActivities.length > 0 && renderFileActivityPanel(fileActivities, isGenerating)}
+                            {renderSummarySection()}
                           </>
                         )}
                       </div>
@@ -378,8 +467,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     <span className="text-white text-xs font-bold">Rocket</span>
                   </div>
                   <div className="pl-9 space-y-4">
+                    {renderThinkingIndicator()}
+                    {renderPlanSection()}
                     {renderStatusMessage()}
                     {fileActivities.length > 0 && renderFileActivityPanel(fileActivities, true)}
+                    {renderSummarySection()}
                   </div>
                 </div>
               </div>
@@ -494,23 +586,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   <ChevronDown className="w-3 h-3" />
                 </button>
 
-                {/* Select Button */}
-                <button 
-                  type="button"
-                  className="flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                  <span>Select</span>
-                </button>
-
-                {/* Plan Button */}
-                <button 
-                  type="button"
-                  className="flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
-                >
-                  <span className="w-3.5 h-3.5 text-center">○</span>
-                  <span>Plan</span>
-                </button>
               </div>
 
               <div className="flex items-center gap-1">
@@ -542,18 +617,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
             </div>
           </div>
         </form>
-
-        {/* Bottom Links - Bolt Style */}
-        <div className="flex items-center justify-end gap-4 mt-3 px-1">
-          <a href="#" className="flex items-center gap-1.5 text-xs text-primary hover:underline">
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>Help Center</span>
-          </a>
-          <a href="#" className="flex items-center gap-1.5 text-xs text-primary hover:underline">
-            <Users className="w-3.5 h-3.5" />
-            <span>Join our Community</span>
-          </a>
-        </div>
       </div>
     </div>
   );

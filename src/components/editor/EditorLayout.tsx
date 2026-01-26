@@ -22,8 +22,12 @@ interface FileActivity {
 }
 
 interface GenerationPhase {
-  phase: 'planning' | 'designing' | 'generating' | 'complete';
+  phase: 'thinking' | 'planning' | 'generating' | 'complete';
   message: string;
+  thinkingTime?: number;
+  plan?: string[];
+  status?: string;
+  summary?: string;
 }
 
 interface EditorLayoutProps {
