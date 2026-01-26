@@ -30,8 +30,12 @@ interface FileActivity {
 }
 
 interface GenerationPhase {
-  phase: 'planning' | 'designing' | 'generating' | 'complete';
+  phase: 'thinking' | 'planning' | 'generating' | 'complete';
   message: string;
+  thinkingTime?: number;
+  plan?: string[];
+  status?: string;
+  summary?: string;
 }
 
 // Project Editor wrapper component for route /projects/:id
@@ -102,9 +106,16 @@ const ProjectEditorRoute = () => {
         setGenerationPhase({ phase: 'planning', message: 'Analyzing your request...' });
 
         try {
-          // Step 1: Generate explanation
-          setStatusMessage('Designing the experience...');
-          setGenerationPhase({ phase: 'designing', message: 'Designing the experience...' });
+          // Step 1: Thinking phase
+          const thinkingStartTime = Date.now();
+          setStatusMessage('Thinking...');
+          setGenerationPhase({ phase: 'thinking', message: 'Thinking...', thinkingTime: 0 });
+          
+          // Update thinking time every second
+          const thinkingInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - thinkingStartTime) / 1000);
+            setGenerationPhase(prev => prev ? { ...prev, thinkingTime: elapsed } : null);
+          }, 1000);
           
           let explanation = '';
           try {
@@ -112,6 +123,23 @@ const ProjectEditorRoute = () => {
           } catch (e) {
             explanation = "I'll create something amazing for you!";
           }
+          
+          clearInterval(thinkingInterval);
+          const finalThinkingTime = Math.floor((Date.now() - thinkingStartTime) / 1000);
+          
+          // Parse plan from explanation
+          const planLines = explanation.split('\n')
+            .filter(line => /^\d+\.|^•|^\*/.test(line.trim()))
+            .map(line => line.replace(/^\d+\.\s*|^•\s*|^\*\s*/, '').trim())
+            .filter(line => line.length > 0)
+            .slice(0, 6);
+          
+          setGenerationPhase({ 
+            phase: 'thinking', 
+            message: 'Thinking complete!', 
+            thinkingTime: finalThinkingTime,
+            plan: planLines
+          });
           
           if (isCancelled.current) return;
           
@@ -121,7 +149,12 @@ const ProjectEditorRoute = () => {
           // Step 2: Generate code
           if (isCancelled.current) return;
           setStatusMessage('Setting up project structure...');
-          setGenerationPhase({ phase: 'generating', message: 'Generating code files...' });
+          setGenerationPhase(prev => ({ 
+            ...prev!,
+            phase: 'generating', 
+            message: 'Generating code files...',
+            status: 'Setting up project structure...'
+          }));
           
           let fullResponse = '';
           
@@ -152,11 +185,21 @@ const ProjectEditorRoute = () => {
 
                 await updateProject(localProject.id, { files: finalFiles });
                 setLocalProject(prev => prev ? { ...prev, files: finalFiles } : null);
+                
+                // Create summary
+                const summary = `✅ Project created successfully! Created ${activities.length} file${activities.length > 1 ? 's' : ''}. Your project is ready to use!`;
+                
                 setIsGenerating(false);
                 setStreamingContent('');
                 setStatusMessage('');
                 setCurrentVersion(1);
-                setGenerationPhase({ phase: 'complete', message: 'Project ready!' });
+                setGenerationPhase(prev => ({ 
+                  ...prev!,
+                  phase: 'complete', 
+                  message: 'Project ready!',
+                  status: 'Generation complete!',
+                  summary
+                }));
               },
               onError: async (error) => {
                 console.error('AI error:', error);
@@ -169,6 +212,10 @@ const ProjectEditorRoute = () => {
               },
               onFileStart: (fileName) => {
                 if (isCancelled.current) return;
+                setGenerationPhase(prev => prev ? { 
+                  ...prev, 
+                  status: `Working on ${fileName}...` 
+                } : null);
                 setFileActivities(prev => {
                   const exists = prev.find(f => f.name === fileName);
                   if (exists) {
@@ -181,6 +228,7 @@ const ProjectEditorRoute = () => {
               onStatusUpdate: (status) => {
                 if (isCancelled.current) return;
                 setStatusMessage(status);
+                setGenerationPhase(prev => prev ? { ...prev, status } : null);
               },
             }
           );
@@ -257,10 +305,17 @@ const ProjectEditorRoute = () => {
     setGenerationPhase({ phase: 'planning', message: 'Analyzing your request...' });
 
     try {
-      // Step 1: Generate explanation first (shown in chat)
+      // Step 1: Thinking phase
+      const thinkingStartTime = Date.now();
       if (isCancelled.current) return;
-      setStatusMessage('Designing the experience...');
-      setGenerationPhase({ phase: 'designing', message: 'Designing the experience...' });
+      setStatusMessage('Thinking...');
+      setGenerationPhase({ phase: 'thinking', message: 'Thinking...', thinkingTime: 0 });
+      
+      // Update thinking time every second
+      const thinkingInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - thinkingStartTime) / 1000);
+        setGenerationPhase(prev => prev ? { ...prev, thinkingTime: elapsed } : null);
+      }, 1000);
       
       let explanation = '';
       try {
@@ -268,6 +323,23 @@ const ProjectEditorRoute = () => {
       } catch (e) {
         explanation = "I'll make those changes for you!";
       }
+      
+      clearInterval(thinkingInterval);
+      const finalThinkingTime = Math.floor((Date.now() - thinkingStartTime) / 1000);
+      
+      // Parse plan from explanation
+      const planLines = explanation.split('\n')
+        .filter(line => /^\d+\.|^•|^\*/.test(line.trim()))
+        .map(line => line.replace(/^\d+\.\s*|^•\s*|^\*\s*/, '').trim())
+        .filter(line => line.length > 0)
+        .slice(0, 6);
+      
+      setGenerationPhase({ 
+        phase: 'thinking', 
+        message: 'Thinking complete!', 
+        thinkingTime: finalThinkingTime,
+        plan: planLines
+      });
       
       if (isCancelled.current) return;
       
@@ -278,7 +350,12 @@ const ProjectEditorRoute = () => {
       // Step 2: Generate code (goes to code view, not shown in chat)
       if (isCancelled.current) return;
       setStatusMessage('Setting up project structure...');
-      setGenerationPhase({ phase: 'generating', message: 'Generating code files...' });
+      setGenerationPhase(prev => ({ 
+        ...prev!,
+        phase: 'generating', 
+        message: 'Generating code files...',
+        status: 'Setting up project structure...'
+      }));
       
       const conversationHistory = [
         ...messages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
@@ -318,11 +395,22 @@ const ProjectEditorRoute = () => {
               setLocalProject(prev => prev ? { ...prev, files: mergedFiles } : null);
             }
 
+            // Create summary
+            const editedCount = activities.filter(a => a.action === 'edited').length;
+            const createdCount = activities.filter(a => a.action === 'created').length;
+            const summary = `✅ Completed! ${createdCount > 0 ? `Created ${createdCount} file${createdCount > 1 ? 's' : ''}` : ''}${createdCount > 0 && editedCount > 0 ? ' and ' : ''}${editedCount > 0 ? `edited ${editedCount} file${editedCount > 1 ? 's' : ''}` : ''}. Your project is ready!`;
+
             setIsGenerating(false);
             setStreamingContent('');
             setStatusMessage('');
             setCurrentVersion(prev => (prev || 0) + 1);
-            setGenerationPhase({ phase: 'complete', message: 'Changes applied!' });
+            setGenerationPhase(prev => ({ 
+              ...prev!,
+              phase: 'complete', 
+              message: 'Changes applied!',
+              status: 'Generation complete!',
+              summary
+            }));
           },
           onError: async (error) => {
             await addMessage('assistant', `Sorry, I encountered an error: ${error.message}`);
@@ -334,6 +422,10 @@ const ProjectEditorRoute = () => {
           },
           onFileStart: (fileName) => {
             if (isCancelled.current) return;
+            setGenerationPhase(prev => prev ? { 
+              ...prev, 
+              status: `Working on ${fileName}...` 
+            } : null);
             setFileActivities(prev => {
               const exists = prev.find(f => f.name === fileName);
               if (exists) {
