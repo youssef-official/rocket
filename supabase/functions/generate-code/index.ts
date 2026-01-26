@@ -216,20 +216,37 @@ RULES:
 
 You are chatting with a developer working on a React/TypeScript project. Help them with their questions!`;
 
-// Project name generation prompt
-const PROJECT_NAME_PROMPT = `You are a creative naming assistant. Generate a SHORT, CATCHY 2-letter project code/name.
+// Project name generation prompt (2 words)
+const PROJECT_NAME_PROMPT = `You are a creative naming assistant. Generate a SHORT, CATCHY 2-WORD project name.
 
 RULES:
-1. Return ONLY 2 uppercase letters
-2. The letters should relate to the project
-3. No explanation, no extra text, just 2 letters
+1. Return ONLY 2 words separated by a space
+2. The words should relate to the project theme
+3. Make it catchy, memorable, and professional
+4. No explanation, no extra text, just 2 words
+5. Use Title Case (first letter of each word capitalized)
 
 Examples:
-- Restaurant Website → RW
-- Portfolio Site → PS
-- E-commerce Store → ES
-- Task Manager → TM`;
+- Restaurant Website → Gourmet Hub
+- Portfolio Site → Creative Canvas
+- Blog Platform → Story Flow
+- E-commerce Store → Shop Swift
+- Task Manager → Task Master
+- Social Network → Connect Hub`;
 
+// Suggestions generation prompt
+const SUGGESTIONS_PROMPT = `You are a helpful assistant that generates feature suggestions.
+
+Based on the project description, generate 4 useful suggestions the user might want to add.
+
+RULES:
+1. Return ONLY valid JSON array with 4 objects
+2. Each object must have "label" (2-4 words) and "prompt" (the full request)
+3. Make suggestions relevant and actionable
+4. No markdown, no explanation, just JSON array
+
+Example:
+[{"label": "Add Dark Mode", "prompt": "Add a dark mode toggle"}, {"label": "Improve SEO", "prompt": "Add meta tags for SEO"}]`;
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -257,6 +274,9 @@ serve(async (req) => {
         break;
       case 'project-name':
         systemPrompt = PROJECT_NAME_PROMPT;
+        break;
+      case 'suggestions':
+        systemPrompt = SUGGESTIONS_PROMPT;
         break;
       case 'code':
       default:

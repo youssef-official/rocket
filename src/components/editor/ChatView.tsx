@@ -1,13 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, Sparkles, ChevronDown, ChevronUp, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Snowflake, Lightbulb, ListOrdered, Zap, FileText } from 'lucide-react';
+import { Send, Loader2, ChevronDown, ChevronUp, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Snowflake, Lightbulb, ListOrdered, Zap, FileText, MessageCircle, History } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '@/types';
+import rocketLogo from '@/assets/rocket-logo.png';
 
 interface FileActivity {
   name: string;
   status: 'editing' | 'done';
   action: 'edited' | 'created';
+}
+
+interface Suggestion {
+  label: string;
+  prompt: string;
 }
 
 interface GenerationPhase {
@@ -33,6 +39,8 @@ interface ChatViewProps {
   statusMessage?: string;
   currentVersion?: number | null;
   onImageUpload?: (file: File) => Promise<string | null>;
+  suggestions?: Suggestion[];
+  onOpenVersions?: () => void;
 }
 
 // Get file icon based on extension
@@ -96,11 +104,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onStop,
   statusMessage,
   currentVersion,
-  onImageUpload
+  onImageUpload,
+  suggestions = [],
+  onOpenVersions
 }) => {
   const [input, setInput] = useState('');
   const [showFileList, setShowFileList] = useState(true);
-  const chatMode = false;
+  const [isChatMode, setIsChatMode] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<{ file: File; preview: string } | null>(null);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -166,7 +176,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         }
       }
       
-      onSendMessage(input.trim(), chatMode, imageUrl);
+      onSendMessage(input.trim(), isChatMode, imageUrl);
       setInput('');
       setUploadedImage(null);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -194,6 +204,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
       URL.revokeObjectURL(uploadedImage.preview);
       setUploadedImage(null);
     }
+  };
+
+  const handleSuggestionClick = (suggestion: Suggestion) => {
+    setInput(suggestion.prompt);
   };
 
   // Render File Activity Panel - Bolt style
@@ -400,6 +414,32 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
+  // Render Suggestions
+  const renderSuggestions = () => {
+    if (suggestions.length === 0 || isGenerating) return null;
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-wrap gap-2 mb-3"
+      >
+        {suggestions.map((suggestion, i) => (
+          <motion.button
+            key={i}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.1 }}
+            onClick={() => handleSuggestionClick(suggestion)}
+            className="px-3 py-1.5 text-xs bg-[#2a2a2a] hover:bg-[#3a3a3a] border border-white/10 rounded-full text-white/70 hover:text-white transition-all"
+          >
+            {suggestion.label}
+          </motion.button>
+        ))}
+      </motion.div>
+    );
+  };
+
   const showEmptyState = messages.length === 0 && !isGenerating;
 
   const lastAssistantIndex = messages.reduce((last, msg, i) => 
@@ -413,9 +453,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           // Empty State - Bolt Style with big logo
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="w-24 h-24 mb-6 opacity-20">
-              <svg viewBox="0 0 100 100" className="w-full h-full text-white/40">
-                <text x="50" y="70" textAnchor="middle" fontSize="80" fill="currentColor" fontWeight="bold">b</text>
-              </svg>
+              <img src={rocketLogo} alt="Rocket" className="w-full h-full object-contain" />
             </div>
             <p className="text-white/40 text-lg">Your preview will appear here</p>
           </div>
@@ -446,8 +484,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   ) : (
                     <div className="max-w-[95%] flex flex-col min-w-0 w-full">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-cyan-400">
-                          <Sparkles className="w-4 h-4 text-white" />
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden">
+                          <img src={rocketLogo} alt="Rocket" className="w-full h-full object-contain" />
                         </div>
                         <span className="text-white text-xs font-bold">Rocket</span>
                       </div>
@@ -458,7 +496,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           </div>
                         )}
 
-                        {isLastAssistant && !chatMode && (
+                        {isLastAssistant && !isChatMode && (
                           <>
                             {renderThinkingIndicator()}
                             {renderPlanSection()}
@@ -488,8 +526,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <div className="flex w-full justify-start">
                 <div className="max-w-[95%] flex flex-col min-w-0 w-full">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-cyan-400">
-                      <Sparkles className="w-4 h-4 text-white animate-pulse" />
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden">
+                      <img src={rocketLogo} alt="Rocket" className="w-full h-full object-contain animate-pulse" />
                     </div>
                     <span className="text-white text-xs font-bold">Rocket</span>
                   </div>
@@ -524,6 +562,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </div>
         )}
 
+        {/* Suggestions */}
+        {renderSuggestions()}
+
         {uploadedImage && (
           <div className="mb-3 flex items-center gap-2 max-w-3xl mx-auto">
             <div className="relative">
@@ -553,7 +594,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="How can Rocket help you today? (or /command)"
+                placeholder={isChatMode ? "Chat with Rocket (no code changes)..." : "How can Rocket help you today?"}
                 disabled={isGenerating}
                 className="w-full bg-transparent resize-none max-h-32 text-[15px] outline-none text-white placeholder-white/30 leading-relaxed"
                 rows={2}
@@ -612,6 +653,32 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   <span>Gemini 3</span>
                   <ChevronDown className="w-3 h-3" />
                 </button>
+
+                {/* Plan/Chat Mode Toggle */}
+                <button 
+                  type="button"
+                  onClick={() => setIsChatMode(!isChatMode)}
+                  className={`flex items-center gap-1.5 h-7 px-2 rounded-md text-xs transition-all ${
+                    isChatMode 
+                      ? 'bg-green-500/20 text-green-400' 
+                      : 'text-white/60 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>Chat</span>
+                </button>
+
+                {/* Versions Button */}
+                {onOpenVersions && (
+                  <button 
+                    type="button"
+                    onClick={onOpenVersions}
+                    className="flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                  >
+                    <History className="w-3.5 h-3.5" />
+                    <span>v{currentVersion || 1}</span>
+                  </button>
+                )}
 
               </div>
 

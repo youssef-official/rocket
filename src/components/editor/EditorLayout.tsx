@@ -33,6 +33,11 @@ interface GenerationPhase {
   summary?: string;
 }
 
+interface Suggestion {
+  label: string;
+  prompt: string;
+}
+
 interface EditorLayoutProps {
   project: ProjectData | null;
   messages: ChatMessage[];
@@ -50,6 +55,7 @@ interface EditorLayoutProps {
   onStop?: () => void;
   currentVersion?: number | null;
   isChatMode?: boolean;
+  suggestions?: Suggestion[];
 }
 
 export const EditorLayout: React.FC<EditorLayoutProps> = ({
@@ -69,6 +75,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   onStop,
   currentVersion,
   isChatMode = false,
+  suggestions = [],
 }) => {
   const { user, signOut } = useAuth();
   const [currentView, setCurrentView] = useState<'code' | 'preview'>('preview');
@@ -438,6 +445,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             onStop={onStop}
             currentVersion={currentVersion}
             onImageUpload={handleImageUpload}
+            suggestions={suggestions}
+            onOpenVersions={() => setShowVersionSelector(true)}
           />
         </motion.div>
 
@@ -467,7 +476,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       {/* Main Content - Mobile */}
       <div className="flex-1 md:hidden overflow-hidden">
         {mobilePanel === 'chat' && (
-          <ChatView messages={displayMessages} onSendMessage={onSendMessage} isGenerating={isGenerating} fileActivities={fileActivities} generationPhase={generationPhase} statusMessage={statusMessage} onStop={onStop} currentVersion={currentVersion} onImageUpload={handleImageUpload} />
+          <ChatView messages={displayMessages} onSendMessage={onSendMessage} isGenerating={isGenerating} fileActivities={fileActivities} generationPhase={generationPhase} statusMessage={statusMessage} onStop={onStop} currentVersion={currentVersion} onImageUpload={handleImageUpload} suggestions={suggestions} onOpenVersions={() => setShowVersionSelector(true)} />
         )}
         {mobilePanel === 'preview' && (
           <PreviewView files={project?.files || {}} projectType={project?.projectType || 'vite'} isLoading={isGenerating} />

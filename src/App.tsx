@@ -17,7 +17,9 @@ import {
   generateDefaultViteProject,
   generateExplanation,
   stopGeneration,
-  generateProjectName
+  generateProjectName,
+  generateSuggestions,
+  type Suggestion
 } from "@/services/aiService";
 import type { ProjectData, ChatMessage, ProjectFile } from "@/types";
 import { toast } from "@/hooks/use-toast";
@@ -58,6 +60,7 @@ const ProjectEditorRoute = () => {
   const [currentVersion, setCurrentVersion] = useState<number | null>(null);
   const [hasStartedGeneration, setHasStartedGeneration] = useState(false);
   const [isChatMode, setIsChatMode] = useState(false);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const isCancelled = useRef(false);
 
   // Use chat messages hook for persistence
@@ -272,6 +275,11 @@ const ProjectEditorRoute = () => {
                   stepFiles: stepFilesMap,
                   summary
                 }));
+                
+                // Generate suggestions after completion
+                if (localProject.description) {
+                  generateSuggestions(localProject.description).then(setSuggestions);
+                }
               },
               onError: async (error) => {
                 console.error('AI error:', error);
@@ -650,6 +658,7 @@ const ProjectEditorRoute = () => {
       onStop={handleStopGeneration}
       currentVersion={currentVersion}
       isChatMode={isChatMode}
+      suggestions={suggestions}
     />
   );
 };
@@ -738,7 +747,7 @@ const AppContent = () => {
     // Create project in DB first
     const projectName = prompt.slice(0, 50) || 'New Project';
     const defaultFiles = projectType === 'vite' 
-      ? generateDefaultViteProject(projectName) 
+      ? generateDefaultViteProject() 
       : {};
     
     const newProject = await createProject(projectName, projectType, defaultFiles, prompt);
