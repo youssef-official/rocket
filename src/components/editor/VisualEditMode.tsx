@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Type, Palette, AlignLeft, AlignCenter, AlignRight, AlignJustify, 
   Save, ChevronDown, Bold, Italic, Underline, Image as ImageIcon, 
   Move, Upload, Trash2, RotateCcw, Plus, Minus, GripVertical,
-  FileCode, Check, AlertCircle
+  FileCode, Check, AlertCircle, Eye, EyeOff, SplitSquareHorizontal,
+  Maximize2, Code2, ArrowLeftRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -87,6 +88,8 @@ const defaultStyles: ElementStyles = {
   fontFamily: 'inherit',
 };
 
+type ViewMode = 'edit' | 'preview' | 'split';
+
 export const VisualEditMode: React.FC<VisualEditModeProps> = ({
   projectFiles,
   onSave,
@@ -103,6 +106,8 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
   const [editMode, setEditMode] = useState<'select' | 'drag'>('select');
   const [isSaving, setIsSaving] = useState(false);
   const [parsedElements, setParsedElements] = useState<any[]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode>('split');
+  const [showCodePreview, setShowCodePreview] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -359,6 +364,98 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
     }
   };
 
+  // Generate live preview of updated files
+  const previewFiles = useMemo(() => {
+    if (editedElements.size === 0) return projectFiles;
+    
+    const changes = Array.from(editedElements.values()).map(el => ({
+      elementId: el.id,
+      newContent: el.type === 'image' ? el.src || '' : el.content,
+      newStyles: el.styles,
+      position: el.position,
+      filePath: el.filePath,
+      lineNumber: el.lineNumber,
+    }));
+
+    return applyVisualChanges(projectFiles, changes, parsedElements);
+  }, [editedElements, projectFiles, parsedElements]);
+
+  // Get changed lines for code diff view
+  const getChangedCode = useMemo(() => {
+    const changedFiles: { filePath: string; original: string; modified: string }[] = [];
+    
+    getAffectedFiles().forEach(filePath => {
+      const original = projectFiles[filePath]?.content || '';
+      const modified = previewFiles[filePath]?.content || '';
+      if (original !== modified) {
+        changedFiles.push({ filePath, original, modified });
+      }
+    });
+    
+    return changedFiles;
+  }, [previewFiles, projectFiles]);
+
+  // Render element for preview
+  const renderPreviewElement = (element: EditableElement) => {
+    const commonStyle = {
+      color: element.styles.color,
+      fontSize: element.styles.fontSize,
+      fontWeight: element.styles.fontWeight,
+      fontStyle: element.styles.fontStyle,
+      textAlign: element.styles.textAlign as any,
+      textDecoration: element.styles.textDecoration,
+      fontFamily: element.styles.fontFamily,
+    };
+
+    switch (element.type) {
+      case 'heading':
+        return <h1 style={commonStyle}>{element.content}</h1>;
+      case 'paragraph':
+      case 'text':
+        return <p style={commonStyle}>{element.content}</p>;
+      case 'button':
+        return (
+          <button
+            style={{
+              ...commonStyle,
+              backgroundColor: element.styles.backgroundColor,
+              padding: element.styles.padding || '12px 32px',
+              borderRadius: element.styles.borderRadius || '8px',
+            }}
+          >
+            {element.content}
+          </button>
+        );
+      case 'image':
+        return (
+          <img
+            src={element.src}
+            alt="Preview"
+            style={{
+              borderRadius: element.styles.borderRadius,
+              opacity: element.styles.opacity,
+              maxWidth: '100%',
+            }}
+          />
+        );
+      case 'container':
+        return (
+          <div
+            style={{
+              ...commonStyle,
+              backgroundColor: element.styles.backgroundColor,
+              padding: element.styles.padding || '24px',
+              borderRadius: element.styles.borderRadius || '16px',
+            }}
+          >
+            {element.content}
+          </div>
+        );
+      default:
+        return <span style={commonStyle}>{element.content}</span>;
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
@@ -372,33 +469,76 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
             </span>
           )}
           {getAffectedFiles().length > 0 && (
-            <span className="flex items-center gap-1 px-2 py-0.5 text-xs bg-green-500/20 text-green-400 rounded-full">
+            <span className="flex items-center gap-1 px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded-full">
               <FileCode className="w-3 h-3" />
               {getAffectedFiles().length} files
             </span>
           )}
         </div>
         
-        {/* Mode Toggle */}
-        <div className="flex items-center gap-2 bg-secondary rounded-full p-1">
-          <button
-            onClick={() => setEditMode('select')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              editMode === 'select' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Type className="w-3.5 h-3.5" />
-            Edit
-          </button>
-          <button
-            onClick={() => setEditMode('drag')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              editMode === 'drag' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Move className="w-3.5 h-3.5" />
-            Move
-          </button>
+        {/* View Mode Toggle */}
+        <div className="flex items-center gap-4">
+          {/* Edit/Drag Mode */}
+          <div className="flex items-center gap-2 bg-secondary rounded-full p-1">
+            <button
+              onClick={() => setEditMode('select')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                editMode === 'select' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Type className="w-3.5 h-3.5" />
+              Edit
+            </button>
+            <button
+              onClick={() => setEditMode('drag')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                editMode === 'drag' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Move className="w-3.5 h-3.5" />
+              Move
+            </button>
+          </div>
+
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('edit')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                viewMode === 'edit' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Edit Only"
+            >
+              <Type className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode('split')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                viewMode === 'split' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Split View"
+            >
+              <SplitSquareHorizontal className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode('preview')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                viewMode === 'preview' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Preview Only"
+            >
+              <Eye className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setShowCodePreview(!showCodePreview)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                showCodePreview ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Show Code Changes"
+            >
+              <Code2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -423,27 +563,79 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
 
       {/* Info Banner */}
       {getAffectedFiles().length > 0 && (
-        <div className="px-4 py-2 bg-green-500/10 border-b border-green-500/20 flex items-center gap-2 text-sm">
-          <Check className="w-4 h-4 text-green-400" />
-          <span className="text-green-400">
-            Changes will be applied to: {getAffectedFiles().join(', ')}
-          </span>
+        <div className="px-4 py-2 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <Check className="w-4 h-4 text-emerald-400" />
+            <span className="text-emerald-400">
+              Changes will be applied to: {getAffectedFiles().join(', ')}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <ArrowLeftRight className="w-4 h-4" />
+            <span className="text-xs">Live preview enabled</span>
+          </div>
         </div>
       )}
 
+      {/* Code Changes Preview */}
+      <AnimatePresence>
+        {showCodePreview && getChangedCode.length > 0 && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-b border-border overflow-hidden"
+          >
+            <div className="max-h-48 overflow-auto bg-card">
+              <div className="p-3 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Code2 className="w-4 h-4 text-primary" />
+                  Code Changes Preview
+                </div>
+                {getChangedCode.map((file, index) => (
+                  <div key={index} className="space-y-1">
+                    <div className="text-xs font-mono text-muted-foreground">{file.filePath}</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2 rounded bg-destructive/10 text-xs font-mono overflow-x-auto">
+                        <div className="text-destructive/70 mb-1 text-[10px]">Before</div>
+                        <pre className="text-muted-foreground whitespace-pre-wrap break-all">
+                          {file.original.substring(0, 200)}...
+                        </pre>
+                      </div>
+                      <div className="p-2 rounded bg-emerald-500/10 text-xs font-mono overflow-x-auto">
+                        <div className="text-emerald-500 mb-1 text-[10px]">After</div>
+                        <pre className="text-foreground whitespace-pre-wrap break-all">
+                          {file.modified.substring(0, 200)}...
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex-1 flex overflow-hidden">
-        {/* Canvas Area */}
-        <div 
-          ref={containerRef}
-          className="flex-1 overflow-auto bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative"
-          onClick={() => setSelectedElement(null)}
-          style={{ cursor: editMode === 'drag' ? 'grab' : 'default' }}
-        >
-          {/* Decorative background */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
-            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
-          </div>
+        {/* Edit Canvas Area */}
+        {(viewMode === 'edit' || viewMode === 'split') && (
+          <div 
+            ref={containerRef}
+            className={`${viewMode === 'split' ? 'w-1/2' : 'flex-1'} overflow-auto bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative border-r border-border`}
+            onClick={() => setSelectedElement(null)}
+            style={{ cursor: editMode === 'drag' ? 'grab' : 'default' }}
+          >
+            {/* Label */}
+            <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-background/80 rounded text-xs font-medium text-muted-foreground backdrop-blur-sm">
+              Editor
+            </div>
+            
+            {/* Decorative background */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
+              <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+            </div>
 
           {/* Editable Elements */}
           <div className="relative min-h-full p-8">
@@ -550,7 +742,62 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
               );
             })}
           </div>
-        </div>
+          </div>
+        )}
+
+        {/* Live Preview Area */}
+        {(viewMode === 'preview' || viewMode === 'split') && (
+          <div className={`${viewMode === 'split' ? 'w-1/2' : 'flex-1'} overflow-auto bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 relative`}>
+            {/* Label */}
+            <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-background/80 rounded text-xs font-medium text-muted-foreground backdrop-blur-sm flex items-center gap-1.5">
+              <Eye className="w-3 h-3" />
+              Live Preview
+            </div>
+            
+            {/* Decorative background */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
+              <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
+            </div>
+
+            {/* Preview Elements */}
+            <div className="relative min-h-full p-8 pt-12">
+              {elements.map((element) => {
+                const wasEdited = editedElements.has(element.id);
+                
+                return (
+                  <motion.div
+                    key={`preview-${element.id}`}
+                    className={`mb-4 ${wasEdited ? 'ring-2 ring-emerald-500/50 ring-offset-2 ring-offset-transparent rounded-lg p-2' : ''}`}
+                    initial={false}
+                    animate={{ 
+                      scale: wasEdited ? [1, 1.02, 1] : 1,
+                    }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {wasEdited && (
+                      <div className="flex items-center gap-1 mb-1">
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span className="text-[10px] text-emerald-400">Modified</span>
+                      </div>
+                    )}
+                    {renderPreviewElement(element)}
+                  </motion.div>
+                );
+              })}
+              
+              {getChangesCount() === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <Eye className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Make changes to see live preview</p>
+                    <p className="text-xs mt-1 opacity-70">Click elements in Editor to modify them</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Edit Panel */}
         <AnimatePresence>
