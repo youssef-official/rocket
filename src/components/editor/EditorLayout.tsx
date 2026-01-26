@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Code2, Eye, LogOut, Settings, HelpCircle, CreditCard, Moon, Sun,
   ChevronDown, Download, Home, ArrowLeft, Clock, Pencil, Eye as EyeIcon,
-  Github, ExternalLink, FolderOpen
+  Github, FolderOpen
 } from 'lucide-react';
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
@@ -403,15 +403,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
         {/* Right Section */}
         <div className="flex items-center gap-2">
-          {/* Open in New Tab */}
-          <button
-            onClick={() => window.open(window.location.href, '_blank')}
-            className="p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-            title="Open in new tab"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </button>
-
           {/* GitHub Icon */}
           <button
             onClick={handleDownload}

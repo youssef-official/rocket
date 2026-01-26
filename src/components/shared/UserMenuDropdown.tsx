@@ -93,36 +93,36 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          <div className="w-52 bg-card border border-border rounded-xl shadow-2xl overflow-hidden">
-            <div className="p-3 border-b border-white/10">
-              <p className="text-sm font-medium text-white truncate">{user.email}</p>
-              <p className="text-xs text-white/60">Free Plan</p>
-            </div>
-            <div className="p-2">
-              {/* Theme Toggle */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  cycleTheme();
-                }}
-                className="w-full flex items-center justify-between px-3 py-2 text-foreground hover:bg-accent rounded-lg transition-colors text-sm cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  {getThemeIcon()}
-                  Theme
-                </div>
-                <span className="text-xs text-muted-foreground">{getThemeLabel()}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleSettings}
-                className="w-full flex items-center gap-2 px-3 py-2 text-foreground hover:bg-accent rounded-lg transition-colors text-sm cursor-pointer"
-              >
-                <Settings className="w-4 h-4" />
-                Account Settings
-              </button>
+            <div className="w-52 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+              <div className="p-3 border-b border-white/10">
+                <p className="text-sm font-medium text-white truncate">{user.email}</p>
+                <p className="text-xs text-white/60">Free Plan</p>
+              </div>
+              <div className="p-2">
+                {/* Theme Toggle */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    cycleTheme();
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors text-sm cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    {getThemeIcon()}
+                    Theme
+                  </div>
+                  <span className="text-xs text-white/60">{getThemeLabel()}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSettings}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors text-sm cursor-pointer"
+                >
+                  <Settings className="w-4 h-4" />
+                  Account Settings
+                </button>
               <button
                 type="button"
                 onClick={handleSignOut}

@@ -145,7 +145,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50" />
 
       {/* Header */}
-      <header className="relative z-10 px-4 md:px-6 py-4">
+      <header className="relative z-50 px-4 md:px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-2">
@@ -191,7 +191,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 flex flex-col items-center justify-center px-4 md:px-6 pt-12 md:pt-20 pb-20 md:pb-32">
+      <main className="relative z-10 flex flex-col items-center justify-center px-4 md:px-6 pt-12 md:pt-20 pb-20 md:pb-32 pointer-events-auto">
         {/* Announcement Badge */}
         <motion.div initial={{
         opacity: 0,
