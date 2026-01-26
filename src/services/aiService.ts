@@ -134,6 +134,105 @@ Here's what I'm building:
 
 Now I'll start building..."`;
 
+// System prompt for generating a short project name
+const PROJECT_NAME_SYSTEM_PROMPT = `You are a creative naming assistant. Generate a SHORT, CATCHY 2-letter project code/name based on the user's project description.
+
+RULES:
+1. Return ONLY 2 uppercase letters
+2. The letters should relate to the project (e.g., "RW" for Restaurant Website, "EC" for E-commerce)
+3. No explanation, no extra text, just 2 letters
+4. Make it memorable and relevant
+
+Examples:
+- Restaurant Website → RW
+- Portfolio Site → PS
+- Blog Platform → BP
+- E-commerce Store → ES
+- Task Manager → TM
+- Social Network → SN`;
+
+// Generate short project name (2 letters)
+export async function generateProjectName(prompt: string): Promise<string> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: `Project: ${prompt}` }],
+        projectType: 'vite',
+        mode: 'project-name',
+      }),
+    });
+
+    if (!response.ok) {
+      // Generate fallback name from first letters of words
+      const words = prompt.split(/\s+/).filter(w => w.length > 2);
+      if (words.length >= 2) {
+        return (words[0][0] + words[1][0]).toUpperCase();
+      }
+      return prompt.slice(0, 2).toUpperCase();
+    }
+
+    if (!response.body) {
+      return prompt.slice(0, 2).toUpperCase();
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullResponse = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      
+      let newlineIndex: number;
+      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+        let line = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + 1);
+
+        if (line.endsWith('\r')) line = line.slice(0, -1);
+        if (line.startsWith(':') || line.trim() === '') continue;
+        if (!line.startsWith('data: ')) continue;
+
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === '[DONE]') continue;
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) {
+            fullResponse += content;
+          }
+        } catch {
+          buffer = line + '\n' + buffer;
+          break;
+        }
+      }
+    }
+
+    // Extract only letters and return first 2 uppercase
+    const letters = fullResponse.replace(/[^a-zA-Z]/g, '').toUpperCase();
+    return letters.slice(0, 2) || prompt.slice(0, 2).toUpperCase();
+  } catch (error) {
+    console.error('Project name generation error:', error);
+    // Fallback: use first letters of words
+    const words = prompt.split(/\s+/).filter(w => w.length > 2);
+    if (words.length >= 2) {
+      return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    return prompt.slice(0, 2).toUpperCase();
+  }
+}
+
 // Chat-only response (no code generation)
 export async function generateChatResponse(
   prompt: string,
@@ -377,7 +476,7 @@ export async function streamAICodeGeneration(
   const { signal } = currentAbortController;
 
   try {
-    callbacks.onStatusUpdate?.('Starting code generation...');
+    callbacks.onStatusUpdate?.('Setting up project structure...');
 
     const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
       method: 'POST',

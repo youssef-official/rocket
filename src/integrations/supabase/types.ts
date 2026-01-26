@@ -125,9 +125,12 @@ export type Database = {
       }
       projects: {
         Row: {
+          building_plan: string[] | null
           created_at: string
           description: string | null
           files: Json
+          generated_name: string | null
+          generation_status: string | null
           id: string
           is_published: boolean
           name: string
@@ -137,9 +140,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          building_plan?: string[] | null
           created_at?: string
           description?: string | null
           files?: Json
+          generated_name?: string | null
+          generation_status?: string | null
           id?: string
           is_published?: boolean
           name?: string
@@ -149,9 +155,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          building_plan?: string[] | null
           created_at?: string
           description?: string | null
           files?: Json
+          generated_name?: string | null
+          generation_status?: string | null
           id?: string
           is_published?: boolean
           name?: string
