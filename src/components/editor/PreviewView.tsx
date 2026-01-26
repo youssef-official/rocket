@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, Smartphone, Monitor, Loader2, Maximize2, RotateCcw } from 'lucide-react';
+import { RefreshCw, Smartphone, Monitor, Loader2, Maximize2, RotateCcw, Minimize2 } from 'lucide-react';
 import { 
   SandpackProvider, 
   SandpackPreview as SandpackPreviewPane,
@@ -79,6 +79,7 @@ const LoadingPlaceholder: React.FC = () => {
 
 export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, isLoading }) => {
   const [viewMode, setViewMode] = React.useState<'desktop' | 'mobile'>('desktop');
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
   
   const filesHash = React.useMemo(() => {
     const allContent = Object.entries(files)
@@ -166,11 +167,12 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
   }, [files, projectType]);
 
   const refresh = () => setKey(k => k + 1);
+  const toggleFullscreen = () => setIsFullscreen(prev => !prev);
 
   // Show loading placeholder during generation
   if (isLoading) {
     return (
-      <div className="flex flex-col h-full bg-white">
+      <div className={`flex flex-col h-full bg-white ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center gap-2">
             <button
@@ -201,8 +203,9 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
             <button
               className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
               title="Fullscreen"
+              onClick={toggleFullscreen}
             >
-              <Maximize2 className="w-4 h-4" />
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -216,7 +219,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
   // Empty State - Clean White with animation
   if (Object.keys(files).length === 0) {
     return (
-      <div className="flex flex-col h-full bg-white">
+      <div className={`flex flex-col h-full bg-white ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center gap-2">
             <button
@@ -236,6 +239,15 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
               <Smartphone className="w-4 h-4" />
             </button>
           </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              title="Fullscreen"
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
         <div className="flex-1">
           <LoadingPlaceholder />
@@ -247,7 +259,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
   if (projectType === 'html') {
     const indexFile = files['index.html'];
     return (
-      <div className="flex flex-col h-full bg-white">
+      <div className={`flex flex-col h-full bg-white ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center gap-2">
             <button
@@ -276,10 +288,11 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
               <RotateCcw className="w-4 h-4" />
             </button>
             <button
+              onClick={toggleFullscreen}
               className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
               title="Fullscreen"
             >
-              <Maximize2 className="w-4 h-4" />
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -308,7 +321,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
 
   // For Vite/React projects - White background preview
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className={`flex flex-col h-full bg-white ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
       {/* Toolbar - Light theme */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center gap-2">
@@ -339,10 +352,11 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
             <RotateCcw className="w-4 h-4" />
           </button>
           <button
+            onClick={toggleFullscreen}
             className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
             title="Fullscreen"
           >
-            <Maximize2 className="w-4 h-4" />
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
         </div>
       </div>

@@ -74,7 +74,7 @@ const getFileIcon = (filename: string) => {
   }
 };
 
-// AGGRESSIVE cleaning - remove ALL JSON/code from AI messages
+// AGGRESSIVE cleaning - remove ALL JSON/code and summary from AI messages
 const cleanAIMessage = (content: string): string => {
   if (content.trim().startsWith('{') && (content.includes('"files"') || content.includes('"src/'))) {
     return "";
@@ -87,6 +87,9 @@ const cleanAIMessage = (content: string): string => {
   cleaned = cleaned.replace(/\{\s*"[^"]+"\s*:\s*"[\s\S]*$/g, '');
   cleaned = cleaned.replace(/"src\/[^"]+"\s*:\s*"[^"]*"/g, '');
   
+  // Remove Summary section
+  cleaned = cleaned.replace(/\*?\*?Summary:?\*?\*?[\s\S]*?(?=\*\*What I['']m Building|\*\*Now I['']ll|$)/gi, '');
+  
   cleaned = cleaned.split('\n').filter(line => {
     const trimmed = line.trim();
     if (trimmed.startsWith('"src/') || trimmed.startsWith('"package.json"') || 
@@ -96,6 +99,8 @@ const cleanAIMessage = (content: string): string => {
     }
     if (trimmed.startsWith('{') && trimmed.includes('"files"')) return false;
     if (trimmed === '{' || trimmed === '}' || trimmed === '",') return false;
+    // Remove lines starting with "Summary:"
+    if (trimmed.toLowerCase().startsWith('summary:')) return false;
     return true;
   }).join('\n');
   
@@ -381,7 +386,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Plan Section with bullet points (for current generation only)
+  // Render Plan Section with numbered bullet points (for current generation only)
   const renderPlanSection = (plan?: string[]) => {
     const planToShow = plan || generationPhase?.plan;
     if (!planToShow || planToShow.length === 0) return null;
@@ -393,10 +398,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-4"
+        className="mt-6"
       >
-        <p className="text-sm font-medium text-white mb-3">What I'm Building:</p>
-        <ul className="space-y-2 pl-1">
+        <p className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+          <ListOrdered className="w-4 h-4 text-primary" />
+          What I'm Building:
+        </p>
+        <ol className="space-y-3 pl-1">
           {planToShow.map((step, i) => {
             const isCompleted = completedSteps.includes(i);
             const isCurrent = currentStep === i;
@@ -407,13 +415,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="flex items-start gap-2"
+                className="flex items-start gap-3"
               >
-                {/* Bullet point */}
-                <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                  isCompleted ? 'bg-green-400' : isCurrent ? 'bg-primary' : 'bg-white/40'
-                }`} />
-                <span className={`text-sm leading-relaxed ${
+                {/* Numbered marker */}
+                <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                  isCompleted 
+                    ? 'bg-green-500/20 text-green-400' 
+                    : isCurrent 
+                      ? 'bg-primary/20 text-primary' 
+                      : 'bg-white/10 text-white/50'
+                }`}>
+                  {i + 1}
+                </span>
+                <span className={`text-sm leading-relaxed pt-0.5 ${
                   isCompleted ? 'text-green-400' : isCurrent ? 'text-white' : 'text-white/70'
                 }`}>
                   {step}
@@ -421,7 +435,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               </motion.li>
             );
           })}
-        </ul>
+        </ol>
       </motion.div>
     );
   };
@@ -555,7 +569,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const messagesWithVersions = getMessagesWithVersions();
 
   return (
-    <div className="relative w-full h-full flex flex-col overflow-hidden bg-[#252525]">
+    <div className="relative w-full h-full flex flex-col overflow-hidden bg-[#1a1a1a]">
       {/* Messages Area */}
       <div ref={containerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-6 min-h-0">
         {showEmptyState ? (
@@ -621,20 +635,25 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           <motion.div 
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="mt-4"
+                            className="mt-6"
                           >
-                            <p className="text-sm font-medium text-white mb-3">What I'm Building:</p>
-                            <ul className="space-y-2 pl-1">
+                            <p className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                              <ListOrdered className="w-4 h-4 text-primary" />
+                              What I'm Building:
+                            </p>
+                            <ol className="space-y-3 pl-1">
                               {messagePlan.map((step, i) => (
                                 <motion.li
                                   key={i}
-                                  className="flex items-start gap-2"
+                                  className="flex items-start gap-3"
                                 >
-                                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-green-400" />
-                                  <span className="text-sm leading-relaxed text-green-400">{step}</span>
+                                  <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-green-500/20 text-green-400">
+                                    {i + 1}
+                                  </span>
+                                  <span className="text-sm leading-relaxed pt-0.5 text-green-400">{step}</span>
                                 </motion.li>
                               ))}
-                            </ul>
+                            </ol>
                           </motion.div>
                         )}
 
@@ -703,7 +722,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
       {/* Input Area - Bolt Style */}
       <div 
-        className={`shrink-0 p-4 pt-2 bg-[#252525] transition-colors ${isDragging ? 'bg-primary/5' : ''}`}
+        className={`shrink-0 p-4 pt-2 bg-[#1a1a1a] transition-colors ${isDragging ? 'bg-primary/5' : ''}`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -741,34 +760,34 @@ export const ChatView: React.FC<ChatViewProps> = ({
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Bolt Style Input - Improved */}
-          <div className="bg-[#2f2f2f] rounded-2xl overflow-hidden border border-white/10">
+          {/* Bolt Style Input - Exact Match */}
+          <div className="bg-[#2d2d2d] rounded-xl overflow-hidden border border-white/5">
             {/* Text Input */}
-            <div className="px-4 py-4">
+            <div className="px-4 py-3">
               <textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={isChatMode ? "Chat with Rocket (no code changes)..." : "How can Rocket help you today?"}
+                placeholder={isChatMode ? "Chat with Rocket (no code changes)..." : "How can Rocket help you today? (or /command)"}
                 disabled={isGenerating}
-                className="w-full bg-transparent resize-none max-h-32 text-[15px] outline-none text-white placeholder-white/40 leading-relaxed"
-                rows={2}
-                style={{ minHeight: '56px' }}
+                className="w-full bg-transparent resize-none max-h-32 text-[15px] outline-none text-white placeholder-white/30 leading-relaxed"
+                rows={1}
+                style={{ minHeight: '24px' }}
               />
             </div>
             
-            {/* Bottom Bar - No separator line */}
-            <div className="flex items-center justify-between px-3 py-2.5 bg-[#2a2a2a]">
-              <div className="flex items-center gap-1">
-                {/* Plus Button */}
+            {/* Bottom Bar - Exact Bolt Style */}
+            <div className="flex items-center justify-between px-3 py-2 bg-[#252525]">
+              <div className="flex items-center gap-2">
+                {/* Plus Button with Circle */}
                 <div className="relative">
                   <button 
                     type="button"
                     onClick={() => setShowPlusMenu(!showPlusMenu)}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all text-white/50 hover:text-white hover:bg-white/10"
+                    className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center transition-all text-white/60 hover:text-white hover:border-white/40 hover:bg-white/5"
                   >
-                    <Plus className={`w-4 h-4 transition-transform ${showPlusMenu ? 'rotate-45' : ''}`} />
+                    <Plus className={`w-3.5 h-3.5 transition-transform ${showPlusMenu ? 'rotate-45' : ''}`} />
                   </button>
 
                   <AnimatePresence>
@@ -782,9 +801,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors w-full text-left text-white"
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors w-full text-left text-white/70 hover:text-white"
                         >
-                          <ImageIcon className="w-4 h-4 text-primary" />
+                          <ImageIcon className="w-4 h-4 text-white/40" />
                           <span className="text-sm">Upload Image</span>
                         </button>
                       </motion.div>
