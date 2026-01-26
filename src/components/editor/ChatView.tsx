@@ -291,7 +291,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Thinking Indicator
+  // Render Thinking Indicator - Simple without card
   const renderThinkingIndicator = () => {
     if (!generationPhase || generationPhase.phase !== 'thinking') return null;
 
@@ -299,7 +299,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#2a2a2a] border border-white/10"
+        className="flex items-center gap-3 py-2"
       >
         <div className="relative">
           <Lightbulb className="w-5 h-5 text-yellow-400" />
@@ -309,14 +309,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
             className="absolute inset-0 rounded-full bg-yellow-400/20"
           />
         </div>
-        <span className="text-sm font-medium text-white/80 flex-1">
+        <span className="text-sm font-medium text-white/80">
           Thought for {generationPhase.thinkingTime || 0}s
         </span>
       </motion.div>
     );
   };
 
-  // Render Plan Section with step-by-step progress (Tasks)
+  // Render Plan Section with step-by-step progress (Tasks) - Single line per task
   const renderPlanSection = () => {
     if (!generationPhase?.plan || generationPhase.plan.length === 0) return null;
 
@@ -333,7 +333,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <ListOrdered className="w-4 h-4 text-blue-400" />
           <span className="text-sm font-medium text-white">Tasks</span>
         </div>
-        <div className="px-4 py-3 space-y-2">
+        <div className="px-4 py-3 space-y-1.5">
           {generationPhase.plan.map((step, i) => {
             const isCompleted = completedSteps.includes(i);
             const isCurrent = currentStep === i;
@@ -343,25 +343,21 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 key={i}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="flex items-start gap-3"
+                transition={{ delay: i * 0.05 }}
+                className="flex items-center gap-2"
               >
                 {/* Step indicator */}
                 {isCompleted ? (
-                  <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
                 ) : isCurrent ? (
-                  <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0 mt-0.5" />
+                  <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
                 ) : (
-                  <span className="w-5 h-5 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">{i + 1}.</span>
+                  <span className="w-4 h-4 flex items-center justify-center text-white/40 text-xs flex-shrink-0">{i + 1}.</span>
                 )}
-                <div className="flex flex-col">
-                  {isCurrent && (
-                    <span className="text-xs text-primary font-medium mb-1">Now I'm making:</span>
-                  )}
-                  <span className={`text-sm ${isCompleted ? 'text-green-400' : isCurrent ? 'text-white' : 'text-white/60'}`}>
-                    {step}
-                  </span>
-                </div>
+                <span className={`text-sm truncate flex-1 ${isCompleted ? 'text-green-400' : isCurrent ? 'text-white' : 'text-white/60'}`}>
+                  {isCurrent && <span className="text-primary mr-1">→</span>}
+                  {step}
+                </span>
               </motion.div>
             );
           })}
@@ -396,7 +392,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Summary Section with Version Card - Premium Bolt Style
+  // Render Summary Section - Version Card only (removed "What I Built")
   const renderSummarySection = () => {
     if (!generationPhase?.summary) return null;
 
@@ -410,35 +406,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-4 space-y-4"
+        className="mt-4 space-y-3"
       >
-        {/* What I Built Section - Premium Style */}
-        <div className="rounded-xl overflow-hidden border border-white/10 bg-gradient-to-b from-[#2a2a2a] to-[#252525]">
-          <div className="px-4 py-3 border-b border-white/10">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-green-400" />
-              What I built:
-            </h3>
-          </div>
-          <div className="px-4 py-3">
-            <ul className="space-y-2">
-              {generationPhase.plan?.map((step, i) => (
-                <motion.li
-                  key={i}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="flex items-start gap-2 text-sm text-white/70"
-                >
-                  <span className="text-white/40 mt-0.5">•</span>
-                  <span>{step}</span>
-                </motion.li>
-              ))}
-            </ul>
-            <p className="mt-4 text-sm text-green-400 font-medium">
-              The project is now ready and built successfully!
-            </p>
-          </div>
+        {/* Success message - Simple */}
+        <div className="flex items-center gap-2 py-2">
+          <CheckCircle2 className="w-5 h-5 text-green-400" />
+          <span className="text-sm text-green-400 font-medium">Project built successfully!</span>
         </div>
 
         {/* Version Card - Compact Bolt Style */}
