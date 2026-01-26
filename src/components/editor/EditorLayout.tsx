@@ -18,7 +18,7 @@ import type { ProjectData, ChatMessage, ViewType, ProjectFile } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
-import vercelLogo from '@/assets/logos/vercel.svg';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FileActivity {
   name: string;
@@ -477,20 +477,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             title={connectedRepoUrl ? 'Connected to GitHub' : 'Connect to GitHub'}
           >
             <Github className="w-4 h-4" />
-          </button>
-
-          {/* Vercel Button */}
-          <button
-            onClick={() => setShowVercelDialog(true)}
-            disabled={!project || Object.keys(project.files).length === 0}
-            className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
-              deployedUrl 
-                ? 'bg-emerald-500/10 text-emerald-500' 
-                : 'hover:bg-accent text-muted-foreground hover:text-foreground'
-            }`}
-            title={deployedUrl ? 'Deployed to Vercel' : 'Deploy to Vercel'}
-          >
-            <img src={vercelLogo} alt="Vercel" className="w-4 h-4 dark:invert" />
           </button>
 
           {/* Download ZIP */}

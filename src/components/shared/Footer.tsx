@@ -1,12 +1,16 @@
 import React from 'react';
 import { Youtube, Linkedin, Instagram } from 'lucide-react';
 import { RocketLogo } from './RocketLogo';
+import { useLanguage } from '@/contexts/LanguageContext';
 import footerBg from '@/assets/footer-bg.webp';
 
 export const Footer: React.FC = () => {
+  const { t, isRTL } = useLanguage();
+
   return (
     <footer 
       className="relative w-full py-16 px-6"
+      dir={isRTL ? 'rtl' : 'ltr'}
       style={{
         backgroundImage: `url(${footerBg})`,
         backgroundSize: 'cover',
@@ -23,7 +27,7 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* Social Links */}
-        <div className="flex items-center gap-6 mb-6">
+        <div className={`flex items-center gap-6 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <a 
             href="https://youtube.com" 
             target="_blank" 
@@ -74,16 +78,16 @@ export const Footer: React.FC = () => {
           
           {/* Legal Links */}
           <a href="/terms" className="text-sm text-white/70 hover:text-white transition-colors">
-            Terms
+            {t('footer.terms')}
           </a>
           <a href="/privacy" className="text-sm text-white/70 hover:text-white transition-colors">
-            Privacy
+            {t('footer.privacy')}
           </a>
         </div>
 
         {/* Copyright */}
         <p className="text-sm text-white/50">
-          © 2026 Rocket USA Inc.
+          {t('footer.copyright')}
         </p>
       </div>
     </footer>
