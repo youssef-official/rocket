@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, ChevronUp, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Snowflake, Lightbulb, ListOrdered, Zap, FileText, MessageCircle, Bookmark } from 'lucide-react';
+import { Send, Loader2, ChevronDown, ChevronUp, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Snowflake, Lightbulb, ListOrdered, Zap, FileText, MessageCircle, Bookmark, Pencil, FileOutput, Eye, Globe, Package } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '@/types';
 import type { ProjectVersion } from '@/hooks/useVersions';
@@ -213,77 +213,106 @@ export const ChatView: React.FC<ChatViewProps> = ({
     setInput(suggestion.prompt);
   };
 
-  // Render File Activity Panel - Bolt style
+  // Render File Activity Panel - Lovable/Bolt style with actions
   const renderFileActivityPanel = (files: FileActivity[], isLive: boolean = false) => {
     if (files.length === 0) return null;
+
+    // Count actions
+    const actionsCount = files.length;
+    const editedCount = files.filter(f => f.action === 'edited').length;
+    const createdCount = files.filter(f => f.action === 'created').length;
 
     return (
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-4 rounded-lg overflow-hidden border border-white/10 bg-[#2a2a2a]"
+        className="mt-4"
       >
+        {/* Header - Actions taken */}
         <button
           onClick={() => setShowFileList(!showFileList)}
-          className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-white/5"
+          className="w-full flex items-center justify-between py-2 transition-colors group"
         >
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-white">
-              Files ({files.length})
+            {isLive ? (
+              <Loader2 className="w-4 h-4 text-white/40 animate-spin" />
+            ) : (
+              <div className="w-4 h-4 rounded-full border-2 border-white/20" />
+            )}
+            <span className="text-sm text-white/60">
+              <span className="text-white/80 font-medium">{actionsCount}</span> actions taken
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            {showFileList ? (
-              <ChevronUp className="w-4 h-4 text-white/40" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-white/40" />
-            )}
-          </div>
+          <ChevronDown className={`w-4 h-4 text-white/40 transition-transform ${showFileList ? 'rotate-180' : ''}`} />
         </button>
 
+        {/* File List - Expandable */}
         <AnimatePresence>
           {showFileList && (
             <motion.div 
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="border-t border-white/10 overflow-hidden"
+              className="overflow-hidden"
             >
-              {files.map((file, i) => {
-                const isEditing = file.status === 'editing';
+              <div className="py-2 space-y-1">
+                {files.map((file, i) => {
+                  const isEditing = file.status === 'editing';
+                  const actionLabel = file.action === 'edited' ? 'Edited' : 'Wrote';
+                  const ActionIcon = file.action === 'edited' ? Pencil : FileOutput;
+                  
+                  return (
+                    <motion.div
+                      key={file.name}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.02 }}
+                      className="flex items-center gap-3 py-1.5 group"
+                    >
+                      {/* Action Icon */}
+                      <ActionIcon className={`w-3.5 h-3.5 flex-shrink-0 ${
+                        isEditing ? 'text-primary' : 'text-white/40'
+                      }`} />
+                      
+                      {/* Action Label */}
+                      <span className={`text-sm w-12 flex-shrink-0 ${
+                        isEditing ? 'text-primary' : 'text-white/50'
+                      }`}>
+                        {actionLabel}
+                      </span>
+                      
+                      {/* File Name with Background */}
+                      <span className={`text-sm font-mono px-2 py-0.5 rounded ${
+                        isEditing 
+                          ? 'bg-primary/10 text-primary' 
+                          : 'bg-white/5 text-white/70'
+                      }`}>
+                        {file.name}
+                      </span>
+                      
+                      {/* Loading indicator for active file */}
+                      {isEditing && (
+                        <Loader2 className="w-3 h-3 text-primary animate-spin ml-auto" />
+                      )}
+                    </motion.div>
+                  );
+                })}
                 
-                return (
+                {/* Build status message */}
+                {!isLive && files.length > 0 && (
                   <motion.div
-                    key={file.name}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.03 }}
-                    className={`flex items-center gap-3 px-4 py-2.5 transition-all ${
-                      isEditing ? 'bg-primary/10' : ''
-                    } ${i !== files.length - 1 ? 'border-b border-white/5' : ''}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="flex items-center gap-3 py-1.5 mt-2"
                   >
-                    {isEditing ? (
-                      <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
-                    )}
-
-                    {getFileIcon(file.name)}
-
-                    <span className="text-sm font-mono text-white/80 flex-1 truncate">
-                      {file.name}
-                    </span>
-
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      isEditing 
-                        ? 'bg-primary/20 text-primary' 
-                        : 'bg-green-500/20 text-green-400'
-                    }`}>
-                      {isEditing ? 'Editing' : 'Done'}
+                    <Package className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />
+                    <span className="text-sm text-white/50">
+                      Built the project to ensure everything works
                     </span>
                   </motion.div>
-                );
-              })}
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
