@@ -68,7 +68,7 @@ const ProjectEditorRoute = () => {
     clearMessages 
   } = useChatMessages(id || null);
 
-  // Load project from database
+  // Load project from database and restore generation state
   useEffect(() => {
     if (id && !projectsLoading && projects.length > 0) {
       const dbProject = projects.find(p => p.id === id);
@@ -84,6 +84,26 @@ const ProjectEditorRoute = () => {
           createdAt: dbProject.createdAt,
           updatedAt: dbProject.updatedAt,
         });
+        
+        // Restore generation state from database if available
+        if (dbProject.buildingPlan && dbProject.buildingPlan.length > 0) {
+          const isComplete = dbProject.generationStatus === 'complete';
+          const allStepsComplete = dbProject.buildingPlan.map((_, i) => i);
+          
+          setGenerationPhase({
+            phase: isComplete ? 'complete' : 'generating',
+            message: isComplete ? 'Project ready!' : 'Generating...',
+            plan: dbProject.buildingPlan,
+            completedSteps: isComplete ? allStepsComplete : [],
+            currentStep: isComplete ? undefined : 0,
+            stepFiles: {},
+            summary: isComplete ? `✅ Project created successfully!` : undefined
+          });
+          
+          if (isComplete) {
+            setHasStartedGeneration(true);
+          }
+        }
       } else {
         // Project not found, redirect to home
         navigate('/');
@@ -158,6 +178,8 @@ const ProjectEditorRoute = () => {
           // Save plan to database
           await updateProject(localProject.id, {
             description: prompt,
+            buildingPlan: planLines,
+            generationStatus: 'generating',
           });
           
           setGenerationPhase({ 
@@ -224,7 +246,10 @@ const ProjectEditorRoute = () => {
                   ? { ...localProject.files, ...files }
                   : localProject.files;
 
-                await updateProject(localProject.id, { files: finalFiles });
+                await updateProject(localProject.id, { 
+                  files: finalFiles,
+                  generationStatus: 'complete'
+                });
                 setLocalProject(prev => prev ? { ...prev, files: finalFiles } : null);
                 
                 // Mark all steps as complete

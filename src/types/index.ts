@@ -45,4 +45,7 @@ export interface Project {
   publishedSlug?: string;
   createdAt: string;
   updatedAt: string;
+  generatedName?: string;
+  buildingPlan?: string[];
+  generationStatus?: string;
 }
