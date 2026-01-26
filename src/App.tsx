@@ -378,8 +378,8 @@ const ProjectEditorRoute = () => {
 
     isCancelled.current = false;
 
-    // Add user message immediately with image if present
-    await addMessage('user', content, imageUrl);
+    // Add user message OPTIMISTICALLY (don't await - show immediately in UI)
+    addMessage('user', content, imageUrl);
     
     // If chat-only mode, just respond conversationally without code generation
     if (isChatOnly) {
@@ -390,9 +390,9 @@ const ProjectEditorRoute = () => {
       try {
         const { generateChatResponse } = await import('@/services/aiService');
         const response = await generateChatResponse(content, messages);
-        await addMessage('assistant', response);
+        addMessage('assistant', response);
       } catch (error) {
-        await addMessage('assistant', "I'm here to help! Ask me anything about your project or web development.");
+        addMessage('assistant', "I'm here to help! Ask me anything about your project or web development.");
       }
       
       setIsGenerating(false);
@@ -402,8 +402,6 @@ const ProjectEditorRoute = () => {
 
     // Build mode - generate code
     setIsChatMode(false);
-
-    // Build mode - generate code
     setIsGenerating(true);
     setStreamingContent('');
     setFileActivities([]);
