@@ -1,19 +1,17 @@
-import React, { forwardRef } from 'react';
+import React from 'react';
 import { Youtube, Linkedin, Instagram } from 'lucide-react';
 import { RocketLogo } from './RocketLogo';
 import footerBg from '@/assets/footer-bg.webp';
 
-export const Footer = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>((props, ref) => {
+export const Footer: React.FC = () => {
   return (
     <footer 
-      ref={ref}
       className="relative w-full py-16 px-6"
       style={{
         backgroundImage: `url(${footerBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
-      {...props}
     >
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/30" />
@@ -90,6 +88,4 @@ export const Footer = forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>
       </div>
     </footer>
   );
-});
-
-Footer.displayName = 'Footer';
+};

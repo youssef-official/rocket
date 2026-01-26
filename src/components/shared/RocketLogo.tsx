@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React from 'react';
 import rocketLogo from '@/assets/rocket-logo.png';
 
 interface RocketLogoProps {
@@ -8,12 +8,12 @@ interface RocketLogoProps {
   showText?: boolean;
 }
 
-export const RocketLogo = forwardRef<HTMLDivElement, RocketLogoProps>(({
+export const RocketLogo: React.FC<RocketLogoProps> = ({
   size = 'md',
   className = '',
   onClick,
   showText = true
-}, ref) => {
+}) => {
   const sizeClasses = {
     sm: 'w-7 h-7',
     md: 'w-9 h-9',
@@ -28,7 +28,6 @@ export const RocketLogo = forwardRef<HTMLDivElement, RocketLogoProps>(({
   
   return (
     <div 
-      ref={ref}
       className={`flex items-center gap-2 ${onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''} ${className}`} 
       onClick={onClick}
     >
@@ -44,6 +43,4 @@ export const RocketLogo = forwardRef<HTMLDivElement, RocketLogoProps>(({
       )}
     </div>
   );
-});
-
-RocketLogo.displayName = 'RocketLogo';
+};
