@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '@/types';
 import type { ProjectVersion } from '@/hooks/useVersions';
@@ -788,6 +788,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     >
                       <ImageIcon className="w-4 h-4" />
                       <span className="text-sm">Upload Image</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Trigger visual edit mode - handled by parent
+                        setShowPlusMenu(false);
+                        // Dispatch custom event for parent to handle
+                        window.dispatchEvent(new CustomEvent('open-visual-edit'));
+                      }}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left text-muted-foreground hover:text-foreground border-t border-border"
+                    >
+                      <MousePointer className="w-4 h-4" />
+                      <span className="text-sm">Visual Edit</span>
                     </button>
                   </motion.div>
                 )}

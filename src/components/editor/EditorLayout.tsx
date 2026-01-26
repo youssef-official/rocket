@@ -8,6 +8,7 @@ import {
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
+import { VisualEditMode } from './VisualEditMode';
 import { RocketLogo } from '@/components/shared/RocketLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVersions, type ProjectVersion } from '@/hooks/useVersions';
@@ -90,6 +91,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number | null>(null);
   const [showHomeDialog, setShowHomeDialog] = useState(false);
+  const [showVisualEdit, setShowVisualEdit] = useState(false);
   const isResizing = useRef(false);
   const prevIsGenerating = useRef(isGenerating);
   const versionCreatedForSession = useRef(false);
@@ -251,6 +253,26 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
   const displayMessages = messages;
 
+  // Listen for visual edit trigger from ChatView
+  useEffect(() => {
+    const handleOpenVisualEdit = () => {
+      setShowVisualEdit(true);
+    };
+    
+    window.addEventListener('open-visual-edit', handleOpenVisualEdit);
+    return () => window.removeEventListener('open-visual-edit', handleOpenVisualEdit);
+  }, []);
+
+  // Handle visual edit save - create a new version
+  const handleVisualEditSave = async (changes: { elementId: string; newText: string; newStyles: any }[]) => {
+    console.log('Visual edit changes:', changes);
+    // For now, just close visual edit mode
+    // In a full implementation, this would update the project files
+    setShowVisualEdit(false);
+    
+    // Could create a version here if needed
+    // await createVersion(project.files, messages, 'Visual Edit Changes');
+  };
   // Apply theme
   useEffect(() => {
     const applyTheme = () => {
@@ -286,6 +308,17 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
   // Get display name for project
   const displayProjectName = project?.generatedName || project?.name || 'Untitled Project';
+
+  // Show Visual Edit Mode if active
+  if (showVisualEdit) {
+    return (
+      <VisualEditMode
+        projectFiles={project?.files || {}}
+        onSave={handleVisualEditSave}
+        onClose={() => setShowVisualEdit(false)}
+      />
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-background">
