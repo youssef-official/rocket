@@ -76,19 +76,16 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
         <>
           {/* Invisible overlay to capture clicks outside */}
           <div 
-            className="fixed inset-0" 
-            style={{ zIndex: 999998 }}
+            className="fixed inset-0 z-[9998]" 
             onClick={() => setShowMenu(false)}
           />
           <div 
-            className="absolute right-0 top-full pt-2"
-            style={{ zIndex: 999999, position: 'relative' }}
+            className="absolute right-0 top-full mt-2 z-[9999]"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
             <div 
-              className="w-48 bg-gray-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden"
-              style={{ position: 'relative', zIndex: 999999 }}
+              className="w-48 bg-card border border-border rounded-xl shadow-2xl overflow-hidden"
             >
               <div className="p-3 border-b border-white/10">
                 <p className="text-sm font-medium text-white truncate">{user.email}</p>
