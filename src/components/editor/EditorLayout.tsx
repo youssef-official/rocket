@@ -26,6 +26,9 @@ interface GenerationPhase {
   message: string;
   thinkingTime?: number;
   plan?: string[];
+  completedSteps?: number[];
+  currentStep?: number;
+  stepFiles?: Record<number, string[]>;
   status?: string;
   summary?: string;
 }
@@ -278,11 +281,17 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
           <ChevronDown className="w-3 h-3 text-white/40" />
 
-          {/* Project Name */}
+          {/* Project Name with 2-letter badge */}
           {project && (
-            <span className="text-sm text-white/70 truncate max-w-[250px]">
-              {project.name}
-            </span>
+            <div className="flex items-center gap-2">
+              {/* 2-Letter Badge */}
+              <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-blue-600 text-[10px] font-bold text-white shadow-lg">
+                {project.name.length === 2 ? project.name : project.name.slice(0, 2).toUpperCase()}
+              </div>
+              <span className="text-sm text-white/70 truncate max-w-[200px]">
+                {project.description || project.name}
+              </span>
+            </div>
           )}
         </div>
 

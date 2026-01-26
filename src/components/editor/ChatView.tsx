@@ -15,6 +15,9 @@ interface GenerationPhase {
   message: string;
   thinkingTime?: number;
   plan?: string[];
+  completedSteps?: number[];
+  currentStep?: number;
+  stepFiles?: Record<number, string[]>;
   status?: string;
   summary?: string;
 }
@@ -296,9 +299,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Plan Section
+  // Render Plan Section with step-by-step progress
   const renderPlanSection = () => {
     if (!generationPhase?.plan || generationPhase.plan.length === 0) return null;
+
+    const completedSteps = generationPhase.completedSteps || [];
+    const currentStep = generationPhase.currentStep;
+    const stepFiles = generationPhase.stepFiles || {};
 
     return (
       <motion.div 
@@ -310,19 +317,65 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <ListOrdered className="w-4 h-4 text-blue-400" />
           <span className="text-sm font-medium text-white">What I'm Building:</span>
         </div>
-        <div className="px-4 py-3 space-y-2">
-          {generationPhase.plan.map((step, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="flex items-start gap-3"
-            >
-              <span className="text-primary font-bold text-sm">{i + 1}.</span>
-              <span className="text-sm text-white/80">{step}</span>
-            </motion.div>
-          ))}
+        <div className="px-4 py-3 space-y-3">
+          {generationPhase.plan.map((step, i) => {
+            const isCompleted = completedSteps.includes(i);
+            const isCurrent = currentStep === i;
+            const filesForStep = stepFiles[i] || [];
+
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="space-y-2"
+              >
+                <div className="flex items-start gap-3">
+                  {/* Step indicator */}
+                  {isCompleted ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  ) : isCurrent ? (
+                    <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <span className="w-5 h-5 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">{i + 1}.</span>
+                  )}
+                  <span className={`text-sm ${isCompleted ? 'text-green-400' : isCurrent ? 'text-white' : 'text-white/60'}`}>
+                    {step}
+                  </span>
+                </div>
+
+                {/* Files for this step */}
+                {filesForStep.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="ml-8 space-y-1"
+                  >
+                    {filesForStep.map((file, fileIdx) => (
+                      <div key={fileIdx} className="flex items-center gap-2 text-xs text-white/50">
+                        {getFileIcon(file)}
+                        <span className="font-mono">{file}</span>
+                        {isCompleted && <CheckCircle2 className="w-3 h-3 text-green-400" />}
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+
+                {/* Current step status */}
+                {isCurrent && generationPhase.status && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="ml-8 flex items-center gap-2 text-xs text-primary"
+                  >
+                    <Zap className="w-3 h-3" />
+                    <span>{generationPhase.status}</span>
+                  </motion.div>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
       </motion.div>
     );

@@ -35,6 +35,9 @@ interface GenerationPhase {
   message: string;
   thinkingTime?: number;
   plan?: string[];
+  completedSteps?: number[];
+  currentStep?: number;
+  stepFiles?: Record<number, string[]>;
   status?: string;
   summary?: string;
 }
@@ -161,7 +164,10 @@ const ProjectEditorRoute = () => {
             phase: 'thinking', 
             message: 'Thinking complete!', 
             thinkingTime: finalThinkingTime,
-            plan: planLines
+            plan: planLines,
+            completedSteps: [],
+            currentStep: 0,
+            stepFiles: {}
           });
           
           if (isCancelled.current) return;
@@ -169,14 +175,18 @@ const ProjectEditorRoute = () => {
           // Add the explanation message (without duplication)
           await addMessage('assistant', explanation);
 
-          // Step 2: Generate code
+          // Step 2: Generate code step by step
           if (isCancelled.current) return;
-          setStatusMessage('Creating design system...');
+          
+          // Start with first plan step
+          const currentStepText = planLines[0] || 'Setting up project';
+          setStatusMessage(`Now I'm making: ${currentStepText}`);
           setGenerationPhase(prev => ({ 
             ...prev!,
             phase: 'generating', 
             message: 'Generating code files...',
-            status: 'Creating design system...'
+            currentStep: 0,
+            status: `Now I'm making: ${currentStepText}`
           }));
           
           let fullResponse = '';
@@ -202,12 +212,24 @@ const ProjectEditorRoute = () => {
                 }));
                 setFileActivities(activities);
                 
+                // Distribute files across plan steps
+                const filesPerStep = Math.ceil(fileList.length / Math.max(planLines.length, 1));
+                const stepFilesMap: Record<number, string[]> = {};
+                fileList.forEach((file, idx) => {
+                  const stepIdx = Math.min(Math.floor(idx / filesPerStep), planLines.length - 1);
+                  if (!stepFilesMap[stepIdx]) stepFilesMap[stepIdx] = [];
+                  stepFilesMap[stepIdx].push(file);
+                });
+                
                 const finalFiles = Object.keys(files).length > 0 
                   ? { ...localProject.files, ...files }
                   : localProject.files;
 
                 await updateProject(localProject.id, { files: finalFiles });
                 setLocalProject(prev => prev ? { ...prev, files: finalFiles } : null);
+                
+                // Mark all steps as complete
+                const allStepsComplete = planLines.map((_, i) => i);
                 
                 // Create summary
                 const summary = `✅ Project created successfully! Created ${activities.length} file${activities.length > 1 ? 's' : ''}. Your project is ready to use!`;
@@ -220,7 +242,10 @@ const ProjectEditorRoute = () => {
                   ...prev!,
                   phase: 'complete', 
                   message: 'Project ready!',
-                  status: 'Generation complete!',
+                  status: 'All steps completed!',
+                  completedSteps: allStepsComplete,
+                  currentStep: undefined,
+                  stepFiles: stepFilesMap,
                   summary
                 }));
               },
@@ -235,10 +260,37 @@ const ProjectEditorRoute = () => {
               },
               onFileStart: (fileName) => {
                 if (isCancelled.current) return;
-                setGenerationPhase(prev => prev ? { 
-                  ...prev, 
-                  status: `Working on ${fileName}...` 
-                } : null);
+                
+                // Calculate which step we're on based on file count
+                setGenerationPhase(prev => {
+                  if (!prev || !prev.plan) return prev;
+                  
+                  const currentFiles = prev.stepFiles || {};
+                  const totalFiles = Object.values(currentFiles).flat().length;
+                  const filesPerStep = Math.ceil(15 / Math.max(prev.plan.length, 1)); // Estimate 15 files
+                  const currentStepIdx = Math.min(Math.floor(totalFiles / filesPerStep), prev.plan.length - 1);
+                  
+                  // Add file to current step
+                  const updatedStepFiles = { ...currentFiles };
+                  if (!updatedStepFiles[currentStepIdx]) updatedStepFiles[currentStepIdx] = [];
+                  if (!updatedStepFiles[currentStepIdx].includes(fileName)) {
+                    updatedStepFiles[currentStepIdx].push(fileName);
+                  }
+                  
+                  // Mark previous steps as complete
+                  const completedSteps = Array.from({ length: currentStepIdx }, (_, i) => i);
+                  
+                  const currentStepText = prev.plan[currentStepIdx] || 'Building components';
+                  
+                  return { 
+                    ...prev, 
+                    status: `Now I'm making: ${currentStepText}`,
+                    currentStep: currentStepIdx,
+                    completedSteps,
+                    stepFiles: updatedStepFiles
+                  };
+                });
+                
                 setFileActivities(prev => {
                   const exists = prev.find(f => f.name === fileName);
                   if (exists) {
@@ -251,7 +303,6 @@ const ProjectEditorRoute = () => {
               onStatusUpdate: (status) => {
                 if (isCancelled.current) return;
                 setStatusMessage(status);
-                setGenerationPhase(prev => prev ? { ...prev, status } : null);
               },
             }
           );
@@ -361,7 +412,10 @@ const ProjectEditorRoute = () => {
         phase: 'thinking', 
         message: 'Thinking complete!', 
         thinkingTime: finalThinkingTime,
-        plan: planLines
+        plan: planLines,
+        completedSteps: [],
+        currentStep: 0,
+        stepFiles: {}
       });
       
       if (isCancelled.current) return;
@@ -372,12 +426,14 @@ const ProjectEditorRoute = () => {
 
       // Step 2: Generate code (goes to code view, not shown in chat)
       if (isCancelled.current) return;
-      setStatusMessage('Creating components...');
+      const currentStepText = planLines[0] || 'Making changes';
+      setStatusMessage(`Now I'm making: ${currentStepText}`);
       setGenerationPhase(prev => ({ 
         ...prev!,
         phase: 'generating', 
         message: 'Generating code files...',
-        status: 'Creating components...'
+        currentStep: 0,
+        status: `Now I'm making: ${currentStepText}`
       }));
       
       const conversationHistory = [
@@ -412,11 +468,23 @@ const ProjectEditorRoute = () => {
             }));
             setFileActivities(activities);
 
+            // Distribute files across plan steps
+            const filesPerStep = Math.ceil(fileList.length / Math.max(planLines.length, 1));
+            const stepFilesMap: Record<number, string[]> = {};
+            fileList.forEach((file, idx) => {
+              const stepIdx = Math.min(Math.floor(idx / filesPerStep), planLines.length - 1);
+              if (!stepFilesMap[stepIdx]) stepFilesMap[stepIdx] = [];
+              stepFilesMap[stepIdx].push(file);
+            });
+
             if (Object.keys(newFiles).length > 0) {
               const mergedFiles = { ...localProject.files, ...newFiles };
               await updateProject(localProject.id, { files: mergedFiles });
               setLocalProject(prev => prev ? { ...prev, files: mergedFiles } : null);
             }
+
+            // Mark all steps as complete
+            const allStepsComplete = planLines.map((_, i) => i);
 
             // Create summary
             const editedCount = activities.filter(a => a.action === 'edited').length;
@@ -431,7 +499,10 @@ const ProjectEditorRoute = () => {
               ...prev!,
               phase: 'complete', 
               message: 'Changes applied!',
-              status: 'Generation complete!',
+              status: 'All steps completed!',
+              completedSteps: allStepsComplete,
+              currentStep: undefined,
+              stepFiles: stepFilesMap,
               summary
             }));
           },
@@ -445,10 +516,37 @@ const ProjectEditorRoute = () => {
           },
           onFileStart: (fileName) => {
             if (isCancelled.current) return;
-            setGenerationPhase(prev => prev ? { 
-              ...prev, 
-              status: `Working on ${fileName}...` 
-            } : null);
+            
+            // Calculate which step we're on based on file count
+            setGenerationPhase(prev => {
+              if (!prev || !prev.plan) return prev;
+              
+              const currentFiles = prev.stepFiles || {};
+              const totalFiles = Object.values(currentFiles).flat().length;
+              const filesPerStep = Math.ceil(10 / Math.max(prev.plan.length, 1)); // Estimate
+              const currentStepIdx = Math.min(Math.floor(totalFiles / filesPerStep), prev.plan.length - 1);
+              
+              // Add file to current step
+              const updatedStepFiles = { ...currentFiles };
+              if (!updatedStepFiles[currentStepIdx]) updatedStepFiles[currentStepIdx] = [];
+              if (!updatedStepFiles[currentStepIdx].includes(fileName)) {
+                updatedStepFiles[currentStepIdx].push(fileName);
+              }
+              
+              // Mark previous steps as complete
+              const completedSteps = Array.from({ length: currentStepIdx }, (_, i) => i);
+              
+              const currentStepText = prev.plan[currentStepIdx] || 'Making changes';
+              
+              return { 
+                ...prev, 
+                status: `Now I'm making: ${currentStepText}`,
+                currentStep: currentStepIdx,
+                completedSteps,
+                stepFiles: updatedStepFiles
+              };
+            });
+            
             setFileActivities(prev => {
               const exists = prev.find(f => f.name === fileName);
               if (exists) {
