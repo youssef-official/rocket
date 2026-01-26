@@ -377,8 +377,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </div>
         </div>
 
-        {/* Center - View Toggle (Bolt Style) - Shifted left */}
-        <div className="hidden md:flex items-center bg-secondary rounded-full p-1 border border-border -ml-16">
+        {/* Center - View Toggle (Bolt Style) - More to the left */}
+        <div className="hidden md:flex items-center bg-secondary rounded-full p-1 border border-border absolute left-1/2 transform -translate-x-[calc(50%+120px)]">
           <button
             onClick={() => setCurrentView('preview')}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
@@ -423,12 +423,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </button>
 
           {/* Share Button */}
-          <button className="flex items-center gap-2 px-4 py-1.5 bg-secondary border border-border rounded-lg text-sm text-foreground hover:bg-accent transition-colors">
+          <button className="flex items-center gap-2 px-4 py-1.5 bg-secondary border border-border rounded-lg text-sm font-bold text-foreground hover:bg-accent transition-colors">
             Share
           </button>
 
-          {/* Publish Button */}
-          <button className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-colors">
+          {/* Publish Button - White text, bold */}
+          <button className="flex items-center gap-2 px-4 py-1.5 bg-white text-black rounded-lg text-sm font-bold hover:opacity-90 transition-colors">
             Publish
           </button>
 
