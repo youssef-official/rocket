@@ -396,7 +396,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Summary Section with Version Card
+  // Render Summary Section with Version Card - Premium Bolt Style
   const renderSummarySection = () => {
     if (!generationPhase?.summary) return null;
 
@@ -410,9 +410,38 @@ export const ChatView: React.FC<ChatViewProps> = ({
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-4 space-y-3"
+        className="mt-4 space-y-4"
       >
-        {/* Version Card - Bolt Style */}
+        {/* What I Built Section - Premium Style */}
+        <div className="rounded-xl overflow-hidden border border-white/10 bg-gradient-to-b from-[#2a2a2a] to-[#252525]">
+          <div className="px-4 py-3 border-b border-white/10">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-green-400" />
+              What I built:
+            </h3>
+          </div>
+          <div className="px-4 py-3">
+            <ul className="space-y-2">
+              {generationPhase.plan?.map((step, i) => (
+                <motion.li
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex items-start gap-2 text-sm text-white/70"
+                >
+                  <span className="text-white/40 mt-0.5">•</span>
+                  <span>{step}</span>
+                </motion.li>
+              ))}
+            </ul>
+            <p className="mt-4 text-sm text-green-400 font-medium">
+              The project is now ready and built successfully!
+            </p>
+          </div>
+        </div>
+
+        {/* Version Card - Compact Bolt Style */}
         {activeVersion && (
           <motion.button
             initial={{ opacity: 0, scale: 0.95 }}
@@ -420,9 +449,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             onClick={() => onSelectVersion?.(activeVersion)}
-            className="w-full flex items-center gap-3 p-3 rounded-xl text-left bg-[#2a2a2a] border border-primary/30 hover:border-primary/50 transition-all shadow-lg shadow-primary/5"
+            className="w-full flex items-center gap-3 p-3 rounded-xl text-left bg-[#2a2a2a] border border-white/10 hover:border-white/20 transition-all"
           >
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/20 text-primary flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 text-white/60 flex-shrink-0">
               <Bookmark className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
@@ -436,27 +465,26 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </motion.button>
         )}
 
-        {/* Show all versions if more than 1 */}
+        {/* Previous Versions - Compact */}
         {versions.length > 1 && (
-          <div className="space-y-2">
-            <p className="text-xs text-white/40 px-1">Previous Versions</p>
-            {versions.slice(1, 4).map((version) => (
+          <div className="space-y-1.5">
+            {versions.slice(1, 3).map((version) => (
               <motion.button
                 key={version.id}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 whileHover={{ scale: 1.01 }}
                 onClick={() => onSelectVersion?.(version)}
-                className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-all ${
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all ${
                   currentVersion === version.versionNumber
                     ? 'bg-[#2a2a2a] border border-white/20'
-                    : 'bg-[#252525] border border-white/5 hover:border-white/10'
+                    : 'bg-transparent hover:bg-white/5'
                 }`}
               >
-                <div className="w-6 h-6 rounded-md flex items-center justify-center bg-white/5 text-white/50 flex-shrink-0 text-[10px] font-bold">
+                <div className="w-5 h-5 rounded-md flex items-center justify-center bg-white/5 text-white/40 flex-shrink-0 text-[10px] font-bold">
                   v{version.versionNumber}
                 </div>
-                <p className="text-xs text-white/60 truncate flex-1">
+                <p className="text-xs text-white/50 truncate flex-1">
                   {version.name || `Version ${version.versionNumber}`}
                 </p>
               </motion.button>

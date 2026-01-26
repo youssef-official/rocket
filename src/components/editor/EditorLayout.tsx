@@ -293,17 +293,11 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
           <ChevronDown className="w-3 h-3 text-white/40" />
 
-          {/* Project Name with 2-letter badge */}
+          {/* Project Name - Bolt Style */}
           {project && (
-            <div className="flex items-center gap-2">
-              {/* 2-Letter Badge */}
-              <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-blue-600 text-[10px] font-bold text-white shadow-lg">
-                {project.name.length === 2 ? project.name : project.name.slice(0, 2).toUpperCase()}
-              </div>
-              <span className="text-sm text-white/70 truncate max-w-[200px]">
-                {project.description || project.name}
-              </span>
-            </div>
+            <span className="text-sm font-medium text-white truncate max-w-[280px]">
+              {project.name}
+            </span>
           )}
         </div>
 
