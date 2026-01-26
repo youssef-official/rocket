@@ -263,15 +263,29 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     return () => window.removeEventListener('open-visual-edit', handleOpenVisualEdit);
   }, []);
 
-  // Handle visual edit save - create a new version
-  const handleVisualEditSave = (changes: { elementId: string; newContent: string; newStyles: any; position?: { x: number; y: number } }[]) => {
+  // Handle visual edit save - update project files and create a version
+  const handleVisualEditSave = async (
+    changes: { elementId: string; newContent: string; newStyles: any; position?: { x: number; y: number } }[],
+    updatedFiles: Record<string, ProjectFile>,
+    summary: string
+  ) => {
     console.log('Visual edit changes:', changes);
-    // For now, just close visual edit mode
-    // In a full implementation, this would update the project files
-    setShowVisualEdit(false);
+    console.log('Updated files:', Object.keys(updatedFiles));
     
-    // Could create a version here if needed
-    // await createVersion(project.files, messages, 'Visual Edit Changes');
+    // Update project files
+    if (project && Object.keys(updatedFiles).length > 0) {
+      onUpdateProject({ files: updatedFiles });
+      
+      // Create a new version with the visual changes
+      await createVersion(
+        updatedFiles,
+        messages,
+        summary || 'Visual Edit Changes',
+        [{ name: 'Visual Edit', status: 'done', action: 'edited' }]
+      );
+    }
+    
+    setShowVisualEdit(false);
   };
   // Apply theme
   useEffect(() => {

@@ -3,10 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Type, Palette, AlignLeft, AlignCenter, AlignRight, AlignJustify, 
   Save, ChevronDown, Bold, Italic, Underline, Image as ImageIcon, 
-  Move, Upload, Trash2, RotateCcw, Plus, Minus, GripVertical
+  Move, Upload, Trash2, RotateCcw, Plus, Minus, GripVertical,
+  FileCode, Check, AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { parseProjectElements, applyVisualChanges, generateChangeSummary } from '@/services/visualEditService';
+import type { ProjectFile } from '@/types';
 
 interface ElementStyles {
   color: string;
@@ -25,18 +28,28 @@ interface ElementStyles {
 
 interface EditableElement {
   id: string;
-  type: 'text' | 'image' | 'button' | 'container';
+  type: 'text' | 'image' | 'button' | 'container' | 'heading' | 'paragraph' | 'link';
+  tagName?: string;
   content: string;
   originalContent: string;
   styles: ElementStyles;
+  originalStyles: ElementStyles;
   position: { x: number; y: number };
   size: { width: number; height: number };
-  src?: string; // For images
+  src?: string;
+  originalSrc?: string;
+  filePath?: string;
+  lineNumber?: number;
+  className?: string;
 }
 
 interface VisualEditModeProps {
-  projectFiles: Record<string, { name: string; path: string; content: string; language: string }>;
-  onSave: (changes: { elementId: string; newContent: string; newStyles: ElementStyles; position?: { x: number; y: number } }[]) => void;
+  projectFiles: Record<string, ProjectFile>;
+  onSave: (
+    changes: { elementId: string; newContent: string; newStyles: ElementStyles; position?: { x: number; y: number } }[],
+    updatedFiles: Record<string, ProjectFile>,
+    summary: string
+  ) => void;
   onClose: () => void;
 }
 
@@ -64,6 +77,16 @@ const fontSizeOptions = [
   { label: '6XL', value: '60px' },
 ];
 
+const defaultStyles: ElementStyles = {
+  color: '#ffffff',
+  fontSize: '16px',
+  fontWeight: 'normal',
+  fontStyle: 'normal',
+  textAlign: 'left',
+  textDecoration: 'none',
+  fontFamily: 'inherit',
+};
+
 export const VisualEditMode: React.FC<VisualEditModeProps> = ({
   projectFiles,
   onSave,
@@ -78,130 +101,79 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isUploading, setIsUploading] = useState(false);
   const [editMode, setEditMode] = useState<'select' | 'drag'>('select');
+  const [isSaving, setIsSaving] = useState(false);
+  const [parsedElements, setParsedElements] = useState<any[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize demo elements from project
+  // Parse project files to find editable elements
   useEffect(() => {
-    const demoElements: EditableElement[] = [
-      {
-        id: 'hero-title',
-        type: 'text',
-        content: 'Welcome to Your Amazing Website',
-        originalContent: 'Welcome to Your Amazing Website',
-        styles: {
-          color: '#ffffff',
-          fontSize: '48px',
-          fontWeight: 'bold',
-          fontStyle: 'normal',
-          textAlign: 'center',
-          textDecoration: 'none',
-          fontFamily: 'inherit',
-        },
-        position: { x: 50, y: 80 },
-        size: { width: 600, height: 60 },
-      },
-      {
-        id: 'hero-subtitle',
-        type: 'text',
-        content: 'Build something incredible today',
-        originalContent: 'Build something incredible today',
-        styles: {
-          color: '#a0aec0',
-          fontSize: '20px',
-          fontWeight: 'normal',
-          fontStyle: 'normal',
-          textAlign: 'center',
-          textDecoration: 'none',
-          fontFamily: 'inherit',
-        },
-        position: { x: 50, y: 150 },
-        size: { width: 400, height: 30 },
-      },
-      {
-        id: 'hero-image',
-        type: 'image',
-        content: '',
-        originalContent: '',
-        src: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=300&fit=crop',
-        styles: {
-          color: '',
-          fontSize: '',
-          fontWeight: '',
-          fontStyle: '',
-          textAlign: '',
-          textDecoration: '',
-          fontFamily: '',
-          borderRadius: '12px',
-          opacity: '1',
-        },
-        position: { x: 50, y: 200 },
-        size: { width: 400, height: 250 },
-      },
-      {
-        id: 'cta-button',
-        type: 'button',
-        content: 'Get Started',
-        originalContent: 'Get Started',
-        styles: {
-          color: '#ffffff',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          fontStyle: 'normal',
-          textAlign: 'center',
-          textDecoration: 'none',
-          fontFamily: 'inherit',
-          backgroundColor: '#6366f1',
-          padding: '12px 32px',
-          borderRadius: '8px',
-        },
-        position: { x: 50, y: 480 },
-        size: { width: 160, height: 48 },
-      },
-      {
-        id: 'feature-card-1',
-        type: 'container',
-        content: 'Fast Performance',
-        originalContent: 'Fast Performance',
-        styles: {
-          color: '#ffffff',
-          fontSize: '18px',
-          fontWeight: 'bold',
-          fontStyle: 'normal',
-          textAlign: 'center',
-          textDecoration: 'none',
-          fontFamily: 'inherit',
-          backgroundColor: 'rgba(255,255,255,0.1)',
-          padding: '24px',
-          borderRadius: '16px',
-        },
-        position: { x: 50, y: 560 },
-        size: { width: 200, height: 120 },
-      },
-      {
-        id: 'feature-card-2',
-        type: 'container',
-        content: 'Modern Design',
-        originalContent: 'Modern Design',
-        styles: {
-          color: '#ffffff',
-          fontSize: '18px',
-          fontWeight: 'bold',
-          fontStyle: 'normal',
-          textAlign: 'center',
-          textDecoration: 'none',
-          fontFamily: 'inherit',
-          backgroundColor: 'rgba(255,255,255,0.1)',
-          padding: '24px',
-          borderRadius: '16px',
-        },
-        position: { x: 280, y: 560 },
-        size: { width: 200, height: 120 },
-      },
-    ];
+    const parsed = parseProjectElements(projectFiles);
+    setParsedElements(parsed);
     
-    setElements(demoElements);
+    // Convert parsed elements to editable elements
+    const editableElements: EditableElement[] = parsed.map((el, index) => {
+      const baseStyles: ElementStyles = {
+        color: el.styles?.color || '#ffffff',
+        fontSize: el.styles?.fontSize || (el.type === 'heading' ? '48px' : '16px'),
+        fontWeight: el.styles?.fontWeight || (el.type === 'heading' ? 'bold' : 'normal'),
+        fontStyle: el.styles?.fontStyle || 'normal',
+        textAlign: el.styles?.textAlign || 'left',
+        textDecoration: el.styles?.textDecoration || 'none',
+        fontFamily: el.styles?.fontFamily || 'inherit',
+        backgroundColor: el.styles?.backgroundColor,
+        borderRadius: el.styles?.borderRadius,
+        opacity: el.styles?.opacity || '1',
+      };
+
+      return {
+        id: el.id,
+        type: el.type as any,
+        tagName: el.tagName,
+        content: el.content,
+        originalContent: el.content,
+        styles: { ...baseStyles },
+        originalStyles: { ...baseStyles },
+        position: { x: 50, y: 50 + (index * 80) },
+        size: { width: 500, height: el.type === 'heading' ? 60 : 40 },
+        src: el.src,
+        originalSrc: el.src,
+        filePath: el.filePath,
+        lineNumber: el.startLine,
+        className: el.className,
+      };
+    });
+
+    // If no elements found, show demo elements
+    if (editableElements.length === 0) {
+      setElements(getDemoElements());
+    } else {
+      setElements(editableElements);
+    }
   }, [projectFiles]);
+
+  const getDemoElements = (): EditableElement[] => [
+    {
+      id: 'demo-title',
+      type: 'heading',
+      content: 'Welcome to Visual Editor',
+      originalContent: 'Welcome to Visual Editor',
+      styles: { ...defaultStyles, color: '#ffffff', fontSize: '48px', fontWeight: 'bold', textAlign: 'center' },
+      originalStyles: { ...defaultStyles, color: '#ffffff', fontSize: '48px', fontWeight: 'bold', textAlign: 'center' },
+      position: { x: 50, y: 80 },
+      size: { width: 600, height: 60 },
+    },
+    {
+      id: 'demo-subtitle',
+      type: 'paragraph',
+      content: 'Click on any element to edit it. Changes will be saved to your project files.',
+      originalContent: 'Click on any element to edit it. Changes will be saved to your project files.',
+      styles: { ...defaultStyles, color: '#a0aec0', fontSize: '20px', textAlign: 'center' },
+      originalStyles: { ...defaultStyles, color: '#a0aec0', fontSize: '20px', textAlign: 'center' },
+      position: { x: 50, y: 160 },
+      size: { width: 600, height: 40 },
+    },
+  ];
 
   const handleElementClick = (element: EditableElement, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -316,30 +288,76 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
     }
   };
 
-  const handleSave = () => {
-    const changes = Array.from(editedElements.values()).map(el => ({
-      elementId: el.id,
-      newContent: el.type === 'image' ? el.src || '' : el.content,
-      newStyles: el.styles,
-      position: el.position,
-    }));
-    onSave(changes);
+  const handleSave = async () => {
+    setIsSaving(true);
+    
+    try {
+      const changes = Array.from(editedElements.values()).map(el => ({
+        elementId: el.id,
+        newContent: el.type === 'image' ? el.src || '' : el.content,
+        newStyles: el.styles,
+        position: el.position,
+        filePath: el.filePath,
+        lineNumber: el.lineNumber,
+      }));
+
+      // Apply changes to actual project files
+      const updatedFiles = applyVisualChanges(projectFiles, changes, parsedElements);
+      
+      // Generate summary for version name
+      const summary = generateChangeSummary(changes, parsedElements);
+
+      onSave(changes, updatedFiles, summary);
+    } catch (error) {
+      console.error('Error saving visual changes:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const resetElement = () => {
     if (!selectedElement) return;
     
-    const original = elements.find(el => el.id === selectedElement.id);
-    if (original) {
-      const reset = { ...original };
-      setSelectedElement(reset);
-      setElements(prev => prev.map(el => el.id === reset.id ? reset : el));
-      editedElements.delete(reset.id);
-      setEditedElements(new Map(editedElements));
-    }
+    const reset: EditableElement = {
+      ...selectedElement,
+      content: selectedElement.originalContent,
+      styles: { ...selectedElement.originalStyles },
+      src: selectedElement.originalSrc,
+    };
+    
+    setSelectedElement(reset);
+    setElements(prev => prev.map(el => el.id === reset.id ? reset : el));
+    editedElements.delete(reset.id);
+    setEditedElements(new Map(editedElements));
   };
 
   const getChangesCount = () => editedElements.size;
+
+  const getAffectedFiles = (): string[] => {
+    const files = new Set<string>();
+    editedElements.forEach(el => {
+      if (el.filePath) files.add(el.filePath);
+    });
+    return Array.from(files);
+  };
+
+  const getElementIcon = (type: string) => {
+    switch (type) {
+      case 'heading':
+        return <span className="text-xs font-bold">H</span>;
+      case 'paragraph':
+      case 'text':
+        return <Type className="w-4 h-4" />;
+      case 'image':
+        return <ImageIcon className="w-4 h-4" />;
+      case 'button':
+        return <span className="text-xs font-bold">B</span>;
+      case 'link':
+        return <span className="text-xs font-bold">A</span>;
+      default:
+        return <div className="w-4 h-4 border-2 border-current rounded" />;
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -351,6 +369,12 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
           {getChangesCount() > 0 && (
             <span className="px-2 py-0.5 text-xs bg-primary/20 text-primary rounded-full">
               {getChangesCount()} changes
+            </span>
+          )}
+          {getAffectedFiles().length > 0 && (
+            <span className="flex items-center gap-1 px-2 py-0.5 text-xs bg-green-500/20 text-green-400 rounded-full">
+              <FileCode className="w-3 h-3" />
+              {getAffectedFiles().length} files
             </span>
           )}
         </div>
@@ -381,12 +405,31 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
           <Button variant="outline" size="sm" onClick={onClose}>
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSave} className="gap-2">
-            <Save className="w-4 h-4" />
-            Save Changes
+          <Button 
+            size="sm" 
+            onClick={handleSave} 
+            className="gap-2"
+            disabled={getChangesCount() === 0 || isSaving}
+          >
+            {isSaving ? (
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            Save & Create Version
           </Button>
         </div>
       </div>
+
+      {/* Info Banner */}
+      {getAffectedFiles().length > 0 && (
+        <div className="px-4 py-2 bg-green-500/10 border-b border-green-500/20 flex items-center gap-2 text-sm">
+          <Check className="w-4 h-4 text-green-400" />
+          <span className="text-green-400">
+            Changes will be applied to: {getAffectedFiles().join(', ')}
+          </span>
+        </div>
+      )}
 
       <div className="flex-1 flex overflow-hidden">
         {/* Canvas Area */}
@@ -417,20 +460,28 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
                   style={{
                     left: element.position.x,
                     top: element.position.y,
-                    width: element.type === 'text' ? 'auto' : element.size.width,
-                    minWidth: element.type === 'text' ? element.size.width : undefined,
+                    width: element.type === 'text' || element.type === 'heading' || element.type === 'paragraph' ? 'auto' : element.size.width,
+                    minWidth: element.type === 'text' || element.type === 'heading' || element.type === 'paragraph' ? element.size.width : undefined,
                   }}
                   onClick={(e) => handleElementClick(element, e)}
                   onMouseDown={(e) => handleDragStart(element, e)}
                   whileHover={{ scale: editMode === 'select' ? 1.02 : 1 }}
                 >
+                  {/* File path indicator */}
+                  {element.filePath && isSelected && (
+                    <div className="absolute -top-6 left-0 flex items-center gap-1 px-2 py-0.5 bg-black/80 rounded text-xs text-green-400">
+                      <FileCode className="w-3 h-3" />
+                      {element.filePath}:{element.lineNumber}
+                    </div>
+                  )}
+                  
                   {editMode === 'drag' && (
                     <div className="absolute -left-6 top-1/2 -translate-y-1/2 p-1 bg-primary/80 rounded cursor-grab">
                       <GripVertical className="w-4 h-4 text-white" />
                     </div>
                   )}
                   
-                  {element.type === 'text' && (
+                  {(element.type === 'text' || element.type === 'heading' || element.type === 'paragraph' || element.type === 'link') && (
                     <p
                       style={{
                         color: element.styles.color,
@@ -446,7 +497,7 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
                     </p>
                   )}
                   
-                  {element.type === 'image' && (
+                  {element.type === 'image' && element.src && (
                     <img
                       src={element.src}
                       alt="Editable"
@@ -467,8 +518,8 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
                         fontSize: element.styles.fontSize,
                         fontWeight: element.styles.fontWeight,
                         backgroundColor: element.styles.backgroundColor,
-                        padding: element.styles.padding,
-                        borderRadius: element.styles.borderRadius,
+                        padding: element.styles.padding || '12px 32px',
+                        borderRadius: element.styles.borderRadius || '8px',
                       }}
                       className="pointer-events-none"
                     >
@@ -483,8 +534,8 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
                         fontSize: element.styles.fontSize,
                         fontWeight: element.styles.fontWeight,
                         backgroundColor: element.styles.backgroundColor,
-                        padding: element.styles.padding,
-                        borderRadius: element.styles.borderRadius,
+                        padding: element.styles.padding || '24px',
+                        borderRadius: element.styles.borderRadius || '16px',
                         width: element.size.width,
                         height: element.size.height,
                         display: 'flex',
@@ -514,11 +565,15 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {selectedElement.type === 'text' && <Type className="w-4 h-4 text-primary" />}
-                    {selectedElement.type === 'image' && <ImageIcon className="w-4 h-4 text-primary" />}
-                    {selectedElement.type === 'button' && <div className="w-4 h-4 bg-primary rounded text-[10px] flex items-center justify-center text-white font-bold">B</div>}
-                    {selectedElement.type === 'container' && <div className="w-4 h-4 border-2 border-primary rounded" />}
-                    <h3 className="font-semibold text-foreground capitalize">{selectedElement.type}</h3>
+                    <div className="w-6 h-6 bg-primary/20 rounded flex items-center justify-center text-primary">
+                      {getElementIcon(selectedElement.type)}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground capitalize">{selectedElement.type}</h3>
+                      {selectedElement.tagName && (
+                        <span className="text-xs text-muted-foreground">&lt;{selectedElement.tagName}&gt;</span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-1">
                     <button
@@ -536,6 +591,24 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
                     </button>
                   </div>
                 </div>
+
+                {/* File Info */}
+                {selectedElement.filePath && (
+                  <div className="p-3 bg-secondary/50 rounded-lg space-y-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      <FileCode className="w-4 h-4 text-green-400" />
+                      <span className="text-foreground font-medium">Source File</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      {selectedElement.filePath}
+                    </p>
+                    {selectedElement.lineNumber && (
+                      <p className="text-xs text-muted-foreground">
+                        Line {selectedElement.lineNumber}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Image Controls */}
                 {selectedElement.type === 'image' && (
@@ -612,7 +685,7 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
                 )}
 
                 {/* Text/Button/Container Controls */}
-                {(selectedElement.type === 'text' || selectedElement.type === 'button' || selectedElement.type === 'container') && (
+                {(selectedElement.type !== 'image') && (
                   <>
                     {/* Text Content */}
                     <div className="space-y-2">
@@ -833,12 +906,15 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
                         type="number"
                         value={Math.round(selectedElement.position.x)}
                         onChange={(e) => {
-                          const updated = { ...selectedElement, position: { ...selectedElement.position, x: parseInt(e.target.value) || 0 } };
+                          const updated = {
+                            ...selectedElement,
+                            position: { ...selectedElement.position, x: parseInt(e.target.value) || 0 },
+                          };
                           setSelectedElement(updated);
                           setElements(prev => prev.map(el => el.id === updated.id ? updated : el));
                           setEditedElements(prev => new Map(prev).set(updated.id, updated));
                         }}
-                        className="flex-1 px-2 py-1.5 rounded border border-border bg-background text-foreground text-sm"
+                        className="w-full px-2 py-1.5 rounded border border-border bg-background text-foreground text-sm"
                       />
                     </div>
                     <div className="flex items-center gap-2">
@@ -847,12 +923,15 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
                         type="number"
                         value={Math.round(selectedElement.position.y)}
                         onChange={(e) => {
-                          const updated = { ...selectedElement, position: { ...selectedElement.position, y: parseInt(e.target.value) || 0 } };
+                          const updated = {
+                            ...selectedElement,
+                            position: { ...selectedElement.position, y: parseInt(e.target.value) || 0 },
+                          };
                           setSelectedElement(updated);
                           setElements(prev => prev.map(el => el.id === updated.id ? updated : el));
                           setEditedElements(prev => new Map(prev).set(updated.id, updated));
                         }}
-                        className="flex-1 px-2 py-1.5 rounded border border-border bg-background text-foreground text-sm"
+                        className="w-full px-2 py-1.5 rounded border border-border bg-background text-foreground text-sm"
                       />
                     </div>
                   </div>
@@ -862,29 +941,6 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
           )}
         </AnimatePresence>
       </div>
-
-      {/* Instructions */}
-      {!selectedElement && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-card border border-border rounded-full shadow-lg"
-        >
-          <p className="text-sm text-muted-foreground">
-            {editMode === 'select' ? (
-              <>
-                <span className="text-primary font-medium">Click</span> to edit • 
-                <span className="text-primary font-medium ml-1">Switch to Move</span> to drag elements
-              </>
-            ) : (
-              <>
-                <span className="text-primary font-medium">Drag</span> elements to reposition • 
-                <span className="text-primary font-medium ml-1">Switch to Edit</span> to modify content
-              </>
-            )}
-          </p>
-        </motion.div>
-      )}
     </div>
   );
 };
