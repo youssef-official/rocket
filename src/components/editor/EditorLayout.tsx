@@ -1,14 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Code2, Globe, LogOut, 
+  Code2, Eye, LogOut, 
   ChevronDown, Download, Home, ArrowLeft,
-  GitBranch
+  GitBranch, Github, Share2
 } from 'lucide-react';
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
-import { VersionSelector } from './VersionSelector';
 import { RocketLogo } from '@/components/shared/RocketLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVersions, type ProjectVersion } from '@/hooks/useVersions';
@@ -68,7 +67,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [currentView, setCurrentView] = useState<'code' | 'preview'>('preview');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [chatWidth, setChatWidth] = useState(420);
+  const [chatWidth, setChatWidth] = useState(450);
   
   const [showVersionSelector, setShowVersionSelector] = useState(false);
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number | null>(null);
@@ -84,24 +83,20 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   useEffect(() => {
     if (project?.id) {
       fetchVersions();
-      versionCreatedForSession.current = false; // Reset when project changes
+      versionCreatedForSession.current = false;
     }
   }, [project?.id, fetchVersions]);
 
-  // Auto-create version when generation completes (transition from generating to not generating)
-  // BUT NOT in chat mode - chat mode should not create versions
+  // Auto-create version when generation completes
   useEffect(() => {
     const wasGenerating = prevIsGenerating.current;
     const nowNotGenerating = !isGenerating;
     
-    // Check if we just finished generating (was generating, now not)
-    // Skip version creation if in chat mode
     if (wasGenerating && nowNotGenerating && project?.files && !versionCreatedForSession.current && !isChatMode) {
       const hasFiles = Object.keys(project.files).length > 0;
       const hasMessages = messages.length > 0;
       
       if (hasFiles && hasMessages) {
-        // Generate smart version name
         const versionNames = [
           'Initial Build',
           'Feature Update',
@@ -119,7 +114,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       }
     }
     
-    // If we start generating again, allow new version to be created
     if (!wasGenerating && isGenerating) {
       versionCreatedForSession.current = false;
     }
@@ -169,7 +163,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!isResizing.current) return;
       const newWidth = moveEvent.clientX;
-      setChatWidth(Math.max(350, Math.min(600, newWidth)));
+      setChatWidth(Math.max(380, Math.min(600, newWidth)));
     };
 
     const handleMouseUp = () => {
@@ -212,7 +206,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  // Use messages directly - streaming is now shown separately in ChatView
   const displayMessages = messages;
 
   // Apply dark mode always
@@ -220,29 +213,16 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     document.documentElement.classList.add('dark');
   }, []);
 
-  // Get current version display
-  const getVersionDisplay = () => {
-    if (currentVersionNumber) {
-      const version = versions.find(v => v.versionNumber === currentVersionNumber);
-      return version?.name || `Version ${currentVersionNumber}`;
-    }
-    if (versions.length > 0) {
-      return 'Previewing latest version';
-    }
-    return null;
-  };
-
-  const versionDisplay = getVersionDisplay();
-
   // State for mobile view
   const [mobilePanel, setMobilePanel] = useState<'chat' | 'preview' | 'code'>('preview');
 
   return (
-    <div className="h-screen flex flex-col bg-background">
-      {/* Header - Clean and minimal */}
-      <header className="h-12 md:h-14 border-b border-border flex items-center justify-between px-2 md:px-4 bg-card">
-        <div className="flex items-center gap-2 md:gap-4">
-          {/* Logo with home navigation */}
+    <div className="h-screen flex flex-col bg-[#1a1a1a]">
+      {/* Header - Bolt Style */}
+      <header className="h-12 border-b border-white/10 flex items-center justify-between px-3 bg-[#1e1e1e]">
+        {/* Left Section */}
+        <div className="flex items-center gap-3">
+          {/* Logo */}
           <div className="relative">
             <RocketLogo 
               size="sm" 
@@ -258,14 +238,14 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute left-0 top-full mt-2 w-48 bg-card border border-border rounded-xl shadow-xl overflow-hidden z-50"
+                  className="absolute left-0 top-full mt-2 w-48 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50"
                 >
                   <button
                     onClick={() => {
                       setShowHomeDialog(false);
                       onGoHome?.();
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors text-sm"
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white"
                   >
                     <Home className="w-4 h-4" />
                     Go to Home
@@ -275,7 +255,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                       setShowHomeDialog(false);
                       onNewProject();
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary transition-colors text-sm border-t border-border"
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm border-t border-white/10 text-white"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     New Project
@@ -285,187 +265,106 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             </AnimatePresence>
           </div>
 
-          <div className="h-6 w-px bg-border hidden md:block" />
+          <div className="h-5 w-px bg-white/10" />
 
-          {/* Project Name - hidden on mobile */}
-          {project && (
-            <div className="hidden md:flex items-center gap-3">
-              <span className="font-semibold text-foreground truncate max-w-[200px]">
-                {project.name.length > 30 ? project.name.slice(0, 30) + '...' : project.name}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Center - Version Selector - hidden on mobile */}
-        <div className="flex-1 hidden md:flex items-center justify-center">
-          {versions.length > 0 ? (
-            <div className="relative">
-              <button
-                onClick={() => setShowVersionSelector(!showVersionSelector)}
-                className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-lg text-sm font-medium transition-colors"
-              >
-                <GitBranch className="w-4 h-4 text-primary" />
-                <span>
-                  {currentVersionNumber 
-                    ? `Version ${currentVersionNumber}`
-                    : `Latest (v${versions[0]?.versionNumber || 1})`
-                  }
-                </span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${showVersionSelector ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {/* Version Dropdown */}
-              <AnimatePresence>
-                {showVersionSelector && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-2xl overflow-hidden z-50"
-                  >
-                    <div className="p-3 border-b border-border bg-secondary/30">
-                      <p className="text-sm font-semibold text-foreground">
-                        Version History ({versions.length} versions)
-                      </p>
-                    </div>
-                    
-                    <div className="max-h-[350px] overflow-y-auto p-2 space-y-1">
-                      {versions.map((version) => {
-                        const isSelected = currentVersionNumber === version.versionNumber;
-                        const isLatest = version.versionNumber === versions[0]?.versionNumber;
-                        
-                        return (
-                          <button
-                            key={version.id}
-                            onClick={() => {
-                              handleSelectVersion(version);
-                              setShowVersionSelector(false);
-                            }}
-                            className={`w-full flex items-start gap-3 p-3 rounded-lg transition-all text-left ${
-                              isSelected 
-                                ? 'bg-primary/15 border-2 border-primary/30' 
-                                : 'hover:bg-secondary border-2 border-transparent'
-                            }`}
-                          >
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-sm ${
-                              isSelected 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'bg-secondary text-foreground'
-                            }`}>
-                              v{version.versionNumber}
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium text-sm truncate">
-                                  {version.name || `Version ${version.versionNumber}`}
-                                </p>
-                                {isLatest && (
-                                  <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-green-500/20 text-green-500 rounded">
-                                    LATEST
-                                  </span>
-                                )}
-                                {isSelected && (
-                                  <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-primary/20 text-primary rounded">
-                                    VIEWING
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {Object.keys(version.files).length} files • {version.chatMessages.length} messages
-                              </p>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary/50 rounded-lg text-sm text-muted-foreground">
-              <GitBranch className="w-4 h-4" />
-              <span>No versions yet</span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1 md:gap-2">
-          {/* View Toggle - Only Code and Preview - Desktop */}
-          <div className="hidden md:flex items-center bg-secondary rounded-lg p-1">
-            <button
-              onClick={() => setCurrentView('preview')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                currentView === 'preview'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Globe className="w-4 h-4" />
-              <span>Preview</span>
-            </button>
-            <button
-              onClick={() => setCurrentView('code')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                currentView === 'code'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Code2 className="w-4 h-4" />
-              <span>Code</span>
-            </button>
+          {/* User Avatar */}
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-[10px] font-medium text-white">
+            {user?.email?.[0].toUpperCase()}
           </div>
 
-          <div className="h-6 w-px bg-border" />
+          <ChevronDown className="w-3 h-3 text-white/40" />
 
-          {/* Actions */}
+          {/* Project Name */}
+          {project && (
+            <span className="text-sm text-white/70 truncate max-w-[250px]">
+              {project.name}
+            </span>
+          )}
+        </div>
+
+        {/* Center - View Toggle (Bolt Style) */}
+        <div className="hidden md:flex items-center bg-[#2a2a2a] rounded-full p-1 border border-white/10">
+          <button
+            onClick={() => setCurrentView('preview')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              currentView === 'preview'
+                ? 'bg-white/10 text-white'
+                : 'text-white/50 hover:text-white/70'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => setCurrentView('code')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              currentView === 'code'
+                ? 'bg-white/10 text-white'
+                : 'text-white/50 hover:text-white/70'
+            }`}
+          >
+            <Code2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Right Section */}
+        <div className="flex items-center gap-2">
+          {/* GitHub Icon */}
           <button
             onClick={handleDownload}
             disabled={!project || Object.keys(project.files).length === 0}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors disabled:opacity-50"
+            className="p-2 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50 text-white/70 hover:text-white"
             title="Download ZIP"
           >
-            <Download className="w-4 h-4" />
+            <Github className="w-4 h-4" />
           </button>
 
+          {/* Share Button */}
+          <button className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] border border-white/10 rounded-lg text-sm text-white hover:bg-white/5 transition-colors">
+            Share
+          </button>
+
+          {/* Publish Button */}
+          <button className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-colors">
+            Publish
+          </button>
 
           {/* User Menu */}
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-secondary transition-colors"
+              className="w-7 h-7 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-[10px] font-bold text-black"
             >
-              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
-                {user?.email?.[0].toUpperCase()}
-              </div>
-              <ChevronDown className="w-4 h-4" />
+              {user?.email?.[0].toUpperCase()}
             </button>
 
             <AnimatePresence>
               {showUserMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-xl shadow-xl overflow-hidden z-50"
-                >
-                  <div className="p-3 border-b border-border">
-                    <p className="text-sm font-medium truncate">{user?.email}</p>
-                    <p className="text-xs text-muted-foreground">Free Plan</p>
-                  </div>
-                  <div className="p-2">
-                    <button
-                      onClick={() => signOut()}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Sign Out
-                    </button>
-                  </div>
-                </motion.div>
+                <>
+                  <div 
+                    className="fixed inset-0 z-[9998]" 
+                    onClick={() => setShowUserMenu(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 top-full mt-2 w-56 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-xl overflow-hidden z-[9999]"
+                  >
+                    <div className="p-3 border-b border-white/10">
+                      <p className="text-sm font-medium truncate text-white">{user?.email}</p>
+                      <p className="text-xs text-white/50">Free Plan</p>
+                    </div>
+                    <div className="p-2">
+                      <button
+                        onClick={() => signOut()}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 text-red-400 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
               )}
             </AnimatePresence>
           </div>
@@ -473,11 +372,11 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       </header>
 
       {/* Mobile Panel Selector */}
-      <div className="md:hidden flex items-center justify-center gap-1 p-2 border-b border-border bg-card">
+      <div className="md:hidden flex items-center justify-center gap-1 p-2 border-b border-white/10 bg-[#1e1e1e]">
         <button
           onClick={() => setMobilePanel('chat')}
           className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-            mobilePanel === 'chat' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+            mobilePanel === 'chat' ? 'bg-primary text-primary-foreground' : 'bg-[#2a2a2a] text-white/70'
           }`}
         >
           Chat
@@ -485,7 +384,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         <button
           onClick={() => setMobilePanel('preview')}
           className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-            mobilePanel === 'preview' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+            mobilePanel === 'preview' ? 'bg-primary text-primary-foreground' : 'bg-[#2a2a2a] text-white/70'
           }`}
         >
           Preview
@@ -493,7 +392,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         <button
           onClick={() => setMobilePanel('code')}
           className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-            mobilePanel === 'code' ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+            mobilePanel === 'code' ? 'bg-primary text-primary-foreground' : 'bg-[#2a2a2a] text-white/70'
           }`}
         >
           Code
@@ -502,10 +401,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
       {/* Main Content - Desktop */}
       <div className="flex-1 hidden md:flex overflow-hidden">
-        {/* Chat Panel */}
+        {/* Chat Panel - Bolt Style */}
         <motion.div
           animate={{ width: chatWidth }}
-          className="border-r border-border flex-shrink-0 overflow-hidden bg-background"
+          className="border-r border-white/10 flex-shrink-0 overflow-hidden bg-[#1a1a1a]"
         >
           <ChatView
             messages={displayMessages}
@@ -523,11 +422,11 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         {/* Resize Handle */}
         <div
           onMouseDown={handleResizeStart}
-          className="w-1 bg-border hover:bg-primary/50 cursor-col-resize transition-colors flex-shrink-0"
+          className="w-1 bg-white/10 hover:bg-primary/50 cursor-col-resize transition-colors flex-shrink-0"
         />
 
         {/* Right Panel - Code or Preview */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden bg-[#1e1e1e]">
           <AnimatePresence mode="wait">
             {currentView === 'code' && (
               <motion.div key="code" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
