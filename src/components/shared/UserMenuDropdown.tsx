@@ -96,7 +96,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-            <div className="w-52 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+            <div className="w-52 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl">
               <div className="p-3 border-b border-white/10">
                 <p className={`text-sm font-medium text-white truncate ${isRTL ? 'text-right' : ''}`}>{user.email}</p>
                 <p className={`text-xs text-white/60 ${isRTL ? 'text-right' : ''}`}>{t('common.freePlan')}</p>
