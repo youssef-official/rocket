@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Code2, Eye, LogOut, 
   ChevronDown, Download, Home, ArrowLeft,
-  GitBranch, Github, Share2, ExternalLink
+  Github, ExternalLink
 } from 'lucide-react';
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
@@ -11,6 +11,7 @@ import { PreviewView } from './PreviewView';
 import { RocketLogo } from '@/components/shared/RocketLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVersions, type ProjectVersion } from '@/hooks/useVersions';
+import { generateVersionName } from '@/services/versionNameService';
 import type { ProjectData, ChatMessage, ViewType, ProjectFile } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import JSZip from 'jszip';
@@ -83,7 +84,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [chatWidth, setChatWidth] = useState(450);
   
-  const [showVersionSelector, setShowVersionSelector] = useState(false);
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number | null>(null);
   const [showHomeDialog, setShowHomeDialog] = useState(false);
   const isResizing = useRef(false);
@@ -111,20 +111,25 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       const hasMessages = messages.length > 0;
       
       if (hasFiles && hasMessages) {
-        const versionNames = [
-          'Initial Build',
-          'Feature Update',
-          'UI Enhancement',
-          'Bug Fixes',
-          'Performance Boost',
-          'Style Refresh',
-          'Component Upgrade',
-          'Layout Optimization',
-        ];
-        const versionName = versionNames[versions.length % versionNames.length];
-        createVersion(project.files, messages, `${versionName} v${versions.length + 1}`);
-        setCurrentVersionNumber(null);
-        versionCreatedForSession.current = true;
+        // Generate AI version name
+        const createVersionWithAIName = async () => {
+          const versionNumber = versions.length + 1;
+          const projectDescription = project.description || project.name || '';
+          const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
+          
+          // Generate descriptive name based on what was built
+          const versionName = await generateVersionName(
+            projectDescription,
+            lastUserMessage,
+            versionNumber
+          );
+          
+          await createVersion(project.files, messages, versionName);
+          setCurrentVersionNumber(null);
+          versionCreatedForSession.current = true;
+        };
+        
+        createVersionWithAIName();
       }
     }
     
@@ -133,7 +138,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
     
     prevIsGenerating.current = isGenerating;
-  }, [isGenerating, messages, project?.files, createVersion, versions.length, isChatMode]);
+  }, [isGenerating, messages, project?.files, project?.description, project?.name, createVersion, versions.length, isChatMode]);
 
   // Handle version selection
   const handleSelectVersion = (version: ProjectVersion) => {
@@ -443,10 +448,11 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             generationPhase={generationPhase}
             statusMessage={statusMessage}
             onStop={onStop}
-            currentVersion={currentVersion}
+            currentVersion={currentVersionNumber}
             onImageUpload={handleImageUpload}
             suggestions={suggestions}
-            onOpenVersions={() => setShowVersionSelector(true)}
+            versions={versions}
+            onSelectVersion={handleSelectVersion}
           />
         </motion.div>
 
@@ -476,7 +482,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       {/* Main Content - Mobile */}
       <div className="flex-1 md:hidden overflow-hidden">
         {mobilePanel === 'chat' && (
-          <ChatView messages={displayMessages} onSendMessage={onSendMessage} isGenerating={isGenerating} fileActivities={fileActivities} generationPhase={generationPhase} statusMessage={statusMessage} onStop={onStop} currentVersion={currentVersion} onImageUpload={handleImageUpload} suggestions={suggestions} onOpenVersions={() => setShowVersionSelector(true)} />
+          <ChatView messages={displayMessages} onSendMessage={onSendMessage} isGenerating={isGenerating} fileActivities={fileActivities} generationPhase={generationPhase} statusMessage={statusMessage} onStop={onStop} currentVersion={currentVersionNumber} onImageUpload={handleImageUpload} suggestions={suggestions} versions={versions} onSelectVersion={handleSelectVersion} />
         )}
         {mobilePanel === 'preview' && (
           <PreviewView files={project?.files || {}} projectType={project?.projectType || 'vite'} isLoading={isGenerating} />
