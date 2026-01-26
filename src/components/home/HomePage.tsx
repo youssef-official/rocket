@@ -163,7 +163,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
           {/* Logo */}
           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <RocketLogo size="md" />
+            <RocketLogo size="md" className={isRTL ? 'ml-1' : ''} />
             <span className="bg-white/20 text-white px-2 py-0.5 rounded-full hidden sm:inline text-xs">BETA</span>
           </div>
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Import logos
 import reactLogo from '@/assets/logos/react.svg';
@@ -79,12 +80,13 @@ export const FrameworkBar: React.FC<FrameworkBarProps> = ({
 }) => {
   const frameworks = Object.keys(frameworkLogos);
   const integrations = Object.keys(integrationLogos);
+  const { t, isRTL } = useLanguage();
 
   return (
-    <div className="flex flex-wrap justify-center gap-4 bg-white/10 backdrop-blur-md rounded-2xl p-4">
-      <div className="flex items-center gap-4 pr-4 border-r border-white/20">
-        <span className="text-white/60 text-sm">Frameworks</span>
-        <div className="flex items-center gap-2">
+    <div className={`flex flex-wrap justify-center gap-4 bg-white/10 backdrop-blur-md rounded-2xl p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+      <div className={`flex items-center gap-4 ${isRTL ? 'pl-4 border-l flex-row-reverse' : 'pr-4 border-r'} border-white/20`}>
+        <span className="text-white/60 text-sm">{t('footer.features')}</span>
+        <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
           {frameworks.map((fw) => (
             <button
               key={fw}
@@ -102,9 +104,9 @@ export const FrameworkBar: React.FC<FrameworkBarProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <span className="text-white/60 text-sm">Integrations</span>
-        <div className="flex items-center gap-2 overflow-x-auto">
+      <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <span className="text-white/60 text-sm">{t('footer.integrations')}</span>
+        <div className={`flex items-center gap-2 overflow-x-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
           {integrations.map((int) => (
             <div
               key={int}

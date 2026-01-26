@@ -92,7 +92,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
       
       {showMenu && (
         <div 
-          className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-full mt-2 z-[9999]`}
+          className={`absolute ${isRTL ? 'right-auto left-0' : 'right-0'} top-full mt-2 z-[9999]`}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
