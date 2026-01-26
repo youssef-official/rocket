@@ -850,6 +850,7 @@ const DashboardRoute = () => {
 
 import { Pricing } from "@/pages/Pricing";
 import { Docs } from "@/pages/Docs";
+import Settings from "@/pages/Settings";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -865,6 +866,7 @@ const App = () => (
             <Route path="/projects/:id" element={<ProjectEditorRoute />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/docs" element={<Docs />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/" element={<AppContent />} />
           </Routes>
         </BrowserRouter>
