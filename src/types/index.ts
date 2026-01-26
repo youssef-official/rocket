@@ -52,3 +52,9 @@ export interface Project {
   buildingPlan?: string[];
   generationStatus?: string;
 }
+
+export interface FileActivity {
+  name: string;
+  status: 'editing' | 'done';
+  action: 'edited' | 'created';
+}

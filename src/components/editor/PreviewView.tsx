@@ -6,12 +6,76 @@ import {
   SandpackPreview as SandpackPreviewPane,
 } from '@codesandbox/sandpack-react';
 import type { ProjectFile } from '@/types';
+import rocketLogo from '@/assets/rocket-logo.png';
 
 interface PreviewViewProps {
   files: Record<string, ProjectFile>;
   projectType: 'vite' | 'html';
   isLoading?: boolean;
 }
+
+// Loading placeholder with animation
+const LoadingPlaceholder: React.FC = () => {
+  return (
+    <div className="flex flex-col items-center justify-center h-full bg-white">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="text-center"
+      >
+        <motion.div
+          animate={{ 
+            opacity: [0.3, 0.6, 0.3],
+            scale: [1, 1.05, 1]
+          }}
+          transition={{ 
+            duration: 2, 
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="mb-6"
+        >
+          <img 
+            src={rocketLogo} 
+            alt="Rocket" 
+            className="w-20 h-20 mx-auto object-contain opacity-40"
+          />
+        </motion.div>
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="text-gray-400 text-lg font-medium"
+        >
+          Your preview will appear here
+        </motion.p>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="mt-4 flex items-center justify-center gap-2"
+        >
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 1, repeat: Infinity, delay: 0 }}
+            className="w-2 h-2 rounded-full bg-primary/40"
+          />
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+            className="w-2 h-2 rounded-full bg-primary/40"
+          />
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
+            className="w-2 h-2 rounded-full bg-primary/40"
+          />
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+};
 
 export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, isLoading }) => {
   const [viewMode, setViewMode] = React.useState<'desktop' | 'mobile'>('desktop');
@@ -103,22 +167,79 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
 
   const refresh = () => setKey(k => k + 1);
 
-  // Empty State - Clean White
+  // Show loading placeholder during generation
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full bg-white">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setViewMode('desktop')}
+              className={`p-2 rounded-lg transition-colors ${
+                viewMode === 'desktop' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              <Monitor className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('mobile')}
+              className={`p-2 rounded-lg transition-colors ${
+                viewMode === 'mobile' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              <Smartphone className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              title="Refresh preview"
+              disabled
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <button
+              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              title="Fullscreen"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        <div className="flex-1">
+          <LoadingPlaceholder />
+        </div>
+      </div>
+    );
+  }
+
+  // Empty State - Clean White with animation
   if (Object.keys(files).length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-white">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center p-8"
-        >
-          <div className="w-24 h-24 mx-auto mb-6 opacity-20">
-            <svg viewBox="0 0 100 100" className="w-full h-full text-gray-300">
-              <text x="50" y="70" textAnchor="middle" fontSize="80" fill="currentColor" fontWeight="bold">R</text>
-            </svg>
+      <div className="flex flex-col h-full bg-white">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setViewMode('desktop')}
+              className={`p-2 rounded-lg transition-colors ${
+                viewMode === 'desktop' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              <Monitor className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('mobile')}
+              className={`p-2 rounded-lg transition-colors ${
+                viewMode === 'mobile' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              <Smartphone className="w-4 h-4" />
+            </button>
           </div>
-          <p className="text-gray-400 text-lg">Your preview will appear here</p>
-        </motion.div>
+        </div>
+        <div className="flex-1">
+          <LoadingPlaceholder />
+        </div>
       </div>
     );
   }
@@ -228,12 +349,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
 
       {/* Preview Frame */}
       <div className="flex-1 overflow-hidden bg-gray-100">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 bg-white">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-gray-500">Generating...</p>
-          </div>
-        ) : viewMode === 'mobile' ? (
+        {viewMode === 'mobile' ? (
           <div className="flex items-center justify-center h-full p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
