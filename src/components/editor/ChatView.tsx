@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Snowflake, Lightbulb, ListOrdered, Zap, MessageCircle, Bookmark, Pencil, FileOutput, Package } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import type { ChatMessage } from '@/types';
 import type { ProjectVersion } from '@/hooks/useVersions';
@@ -658,7 +658,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         )}
 
                         {/* Show current generation UI only for last assistant message */}
-                        {isLastAssistant && !isChatMode && (
+                        {isLastAssistant && (
                           <>
                             {renderThinkingIndicator()}
                             {generationPhase?.plan && generationPhase.plan.length > 0 && renderPlanSection()}
@@ -760,116 +760,100 @@ export const ChatView: React.FC<ChatViewProps> = ({
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Bolt Style Input - Exact Match */}
-          <div className="bg-[#2d2d2d] rounded-xl overflow-hidden border border-white/5">
-            {/* Text Input */}
-            <div className="px-4 py-3">
+          {/* Bolt Style Input - Matching Reference */}
+          <div className="bg-[#343434] rounded-xl overflow-hidden">
+            {/* Single Row Layout */}
+            <div className="flex items-center gap-3 px-3 py-2.5">
+              {/* Plus Button with Circle */}
+              <div className="relative flex-shrink-0">
+                <button 
+                  type="button"
+                  onClick={() => setShowPlusMenu(!showPlusMenu)}
+                  className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center transition-all text-white/50 hover:text-white hover:border-white/40"
+                >
+                  <Plus className={`w-3.5 h-3.5 transition-transform ${showPlusMenu ? 'rotate-45' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {showPlusMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute bottom-full left-0 mb-2 bg-[#2a2a2a] rounded-lg overflow-hidden shadow-xl z-50 border border-white/10"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors w-full text-left text-white/60 hover:text-white"
+                      >
+                        <ImageIcon className="w-4 h-4 text-white/40" />
+                        <span className="text-sm">Upload Image</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Text Input */}
               <textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={isChatMode ? "Chat with Rocket (no code changes)..." : "How can Rocket help you today? (or /command)"}
+                placeholder={isChatMode ? "Plan with Rocket (no code changes)..." : "How can Rocket help you today? (or /command)"}
                 disabled={isGenerating}
-                className="w-full bg-transparent resize-none max-h-32 text-[15px] outline-none text-white placeholder-white/30 leading-relaxed"
+                className="flex-1 bg-transparent resize-none max-h-32 text-[15px] outline-none text-white placeholder-white/40 leading-relaxed"
                 rows={1}
                 style={{ minHeight: '24px' }}
               />
-            </div>
-            
-            {/* Bottom Bar - Exact Bolt Style */}
-            <div className="flex items-center justify-between px-3 py-2 bg-[#252525]">
-              <div className="flex items-center gap-2">
-                {/* Plus Button with Circle */}
-                <div className="relative">
-                  <button 
-                    type="button"
-                    onClick={() => setShowPlusMenu(!showPlusMenu)}
-                    className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center transition-all text-white/60 hover:text-white hover:border-white/40 hover:bg-white/5"
-                  >
-                    <Plus className={`w-3.5 h-3.5 transition-transform ${showPlusMenu ? 'rotate-45' : ''}`} />
-                  </button>
 
-                  <AnimatePresence>
-                    {showPlusMenu && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute bottom-full left-0 mb-2 bg-[#2a2a2a] rounded-lg overflow-hidden shadow-xl z-50 border border-white/10"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors w-full text-left text-white/70 hover:text-white"
-                        >
-                          <ImageIcon className="w-4 h-4 text-white/40" />
-                          <span className="text-sm">Upload Image</span>
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+              {/* Plan Mode Toggle */}
+              <button 
+                type="button"
+                onClick={() => setIsChatMode(!isChatMode)}
+                className={`flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs transition-all flex-shrink-0 ${
+                  isChatMode 
+                    ? 'bg-white/10 text-white' 
+                    : 'text-white/50 hover:text-white'
+                }`}
+              >
+                <Lightbulb className="w-3.5 h-3.5" />
+                <span>Plan</span>
+              </button>
 
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                    className="hidden"
-                  />
-                </div>
-
-                {/* Model Selector - Bolt Style */}
+              {/* Send/Stop button */}
+              {isGenerating ? (
                 <button 
                   type="button"
-                  className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                  onClick={onStop}
+                  className="w-8 h-8 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all flex-shrink-0"
                 >
-                  <Snowflake className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Gemini 3</span>
-                  <ChevronDown className="w-3 h-3" />
+                  <StopCircle className="w-4 h-4" />
                 </button>
-
-                {/* Plan/Chat Mode Toggle */}
-                <button 
-                  type="button"
-                  onClick={() => setIsChatMode(!isChatMode)}
-                  className={`flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs transition-all ${
-                    isChatMode 
-                      ? 'bg-green-500/20 text-green-400' 
-                      : 'text-white/60 hover:text-white hover:bg-white/10'
+              ) : (
+                <motion.button
+                  type="submit"
+                  disabled={!input.trim()}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
+                    input.trim()
+                      ? 'bg-primary text-white hover:opacity-90'
+                      : 'bg-white/10 text-white/30'
                   }`}
                 >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span>Chat</span>
-                </button>
-              </div>
-
-              <div className="flex items-center gap-1">
-                {/* Send/Stop button */}
-                {isGenerating ? (
-                  <button 
-                    type="button"
-                    onClick={onStop}
-                    className="w-8 h-8 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all"
-                  >
-                    <StopCircle className="w-4 h-4" />
-                  </button>
-                ) : (
-                  <motion.button
-                    type="submit"
-                    disabled={!input.trim()}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                      input.trim()
-                        ? 'bg-primary text-white hover:opacity-90'
-                        : 'bg-white/10 text-white/30'
-                    }`}
-                  >
-                    <Send className="w-4 h-4" />
-                  </motion.button>
-                )}
-              </div>
+                  <Send className="w-4 h-4" />
+                </motion.button>
+              )}
             </div>
           </div>
         </form>
