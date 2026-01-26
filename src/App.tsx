@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useParams, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { HomePage } from "@/components/home/HomePage";
 import { EditorLayout } from "@/components/editor/EditorLayout";
@@ -854,24 +855,26 @@ import Settings from "@/pages/Settings";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <ThemeInitializer />
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<AuthPage onSuccess={() => window.location.href = '/'} />} />
-            <Route path="/dashboard" element={<DashboardRoute />} />
-            <Route path="/projects/:id" element={<ProjectEditorRoute />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/docs" element={<Docs />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/" element={<AppContent />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <ThemeInitializer />
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<AuthPage onSuccess={() => window.location.href = '/'} />} />
+              <Route path="/dashboard" element={<DashboardRoute />} />
+              <Route path="/projects/:id" element={<ProjectEditorRoute />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/docs" element={<Docs />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/" element={<AppContent />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </LanguageProvider>
   </QueryClientProvider>
 );
 

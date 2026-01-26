@@ -3,6 +3,8 @@ import { User as UserIcon, Settings, LogOut, Moon, Sun, Monitor } from 'lucide-r
 import { useNavigate } from 'react-router-dom';
 import type { User } from '@/types';
 import { useThemePreference } from '@/hooks/useThemePreference';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LanguageSelector } from './LanguageSelector';
 
 interface UserMenuDropdownProps {
   user: User;
@@ -12,6 +14,7 @@ interface UserMenuDropdownProps {
 export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOut }) => {
   const [showMenu, setShowMenu] = useState(false);
   const { theme, cycleTheme } = useThemePreference();
+  const { t, isRTL } = useLanguage();
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -23,9 +26,9 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
   };
 
   const getThemeLabel = () => {
-    if (theme === 'dark') return 'Dark';
-    if (theme === 'light') return 'Light';
-    return 'System';
+    if (theme === 'dark') return t('common.dark');
+    if (theme === 'light') return t('common.light');
+    return t('common.system');
   };
 
   const handleMouseEnter = () => {
@@ -89,16 +92,19 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
       
       {showMenu && (
         <div 
-          className="absolute right-0 top-full mt-2 z-[9999]"
+          className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-full mt-2 z-[9999]`}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
             <div className="w-52 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
               <div className="p-3 border-b border-white/10">
-                <p className="text-sm font-medium text-white truncate">{user.email}</p>
-                <p className="text-xs text-white/60">Free Plan</p>
+                <p className={`text-sm font-medium text-white truncate ${isRTL ? 'text-right' : ''}`}>{user.email}</p>
+                <p className={`text-xs text-white/60 ${isRTL ? 'text-right' : ''}`}>{t('common.freePlan')}</p>
               </div>
               <div className="p-2">
+                {/* Language Selector */}
+                <LanguageSelector />
+                
                 {/* Theme Toggle */}
                 <button
                   type="button"
@@ -107,29 +113,29 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                     e.stopPropagation();
                     cycleTheme();
                   }}
-                  className="w-full flex items-center justify-between px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors text-sm cursor-pointer"
+                  className={`w-full flex items-center justify-between px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     {getThemeIcon()}
-                    Theme
+                    {t('common.theme')}
                   </div>
                   <span className="text-xs text-white/60">{getThemeLabel()}</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleSettings}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors text-sm cursor-pointer"
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
                 >
                   <Settings className="w-4 h-4" />
-                  Account Settings
+                  {t('common.settings')}
                 </button>
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-2 px-3 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors text-sm cursor-pointer"
+                className={`w-full flex items-center gap-2 px-3 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
               >
                 <LogOut className="w-4 h-4" />
-                Sign Out
+                {t('common.signOut')}
               </button>
             </div>
           </div>
