@@ -718,9 +718,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
         )}
       </div>
 
-      {/* Input Area - Bolt Style */}
+      {/* Input Area - Matching test.tsx exactly */}
       <div 
-        className={`shrink-0 p-4 pt-2 bg-[#1a1a1a] transition-colors ${isDragging ? 'bg-primary/5' : ''}`}
+        className={`shrink-0 p-4 pt-2 pb-[env(safe-area-inset-bottom,24px)] md:pb-4 border-t bg-card border-border transition-colors ${isDragging ? 'bg-primary/5' : ''}`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -758,101 +758,101 @@ export const ChatView: React.FC<ChatViewProps> = ({
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Bolt Style Input - Matching Reference */}
-          <div className="bg-secondary rounded-xl overflow-hidden">
-            {/* Single Row Layout */}
-            <div className="flex items-center gap-3 px-3 py-2.5">
-              {/* Plus Button with Circle */}
-              <div className="relative flex-shrink-0">
-                <button 
-                  type="button"
-                  onClick={() => setShowPlusMenu(!showPlusMenu)}
-                  className="w-7 h-7 rounded-full border border-border flex items-center justify-center transition-all text-muted-foreground hover:text-foreground hover:border-foreground/40"
-                >
-                  <Plus className={`w-3.5 h-3.5 transition-transform ${showPlusMenu ? 'rotate-45' : ''}`} />
-                </button>
-
-                <AnimatePresence>
-                  {showPlusMenu && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute bottom-full left-0 mb-2 bg-card rounded-lg overflow-hidden shadow-xl z-50 border border-border"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left text-muted-foreground hover:text-foreground"
-                      >
-                        <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm">Upload Image</span>
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                />
-              </div>
-
-              {/* Text Input */}
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={isChatMode ? "Plan with Rocket (no code changes)..." : "How can Rocket help you today? (or /command)"}
-                disabled={isGenerating}
-                className="flex-1 bg-transparent resize-none max-h-32 text-[15px] outline-none text-foreground placeholder-muted-foreground leading-relaxed"
-                rows={1}
-                style={{ minHeight: '24px' }}
-              />
-
-              {/* Plan Mode Toggle */}
+          {/* Input Container - test.tsx style */}
+          <div className="max-w-3xl mx-auto rounded-2xl border shadow-sm flex items-end p-2 transition-colors bg-secondary border-border">
+            {/* Plus Button */}
+            <div className="relative">
               <button 
                 type="button"
-                onClick={() => setIsChatMode(!isChatMode)}
-                className={`flex items-center gap-1.5 h-7 px-2.5 rounded-full text-xs transition-all flex-shrink-0 ${
-                  isChatMode 
-                    ? 'bg-accent text-foreground' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
+                onClick={() => setShowPlusMenu(!showPlusMenu)}
+                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mb-0.5 ml-1 transition-colors bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
               >
-                <Lightbulb className="w-3.5 h-3.5" />
-                <span>Plan</span>
+                <Plus className={`w-5 h-5 transition-transform ${showPlusMenu ? 'rotate-45' : ''}`} />
               </button>
 
-              {/* Send/Stop button */}
-              {isGenerating ? (
-                <button 
-                  type="button"
-                  onClick={onStop}
-                  className="w-8 h-8 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all flex-shrink-0"
-                >
-                  <StopCircle className="w-4 h-4" />
-                </button>
-              ) : (
-                <motion.button
-                  type="submit"
-                  disabled={!input.trim()}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
-                    input.trim()
-                      ? 'bg-primary text-primary-foreground hover:opacity-90'
-                      : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  <Send className="w-4 h-4" />
-                </motion.button>
-              )}
+              <AnimatePresence>
+                {showPlusMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute bottom-full left-0 mb-2 bg-card rounded-lg overflow-hidden shadow-xl z-50 border border-border"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        fileInputRef.current?.click();
+                        setShowPlusMenu(false);
+                      }}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left text-muted-foreground hover:text-foreground"
+                    >
+                      <ImageIcon className="w-4 h-4" />
+                      <span className="text-sm">Upload Image</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
             </div>
+
+            {/* Text Input */}
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isChatMode ? "Plan with Rocket (no code changes)..." : "How can Rocket help you today?"}
+              disabled={isGenerating}
+              className="flex-1 bg-transparent resize-none max-h-32 py-2.5 px-3 text-[15px] outline-none text-foreground placeholder-muted-foreground"
+              rows={1}
+              style={{ minHeight: '40px' }}
+            />
+
+            {/* Plan Mode Toggle */}
+            <button 
+              type="button"
+              onClick={() => setIsChatMode(!isChatMode)}
+              className={`flex items-center gap-1.5 h-9 px-3 rounded-full text-xs transition-all shrink-0 mb-0.5 ${
+                isChatMode 
+                  ? 'bg-primary/10 text-primary' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Lightbulb className="w-4 h-4" />
+              <span className="font-medium">Plan</span>
+            </button>
+
+            {/* Send/Stop button */}
+            {isGenerating ? (
+              <button 
+                type="button"
+                onClick={onStop}
+                className="w-9 h-9 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center shrink-0 mb-0.5 mr-1 transition-all"
+              >
+                <StopCircle className="w-5 h-5" />
+              </button>
+            ) : (
+              <motion.button
+                type="submit"
+                disabled={!input.trim()}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 mb-0.5 mr-1 transition-all ${
+                  input.trim()
+                    ? 'bg-primary text-primary-foreground shadow-md hover:opacity-90'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                <Send className="w-4 h-4" />
+              </motion.button>
+            )}
           </div>
         </form>
       </div>
