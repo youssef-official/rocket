@@ -340,9 +340,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   ) : (
                     <span className="w-5 h-5 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">{i + 1}.</span>
                   )}
-                  <span className={`text-sm ${isCompleted ? 'text-green-400' : isCurrent ? 'text-white' : 'text-white/60'}`}>
-                    {step}
-                  </span>
+                  <div className="flex flex-col">
+                    {isCurrent && (
+                      <span className="text-xs text-primary font-medium mb-1">Now I'm making:</span>
+                    )}
+                    <span className={`text-sm ${isCompleted ? 'text-green-400' : isCurrent ? 'text-white' : 'text-white/60'}`}>
+                      {step}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Files for this step */}
@@ -350,10 +355,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
-                    className="ml-8 space-y-1"
+                    className="ml-8 space-y-1 border-l-2 border-white/10 pl-3"
                   >
                     {filesForStep.map((file, fileIdx) => (
-                      <div key={fileIdx} className="flex items-center gap-2 text-xs text-white/50">
+                      <div key={fileIdx} className="flex items-center gap-2 text-xs text-white/60">
                         {getFileIcon(file)}
                         <span className="font-mono">{file}</span>
                         {isCompleted && <CheckCircle2 className="w-3 h-3 text-green-400" />}
@@ -362,17 +367,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   </motion.div>
                 )}
 
-                {/* Current step status */}
-                {isCurrent && generationPhase.status && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="ml-8 flex items-center gap-2 text-xs text-primary"
-                  >
-                    <Zap className="w-3 h-3" />
-                    <span>{generationPhase.status}</span>
-                  </motion.div>
-                )}
               </motion.div>
             );
           })}
@@ -381,8 +375,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Status Message (during generation)
+  // Render Status Message (during generation) - Only show when NOT in plan view
   const renderStatusMessage = () => {
+    // Don't show separate status if we're showing plan (status is shown inline in plan)
+    if (generationPhase?.plan && generationPhase.plan.length > 0) return null;
     if (!generationPhase?.status && !statusMessage) return null;
     if (!isGenerating && !generationPhase?.status) return null;
 

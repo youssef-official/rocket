@@ -180,13 +180,12 @@ const ProjectEditorRoute = () => {
           
           // Start with first plan step
           const currentStepText = planLines[0] || 'Setting up project';
-          setStatusMessage(`Now I'm making: ${currentStepText}`);
           setGenerationPhase(prev => ({ 
             ...prev!,
             phase: 'generating', 
             message: 'Generating code files...',
             currentStep: 0,
-            status: `Now I'm making: ${currentStepText}`
+            status: currentStepText
           }));
           
           let fullResponse = '';
@@ -284,7 +283,7 @@ const ProjectEditorRoute = () => {
                   
                   return { 
                     ...prev, 
-                    status: `Now I'm making: ${currentStepText}`,
+                    status: currentStepText,
                     currentStep: currentStepIdx,
                     completedSteps,
                     stepFiles: updatedStepFiles
@@ -427,13 +426,12 @@ const ProjectEditorRoute = () => {
       // Step 2: Generate code (goes to code view, not shown in chat)
       if (isCancelled.current) return;
       const currentStepText = planLines[0] || 'Making changes';
-      setStatusMessage(`Now I'm making: ${currentStepText}`);
       setGenerationPhase(prev => ({ 
         ...prev!,
         phase: 'generating', 
         message: 'Generating code files...',
         currentStep: 0,
-        status: `Now I'm making: ${currentStepText}`
+        status: currentStepText
       }));
       
       const conversationHistory = [
