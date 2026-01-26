@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, Smartphone, Monitor, Loader2 } from 'lucide-react';
+import { RefreshCw, Smartphone, Monitor, Loader2, Maximize2, RotateCcw } from 'lucide-react';
 import { 
   SandpackProvider, 
   SandpackPreview as SandpackPreviewPane,
@@ -71,14 +71,14 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
       if (!hasAppFile) {
         spFiles['/App.tsx'] = `export default function App() {
   return (
-    <div className="min-h-screen bg-[#1e1e1e] flex items-center justify-center p-8">
+    <div className="min-h-screen bg-white flex items-center justify-center p-8">
       <div className="text-center">
         <div className="w-24 h-24 mx-auto mb-6 opacity-20">
-          <svg viewBox="0 0 100 100" className="w-full h-full text-white/40">
-            <text x="50" y="70" textAnchor="middle" fontSize="80" fill="currentColor" fontWeight="bold">b</text>
+          <svg viewBox="0 0 100 100" className="w-full h-full text-gray-400">
+            <text x="50" y="70" textAnchor="middle" fontSize="80" fill="currentColor" fontWeight="bold">R</text>
           </svg>
         </div>
-        <p className="text-white/40 text-lg">Your preview will appear here</p>
+        <p className="text-gray-400 text-lg">Your preview will appear here</p>
       </div>
     </div>
   );
@@ -103,21 +103,21 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
 
   const refresh = () => setKey(k => k + 1);
 
-  // Empty State - Bolt Style
+  // Empty State - Clean White
   if (Object.keys(files).length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#1e1e1e]">
+      <div className="flex-1 flex items-center justify-center bg-white">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center p-8"
         >
           <div className="w-24 h-24 mx-auto mb-6 opacity-20">
-            <svg viewBox="0 0 100 100" className="w-full h-full text-white/40">
-              <text x="50" y="70" textAnchor="middle" fontSize="80" fill="currentColor" fontWeight="bold">b</text>
+            <svg viewBox="0 0 100 100" className="w-full h-full text-gray-300">
+              <text x="50" y="70" textAnchor="middle" fontSize="80" fill="currentColor" fontWeight="bold">R</text>
             </svg>
           </div>
-          <p className="text-white/40 text-lg">Your preview will appear here</p>
+          <p className="text-gray-400 text-lg">Your preview will appear here</p>
         </motion.div>
       </div>
     );
@@ -126,13 +126,13 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
   if (projectType === 'html') {
     const indexFile = files['index.html'];
     return (
-      <div className="flex flex-col h-full bg-[#1e1e1e]">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-[#1a1a1a]">
+      <div className="flex flex-col h-full bg-white">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setViewMode('desktop')}
               className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'desktop' ? 'bg-white/10 text-white' : 'text-white/40 hover:bg-white/5'
+                viewMode === 'desktop' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
               }`}
             >
               <Monitor className="w-4 h-4" />
@@ -140,25 +140,33 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
             <button
               onClick={() => setViewMode('mobile')}
               className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'mobile' ? 'bg-white/10 text-white' : 'text-white/40 hover:bg-white/5'
+                viewMode === 'mobile' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
               }`}
             >
               <Smartphone className="w-4 h-4" />
             </button>
           </div>
-          <button
-            onClick={refresh}
-            className="p-2 rounded-lg text-white/40 hover:bg-white/5 hover:text-white transition-colors"
-            title="Refresh preview"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={refresh}
+              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              title="Refresh preview"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <button
+              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              title="Fullscreen"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-        <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
+        <div className="flex-1 flex items-center justify-center p-4 overflow-hidden bg-gray-100">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className={`bg-white rounded-lg overflow-hidden shadow-2xl border border-white/10 ${
+            className={`bg-white rounded-lg overflow-hidden shadow-lg ${
               viewMode === 'mobile' ? 'w-[375px] h-[667px]' : 'w-full h-full'
             }`}
           >
@@ -177,16 +185,16 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
     );
   }
 
-  // For Vite/React projects
+  // For Vite/React projects - White background preview
   return (
-    <div className="flex flex-col h-full bg-[#1e1e1e]">
-      {/* Toolbar - Bolt Style */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-[#1a1a1a]">
+    <div className="flex flex-col h-full bg-white">
+      {/* Toolbar - Light theme */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setViewMode('desktop')}
             className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'desktop' ? 'bg-white/10 text-white' : 'text-white/40 hover:bg-white/5'
+              viewMode === 'desktop' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
             }`}
           >
             <Monitor className="w-4 h-4" />
@@ -194,35 +202,43 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
           <button
             onClick={() => setViewMode('mobile')}
             className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'mobile' ? 'bg-white/10 text-white' : 'text-white/40 hover:bg-white/5'
+              viewMode === 'mobile' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
             }`}
           >
             <Smartphone className="w-4 h-4" />
           </button>
         </div>
 
-        <button
-          onClick={refresh}
-          className="p-2 rounded-lg text-white/40 hover:bg-white/5 hover:text-white transition-colors"
-          title="Refresh preview"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={refresh}
+            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+            title="Refresh preview"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+          <button
+            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+            title="Fullscreen"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Preview Frame */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden bg-gray-100">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 bg-[#1e1e1e]">
+          <div className="flex flex-col items-center justify-center h-full gap-4 bg-white">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-white/40">Generating...</p>
+            <p className="text-gray-500">Generating...</p>
           </div>
         ) : viewMode === 'mobile' ? (
-          <div className="flex items-center justify-center h-full p-4 bg-[#1e1e1e]">
+          <div className="flex items-center justify-center h-full p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-[375px] h-[667px] bg-white rounded-lg overflow-hidden shadow-2xl border border-white/10"
+              className="w-[375px] h-[667px] bg-white rounded-lg overflow-hidden shadow-lg"
             >
               <SandpackProvider
                 key={`${key}-${filesHash}`}

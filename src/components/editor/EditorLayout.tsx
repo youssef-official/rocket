@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Code2, Eye, LogOut, 
-  ChevronDown, Download, Home, ArrowLeft,
-  Github, ExternalLink
+  Code2, Eye, LogOut, Settings, HelpCircle, CreditCard, Palette,
+  ChevronDown, Download, Home, ArrowLeft, Clock, Pencil, Eye as EyeIcon,
+  Github, ExternalLink, FolderOpen
 } from 'lucide-react';
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
@@ -15,6 +15,7 @@ import { generateVersionName } from '@/services/versionNameService';
 import type { ProjectData, ChatMessage, ViewType, ProjectFile } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import JSZip from 'jszip';
+import { useNavigate } from 'react-router-dom';
 
 interface FileActivity {
   name: string;
@@ -79,9 +80,11 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   suggestions = [],
 }) => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [currentView, setCurrentView] = useState<'code' | 'preview'>('preview');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showProjectMenu, setShowProjectMenu] = useState(false);
   const [chatWidth, setChatWidth] = useState(450);
   
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number | null>(null);
@@ -225,6 +228,11 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  // Handle logo click - navigate to home
+  const handleLogoClick = () => {
+    navigate('/');
+  };
+
   const displayMessages = messages;
 
   // Apply dark mode always
@@ -235,77 +243,104 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   // State for mobile view
   const [mobilePanel, setMobilePanel] = useState<'chat' | 'preview' | 'code'>('preview');
 
+  // Get display name for project
+  const displayProjectName = project?.generatedName || project?.name || 'Untitled Project';
+
   return (
     <div className="h-screen flex flex-col bg-[#1a1a1a]">
       {/* Header - Bolt Style */}
-      <header className="h-12 border-b border-white/10 flex items-center justify-between px-3 bg-[#1e1e1e]">
+      <header className="h-14 border-b border-white/10 flex items-center justify-between px-4 bg-[#1e1e1e]">
         {/* Left Section */}
-        <div className="flex items-center gap-3">
-          {/* Logo */}
-          <div className="relative">
+        <div className="flex items-center gap-4">
+          {/* Logo - Clickable to go home */}
+          <button onClick={handleLogoClick} className="hover:opacity-80 transition-opacity">
             <RocketLogo 
-              size="sm" 
+              size="md" 
               showText={false}
-              onClick={() => setShowHomeDialog(!showHomeDialog)}
-              className="cursor-pointer"
             />
-            
-            {/* Home dialog dropdown */}
+          </button>
+
+          <div className="h-6 w-px bg-white/10" />
+
+          {/* Project Name - Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowProjectMenu(!showProjectMenu)}
+              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
+            >
+              <span className="text-base font-bold text-white truncate max-w-[280px]">
+                {displayProjectName}
+              </span>
+              <ChevronDown className="w-4 h-4 text-white/50" />
+            </button>
+
             <AnimatePresence>
-              {showHomeDialog && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute left-0 top-full mt-2 w-48 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50"
-                >
-                  <button
-                    onClick={() => {
-                      setShowHomeDialog(false);
-                      onGoHome?.();
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white"
+              {showProjectMenu && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-[9998]" 
+                    onClick={() => setShowProjectMenu(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute left-0 top-full mt-2 w-56 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-xl overflow-hidden z-[9999]"
                   >
-                    <Home className="w-4 h-4" />
-                    Go to Home
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowHomeDialog(false);
-                      onNewProject();
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm border-t border-white/10 text-white"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    New Project
-                  </button>
-                </motion.div>
+                    <button
+                      onClick={() => {
+                        setShowProjectMenu(false);
+                        onViewDashboard?.();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white"
+                    >
+                      <FolderOpen className="w-4 h-4 text-white/50" />
+                      <span>Open recent project</span>
+                      <ChevronDown className="w-3 h-3 text-white/40 ml-auto -rotate-90" />
+                    </button>
+                    <button
+                      onClick={() => setShowProjectMenu(false)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white border-t border-white/5"
+                    >
+                      <Clock className="w-4 h-4 text-white/50" />
+                      <span>Version history</span>
+                      <ChevronDown className="w-3 h-3 text-white/40 ml-auto -rotate-90" />
+                    </button>
+                    <button
+                      onClick={() => setShowProjectMenu(false)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white border-t border-white/5"
+                    >
+                      <Pencil className="w-4 h-4 text-white/50" />
+                      <span>Rename...</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleDownload();
+                        setShowProjectMenu(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white border-t border-white/5"
+                    >
+                      <Download className="w-4 h-4 text-white/50" />
+                      <span>Export</span>
+                      <ChevronDown className="w-3 h-3 text-white/40 ml-auto -rotate-90" />
+                    </button>
+                    <div className="flex items-center gap-3 px-4 py-3 border-t border-white/5">
+                      <EyeIcon className="w-4 h-4 text-white/50" />
+                      <span className="text-sm text-white">Visibility</span>
+                      <span className="text-xs text-white/40 ml-auto">Private</span>
+                    </div>
+                  </motion.div>
+                </>
               )}
             </AnimatePresence>
           </div>
-
-          <div className="h-5 w-px bg-white/10" />
-
-          {/* User Avatar */}
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-[10px] font-medium text-white">
-            {user?.email?.[0].toUpperCase()}
-          </div>
-
-          <ChevronDown className="w-3 h-3 text-white/40" />
-
-          {/* Project Name - Bolt Style */}
-          {project && (
-            <span className="text-sm font-medium text-white truncate max-w-[280px]">
-              {project.name}
-            </span>
-          )}
         </div>
 
         {/* Center - View Toggle (Bolt Style) */}
         <div className="hidden md:flex items-center bg-[#2a2a2a] rounded-full p-1 border border-white/10">
           <button
             onClick={() => setCurrentView('preview')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
               currentView === 'preview'
                 ? 'bg-white/10 text-white'
                 : 'text-white/50 hover:text-white/70'
@@ -315,7 +350,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </button>
           <button
             onClick={() => setCurrentView('code')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
               currentView === 'code'
                 ? 'bg-white/10 text-white'
                 : 'text-white/50 hover:text-white/70'
@@ -347,12 +382,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </button>
 
           {/* Share Button */}
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-[#2a2a2a] border border-white/10 rounded-lg text-sm text-white hover:bg-white/5 transition-colors">
+          <button className="flex items-center gap-2 px-4 py-1.5 bg-[#2a2a2a] border border-white/10 rounded-lg text-sm text-white hover:bg-white/5 transition-colors">
             Share
           </button>
 
           {/* Publish Button */}
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-colors">
+          <button className="flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-colors">
             Publish
           </button>
 
@@ -360,7 +395,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-7 h-7 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-[10px] font-bold text-black"
+              className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-sm font-bold text-black"
             >
               {user?.email?.[0].toUpperCase()}
             </button>
@@ -378,19 +413,42 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     className="absolute right-0 top-full mt-2 w-56 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-xl overflow-hidden z-[9999]"
                   >
-                    <div className="p-3 border-b border-white/10">
-                      <p className="text-sm font-medium truncate text-white">{user?.email}</p>
-                      <p className="text-xs text-white/50">Free Plan</p>
-                    </div>
-                    <div className="p-2">
-                      <button
-                        onClick={() => signOut()}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 text-red-400 transition-colors"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Sign Out
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setShowUserMenu(false)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white"
+                    >
+                      <Settings className="w-4 h-4 text-white/50" />
+                      <span>Settings</span>
+                    </button>
+                    <button
+                      onClick={() => setShowUserMenu(false)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white border-t border-white/5"
+                    >
+                      <HelpCircle className="w-4 h-4 text-white/50" />
+                      <span>Help</span>
+                    </button>
+                    <button
+                      onClick={() => setShowUserMenu(false)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white border-t border-white/5"
+                    >
+                      <CreditCard className="w-4 h-4 text-white/50" />
+                      <span>Subscription</span>
+                    </button>
+                    <button
+                      onClick={() => setShowUserMenu(false)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-sm text-white border-t border-white/5"
+                    >
+                      <Palette className="w-4 h-4 text-white/50" />
+                      <span>Theme</span>
+                      <ChevronDown className="w-3 h-3 text-white/40 ml-auto -rotate-90" />
+                    </button>
+                    <button
+                      onClick={() => signOut()}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 text-red-400 transition-colors border-t border-white/5"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign out</span>
+                    </button>
                   </motion.div>
                 </>
               )}
@@ -432,7 +490,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         {/* Chat Panel - Bolt Style */}
         <motion.div
           animate={{ width: chatWidth }}
-          className="border-r border-white/10 flex-shrink-0 overflow-hidden bg-[#1a1a1a]"
+          className="border-r border-white/10 flex-shrink-0 overflow-hidden bg-[#252525]"
         >
           <ChatView
             messages={displayMessages}
@@ -457,7 +515,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         />
 
         {/* Right Panel - Code or Preview */}
-        <div className="flex-1 overflow-hidden bg-[#1e1e1e]">
+        <div className="flex-1 overflow-hidden bg-white">
           <AnimatePresence mode="wait">
             {currentView === 'code' && (
               <motion.div key="code" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
@@ -476,7 +534,20 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       {/* Main Content - Mobile */}
       <div className="flex-1 md:hidden overflow-hidden">
         {mobilePanel === 'chat' && (
-          <ChatView messages={displayMessages} onSendMessage={onSendMessage} isGenerating={isGenerating} fileActivities={fileActivities} generationPhase={generationPhase} statusMessage={statusMessage} onStop={onStop} currentVersion={currentVersionNumber} onImageUpload={handleImageUpload} suggestions={suggestions} versions={versions} onSelectVersion={handleSelectVersion} />
+          <ChatView
+            messages={displayMessages}
+            onSendMessage={onSendMessage}
+            isGenerating={isGenerating}
+            fileActivities={fileActivities}
+            generationPhase={generationPhase}
+            statusMessage={statusMessage}
+            onStop={onStop}
+            currentVersion={currentVersionNumber}
+            onImageUpload={handleImageUpload}
+            suggestions={suggestions}
+            versions={versions}
+            onSelectVersion={handleSelectVersion}
+          />
         )}
         {mobilePanel === 'preview' && (
           <PreviewView files={project?.files || {}} projectType={project?.projectType || 'vite'} isLoading={isGenerating} />
