@@ -133,11 +133,58 @@ export function useVersions(projectId: string | null) {
     return versions.find(v => v.versionNumber === versionNumber);
   }, [versions]);
 
+  const rollbackToVersion = useCallback(async (
+    versionNumber: number
+  ): Promise<{ files: Record<string, ProjectFile>; messages: ChatMessage[] } | null> => {
+    if (!user || !projectId) return null;
+
+    try {
+      const targetVersion = versions.find(v => v.versionNumber === versionNumber);
+      if (!targetVersion) return null;
+
+      // Delete all versions after the target version
+      const versionsToDelete = versions
+        .filter(v => v.versionNumber > versionNumber)
+        .map(v => v.id);
+
+      if (versionsToDelete.length > 0) {
+        const { error } = await supabase
+          .from('project_versions')
+          .delete()
+          .in('id', versionsToDelete);
+
+        if (error) throw error;
+      }
+
+      // Update local state
+      setVersions(prev => prev.filter(v => v.versionNumber <= versionNumber));
+
+      toast({
+        title: 'Rollback successful',
+        description: `Restored to version ${versionNumber}`,
+      });
+
+      return {
+        files: targetVersion.files,
+        messages: targetVersion.chatMessages,
+      };
+    } catch (error) {
+      console.error('Error rolling back:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to rollback to version',
+        variant: 'destructive',
+      });
+      return null;
+    }
+  }, [user, projectId, versions]);
+
   return {
     versions,
     loading,
     fetchVersions,
     createVersion,
     getVersion,
+    rollbackToVersion,
   };
 }
