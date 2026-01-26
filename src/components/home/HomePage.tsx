@@ -274,9 +274,9 @@ export const HomePage: React.FC<HomePageProps> = ({
               {/* Drag overlay */}
               {isDragging && (
                 <div className="absolute inset-0 z-10 bg-pink-50 border-2 border-dashed border-pink-400 rounded-2xl flex items-center justify-center pointer-events-none">
-                  <div className={`text-pink-500 font-medium flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <ImageIcon className="w-5 h-5" />
-                    <span>Drop image here</span>
+                  <div className="flex flex-col items-center gap-2 text-pink-500">
+                    <ImageIcon className="w-8 h-8" />
+                    <span className="font-medium">{t('home.dropImage')}</span>
                   </div>
                 </div>
               )}

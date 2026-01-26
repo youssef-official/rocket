@@ -5,6 +5,7 @@ import {
   FolderOpen
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Project {
   id: string;
@@ -34,6 +35,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
   onNewProject,
 }) => {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const { t, isRTL } = useLanguage();
 
   if (loading) {
     return (
@@ -48,17 +50,19 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
   }
 
   return (
-    <section className="relative z-10 px-6 pb-20">
+    <section className="relative z-10 px-6 pb-20" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
+        <div className={`flex items-center justify-between mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center">
               <FolderOpen className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">My Projects</h2>
-              <p className="text-white/60 text-sm">{projects.length} project{projects.length !== 1 ? 's' : ''}</p>
+            <div className={isRTL ? 'text-right' : 'text-left'}>
+              <h2 className="text-2xl font-bold text-white">{t('projects.title')}</h2>
+              <p className="text-white/60 text-sm">
+                {t('projects.count', { count: projects.length, s: projects.length !== 1 ? 's' : '' })}
+              </p>
             </div>
           </div>
           
@@ -66,10 +70,10 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={onNewProject}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white/10 backdrop-blur-md rounded-xl text-white hover:bg-white/20 transition-colors"
+            className={`flex items-center gap-2 px-4 py-2.5 bg-white/10 backdrop-blur-md rounded-xl text-white hover:bg-white/20 transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
           >
             <Plus className="w-4 h-4" />
-            New Project
+            {t('projects.newProject')}
           </motion.button>
         </div>
 
@@ -100,24 +104,24 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                   {/* Hover Overlay */}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <span className="px-4 py-2 bg-white rounded-lg text-gray-900 font-medium text-sm">
-                      Open Project
+                      {t('projects.openProject')}
                     </span>
                   </div>
                 </div>
 
                 {/* Info */}
                 <div className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 min-w-0">
+                  <div className={`flex items-start justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex-1 min-w-0 ${isRTL ? 'text-right' : 'text-left'}`}>
                       <h3 className="font-semibold text-white truncate">
                         {project.name}
                       </h3>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className={`flex items-center gap-2 mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
                         <span className="inline-block text-xs px-2 py-0.5 bg-white/10 text-white/70 rounded-full">
                           {project.projectType === 'vite' ? 'React' : 'HTML'}
                         </span>
                         {project.isPublished && (
-                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">
+                          <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full ${isRTL ? 'flex-row-reverse' : ''}`}>
                             <ExternalLink className="w-3 h-3" />
                             Live
                           </span>
@@ -138,17 +142,17 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                       </button>
 
                       {menuOpenId === project.id && (
-                        <div className="absolute right-0 bottom-full mb-1 w-36 bg-gray-900 border border-white/10 rounded-xl shadow-xl overflow-hidden z-[100]">
+                        <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} bottom-full mb-1 w-36 bg-gray-900 border border-white/10 rounded-xl shadow-xl overflow-hidden z-[100]`}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               onForkProject(project.id);
                               setMenuOpenId(null);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-white/10 transition-colors text-sm text-white/80"
+                            className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-white/10 transition-colors text-sm text-white/80 ${isRTL ? 'flex-row-reverse text-right' : ''}`}
                           >
                             <Copy className="w-4 h-4" />
-                            Fork
+                            {t('projects.fork')}
                           </button>
                           <button
                             onClick={(e) => {
@@ -156,17 +160,17 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                               onDeleteProject(project.id);
                               setMenuOpenId(null);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-red-500/20 text-red-400 transition-colors text-sm"
+                            className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-red-500/20 text-red-400 transition-colors text-sm ${isRTL ? 'flex-row-reverse text-right' : ''}`}
                           >
                             <Trash2 className="w-4 h-4" />
-                            Delete
+                            {t('projects.delete')}
                           </button>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-white/50">
+                  <div className={`flex items-center gap-2 text-xs text-white/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <Clock className="w-3 h-3" />
                     <span>
                       {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
@@ -185,7 +189,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
               href="/dashboard"
               className="text-white/60 hover:text-white transition-colors text-sm underline underline-offset-4"
             >
-              View all {projects.length} projects →
+              {t('projects.viewAll', { count: projects.length })} →
             </a>
           </div>
         )}

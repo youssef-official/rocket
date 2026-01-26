@@ -39,6 +39,7 @@ export const translations: Translations = {
   'home.privateDesc': { en: 'Only you can access', ar: 'أنت فقط من يمكنه الوصول', zh: '仅您可以访问', ja: 'あなただけがアクセス可能', fr: 'Vous seul pouvez y accéder' },
   'home.newBadge': { en: 'New', ar: 'جديد', zh: '新', ja: '新着', fr: 'Nouveau' },
   'home.mobileAnnouncement': { en: 'Rocket Mobile for iPhone is here', ar: 'تطبيق Rocket للآيفون متاح الآن', zh: 'Rocket iPhone 版已上线', ja: 'Rocket iPhone版が登場', fr: 'Rocket Mobile pour iPhone est disponible' },
+  'home.dropImage': { en: 'Drop image here', ar: 'أفلت الصورة هنا', zh: '将图片拖放到此处', ja: 'ここに画像をドロップ', fr: 'Déposez l\'image ici' },
   
   // Typing words
   'typing.dashboard': { en: 'dashboard.', ar: 'لوحة تحكم.', zh: '仪表板.', ja: 'ダッシュボード.', fr: 'tableau de bord.' },
@@ -65,6 +66,12 @@ export const translations: Translations = {
   'projects.title': { en: 'Your Projects', ar: 'مشاريعك', zh: '您的项目', ja: 'あなたのプロジェクト', fr: 'Vos projets' },
   'projects.empty': { en: 'No projects yet', ar: 'لا توجد مشاريع بعد', zh: '暂无项目', ja: 'プロジェクトはまだありません', fr: 'Aucun projet' },
   'projects.createFirst': { en: 'Create your first project', ar: 'أنشئ أول مشروع لك', zh: '创建您的第一个项目', ja: '最初のプロジェクトを作成', fr: 'Créez votre premier projet' },
+  'projects.newProject': { en: 'New Project', ar: 'مشروع جديد', zh: '新项目', ja: '新規プロジェクト', fr: 'Nouveau projet' },
+  'projects.openProject': { en: 'Open Project', ar: 'فتح المشروع', zh: '打开项目', ja: 'プロジェクトを開く', fr: 'Ouvrir le projet' },
+  'projects.fork': { en: 'Fork', ar: 'نسخ', zh: '分叉', ja: 'フォーク', fr: 'Forker' },
+  'projects.delete': { en: 'Delete', ar: 'حذف', zh: '删除', ja: '削除', fr: 'Supprimer' },
+  'projects.viewAll': { en: 'View all {count} projects', ar: 'عرض جميع المشاريع ({count})', zh: '查看所有 {count} 个项目', ja: '全 {count} 件のプロジェクトを表示', fr: 'Voir les {count} projets' },
+  'projects.count': { en: '{count} project{s}', ar: '{count} مشروع', zh: '{count} 个项目', ja: '{count} 件のプロジェクト', fr: '{count} projet{s}' },
   
   // Footer
   'footer.product': { en: 'Product', ar: 'المنتج', zh: '产品', ja: '製品', fr: 'Produit' },
@@ -86,7 +93,7 @@ export const translations: Translations = {
   'docs.search': { en: 'Search docs...', ar: 'البحث في المستندات...', zh: '搜索文档...', ja: 'ドキュメントを検索...', fr: 'Rechercher dans les docs...' },
   'docs.gettingStarted': { en: 'Getting Started', ar: 'البدء', zh: '入门', ja: 'はじめに', fr: 'Démarrage' },
   'docs.aiGeneration': { en: 'AI Code Generation', ar: 'توليد الكود بالذكاء الاصطناعي', zh: 'AI代码生成', ja: 'AIコード生成', fr: 'Génération de code IA' },
-  'docs.publicPrivate': { en: 'Public & Private Projects', ar: 'المشاريع العامة والخاصة', zh: '公开和私有项目', ja: '公開・プライベートプロジェクト', fr: 'Projets publics et privés' },
+  'docs.publicPrivate': { en: 'Public & Private Projects', ar: 'المشاريع العامة والخاصة', zh: '公开和私و项目', ja: '公開・プライベートプロジェクト', fr: 'Projets publics et privés' },
   'docs.editing': { en: 'Editing Your Project', ar: 'تحرير مشروعك', zh: '编辑您的项目', ja: 'プロジェクトの編集', fr: 'Modifier votre projet' },
   'docs.images': { en: 'Working with Images', ar: 'العمل مع الصور', zh: '处理图片', ja: '画像の操作', fr: 'Travailler avec des images' },
   'docs.versions': { en: 'Version History', ar: 'سجل الإصدارات', zh: '版本历史', ja: 'バージョン履歴', fr: 'Historique des versions' },
@@ -114,7 +121,7 @@ export const translations: Translations = {
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
   isRTL: boolean;
   languageNames: Record<Language, string>;
 }
@@ -147,8 +154,16 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setLanguageState(lang);
   };
 
-  const t = (key: string): string => {
-    return translations[key]?.[language] || key;
+  const t = (key: string, params?: Record<string, string | number>): string => {
+    let translation = translations[key]?.[language] || key;
+    
+    if (params) {
+      Object.entries(params).forEach(([paramKey, value]) => {
+        translation = translation.replace(`{${paramKey}}`, String(value));
+      });
+    }
+    
+    return translation;
   };
 
   return (
