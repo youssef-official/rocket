@@ -37,6 +37,9 @@ export function useProjects() {
         publishedSlug: p.published_slug || undefined,
         createdAt: p.created_at,
         updatedAt: p.updated_at,
+        generatedName: p.generated_name || undefined,
+        buildingPlan: p.building_plan || undefined,
+        generationStatus: p.generation_status || undefined,
       }));
 
       setProjects(mapped);
@@ -90,6 +93,9 @@ export function useProjects() {
         publishedSlug: data.published_slug || undefined,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
+        generatedName: data.generated_name || undefined,
+        buildingPlan: data.building_plan || undefined,
+        generationStatus: data.generation_status || undefined,
       };
 
       setProjects((prev) => [newProject, ...prev]);
@@ -107,7 +113,7 @@ export function useProjects() {
 
   const updateProject = async (
     id: string,
-    updates: Partial<Pick<Project, 'name' | 'description' | 'files' | 'isPublished'>>
+    updates: Partial<Pick<Project, 'name' | 'description' | 'files' | 'isPublished' | 'buildingPlan' | 'generationStatus'>>
   ): Promise<boolean> => {
     try {
       const dbUpdates: Record<string, unknown> = {};
@@ -115,6 +121,8 @@ export function useProjects() {
       if (updates.description !== undefined) dbUpdates.description = updates.description;
       if (updates.files !== undefined) dbUpdates.files = updates.files as unknown as Json;
       if (updates.isPublished !== undefined) dbUpdates.is_published = updates.isPublished;
+      if (updates.buildingPlan !== undefined) dbUpdates.building_plan = updates.buildingPlan;
+      if (updates.generationStatus !== undefined) dbUpdates.generation_status = updates.generationStatus;
 
       const { error } = await supabase
         .from('projects')
