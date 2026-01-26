@@ -124,30 +124,25 @@ const ProjectEditorRoute = () => {
         
         const prompt = localProject.description || '';
         
-        // Step 0: Generate project name first
-        setStatusMessage('Generating project name...');
-        setGenerationPhase({ phase: 'planning', message: 'Generating project name...' });
-        
-        let generatedName = '';
-        try {
-          generatedName = await generateProjectName(prompt);
-          // Update project name in database
-          await updateProject(localProject.id, { 
-            name: generatedName,
-          });
-          setLocalProject(prev => prev ? { ...prev, name: generatedName } : null);
-        } catch (e) {
-          console.error('Failed to generate project name:', e);
-          generatedName = prompt.slice(0, 2).toUpperCase();
-        }
-        
-        // Add user message
-        await addMessage('user', prompt);
+        // Add user message IMMEDIATELY (don't wait for name generation)
+        addMessage('user', prompt);
         setIsGenerating(true);
         setStreamingContent('');
         setFileActivities([]);
         setStatusMessage('Analyzing your request...');
         setGenerationPhase({ phase: 'planning', message: 'Analyzing your request...' });
+        
+        // Generate project name in background (don't block UI)
+        generateProjectName(prompt).then(async (generatedName) => {
+          try {
+            await updateProject(localProject.id, { name: generatedName });
+            setLocalProject(prev => prev ? { ...prev, name: generatedName } : null);
+          } catch (e) {
+            console.error('Failed to update project name:', e);
+          }
+        }).catch((e) => {
+          console.error('Failed to generate project name:', e);
+        });
 
         try {
           // Step 1: Thinking phase
