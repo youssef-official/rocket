@@ -19,6 +19,11 @@ export const translations: Translations = {
   'common.system': { en: 'System', ar: 'النظام', zh: '系统', ja: 'システム', fr: 'Système' },
   'common.language': { en: 'Language', ar: 'اللغة', zh: '语言', ja: '言語', fr: 'Langue' },
   'common.freePlan': { en: 'Free Plan', ar: 'الخطة المجانية', zh: '免费计划', ja: '無料プラン', fr: 'Plan gratuit' },
+  'common.save': { en: 'Save', ar: 'حفظ', zh: '保存', ja: '保存', fr: 'Sauvegarder' },
+  'common.cancel': { en: 'Cancel', ar: 'إلغاء', zh: '取消', ja: 'キャンセル', fr: 'Annuler' },
+  'common.loading': { en: 'Loading...', ar: 'جاري التحميل...', zh: '加载中...', ja: '読み込み中...', fr: 'Chargement...' },
+  'common.error': { en: 'Error', ar: 'خطأ', zh: '错误', ja: 'エラー', fr: 'Erreur' },
+  'common.success': { en: 'Success', ar: 'نجاح', zh: '成功', ja: '成功', fr: 'Succès' },
   
   // Navigation
   'nav.pricing': { en: 'Pricing', ar: 'الأسعار', zh: '定价', ja: '料金', fr: 'Tarifs' },
@@ -61,6 +66,12 @@ export const translations: Translations = {
   'editor.connectedGitHub': { en: 'Connected to GitHub', ar: 'متصل بـ GitHub', zh: '已连接到 GitHub', ja: 'GitHubに接続済み', fr: 'Connecté à GitHub' },
   'editor.deployVercel': { en: 'Deploy to Vercel', ar: 'نشر على Vercel', zh: '部署到 Vercel', ja: 'Vercelにデプロイ', fr: 'Déployer sur Vercel' },
   'editor.deployedVercel': { en: 'Deployed to Vercel', ar: 'تم النشر على Vercel', zh: '已部署到 Vercel', ja: 'Vercelにデプロイ済み', fr: 'Déployé sur Vercel' },
+  'editor.chat': { en: 'Chat', ar: 'المحادثة', zh: '聊天', ja: 'チャット', fr: 'Chat' },
+  'editor.code': { en: 'Code', ar: 'الكود', zh: '代码', ja: 'コード', fr: 'Code' },
+  'editor.preview': { en: 'Preview', ar: 'المعاينة', zh: '预览', ja: 'プレビュー', fr: 'Aperçu' },
+  'editor.database': { en: 'Database', ar: 'قاعدة البيانات', zh: '数据库', ja: 'データベース', fr: 'Base de données' },
+  'editor.repoName': { en: 'Repository name', ar: 'اسم المستودع', zh: '仓库名称', ja: 'リポジトリ名', fr: 'Nom du dépôt' },
+  'editor.syncToGitHub': { en: 'Sync to GitHub', ar: 'مزامنة مع GitHub', zh: '同步到 GitHub', ja: 'GitHubに同期', fr: 'Synchroniser avec GitHub' },
   
   // Projects
   'projects.title': { en: 'Your Projects', ar: 'مشاريعك', zh: '您的项目', ja: 'あなたのプロジェクト', fr: 'Vos projets' },
@@ -93,7 +104,7 @@ export const translations: Translations = {
   'docs.search': { en: 'Search docs...', ar: 'البحث في المستندات...', zh: '搜索文档...', ja: 'ドキュメントを検索...', fr: 'Rechercher dans les docs...' },
   'docs.gettingStarted': { en: 'Getting Started', ar: 'البدء', zh: '入门', ja: 'はじめに', fr: 'Démarrage' },
   'docs.aiGeneration': { en: 'AI Code Generation', ar: 'توليد الكود بالذكاء الاصطناعي', zh: 'AI代码生成', ja: 'AIコード生成', fr: 'Génération de code IA' },
-  'docs.publicPrivate': { en: 'Public & Private Projects', ar: 'المشاريع العامة والخاصة', zh: '公开和私و项目', ja: '公開・プライベートプロジェクト', fr: 'Projets publics et privés' },
+  'docs.publicPrivate': { en: 'Public & Private Projects', ar: 'المشاريع العامة والخاصة', zh: '公开和私人项目', ja: '公開・プライベートプロジェクト', fr: 'Projets publics et privés' },
   'docs.editing': { en: 'Editing Your Project', ar: 'تحرير مشروعك', zh: '编辑您的项目', ja: 'プロジェクトの編集', fr: 'Modifier votre projet' },
   'docs.images': { en: 'Working with Images', ar: 'العمل مع الصور', zh: '处理图片', ja: '画像の操作', fr: 'Travailler avec des images' },
   'docs.versions': { en: 'Version History', ar: 'سجل الإصدارات', zh: '版本历史', ja: 'バージョン履歴', fr: 'Historique des versions' },
@@ -116,6 +127,37 @@ export const translations: Translations = {
   'pricing.contactSales': { en: 'Contact Sales', ar: 'تواصل مع المبيعات', zh: '联系销售', ja: '営業に連絡', fr: 'Contacter les ventes' },
   'pricing.faq': { en: 'Frequently Asked Questions', ar: 'الأسئلة الشائعة', zh: '常见问题', ja: 'よくある質問', fr: 'Questions fréquentes' },
   'pricing.faqSubtitle': { en: 'Have questions? We\'re here to help.', ar: 'لديك أسئلة؟ نحن هنا للمساعدة.', zh: '有问题？我们随时为您提供帮助。', ja: 'ご質問がありますか？お手伝いします。', fr: 'Des questions ? Nous sommes là pour vous aider.' },
+
+  // Auth
+  'auth.loginRequired': { en: 'Login Required', ar: 'يجب تسجيل الدخول', zh: '需要登录', ja: 'ログインが必要です', fr: 'Connexion requise' },
+  'auth.loginToAccess': { en: 'Please login to access this project', ar: 'يرجى تسجيل الدخول للوصول لهذا المشروع', zh: '请登录以访问此项目', ja: 'このプロジェクトにアクセスするにはログインしてください', fr: 'Veuillez vous connecter pour accéder à ce projet' },
+  'auth.goToLogin': { en: 'Go to Login', ar: 'الذهاب لتسجيل الدخول', zh: '前往登录', ja: 'ログインへ', fr: 'Aller à la connexion' },
+  'auth.email': { en: 'Email', ar: 'البريد الإلكتروني', zh: '邮箱', ja: 'メール', fr: 'E-mail' },
+  'auth.password': { en: 'Password', ar: 'كلمة المرور', zh: '密码', ja: 'パスワード', fr: 'Mot de passe' },
+  'auth.signUp': { en: 'Sign Up', ar: 'إنشاء حساب', zh: '注册', ja: 'サインアップ', fr: 'S\'inscrire' },
+  'auth.login': { en: 'Login', ar: 'تسجيل الدخول', zh: '登录', ja: 'ログイン', fr: 'Connexion' },
+
+  // Settings
+  'settings.profile': { en: 'Profile', ar: 'الملف الشخصي', zh: '个人资料', ja: 'プロフィール', fr: 'Profil' },
+  'settings.displayName': { en: 'Display Name', ar: 'الاسم المعروض', zh: '显示名称', ja: '表示名', fr: 'Nom d\'affichage' },
+  'settings.avatarUrl': { en: 'Avatar URL', ar: 'رابط الصورة الشخصية', zh: '头像链接', ja: 'アバターURL', fr: 'URL de l\'avatar' },
+  'settings.updateProfile': { en: 'Update Profile', ar: 'تحديث الملف الشخصي', zh: '更新资料', ja: 'プロフィールを更新', fr: 'Mettre à jour le profil' },
+  'settings.profileUpdated': { en: 'Profile updated successfully', ar: 'تم تحديث الملف الشخصي بنجاح', zh: '资料更新成功', ja: 'プロフィールを更新しました', fr: 'Profil mis à jour avec succès' },
+
+  // Chat
+  'chat.thinking': { en: 'Thinking...', ar: 'جاري التفكير...', zh: '思考中...', ja: '考え中...', fr: 'Réflexion...' },
+  'chat.generating': { en: 'Generating...', ar: 'جاري التوليد...', zh: '生成中...', ja: '生成中...', fr: 'Génération...' },
+  'chat.complete': { en: 'Complete!', ar: 'اكتمل!', zh: '完成!', ja: '完了!', fr: 'Terminé!' },
+  'chat.readyMessage': { en: 'The website is now ready and built successfully!', ar: 'الموقع جاهز الآن وتم بناؤه بنجاح!', zh: '网站已准备就绪并成功构建!', ja: 'ウェブサイトが正常に構築されました!', fr: 'Le site web est maintenant prêt et construit avec succès!' },
+  'chat.version': { en: 'Version', ar: 'الإصدار', zh: '版本', ja: 'バージョン', fr: 'Version' },
+  'chat.active': { en: 'Active', ar: 'نشط', zh: '当前', ja: 'アクティブ', fr: 'Actif' },
+  'chat.rollback': { en: 'Rollback', ar: 'استعادة', zh: '回滚', ja: 'ロールバック', fr: 'Restaurer' },
+  'chat.actionsTaken': { en: 'actions taken', ar: 'إجراءات تمت', zh: '已执行操作', ja: 'アクション実行', fr: 'actions effectuées' },
+  'chat.planMode': { en: 'Plan', ar: 'خطة', zh: '规划', ja: 'プラン', fr: 'Plan' },
+  'chat.uploadImage': { en: 'Upload Image', ar: 'رفع صورة', zh: '上传图片', ja: '画像をアップロード', fr: 'Télécharger une image' },
+  'chat.visualEdit': { en: 'Visual Edit', ar: 'تحرير مرئي', zh: '可视化编辑', ja: 'ビジュアル編集', fr: 'Édition visuelle' },
+  'chat.placeholder': { en: 'How can Rocket help you today?', ar: 'كيف يمكن لـ Rocket مساعدتك اليوم؟', zh: 'Rocket今天能为您做什么?', ja: '今日はRocketがどのようにお手伝いできますか?', fr: 'Comment Rocket peut-il vous aider aujourd\'hui?' },
+  'chat.planPlaceholder': { en: 'Plan with Rocket (no code changes)...', ar: 'خطط مع Rocket (بدون تغييرات في الكود)...', zh: '与Rocket规划（不更改代码）...', ja: 'Rocketと計画（コード変更なし）...', fr: 'Planifier avec Rocket (pas de changement de code)...' },
 };
 
 interface LanguageContextType {
