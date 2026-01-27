@@ -42,6 +42,7 @@ export const GitHubConnectDialog: React.FC<GitHubConnectDialogProps> = ({
   const { t } = useLanguage();
   const [isConnecting, setIsConnecting] = useState(false);
   const [repoUrl, setRepoUrl] = useState<string | null>(null);
+  const [customRepoName, setCustomRepoName] = useState(projectName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-'));
   const [error, setError] = useState<string | null>(null);
 
   const handleConnect = async () => {
@@ -61,7 +62,7 @@ export const GitHubConnectDialog: React.FC<GitHubConnectDialogProps> = ({
       // Create repo
       const repo = await createGitHubRepo(
         integrations.github_token,
-        projectName,
+        customRepoName,
         `Built with Rocket 🚀 - ${projectName}`
       );
 
@@ -172,9 +173,12 @@ export const GitHubConnectDialog: React.FC<GitHubConnectDialogProps> = ({
 
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">{t('editor.repoName')}</Label>
-                  <p className="text-sm font-medium text-foreground">
-                    {projectName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')}
-                  </p>
+                  <Input
+                    value={customRepoName}
+                    onChange={(e) => setCustomRepoName(e.target.value)}
+                    placeholder={t('editor.repoName')}
+                    className="h-8 text-sm"
+                  />
                 </div>
               </div>
 

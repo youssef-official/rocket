@@ -709,7 +709,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         )}
 
                         {/* Show version card for each assistant message that has a version */}
-                        {version && !isGenerating && (
+                        {version && !isGenerating && isLastAssistant && (
                           renderCompletionBlock(version, isActiveVersion)
                         )}
 

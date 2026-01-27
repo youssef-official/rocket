@@ -35,8 +35,19 @@ export async function createGitHubRepo(
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error('GitHub API error:', error);
+      const errorData = await response.json();
+      // If repo already exists (422), try to get it
+      if (response.status === 422 && errorData.errors?.some((e: any) => e.message === 'name already exists on this account')) {
+        const userResponse = await fetch('https://api.github.com/user', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const userData = await userResponse.json();
+        const getRepoResponse = await fetch(`https://api.github.com/repos/${userData.login}/${repoName}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (getRepoResponse.ok) return await getRepoResponse.json();
+      }
+      console.error('GitHub API error:', errorData);
       return null;
     }
 
@@ -92,31 +103,39 @@ export async function uploadFilesToGitHub(
     const treeItems: { path: string; mode: string; type: string; sha: string }[] = [];
 
     for (const [path, file] of Object.entries(files)) {
-      const blobResponse = await fetch(
-        `https://api.github.com/repos/${repoFullName}/git/blobs`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            content: btoa(unescape(encodeURIComponent(file.content))),
-            encoding: 'base64',
-          }),
+      try {
+        const blobResponse = await fetch(
+          `https://api.github.com/repos/${repoFullName}/git/blobs`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/vnd.github.v3+json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              content: btoa(unescape(encodeURIComponent(file.content))),
+              encoding: 'base64',
+            }),
+          }
+        );
+
+        if (!blobResponse.ok) {
+          const errorData = await blobResponse.json();
+          console.error(`Error creating blob for ${path}:`, errorData);
+          continue;
         }
-      );
 
-      if (!blobResponse.ok) continue;
-
-      const blobData = await blobResponse.json();
-      treeItems.push({
-        path: path.startsWith('/') ? path.substring(1) : path,
-        mode: '100644',
-        type: 'blob',
-        sha: blobData.sha,
-      });
+        const blobData = await blobResponse.json();
+        treeItems.push({
+          path: path.startsWith('/') ? path.substring(1) : path,
+          mode: '100644',
+          type: 'blob',
+          sha: blobData.sha,
+        });
+      } catch (e) {
+        console.error(`Failed to process file ${path}:`, e);
+      }
     }
 
     // Add README.md

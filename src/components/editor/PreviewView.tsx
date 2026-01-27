@@ -150,6 +150,22 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
 }`;
       }
 
+      if (!spFiles['/main.tsx'] && !spFiles['/index.tsx'] && !spFiles['/src/main.tsx'] && !spFiles['/src/index.tsx']) {
+        spFiles['/main.tsx'] = `import React from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./index.css";
+
+const root = createRoot(document.getElementById("root"));
+root.render(<App />);`;
+      }
+
+      if (!spFiles['/index.css'] && !spFiles['/src/index.css']) {
+        spFiles['/index.css'] = `@tailwind base;
+@tailwind components;
+@tailwind utilities;`;
+      }
+
       const remappedFiles: Record<string, string> = {};
       Object.entries(spFiles).forEach(([path, content]) => {
         if (path.startsWith('/src/')) {

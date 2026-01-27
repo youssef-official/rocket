@@ -82,7 +82,38 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
       const sandpackPath = path.startsWith('/') ? path : `/${path}`;
       files[sandpackPath] = { code: file.content };
     });
-    return files;
+
+    // Remap /src/ files to root for react-ts template
+    const remappedFiles: Record<string, { code: string }> = {};
+    Object.entries(files).forEach(([path, file]) => {
+      if (path.startsWith('/src/')) {
+        remappedFiles[path.replace('/src/', '/')] = file;
+      } else {
+        remappedFiles[path] = file;
+      }
+    });
+
+    if (!remappedFiles['/main.tsx'] && !remappedFiles['/index.tsx']) {
+      remappedFiles['/main.tsx'] = {
+        code: `import React from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./index.css";
+
+const root = createRoot(document.getElementById("root"));
+root.render(<App />);`
+      };
+    }
+
+    if (!remappedFiles['/index.css']) {
+      remappedFiles['/index.css'] = {
+        code: `@tailwind base;
+@tailwind components;
+@tailwind utilities;`
+      };
+    }
+
+    return remappedFiles;
   }, [projectFiles]);
 
   // Inject click handler into preview
@@ -554,7 +585,7 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
           >
             {Object.keys(sandpackFiles).length > 0 ? (
               <SandpackProvider
-                template="vite-react"
+                template="react-ts"
                 files={sandpackFiles}
                 theme="dark"
                 options={{
