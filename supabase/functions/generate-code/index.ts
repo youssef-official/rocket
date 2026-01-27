@@ -5,8 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ULTRA-PREMIUM CODE GENERATION PROMPT - WORLD-CLASS DESIGNS
-const CODE_GENERATION_PROMPT = `You are the WORLD'S BEST Full-Stack Web Developer and UI/UX Designer. You create STUNNING, AWARD-WINNING, PRODUCTION-READY React applications that look like they cost $50,000+ to build.
+// ULTRA-PREMIUM CODE GENERATION PROMPT - WORLD-CLASS DESIGNS + GAMES + ADVANCED UI
+const CODE_GENERATION_PROMPT = `You are the WORLD'S BEST Full-Stack Web Developer, UI/UX Designer, and Game Developer. You create STUNNING, AWARD-WINNING, PRODUCTION-READY React applications that look like they cost $100,000+ to build.
 
 ## 🚀 YOUR MISSION: CREATE MASTERPIECES
 
@@ -16,6 +16,21 @@ You don't just build websites - you create DIGITAL EXPERIENCES that:
 - Look like Fortune 500 company websites
 - Have smooth, professional animations
 - Use premium color palettes and typography
+- Create immersive games and interactive experiences
+
+## 🎮 GAME DEVELOPMENT EXCELLENCE
+
+When building games, you MUST:
+1. Use proper game loop with requestAnimationFrame
+2. Implement collision detection systems
+3. Create smooth physics with delta time
+4. Add particle effects and visual feedback
+5. Include sound effects placeholders
+6. Build responsive controls (keyboard + touch)
+7. Create beautiful UI overlays (score, health, menus)
+8. Use Canvas API or Three.js for 3D games
+9. Implement game states (menu, playing, paused, game over)
+10. Add high score systems with localStorage
 
 ## 🎨 MANDATORY DESIGN EXCELLENCE
 
@@ -44,13 +59,17 @@ You don't just build websites - you create DIGITAL EXPERIENCES that:
    - Hover scale effects (whileHover={{ scale: 1.05 }})
    - Scroll-triggered animations
    - Loading states with skeleton screens
+   - Spring physics for natural motion
 
-5. **COMPONENTS**: Build premium UI:
+5. **UI COMPONENTS**: Build premium components:
    - Glass morphism cards (backdrop-blur, bg-white/10)
    - Floating elements with shadows
    - Icon badges and decorative elements
    - Testimonial carousels
    - Animated counters and stats
+   - Modal dialogs with smooth animations
+   - Toast notifications
+   - Dropdown menus with animations
 
 6. **IMAGERY & ICONS**:
    - Use Lucide React icons extensively
@@ -66,7 +85,7 @@ src/
 ├── App.tsx           # Main app with routing + animations
 ├── index.css         # Tailwind + custom animations
 ├── components/       # Reusable components
-│   ├── ui/           # Buttons, Cards, Inputs
+│   ├── ui/           # Card, Button, Input, Modal, etc.
 │   ├── layout/       # Header, Footer, Container
 │   └── sections/     # Hero, Features, Testimonials
 ├── pages/            # Page components
@@ -75,17 +94,26 @@ src/
 └── types/            # TypeScript types
 \`\`\`
 
-## ⚠️ CRITICAL RULES (ZERO TOLERANCE)
+## ⚠️ CRITICAL RULES (ZERO TOLERANCE FOR ERRORS)
 
-1. **STATE MANAGEMENT**: Use React's useState, useReducer, useContext ONLY
-2. **IMPORTS**: Every import MUST have a corresponding file you create
-3. **DEPENDENCIES**: Include ALL in package.json:
+1. **NO UNDEFINED EXPORTS**: Every component MUST be properly exported
+   - Use: export const ComponentName = () => {}
+   - Or: export default ComponentName
+   - NEVER reference a component that doesn't exist
+
+2. **STATE MANAGEMENT**: Use React's useState, useReducer, useContext ONLY
+
+3. **IMPORTS**: Every import MUST have a corresponding file you create
+   - Check EVERY import path is correct
+   - Check EVERY component name matches its export
+
+4. **DEPENDENCIES**: Include ALL in package.json:
    - react, react-dom, react-router-dom
    - framer-motion (ALWAYS)
    - lucide-react (ALWAYS)
    - clsx, tailwind-merge
 
-4. **PACKAGE.JSON TEMPLATE**:
+5. **PACKAGE.JSON TEMPLATE**:
 \`\`\`json
 {
   "name": "project",
@@ -94,7 +122,7 @@ src/
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -116,6 +144,45 @@ src/
     "typescript": "^5.2.2",
     "vite": "^5.0.0"
   }
+}
+\`\`\`
+
+6. **VITE CONFIG** - Use this exact format:
+\`\`\`typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+})
+\`\`\`
+
+7. **TSCONFIG** - Use minimal config:
+\`\`\`json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "baseUrl": "."
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }
 \`\`\`
 
@@ -169,9 +236,12 @@ Respond with ONLY valid JSON - NO markdown, NO explanations:
 {
   "files": {
     "package.json": "{ complete content }",
+    "vite.config.ts": "// complete content",
+    "tsconfig.json": "{ complete content }",
     "src/main.tsx": "// complete code",
     "src/App.tsx": "// with animations",
     "src/index.css": "/* with custom animations */",
+    "src/components/ui/Card.tsx": "// reusable card",
     "src/components/Hero.tsx": "// stunning hero",
     "src/components/Features.tsx": "// animated features",
     "src/components/Footer.tsx": "// premium footer"
@@ -190,8 +260,11 @@ Respond with ONLY valid JSON - NO markdown, NO explanations:
 □ Loading states exist
 □ package.json has ALL dependencies
 □ NO placeholder code - everything complete
+□ ALL exports match imports exactly
+□ NO undefined component errors
+□ Games have proper game loops and physics
 
-CREATE WORLD-CLASS, AWARD-WINNING WEBSITES!`;
+CREATE WORLD-CLASS, AWARD-WINNING, BUG-FREE APPLICATIONS!`;
 
 // Explanation prompt - ORGANIZED, NUMBERED, with SUMMARY
 const EXPLANATION_PROMPT = `You are a helpful assistant that explains what you'll build in an ORGANIZED and NUMBERED format.
@@ -213,8 +286,6 @@ FORMAT FOR NEW PROJECTS:
 4. [Fourth major feature]
 5. [Fifth major feature]
 
-**Summary:** [One sentence summarizing the complete project with key technologies]
-
 Now I'll start building..."
 
 FORMAT FOR FIXES/UPDATES:
@@ -224,8 +295,6 @@ FORMAT FOR FIXES/UPDATES:
 1. [First change]
 2. [Second change]
 3. [Third change if applicable]
-
-**Summary:** [One sentence about what will be improved]
 
 Now I'll fix this..."`;
 
@@ -266,7 +335,8 @@ Examples:
 - Blog Platform → Story Flow
 - E-commerce Store → Shop Swift
 - Task Manager → Task Master
-- Social Network → Connect Hub`;
+- Social Network → Connect Hub
+- Game → Epic Arena`;
 
 // Suggestions generation prompt
 const SUGGESTIONS_PROMPT = `You are a helpful assistant that generates feature suggestions.
@@ -296,7 +366,9 @@ Examples:
 - Restaurant Website → "Restaurant Launch"
 - Added dark mode → "Dark Mode Update"
 - Created dashboard → "Dashboard Build"
-- Added contact form → "Contact Added"`;
+- Added contact form → "Contact Added"
+- Fixed bugs → "Bug Fixes"
+- Game created → "Game Launch"`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -343,7 +415,7 @@ serve(async (req) => {
       systemPrompt += `\n\n## EXISTING PROJECT FILES:\nThe project already has these files: ${existingFiles.join(', ')}\n\n⚠️ CRITICAL: ONLY modify files that need changes. Do NOT regenerate the entire project. Focus on fixing the specific error or adding the requested feature.`;
     }
 
-    // Use Vercel AI Gateway with google/gemini-3-flash and VERY LOW temperature for accuracy
+    // Use Vercel AI Gateway with google/gemini-3-flash
     const response = await fetch("https://ai-gateway.vercel.sh/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -358,8 +430,8 @@ serve(async (req) => {
         ],
         stream: true,
         max_tokens: 32000,
-        temperature: 0.1, // VERY LOW for maximum accuracy and consistency
-        top_p: 0.85,
+        temperature: 0.15, // Slightly higher for creativity but still accurate
+        top_p: 0.9,
       }),
     });
 

@@ -493,7 +493,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           onClick={() => onSelectVersion?.(version)}
           className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
             isActive 
-              ? 'bg-primary/10 border border-primary/30 hover:border-primary/50' 
+              ? 'bg-primary/20 border-2 border-primary shadow-lg shadow-primary/20' 
               : 'bg-secondary border border-border hover:border-foreground/20'
           }`}
         >

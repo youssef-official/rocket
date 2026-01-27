@@ -134,6 +134,7 @@ export type Database = {
           files: Json
           generated_name: string | null
           generation_status: string | null
+          github_repo_url: string | null
           id: string
           is_published: boolean
           name: string
@@ -141,6 +142,7 @@ export type Database = {
           published_slug: string | null
           updated_at: string
           user_id: string
+          vercel_url: string | null
         }
         Insert: {
           building_plan?: string[] | null
@@ -149,6 +151,7 @@ export type Database = {
           files?: Json
           generated_name?: string | null
           generation_status?: string | null
+          github_repo_url?: string | null
           id?: string
           is_published?: boolean
           name?: string
@@ -156,6 +159,7 @@ export type Database = {
           published_slug?: string | null
           updated_at?: string
           user_id: string
+          vercel_url?: string | null
         }
         Update: {
           building_plan?: string[] | null
@@ -164,6 +168,7 @@ export type Database = {
           files?: Json
           generated_name?: string | null
           generation_status?: string | null
+          github_repo_url?: string | null
           id?: string
           is_published?: boolean
           name?: string
@@ -171,6 +176,7 @@ export type Database = {
           published_slug?: string | null
           updated_at?: string
           user_id?: string
+          vercel_url?: string | null
         }
         Relationships: []
       }
