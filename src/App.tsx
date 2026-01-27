@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useParams, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { LanguageProvider } from "@/contexts/LanguageContext";
+import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { HomePage } from "@/components/home/HomePage";
 import { EditorLayout } from "@/components/editor/EditorLayout";
@@ -50,6 +50,7 @@ interface GenerationPhase {
 const ProjectEditorRoute = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const { projects, loading: projectsLoading, updateProject, getProject } = useProjects();
   
@@ -97,7 +98,7 @@ const ProjectEditorRoute = () => {
           
           setGenerationPhase({
             phase: isComplete ? 'complete' : 'generating',
-            message: isComplete ? 'Project ready!' : 'Generating...',
+            message: isComplete ? t('chat.complete') : t('chat.generating'),
             plan: dbProject.buildingPlan,
             completedSteps: isComplete ? allStepsComplete : [],
             currentStep: isComplete ? undefined : 0,
@@ -131,8 +132,8 @@ const ProjectEditorRoute = () => {
         setIsGenerating(true);
         setStreamingContent('');
         setFileActivities([]);
-        setStatusMessage('Analyzing your request...');
-        setGenerationPhase({ phase: 'planning', message: 'Analyzing your request...' });
+        setStatusMessage(t('chat.analyzing'));
+        setGenerationPhase({ phase: 'planning', message: t('chat.analyzing') });
         
         // Generate project name in background (don't block UI)
         generateProjectName(prompt).then(async (generatedName) => {
@@ -149,8 +150,8 @@ const ProjectEditorRoute = () => {
         try {
           // Step 1: Thinking phase
           const thinkingStartTime = Date.now();
-          setStatusMessage('Thinking...');
-          setGenerationPhase({ phase: 'thinking', message: 'Thinking...', thinkingTime: 0 });
+          setStatusMessage(t('chat.thinking'));
+          setGenerationPhase({ phase: 'thinking', message: t('chat.thinking'), thinkingTime: 0 });
           
           // Update thinking time every second
           const thinkingInterval = setInterval(() => {
@@ -184,7 +185,7 @@ const ProjectEditorRoute = () => {
           
           setGenerationPhase({ 
             phase: 'thinking', 
-            message: 'Thinking complete!', 
+            message: t('chat.thinkingComplete'),
             thinkingTime: finalThinkingTime,
             plan: planLines,
             completedSteps: [],
@@ -201,11 +202,11 @@ const ProjectEditorRoute = () => {
           if (isCancelled.current) return;
           
           // Start with first plan step
-          const currentStepText = planLines[0] || 'Setting up project';
+          const currentStepText = planLines[0] || t('chat.makingChanges');
           setGenerationPhase(prev => ({ 
             ...prev!,
             phase: 'generating', 
-            message: 'Generating code files...',
+            message: t('chat.generating'),
             currentStep: 0,
             status: currentStepText
           }));
@@ -265,8 +266,8 @@ const ProjectEditorRoute = () => {
                 setGenerationPhase(prev => ({ 
                   ...prev!,
                   phase: 'complete', 
-                  message: 'Project ready!',
-                  status: 'All steps completed!',
+                  message: t('chat.complete'),
+                  status: t('chat.complete'),
                   completedSteps: allStepsComplete,
                   currentStep: undefined,
                   stepFiles: stepFilesMap,
@@ -363,12 +364,12 @@ const ProjectEditorRoute = () => {
     stopGeneration();
     setIsGenerating(false);
     setStatusMessage('');
-    setGenerationPhase({ phase: 'complete', message: 'Generation stopped.' });
+    setGenerationPhase({ phase: 'complete', message: t('chat.generationStopped') });
     toast({
-      title: 'Generation Stopped',
-      description: 'Code generation was cancelled.',
+      title: t('chat.generationStopped'),
+      description: t('chat.generationCancelled'),
     });
-  }, []);
+  }, [t]);
 
   const handleSendMessage = useCallback(async (content: string, isChatOnly: boolean = false, imageUrl?: string) => {
     if (!localProject) return;
@@ -382,7 +383,7 @@ const ProjectEditorRoute = () => {
     if (isChatOnly) {
       setIsChatMode(true);
       setIsGenerating(true);
-      setStatusMessage('Thinking...');
+      setStatusMessage(t('chat.thinking'));
       
       try {
         const { generateChatResponse } = await import('@/services/aiService');
@@ -402,15 +403,15 @@ const ProjectEditorRoute = () => {
     setIsGenerating(true);
     setStreamingContent('');
     setFileActivities([]);
-    setStatusMessage('Analyzing your request...');
-    setGenerationPhase({ phase: 'planning', message: 'Analyzing your request...' });
+    setStatusMessage(t('chat.analyzing'));
+    setGenerationPhase({ phase: 'planning', message: t('chat.analyzing') });
 
     try {
       // Step 1: Thinking phase
       const thinkingStartTime = Date.now();
       if (isCancelled.current) return;
-      setStatusMessage('Thinking...');
-      setGenerationPhase({ phase: 'thinking', message: 'Thinking...', thinkingTime: 0 });
+      setStatusMessage(t('chat.thinking'));
+      setGenerationPhase({ phase: 'thinking', message: t('chat.thinking'), thinkingTime: 0 });
       
       // Update thinking time every second
       const thinkingInterval = setInterval(() => {
@@ -437,7 +438,7 @@ const ProjectEditorRoute = () => {
       
       setGenerationPhase({ 
         phase: 'thinking', 
-        message: 'Thinking complete!', 
+        message: t('chat.thinkingComplete'),
         thinkingTime: finalThinkingTime,
         plan: planLines,
         completedSteps: [],
@@ -453,11 +454,11 @@ const ProjectEditorRoute = () => {
 
       // Step 2: Generate code (goes to code view, not shown in chat)
       if (isCancelled.current) return;
-      const currentStepText = planLines[0] || 'Making changes';
+      const currentStepText = planLines[0] || t('chat.makingChanges');
       setGenerationPhase(prev => ({ 
         ...prev!,
         phase: 'generating', 
-        message: 'Generating code files...',
+        message: t('chat.generating'),
         currentStep: 0,
         status: currentStepText
       }));
@@ -524,8 +525,8 @@ const ProjectEditorRoute = () => {
             setGenerationPhase(prev => ({ 
               ...prev!,
               phase: 'complete', 
-              message: 'Changes applied!',
-              status: 'All steps completed!',
+              message: t('chat.changesApplied'),
+              status: t('chat.complete'),
               completedSteps: allStepsComplete,
               currentStep: undefined,
               stepFiles: stepFilesMap,
@@ -562,11 +563,11 @@ const ProjectEditorRoute = () => {
               // Mark previous steps as complete
               const completedSteps = Array.from({ length: currentStepIdx }, (_, i) => i);
               
-              const currentStepText = prev.plan[currentStepIdx] || 'Making changes';
+              const currentStepText = prev.plan[currentStepIdx] || t('chat.makingChanges');
               
               return { 
                 ...prev, 
-                status: `Now I'm making: ${currentStepText}`,
+                status: `${t('chat.makingChanges')}: ${currentStepText}`,
                 currentStep: currentStepIdx,
                 completedSteps,
                 stepFiles: updatedStepFiles
@@ -620,6 +621,21 @@ const ProjectEditorRoute = () => {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-foreground border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-background p-4 text-center">
+        <h2 className="text-2xl font-bold mb-4">{t('auth.loginRequired')}</h2>
+        <p className="text-muted-foreground mb-6">{t('auth.loginToAccess')}</p>
+        <button
+          onClick={() => navigate('/login')}
+          className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+        >
+          {t('auth.goToLogin')}
+        </button>
       </div>
     );
   }

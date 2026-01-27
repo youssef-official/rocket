@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
 import type { ProjectVersion } from '@/hooks/useVersions';
 import rocketLogo from '@/assets/rocket-logo.png';
@@ -140,6 +141,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onSelectVersion,
   onRollback
 }) => {
+  const { t } = useLanguage();
   const [input, setInput] = useState('');
   const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({});
   const [isChatMode, setIsChatMode] = useState(false);
@@ -285,7 +287,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <div className="w-4 h-4 rounded-full border-2 border-border" />
             )}
             <span className="text-sm text-muted-foreground">
-              <span className="text-foreground/80 font-medium">{actionsCount}</span> actions taken
+              <span className="text-foreground/80 font-medium">{actionsCount}</span> {t('chat.actionsTaken')}
             </span>
           </div>
           <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -303,7 +305,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <div className="py-2 space-y-1">
                 {files.map((file, i) => {
                   const isEditing = file.status === 'editing';
-                  const actionLabel = file.action === 'edited' ? 'Edited' : 'Wrote';
+                  const actionLabel = file.action === 'edited' ? t('chat.edited') : t('chat.wrote');
                   const ActionIcon = file.action === 'edited' ? Pencil : FileOutput;
                   
                   return (
@@ -353,7 +355,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   >
                     <Package className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                     <span className="text-sm text-muted-foreground">
-                      Built the project to ensure everything works
+                      {t('chat.built')}
                     </span>
                   </motion.div>
                 )}
@@ -406,7 +408,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       >
         <p className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <ListOrdered className="w-4 h-4 text-primary" />
-          What I'm Building:
+          {t('chat.whatImBuilding')}
         </p>
         <ol className="space-y-3 pl-1">
           {planToShow.map((step, i) => {
@@ -504,10 +506,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
-              {version.name || `Version ${version.versionNumber}`}
+              {version.name || `${t('chat.version')} ${version.versionNumber}`}
             </p>
             <p className={`text-xs mt-0.5 ${isActive ? 'text-primary/70' : 'text-muted-foreground'}`}>
-              Version {version.versionNumber}{isActive && ' • Active'}
+              {t('chat.version')} {version.versionNumber}{isActive && ` • ${t('chat.active')}`}
             </p>
           </div>
 
@@ -519,7 +521,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 setRollbackVersionId(version.versionNumber);
               }}
               className="p-2 rounded-lg bg-destructive/10 text-destructive opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20"
-              title="Rollback to this version"
+              title={t('chat.rollback')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -542,7 +544,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       >
         {/* Success message */}
         <div className="flex items-center gap-2 py-2">
-          <span className="text-sm text-foreground font-medium">The website is now ready and built successfully!</span>
+          <span className="text-sm text-foreground font-medium">{t('chat.readyMessage')}</span>
         </div>
 
         {/* Version Card */}
@@ -673,7 +675,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           >
                             <p className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
                               <ListOrdered className="w-4 h-4 text-primary" />
-                              What I'm Building:
+                              {t('chat.whatImBuilding')}
                             </p>
                             <ol className="space-y-3 pl-1">
                               {messagePlan.map((step, i) => (
@@ -719,7 +721,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                             className="mt-4 space-y-3"
                           >
                             <div className="flex items-center gap-2 py-2">
-                              <span className="text-sm text-foreground font-medium">The website is now ready and built successfully!</span>
+                              <span className="text-sm text-foreground font-medium">{t('chat.readyMessage')}</span>
                             </div>
                           </motion.div>
                         )}
@@ -765,7 +767,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <div className="absolute inset-0 z-10 bg-primary/10 border-2 border-dashed border-primary rounded-2xl flex items-center justify-center pointer-events-none">
             <div className="text-primary font-medium flex items-center gap-2">
               <ImageIcon className="w-5 h-5" />
-              <span>Drop image here</span>
+              <span>{t('home.dropImage')}</span>
             </div>
           </div>
         )}
@@ -822,7 +824,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left text-muted-foreground hover:text-foreground"
                     >
                       <ImageIcon className="w-4 h-4" />
-                      <span className="text-sm">Upload Image</span>
+                      <span className="text-sm">{t('chat.uploadImage')}</span>
                     </button>
                     <button
                       type="button"
@@ -835,7 +837,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left text-muted-foreground hover:text-foreground border-t border-border"
                     >
                       <MousePointer className="w-4 h-4" />
-                      <span className="text-sm">Visual Edit</span>
+                      <span className="text-sm">{t('chat.visualEdit')}</span>
                     </button>
                   </motion.div>
                 )}
@@ -856,7 +858,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isChatMode ? "Plan with Rocket (no code changes)..." : "How can Rocket help you today?"}
+              placeholder={isChatMode ? t('chat.planPlaceholder') : t('chat.placeholder')}
               disabled={isGenerating}
               className="flex-1 bg-transparent resize-none max-h-32 py-2.5 px-3 text-[15px] outline-none text-foreground placeholder-muted-foreground"
               rows={1}
@@ -874,7 +876,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               }`}
             >
               <Lightbulb className="w-4 h-4" />
-              <span className="font-medium">Plan</span>
+              <span className="font-medium">{t('chat.planMode')}</span>
             </button>
 
             {/* Send/Stop button */}
@@ -913,12 +915,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             className="bg-card border border-border rounded-xl p-6 max-w-md mx-4 shadow-2xl"
           >
-            <h3 className="text-lg font-semibold text-foreground mb-2">Are you sure?</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">{t('chat.rollbackConfirm')}</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              This will restore your project to <strong>Version {rollbackVersionId}</strong>.
+              {t('chat.rollbackDesc', { version: rollbackVersionId || '' })}
               <br /><br />
               <span className="text-destructive font-medium">
-                Warning: All versions after this point will be permanently deleted. This action cannot be undone.
+                {t('chat.rollbackWarning')}
               </span>
             </p>
             <div className="flex gap-3 justify-end">
@@ -926,7 +928,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 onClick={() => setRollbackVersionId(null)}
                 className="px-4 py-2 text-sm font-medium text-foreground bg-secondary hover:bg-secondary/80 rounded-lg transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleRollbackClick}
@@ -944,7 +946,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                       <path d="M3 3v5h5"/>
                     </svg>
-                    Rollback
+                    {t('chat.rollback')}
                   </>
                 )}
               </button>

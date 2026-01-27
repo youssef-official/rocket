@@ -90,6 +90,8 @@ You MUST respond with valid JSON in this EXACT structure:
 7. Create MULTIPLE PAGES and COMPONENTS for large projects
 8. Generate AT LEAST 10-15 files for complex projects
 9. Make the UI VISUALLY STUNNING - this is the #1 priority
+10. Do NOT use 'import.meta.env' or 'import.meta' (it causes errors)
+11. Do NOT use 'react-hot-toast' (use 'sonner' instead)
 
 CREATE SOMETHING EXCEPTIONAL!`;
 
@@ -886,7 +888,8 @@ export function generateDefaultViteProject(): Record<string, ProjectFile> {
           "react": "^18.2.0",
           "react-dom": "^18.2.0",
           "framer-motion": "^10.16.4",
-          "lucide-react": "^0.294.0"
+          "lucide-react": "^0.294.0",
+          "sonner": "^1.4.0"
         },
         devDependencies: {
           "@types/react": "^18.2.0",

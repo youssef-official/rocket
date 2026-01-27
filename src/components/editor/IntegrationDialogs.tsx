@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useIntegrations } from '@/hooks/useIntegrations';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { createGitHubRepo, uploadFilesToGitHub } from '@/services/githubService';
 import { deployToVercel, getDeploymentStatus } from '@/services/vercelService';
 import { toast } from '@/hooks/use-toast';
@@ -38,6 +39,7 @@ export const GitHubConnectDialog: React.FC<GitHubConnectDialogProps> = ({
   onConnected,
 }) => {
   const { integrations } = useIntegrations();
+  const { t } = useLanguage();
   const [isConnecting, setIsConnecting] = useState(false);
   const [repoUrl, setRepoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,8 +47,8 @@ export const GitHubConnectDialog: React.FC<GitHubConnectDialogProps> = ({
   const handleConnect = async () => {
     if (!integrations?.github_token) {
       toast({
-        title: 'GitHub not connected',
-        description: 'Please connect your GitHub account in Settings first.',
+        title: t('integrations.githubNotConnected'),
+        description: t('integrations.githubConnectSettings'),
         variant: 'destructive',
       });
       return;
@@ -83,14 +85,14 @@ export const GitHubConnectDialog: React.FC<GitHubConnectDialogProps> = ({
       onConnected?.(repo.html_url);
 
       toast({
-        title: 'GitHub connected!',
-        description: 'Your project is now synced with GitHub.',
+        title: t('integrations.githubConnected'),
+        description: t('integrations.syncDesc'),
       });
     } catch (err: any) {
-      setError(err.message || 'Failed to connect to GitHub');
+      setError(err.message || t('common.error'));
       toast({
-        title: 'Connection failed',
-        description: err.message || 'Failed to connect to GitHub',
+        title: t('common.error'),
+        description: err.message || t('common.error'),
         variant: 'destructive',
       });
     } finally {
@@ -104,13 +106,13 @@ export const GitHubConnectDialog: React.FC<GitHubConnectDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Github className="w-5 h-5" />
-            Connect to GitHub
+            {t('editor.connectGitHub')}
           </DialogTitle>
           <DialogDescription>
             {repoUrl ? (
-              'Your project is connected to GitHub!'
+              t('integrations.githubConnected')
             ) : (
-              'Connect your project to GitHub for 2-way sync.'
+              t('integrations.githubConnectDesc')
             )}
           </DialogDescription>
         </DialogHeader>
@@ -120,9 +122,9 @@ export const GitHubConnectDialog: React.FC<GitHubConnectDialogProps> = ({
             <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
               <AlertCircle className="w-5 h-5 text-amber-500" />
               <div>
-                <p className="text-sm font-medium text-foreground">GitHub not connected</p>
+                <p className="text-sm font-medium text-foreground">{t('integrations.githubNotConnected')}</p>
                 <p className="text-xs text-muted-foreground">
-                  Go to Settings to connect your GitHub account first.
+                  {t('integrations.goToSettingsGithub')}
                 </p>
               </div>
             </div>
@@ -131,9 +133,9 @@ export const GitHubConnectDialog: React.FC<GitHubConnectDialogProps> = ({
               <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
                 <Check className="w-5 h-5 text-emerald-500" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Connected</p>
+                  <p className="text-sm font-medium text-foreground">{t('integrations.connected')}</p>
                   <p className="text-xs text-muted-foreground">
-                    Changes will sync automatically
+                    {t('integrations.syncAuto')}
                   </p>
                 </div>
               </div>
@@ -152,7 +154,7 @@ export const GitHubConnectDialog: React.FC<GitHubConnectDialogProps> = ({
               </a>
 
               <p className="text-xs text-muted-foreground text-center">
-                Any changes made in GitHub will sync back to your project and create a new version.
+                {t('integrations.syncDesc')}
               </p>
             </div>
           ) : (
@@ -164,12 +166,12 @@ export const GitHubConnectDialog: React.FC<GitHubConnectDialogProps> = ({
                   </div>
                   <div>
                     <p className="text-sm font-medium">@{integrations?.github_username}</p>
-                    <p className="text-xs text-muted-foreground">Connected account</p>
+                    <p className="text-xs text-muted-foreground">{t('integrations.connectedAccount')}</p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Repository name</Label>
+                  <Label className="text-xs text-muted-foreground">{t('editor.repoName')}</Label>
                   <p className="text-sm font-medium text-foreground">
                     {projectName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')}
                   </p>
@@ -191,12 +193,12 @@ export const GitHubConnectDialog: React.FC<GitHubConnectDialogProps> = ({
                 {isConnecting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating repository...
+                    {t('integrations.creatingRepo')}
                   </>
                 ) : (
                   <>
                     <Link2 className="w-4 h-4 mr-2" />
-                    Connect project
+                    {t('integrations.connectProject')}
                   </>
                 )}
               </Button>
@@ -224,6 +226,7 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
   onDeployed,
 }) => {
   const { integrations } = useIntegrations();
+  const { t } = useLanguage();
   const [isDeploying, setIsDeploying] = useState(false);
   const [deploymentUrl, setDeploymentUrl] = useState<string | null>(null);
   const [deploymentStatus, setDeploymentStatus] = useState<string | null>(null);
@@ -237,8 +240,8 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
   const handleDeploy = async () => {
     if (!integrations?.vercel_token) {
       toast({
-        title: 'Vercel not connected',
-        description: 'Please connect your Vercel account in Settings first.',
+        title: t('integrations.vercelNotConnected'),
+        description: t('integrations.vercelConnectSettings'),
         variant: 'destructive',
       });
       return;
@@ -246,7 +249,7 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
 
     setIsDeploying(true);
     setError(null);
-    setDeploymentStatus('Creating deployment...');
+    setDeploymentStatus(t('integrations.deploying'));
 
     try {
       const deployment = await deployToVercel(
@@ -260,7 +263,7 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
       }
 
       setDeploymentUrl(deployment.url);
-      setDeploymentStatus('Building...');
+      setDeploymentStatus(t('common.loading'));
 
       // Poll for deployment status
       const pollStatus = async () => {
@@ -279,8 +282,8 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
               setDeploymentUrl(status.url);
               onDeployed?.(status.url);
               toast({
-                title: 'Deployment successful!',
-                description: 'Your site is now live.',
+                title: t('integrations.vercelDeployed'),
+                description: t('integrations.live'),
               });
               break;
             } else if (status.readyState === 'ERROR') {
@@ -296,11 +299,11 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
 
       pollStatus();
     } catch (err: any) {
-      setError(err.message || 'Failed to deploy');
+      setError(err.message || t('common.error'));
       setDeploymentStatus(null);
       toast({
-        title: 'Deployment failed',
-        description: err.message || 'Failed to deploy to Vercel',
+        title: t('common.error'),
+        description: err.message || t('common.error'),
         variant: 'destructive',
       });
     } finally {
@@ -314,10 +317,10 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <img src={vercelLogo} alt="Vercel" className="w-5 h-5 dark:invert" />
-            Deploy to Vercel
+            {t('editor.deployVercel')}
           </DialogTitle>
           <DialogDescription>
-            {deploymentUrl ? 'Your site is deployed!' : 'Deploy your project to Vercel.'}
+            {deploymentUrl ? t('integrations.vercelDeployed') : t('integrations.vercelDeployDesc')}
           </DialogDescription>
         </DialogHeader>
 
@@ -326,9 +329,9 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
             <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
               <AlertCircle className="w-5 h-5 text-amber-500" />
               <div>
-                <p className="text-sm font-medium text-foreground">Vercel not connected</p>
+                <p className="text-sm font-medium text-foreground">{t('integrations.vercelNotConnected')}</p>
                 <p className="text-xs text-muted-foreground">
-                  Go to Settings to connect your Vercel account first.
+                  {t('integrations.goToSettingsVercel')}
                 </p>
               </div>
             </div>
@@ -337,8 +340,8 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
               <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
                 <Check className="w-5 h-5 text-emerald-500" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Deployed</p>
-                  <p className="text-xs text-muted-foreground">Your site is live!</p>
+                  <p className="text-sm font-medium text-foreground">{t('integrations.deployedVercel')}</p>
+                  <p className="text-xs text-muted-foreground">{t('integrations.live')}</p>
                 </div>
               </div>
 
@@ -362,7 +365,7 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
                 disabled={isDeploying}
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${isDeploying ? 'animate-spin' : ''}`} />
-                Redeploy
+                {t('integrations.redeploy')}
               </Button>
             </div>
           ) : (
@@ -374,12 +377,12 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
                   </div>
                   <div>
                     <p className="text-sm font-medium">{integrations?.vercel_username}</p>
-                    <p className="text-xs text-muted-foreground">Connected account</p>
+                    <p className="text-xs text-muted-foreground">{t('integrations.connectedAccount')}</p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="project-name">Project name</Label>
+                  <Label htmlFor="project-name">{t('integrations.projectName')}</Label>
                   <Input
                     id="project-name"
                     value={customName}
@@ -427,12 +430,12 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
                 {isDeploying ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Deploying...
+                    {t('integrations.deploying')}
                   </>
                 ) : (
                   <>
                     <Upload className="w-4 h-4 mr-2" />
-                    Deploy
+                    {t('integrations.deploy')}
                   </>
                 )}
               </Button>
