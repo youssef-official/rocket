@@ -370,13 +370,22 @@ Examples:
 - Fixed bugs → "Bug Fixes"
 - Game created → "Game Launch"`;
 
+// Model mapping for Rok AI engines
+const MODEL_MAPPING: Record<string, string> = {
+  'rok-fast': 'xiaomi/mimo-v2-flash',
+  'rok-smart': 'minimax/minimax-m2.1',
+  'rok-turbo': 'google/gemini-3-flash',
+  'rok-ultra': 'anthropic/claude-haiku-4.5',
+  'rok-reson': 'anthropic/claude-opus-4.5',
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, projectType, mode, existingFiles } = await req.json();
+    const { messages, projectType, mode, existingFiles, modelId } = await req.json();
     const VERCEL_AI_API_KEY = Deno.env.get("VERCEL_AI_API_KEY");
     
     if (!VERCEL_AI_API_KEY) {
@@ -415,7 +424,11 @@ serve(async (req) => {
       systemPrompt += `\n\n## EXISTING PROJECT FILES:\nThe project already has these files: ${existingFiles.join(', ')}\n\n⚠️ CRITICAL: ONLY modify files that need changes. Do NOT regenerate the entire project. Focus on fixing the specific error or adding the requested feature.`;
     }
 
-    // Use Vercel AI Gateway with google/gemini-3-flash
+    // Get the actual model from modelId or default to rok-fast
+    const selectedModelId = modelId || 'rok-fast';
+    const actualModel = MODEL_MAPPING[selectedModelId] || 'google/gemini-3-flash';
+
+    // Use Vercel AI Gateway with the selected model
     const response = await fetch("https://ai-gateway.vercel.sh/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -423,14 +436,14 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash",
+        model: actualModel,
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: true,
         max_tokens: 32000,
-        temperature: 0.15, // Slightly higher for creativity but still accurate
+        temperature: 0.15,
         top_p: 0.9,
       }),
     });

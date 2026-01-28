@@ -172,6 +172,39 @@ export const translations: Translations = {
   'chat.built': { en: 'Built the project to ensure everything works', ar: 'تم بناء المشروع للتأكد من أن كل شيء يعمل', zh: '构建项目以确保一切正常', ja: 'すべてが機能することを確認するためにプロジェクトをビルドしました', fr: 'Projet construit pour s\'assurer que tout fonctionne' },
   'chat.whatImBuilding': { en: "What I'm Building:", ar: "ما أقوم ببنائه:", zh: "我正在构建的内容:", ja: "作成中のもの:", fr: "Ce que je construis :" },
 
+  // Models
+  'models.selectModel': { en: 'Select AI Model', ar: 'اختر نموذج الذكاء الاصطناعي', zh: '选择AI模型', ja: 'AIモデルを選択', fr: 'Sélectionner le modèle IA' },
+  'models.upgradeAccess': { en: 'Upgrade for more models', ar: 'قم بالترقية للمزيد من النماذج', zh: '升级以获取更多模型', ja: 'より多くのモデルにアクセスするにはアップグレード', fr: 'Passez à la version supérieure pour plus de modèles' },
+
+  // Upgrade Modal
+  'upgrade.title': { en: 'Upgrade Your Plan', ar: 'قم بترقية خطتك', zh: '升级您的计划', ja: 'プランをアップグレード', fr: 'Améliorez votre plan' },
+  'upgrade.subtitle': { en: 'Unlock more features and credits', ar: 'افتح المزيد من الميزات والنقاط', zh: '解锁更多功能和积分', ja: 'より多くの機能とクレジットをアンロック', fr: 'Débloquez plus de fonctionnalités et de crédits' },
+  'upgrade.popular': { en: 'Most Popular', ar: 'الأكثر شيوعاً', zh: '最受欢迎', ja: '最も人気', fr: 'Le plus populaire' },
+  'upgrade.currentPlan': { en: 'Current Plan', ar: 'الخطة الحالية', zh: '当前计划', ja: '現在のプラン', fr: 'Plan actuel' },
+  'upgrade.selectPlan': { en: 'Select Plan', ar: 'اختر الخطة', zh: '选择计划', ja: 'プランを選択', fr: 'Sélectionner le plan' },
+  'upgrade.month': { en: 'month', ar: 'شهر', zh: '月', ja: '月', fr: 'mois' },
+  'upgrade.footer': { en: 'All plans include our core features. Upgrade anytime.', ar: 'جميع الخطط تشمل ميزاتنا الأساسية. قم بالترقية في أي وقت.', zh: '所有计划都包含我们的核心功能。随时升级。', ja: 'すべてのプランにはコア機能が含まれています。いつでもアップグレードできます。', fr: 'Tous les plans incluent nos fonctionnalités de base. Passez à la version supérieure à tout moment.' },
+  'upgrade.banner': { en: 'You\'ve used 50% of your credits! Upgrade for more.', ar: 'لقد استخدمت 50% من نقاطك! قم بالترقية للمزيد.', zh: '您已使用50%的积分！升级以获取更多。', ja: 'クレジットの50%を使用しました！アップグレードして増やしましょう。', fr: 'Vous avez utilisé 50% de vos crédits ! Passez à la version supérieure pour en avoir plus.' },
+
+  // Message Options
+  'message.copyLink': { en: 'Copy message link', ar: 'نسخ رابط الرسالة', zh: '复制消息链接', ja: 'メッセージリンクをコピー', fr: 'Copier le lien du message' },
+  'message.preview': { en: 'Preview', ar: 'معاينة', zh: '预览', ja: 'プレビュー', fr: 'Aperçu' },
+  'message.workedFor': { en: 'Worked for', ar: 'مدة العمل', zh: '工作时间', ja: '作業時間', fr: 'Temps de travail' },
+  'message.creditsUsed': { en: 'Credits used', ar: 'النقاط المستخدمة', zh: '使用的积分', ja: '使用したクレジット', fr: 'Crédits utilisés' },
+
+  // Credits
+  'credits.remaining': { en: 'Credits remaining', ar: 'النقاط المتبقية', zh: '剩余积分', ja: '残りクレジット', fr: 'Crédits restants' },
+  'credits.daily': { en: 'Daily credits', ar: 'النقاط اليومية', zh: '每日积分', ja: '毎日のクレジット', fr: 'Crédits quotidiens' },
+  'credits.monthly': { en: 'Monthly credits', ar: 'النقاط الشهرية', zh: '每月积分', ja: '月間クレジット', fr: 'Crédits mensuels' },
+
+  // Common
+  'common.copied': { en: 'Copied!', ar: 'تم النسخ!', zh: '已复制!', ja: 'コピーしました!', fr: 'Copié !' },
+
+  // Project Visibility
+  'project.notFound': { en: 'Project not found or has been deleted', ar: 'المشروع غير موجود أو تم حذفه', zh: '项目未找到或已删除', ja: 'プロジェクトが見つからないか削除されました', fr: 'Projet introuvable ou supprimé' },
+  'project.private': { en: 'This project is private', ar: 'هذا المشروع خاص', zh: '此项目是私有的', ja: 'このプロジェクトはプライベートです', fr: 'Ce projet est privé' },
+  'project.viewOnly': { en: 'View Only', ar: 'عرض فقط', zh: '仅查看', ja: '閲覧のみ', fr: 'Affichage seulement' },
+
   // Integrations
   'integrations.githubConnected': { en: 'Your project is connected to GitHub!', ar: 'مشروعك متصل بـ GitHub!', zh: '您的项目已连接到 GitHub!', ja: 'プロジェクトはGitHubに接続されています!', fr: 'Votre projet est connecté à GitHub !' },
   'integrations.githubConnectDesc': { en: 'Connect your project to GitHub for 2-way sync.', ar: 'اربط مشروعك بـ GitHub للمزامنة ثنائية الاتجاه.', zh: '将您的项目连接到 GitHub 以进行双向同步。', ja: 'プロジェクトをGitHubに接続して双方向同期を行います。', fr: 'Connectez votre projet à GitHub pour une synchronisation bidirectionnelle.' },

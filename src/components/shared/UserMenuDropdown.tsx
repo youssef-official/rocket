@@ -1,20 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Settings, LogOut, Moon, Sun, Monitor } from 'lucide-react';
+import { User as UserIcon, Settings, LogOut, Moon, Sun, Monitor, Coins, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '@/types';
 import { useThemePreference } from '@/hooks/useThemePreference';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
 import { LanguageSelector } from './LanguageSelector';
 
 interface UserMenuDropdownProps {
   user: User;
   signOut: () => void;
+  onUpgradeClick?: () => void;
 }
 
-export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOut }) => {
+export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOut, onUpgradeClick }) => {
   const [showMenu, setShowMenu] = useState(false);
   const { theme, cycleTheme } = useThemePreference();
   const { t, isRTL } = useLanguage();
+  const { userPlan, getRemainingCredits } = useUserPlan();
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -75,6 +78,9 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
     navigate('/settings');
   };
 
+  const remainingCredits = getRemainingCredits();
+  const planConfig = userPlan ? PLAN_CONFIG[userPlan.plan] : PLAN_CONFIG.spark;
+
   return (
     <div 
       ref={menuRef}
@@ -96,12 +102,46 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-            <div className="w-52 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl">
+            <div className="w-56 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl">
               <div className="p-3 border-b border-white/10">
                 <p className={`text-sm font-medium text-white truncate ${isRTL ? 'text-right' : ''}`}>{user.email}</p>
-                <p className={`text-xs text-white/60 ${isRTL ? 'text-right' : ''}`}>{t('common.freePlan')}</p>
+                <div className={`flex items-center justify-between mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <span className="text-xs text-white/60">{planConfig.name} Plan</span>
+                </div>
               </div>
+
+              {/* Credits Display */}
+              <div className="p-3 border-b border-white/10 bg-white/5">
+                <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <Coins className="w-4 h-4 text-yellow-400" />
+                    <span className="text-sm text-white/80">{t('credits.remaining')}</span>
+                  </div>
+                  <span className="text-sm font-bold text-yellow-400">{remainingCredits}</span>
+                </div>
+                <p className="text-xs text-white/50 mt-1">
+                  {userPlan?.plan === 'spark' ? t('credits.daily') : t('credits.monthly')}
+                </p>
+              </div>
+
               <div className="p-2">
+                {/* Upgrade Button */}
+                {userPlan?.plan === 'spark' && onUpgradeClick && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      onUpgradeClick();
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 mb-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg transition-colors text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
+                  >
+                    <Crown className="w-4 h-4" />
+                    {t('models.upgradeAccess')}
+                  </button>
+                )}
+
                 {/* Language Selector */}
                 <LanguageSelector />
                 

@@ -52,6 +52,50 @@ export type Database = {
           },
         ]
       }
+      credit_transactions: {
+        Row: {
+          created_at: string
+          credits_used: number
+          description: string | null
+          id: string
+          message_id: string | null
+          model_used: string | null
+          project_id: string | null
+          user_id: string
+          work_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          credits_used: number
+          description?: string | null
+          id?: string
+          message_id?: string | null
+          model_used?: string | null
+          project_id?: string | null
+          user_id: string
+          work_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number
+          description?: string | null
+          id?: string
+          message_id?: string | null
+          model_used?: string | null
+          project_id?: string | null
+          user_id?: string
+          work_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -136,6 +180,7 @@ export type Database = {
           generation_status: string | null
           github_repo_url: string | null
           id: string
+          is_public: boolean
           is_published: boolean
           name: string
           project_type: string
@@ -153,6 +198,7 @@ export type Database = {
           generation_status?: string | null
           github_repo_url?: string | null
           id?: string
+          is_public?: boolean
           is_published?: boolean
           name?: string
           project_type?: string
@@ -170,6 +216,7 @@ export type Database = {
           generation_status?: string | null
           github_repo_url?: string | null
           id?: string
+          is_public?: boolean
           is_published?: boolean
           name?: string
           project_type?: string
@@ -219,15 +266,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_plans: {
+        Row: {
+          created_at: string
+          credits_used_today: number
+          daily_credits: number
+          id: string
+          last_daily_reset: string | null
+          max_daily_credits: number
+          monthly_credits: number
+          plan: Database["public"]["Enums"]["plan_type"]
+          total_credits_used: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_used_today?: number
+          daily_credits?: number
+          id?: string
+          last_daily_reset?: string | null
+          max_daily_credits?: number
+          monthly_credits?: number
+          plan?: Database["public"]["Enums"]["plan_type"]
+          total_credits_used?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_used_today?: number
+          daily_credits?: number
+          id?: string
+          last_daily_reset?: string | null
+          max_daily_credits?: number
+          monthly_credits?: number
+          plan?: Database["public"]["Enums"]["plan_type"]
+          total_credits_used?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      reset_daily_credits: { Args: never; Returns: undefined }
     }
     Enums: {
-      [_ in never]: never
+      plan_type: "spark" | "builder" | "creator" | "scale"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -354,6 +443,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      plan_type: ["spark", "builder", "creator", "scale"],
+    },
   },
 } as const

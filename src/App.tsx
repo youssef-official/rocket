@@ -868,6 +868,7 @@ const DashboardRoute = () => {
 import { Pricing } from "@/pages/Pricing";
 import { Docs } from "@/pages/Docs";
 import Settings from "@/pages/Settings";
+import { ProjectView } from "@/pages/ProjectView";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -882,6 +883,7 @@ const App = () => (
               <Route path="/login" element={<AuthPage onSuccess={() => window.location.href = '/'} />} />
               <Route path="/dashboard" element={<DashboardRoute />} />
               <Route path="/projects/:id" element={<ProjectEditorRoute />} />
+              <Route path="/view/:projectId" element={<ProjectView />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/docs" element={<Docs />} />
               <Route path="/settings" element={<Settings />} />
