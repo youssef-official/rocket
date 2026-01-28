@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreHorizontal, Coins } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
 import type { ProjectVersion } from '@/hooks/useVersions';
 import rocketLogo from '@/assets/rocket-logo.png';
+import { ModelSelector, type ModelId } from './ModelSelector';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface FileActivity {
   name: string;
@@ -40,7 +42,7 @@ interface MessageWithMeta {
 
 interface ChatViewProps {
   messages: ChatMessage[];
-  onSendMessage: (content: string, isChat?: boolean, imageUrl?: string) => void;
+  onSendMessage: (content: string, isChat?: boolean, imageUrl?: string, modelId?: string) => void;
   isGenerating: boolean;
   fileActivities?: FileActivity[];
   generationPhase?: GenerationPhase | null;
@@ -53,6 +55,7 @@ interface ChatViewProps {
   versions?: ProjectVersion[];
   onSelectVersion?: (version: ProjectVersion) => void;
   onRollback?: (versionNumber: number) => Promise<void>;
+  userPlan?: 'spark' | 'builder' | 'creator' | 'scale';
 }
 
 // Get file icon based on extension
@@ -139,10 +142,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
   suggestions = [],
   versions = [],
   onSelectVersion,
-  onRollback
+  onRollback,
+  userPlan = 'spark'
 }) => {
   const { t } = useLanguage();
   const [input, setInput] = useState('');
+  const [currentModel, setCurrentModel] = useState<ModelId>('rok-fast');
   const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({});
   const [isChatMode, setIsChatMode] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<{ file: File; preview: string } | null>(null);
@@ -212,7 +217,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         }
       }
       
-      onSendMessage(input.trim(), isChatMode, imageUrl);
+      onSendMessage(input.trim(), isChatMode, imageUrl, currentModel);
       setInput('');
       setUploadedImage(null);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -709,9 +714,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         )}
 
                         {/* Show version card for each assistant message that has a version */}
-                        {version && !isGenerating && isLastAssistant && (
+                        {version && !isGenerating && (
                           renderCompletionBlock(version, isActiveVersion)
                         )}
+
+                        {/* Message Options (Credits) */}
+                        <div className="flex justify-end mt-2">
+                           {msg.creditsUsed ? (
+                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 px-2 py-1 rounded-full">
+                               <Coins className="w-3 h-3 text-amber-500" />
+                               <span>{msg.creditsUsed} Credits</span>
+                             </div>
+                           ) : null}
+                        </div>
 
                         {/* Show current generation completion for last message */}
                         {isLastAssistant && generationPhase?.phase === 'complete' && !version && (
@@ -865,11 +880,20 @@ export const ChatView: React.FC<ChatViewProps> = ({
               style={{ minHeight: '40px' }}
             />
 
+            {/* Model Selector */}
+            <div className="shrink-0 mb-0.5 mr-1">
+              <ModelSelector
+                currentModel={currentModel}
+                onModelChange={setCurrentModel}
+                userPlan={userPlan}
+              />
+            </div>
+
             {/* Plan Mode Toggle */}
             <button 
               type="button"
               onClick={() => setIsChatMode(!isChatMode)}
-              className={`flex items-center gap-1.5 h-9 px-3 rounded-full text-xs transition-all shrink-0 mb-0.5 ${
+              className={`flex items-center gap-1.5 h-9 px-3 rounded-full text-xs transition-all shrink-0 mb-0.5 mr-1 ${
                 isChatMode 
                   ? 'bg-primary/10 text-primary' 
                   : 'text-muted-foreground hover:text-foreground'

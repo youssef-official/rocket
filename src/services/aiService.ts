@@ -5,7 +5,7 @@ let currentAbortController: AbortController | null = null;
 
 interface StreamCallbacks {
   onChunk: (chunk: string) => void;
-  onComplete: (fullResponse: string) => void;
+  onComplete: (fullResponse: string, metadata?: { creditsUsed: number }) => void;
   onError: (error: Error) => void;
   onFileStart?: (fileName: string) => void;
   onStatusUpdate?: (status: string) => void;
@@ -589,7 +589,8 @@ export async function streamAICodeGeneration(
   messages: ChatMessage[],
   projectType: 'vite' | 'html',
   callbacks: StreamCallbacks,
-  existingFiles?: string[]
+  existingFiles?: string[],
+  modelId?: string
 ): Promise<void> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -611,7 +612,8 @@ export async function streamAICodeGeneration(
         messages, 
         projectType, 
         mode: 'code',
-        existingFiles: existingFiles || []
+        existingFiles: existingFiles || [],
+        modelId
       }),
       signal,
     });
@@ -702,8 +704,10 @@ export async function streamAICodeGeneration(
       }
     }
 
+    const creditsUsed = parseFloat(response.headers.get("x-rok-credits-used") || "0");
+
     callbacks.onStatusUpdate?.('Generation complete!');
-    callbacks.onComplete(fullResponse);
+    callbacks.onComplete(fullResponse, { creditsUsed });
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       callbacks.onError(new Error('Generation stopped by user.'));

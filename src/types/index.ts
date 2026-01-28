@@ -28,6 +28,7 @@ export interface ChatMessage {
   content: string;
   imageUrl?: string;
   createdAt: string;
+  creditsUsed?: number;
 }
 
 export interface User {

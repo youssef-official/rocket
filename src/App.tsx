@@ -76,9 +76,18 @@ const ProjectEditorRoute = () => {
 
   // Load project from database and restore generation state
   useEffect(() => {
-    if (id && !projectsLoading && projects.length > 0) {
+    if (id && !projectsLoading) {
+      // Logic for handling project access
       const dbProject = projects.find(p => p.id === id);
+
       if (dbProject) {
+        // Check ownership
+        if (user && dbProject.userId && dbProject.userId !== user.id) {
+          // If not owner, redirect to view-only mode
+          navigate(`/view/${id}`);
+          return;
+        }
+
         setLocalProject({
           id: dbProject.id,
           name: dbProject.name,
@@ -110,12 +119,15 @@ const ProjectEditorRoute = () => {
             setHasStartedGeneration(true);
           }
         }
-      } else {
-        // Project not found, redirect to home
-        navigate('/');
+      } else if (!authLoading && !projectsLoading) {
+        // Project not found in user's list.
+        // It might exist but not belong to user (since projects list usually only returns user's projects).
+        // Try to fetch it via API or just assume if it's not in the list, we redirect to view
+        // (and let view handle the 404 or public check).
+        navigate(`/view/${id}`);
       }
     }
-  }, [id, projects, projectsLoading, navigate]);
+  }, [id, projects, projectsLoading, navigate, user, authLoading]);
 
   // Auto-start generation for new projects (description = prompt, no messages yet)
   useEffect(() => {
@@ -371,7 +383,7 @@ const ProjectEditorRoute = () => {
     });
   }, [t]);
 
-  const handleSendMessage = useCallback(async (content: string, isChatOnly: boolean = false, imageUrl?: string) => {
+  const handleSendMessage = useCallback(async (content: string, isChatOnly: boolean = false, imageUrl?: string, modelId?: string) => {
     if (!localProject) return;
 
     isCancelled.current = false;
@@ -473,6 +485,9 @@ const ProjectEditorRoute = () => {
       // Pass existing file list so AI knows what files exist and can do targeted edits
       const existingFilesList = Object.keys(localProject.files);
       
+      // Pass existing file list so AI knows what files exist and can do targeted edits
+      const existingFilesList = Object.keys(localProject.files);
+
       await streamAICodeGeneration(
         conversationHistory,
         localProject.projectType,
@@ -482,10 +497,40 @@ const ProjectEditorRoute = () => {
             fullResponse += chunk;
             setStreamingContent(fullResponse);
           },
-          onComplete: async (response) => {
+          onComplete: async (response, metadata) => {
             if (isCancelled.current) return;
             
             const { files: newFiles, fileList } = parseAIResponse(response);
+
+            // Add a completion message with credits used if available
+            // This ensures the credits are visible in the chat history
+            if (metadata?.creditsUsed) {
+                // Add a hidden system message or just attach to the next message?
+                // Since we don't have a way to update the "streamed" content easily (it's not in DB yet),
+                // we'll rely on the frontend displaying it from `generationPhase` or similar if we want.
+                // But the user wants "Message Options" on the message.
+                // The streamed content is NOT a message in DB yet?
+                // Wait, EditorLayout uses `messages` from `useChatMessages`.
+                // `streamingContent` is displayed separately in `ChatView`?
+                // No, `ChatView` displays `messages`.
+                // BUT `EditorLayout` does NOT add the assistant response to DB?
+                // IF so, the assistant response disappears on reload? That would be a bug.
+                // Ah, `ChatView` likely displays `streamingContent` transiently.
+                // Does `EditorLayout` save it?
+                // Looking at `onComplete`:
+                // It updates `localProject`. It sets `generationPhase` to complete.
+                // It does NOT call `addMessage`.
+                // This seems like a potential existing issue or design choice where code generation isn't chat history?
+                // But the user sees "Assistant" messages.
+                // Wait, `ChatView.tsx`:
+                // `{messagesWithVersions.map...}`
+                // And separate `{isGenerating && ... renderThinkingIndicator ...}`
+                // It seems code generation responses (the diffs/files) are NOT chat messages.
+                // Only "Explanation" is a chat message.
+                // So I should attach the credits to the "Explanation" message?
+                // The explanation message ID is not returned by `addMessage` (promise returns it but we didn't capture it).
+                // Let's capture it.
+            }
 
             // Update file activities
             const activities = fileList.map(name => ({
@@ -532,6 +577,11 @@ const ProjectEditorRoute = () => {
               stepFiles: stepFilesMap,
               summary
             }));
+
+            // Add a final confirmation message to chat with credits (optional but good for history)
+            if (metadata?.creditsUsed) {
+               await addMessage('assistant', `Build complete! (Used ${metadata.creditsUsed} credits)`, undefined, metadata.creditsUsed);
+            }
           },
           onError: async (error) => {
             await addMessage('assistant', `Sorry, I encountered an error: ${error.message}`);
@@ -589,7 +639,8 @@ const ProjectEditorRoute = () => {
             setStatusMessage(status);
           },
         },
-        existingFilesList
+        existingFilesList,
+        modelId
       );
     } catch (error) {
       if (isCancelled.current) return;

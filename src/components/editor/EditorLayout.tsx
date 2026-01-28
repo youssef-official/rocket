@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Code2, Eye, LogOut, Settings, HelpCircle, CreditCard, Moon, Sun,
   ChevronDown, Download, Home, ArrowLeft, Clock, Pencil, Eye as EyeIcon,
-  Github, FolderOpen, Upload
+  Github, FolderOpen, Upload, Zap, AlertTriangle
 } from 'lucide-react';
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
 import { VisualEditMode } from './VisualEditMode';
 import { GitHubConnectDialog, VercelDeployDialog } from './IntegrationDialogs';
+import { SettingsModal } from '@/components/dashboard/SettingsModal';
 import { RocketLogo } from '@/components/shared/RocketLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVersions, type ProjectVersion } from '@/hooks/useVersions';
@@ -19,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Progress } from '@/components/ui/progress';
 
 interface FileActivity {
   name: string;
@@ -43,10 +45,12 @@ interface Suggestion {
   prompt: string;
 }
 
+import { type ModelId } from './ModelSelector';
+
 interface EditorLayoutProps {
   project: ProjectData | null;
   messages: ChatMessage[];
-  onSendMessage: (content: string, isChatOnly?: boolean, imageUrl?: string) => void;
+  onSendMessage: (content: string, isChatOnly?: boolean, imageUrl?: string, modelId?: string) => void;
   isGenerating: boolean;
   onNewProject: () => void;
   onUpdateProject: (updates: Partial<ProjectData>) => void;
@@ -97,6 +101,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [showVisualEdit, setShowVisualEdit] = useState(false);
   const [showGitHubDialog, setShowGitHubDialog] = useState(false);
   const [showVercelDialog, setShowVercelDialog] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [connectedRepoUrl, setConnectedRepoUrl] = useState<string | null>(null);
   const [deployedUrl, setDeployedUrl] = useState<string | null>(null);
   const isResizing = useRef(false);
@@ -104,8 +109,43 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const versionCreatedForSession = useRef(false);
   const lastFileActivitiesRef = useRef<FileActivity[]>([]);
 
+  // User Plan State
+  const [userPlan, setUserPlan] = useState<any>(null);
+  const [showUpgradeBanner, setShowUpgradeBanner] = useState(false);
+
   // Versions hook
   const { versions, fetchVersions, createVersion, rollbackToVersion } = useVersions(project?.id || null);
+
+  // Fetch User Plan & Credits
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('user_plans')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (data) {
+        setUserPlan(data);
+        // Check for 50% usage
+        const totalLimit = data.plan === 'spark' ? data.daily_credits : data.monthly_credits;
+        const used = data.plan === 'spark' ? data.credits_used_today : (data.total_credits_used % totalLimit); // Approx logic for monthly?
+        // Actually for monthly plan, we should probably track 'credits_used_this_month'.
+        // But for Spark (Free), it's daily.
+
+        const usagePercent = (data.credits_used_today / data.daily_credits) * 100;
+        if (data.plan === 'spark' && usagePercent >= 50) {
+          setShowUpgradeBanner(true);
+        }
+      }
+    };
+
+    fetchUserPlan();
+    // Refresh every minute to keep credits updated
+    const interval = setInterval(fetchUserPlan, 60000);
+    return () => clearInterval(interval);
+  }, [user, isGenerating]); // Re-fetch when generation finishes (isGenerating changes)
 
   // Track file activities for version
   useEffect(() => {
@@ -248,6 +288,18 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const handleDownload = async () => {
     if (!project) return;
     
+    // Check plan limits (Spark cannot export ZIP)
+    if (userPlan?.plan === 'spark') {
+        // Show upgrade modal/toast
+        toast({
+            title: "Upgrade Required",
+            description: "Exporting to ZIP requires the Builder plan or higher.",
+            variant: "destructive",
+        });
+        // navigate('/pricing'); // Or open upgrade modal
+        return;
+    }
+
     const zip = new JSZip();
     Object.entries(project.files).forEach(([path, file]) => {
       zip.file(path, file.content);
@@ -285,9 +337,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     updatedFiles: Record<string, ProjectFile>,
     summary: string
   ) => {
-    console.log('Visual edit changes:', changes);
-    console.log('Updated files:', Object.keys(updatedFiles));
-    
     // Update project files
     if (project && Object.keys(updatedFiles).length > 0) {
       onUpdateProject({ files: updatedFiles });
@@ -432,7 +481,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     <div className={`flex items-center gap-3 px-4 py-3 border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}>
                       <EyeIcon className="w-4 h-4 text-muted-foreground" />
                       <span className="text-sm text-foreground">{t('editor.visibility')}</span>
-                      <span className={`text-xs text-muted-foreground ${isRTL ? 'mr-auto' : 'ml-auto'}`}>{t('home.private')}</span>
+                      <span className={`text-xs text-muted-foreground ${isRTL ? 'mr-auto' : 'ml-auto'}`}>{project?.isPublished ? t('home.public') : t('home.private')}</span>
                     </div>
                   </motion.div>
                 </>
@@ -440,6 +489,19 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             </AnimatePresence>
           </div>
         </div>
+
+        {/* Upgrade Banner (Conditional) */}
+        {showUpgradeBanner && (
+          <div className="hidden md:flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-3 py-1.5 rounded-full border border-amber-500/20 mr-4">
+             <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+             <span className="text-xs font-medium text-amber-500">
+               {userPlan?.plan === 'spark' ? `${Math.floor((userPlan?.credits_used_today / userPlan?.daily_credits) * 100)}% Used` : 'Credits Running Low'}
+             </span>
+             <button onClick={() => navigate('/pricing')} className="text-xs font-bold text-amber-600 hover:underline">
+               Upgrade
+             </button>
+          </div>
+        )}
 
         {/* Center - View Toggle (Bolt Style) - More to the left */}
         <div className={`hidden md:flex items-center bg-secondary rounded-full p-1 border border-border absolute left-1/2 transform -translate-x-1/2`}>
@@ -511,7 +573,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-sm font-bold text-black"
+              className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-sm font-bold text-black ring-2 ring-transparent hover:ring-primary/20 transition-all"
             >
               {user?.email?.[0].toUpperCase()}
             </button>
@@ -527,10 +589,39 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-full mt-2 w-56 bg-card border border-border rounded-lg shadow-xl overflow-hidden z-[9999]`}
+                    className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-full mt-2 w-64 bg-card border border-border rounded-lg shadow-xl overflow-hidden z-[9999]`}
                   >
+                    {/* User Info & Credits */}
+                    <div className="px-4 py-3 border-b border-border bg-secondary/30">
+                      <p className="text-sm font-bold text-foreground truncate">{user?.email}</p>
+
+                      {userPlan && (
+                        <div className="mt-3 space-y-2">
+                           <div className="flex items-center justify-between text-xs">
+                             <span className="text-muted-foreground flex items-center gap-1">
+                               <Zap className="w-3 h-3 text-amber-500" />
+                               {userPlan.plan === 'spark' ? 'Daily Credits' : 'Monthly Credits'}
+                             </span>
+                             <span className="font-bold text-foreground">
+                               {Math.max(0, (userPlan.plan === 'spark' ? userPlan.daily_credits : userPlan.monthly_credits) - userPlan.credits_used_today).toFixed(1)}
+                             </span>
+                           </div>
+                           <Progress
+                              value={(userPlan.credits_used_today / (userPlan.plan === 'spark' ? userPlan.daily_credits : userPlan.monthly_credits)) * 100}
+                              className="h-1.5"
+                           />
+                           <button
+                             onClick={() => { setShowUserMenu(false); navigate('/pricing'); }}
+                             className="w-full mt-1 text-xs font-medium text-primary hover:underline text-left"
+                           >
+                             Upgrade Plan →
+                           </button>
+                        </div>
+                      )}
+                    </div>
+
                     <button
-                      onClick={() => setShowUserMenu(false)}
+                      onClick={() => { setShowUserMenu(false); setShowSettingsModal(true); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
                     >
                       <Settings className="w-4 h-4 text-muted-foreground" />
@@ -544,7 +635,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                       <span>{t('nav.docs')}</span>
                     </button>
                     <button
-                      onClick={() => setShowUserMenu(false)}
+                      onClick={() => { setShowUserMenu(false); navigate('/pricing'); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
                     >
                       <CreditCard className="w-4 h-4 text-muted-foreground" />
@@ -636,6 +727,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               versions={versions}
               onSelectVersion={handleSelectVersion}
               onRollback={handleRollback}
+              userPlan={userPlan?.plan || 'spark'}
             />
           </div>
 
@@ -681,6 +773,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               versions={versions}
               onSelectVersion={handleSelectVersion}
               onRollback={handleRollback}
+              userPlan={userPlan?.plan || 'spark'}
             />
           )}
           {mobilePanel === 'preview' && (
@@ -716,6 +809,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         projectName={project?.name || 'untitled-project'}
         projectFiles={project?.files || {}}
         onDeployed={setDeployedUrl}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        open={showSettingsModal}
+        onOpenChange={setShowSettingsModal}
       />
     </div>
   );

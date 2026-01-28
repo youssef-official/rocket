@@ -1,138 +1,153 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Eye, Code2, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { RocketLogo } from '@/components/shared/RocketLogo';
-import type { ProjectFile } from '@/types';
-import spaceHeroBg from '@/assets/space-hero-bg.jpg';
+import { PreviewView } from '@/components/editor/PreviewView';
+import { CodeView } from '@/components/editor/CodeView';
+import { supabase } from '@/integrations/supabase/client';
+import type { ProjectData, ProjectFile } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Eye, Code2, Loader2, ArrowLeft } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
-export const ProjectView: React.FC = () => {
+export const ProjectView = () => {
   const { projectId } = useParams<{ projectId: string }>();
-  const { user } = useAuth();
-  const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
-
+  const { t } = useLanguage();
+  const [project, setProject] = useState<ProjectData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [project, setProject] = useState<any>(null);
+  const [currentView, setCurrentView] = useState<'preview' | 'code'>('preview');
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProject = async () => {
-      if (!projectId) {
-        setError(t('project.notFound'));
-        setLoading(false);
-        return;
-      }
+      if (!projectId) return;
 
       try {
-        const { data, error: fetchError } = await supabase
+        const { data, error } = await supabase
           .from('projects')
           .select('*')
           .eq('id', projectId)
           .single();
 
-        if (fetchError || !data) {
-          setError(t('project.notFound'));
-          setLoading(false);
-          return;
+        if (error) throw error;
+
+        // Check visibility
+        if (!data.is_public) {
+           // We might want to check auth here too, but for now we assume public view is strictly for public projects
+           // or we rely on RLS. If RLS blocks it, we get an error.
         }
 
-        // Check if project is private
-        if (!data.is_public && data.user_id !== user?.id) {
-          setError(t('project.private'));
-          setLoading(false);
-          return;
-        }
+        const projectData: ProjectData = {
+            id: data.id,
+            name: data.name,
+            description: data.description,
+            projectType: data.project_type,
+            files: data.files as Record<string, ProjectFile>,
+            isPublished: data.is_public,
+            publishedSlug: data.slug,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at,
+            generatedName: data.generated_name
+        };
 
-        // If user owns the project, redirect to editor
-        if (data.user_id === user?.id) {
-          navigate(`/projects/${projectId}`);
-          return;
-        }
-
-        setProject(data);
-      } catch (err) {
-        setError(t('project.notFound'));
+        setProject(projectData);
+      } catch (err: any) {
+        console.error('Error fetching project:', err);
+        setError('Project not found or you do not have permission to view it.');
       } finally {
         setLoading(false);
       }
     };
 
     fetchProject();
-  }, [projectId, user, navigate, t]);
+  }, [projectId]);
 
   if (loading) {
     return (
-      <div 
-        className="min-h-screen flex items-center justify-center"
-        style={{
-          backgroundImage: `url(${spaceHeroBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="relative z-10 flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 text-white animate-spin" />
-          <p className="text-white/80">{t('common.loading')}</p>
-        </div>
+      <div className="h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (error) {
+  if (error || !project) {
     return (
-      <div 
-        className="min-h-screen flex items-center justify-center"
-        style={{
-          backgroundImage: `url(${spaceHeroBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div className="absolute inset-0 bg-black/50" />
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 p-12 text-center max-w-md"
-        >
-          <RocketLogo size="lg" className="mx-auto mb-6" />
-          <h1 className="text-2xl font-bold text-white mb-4">{error}</h1>
-          <p className="text-white/70 mb-6">
-            {error === t('project.private') 
-              ? 'This project is set to private and can only be viewed by its owner.'
-              : 'The project you are looking for does not exist or has been deleted.'
-            }
-          </p>
-          <a 
-            href="/"
-            className="inline-block px-6 py-3 bg-pink-500 hover:bg-pink-600 text-white rounded-xl font-medium transition-colors"
-          >
-            {t('nav.backToHome')}
-          </a>
-        </motion.div>
+      <div className="h-screen flex flex-col items-center justify-center bg-background p-4 text-center">
+        <RocketLogo size="lg" className="mb-6 opacity-50" />
+        <h2 className="text-2xl font-bold mb-2">Project Not Found</h2>
+        <p className="text-muted-foreground mb-6">{error || "The project you're looking for doesn't exist or is private."}</p>
+        <Button onClick={() => navigate('/')}>
+          Go Home
+        </Button>
       </div>
     );
   }
 
-  // Simple view-only display
   return (
-    <div className="h-screen flex flex-col bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      <header className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
-        <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <a href="/"><RocketLogo size="sm" /></a>
-          <div className="h-4 w-px bg-border" />
-          <h1 className="font-medium text-foreground">{project?.name || 'Untitled Project'}</h1>
-          <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 text-xs rounded-full">
-            {t('project.viewOnly')}
-          </span>
+    <div className="h-screen flex flex-col bg-background">
+      {/* Header */}
+      <header className="h-14 flex items-center justify-between px-4 bg-card border-b border-border">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+             <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <RocketLogo size="sm" showText={false} />
+            <h1 className="font-bold text-lg truncate max-w-[200px]">{project.generatedName || project.name}</h1>
+          </div>
+        </div>
+
+        {/* View Toggle */}
+        <div className="flex items-center bg-secondary rounded-full p-1 border border-border">
+          <button
+            onClick={() => setCurrentView('preview')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+              currentView === 'preview'
+                ? 'bg-accent text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>Preview</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('code')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+              currentView === 'code'
+                ? 'bg-accent text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Code2 className="w-3.5 h-3.5" />
+            <span>Code</span>
+          </button>
+        </div>
+
+        <div className="w-[100px] flex justify-end">
+           <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+             Build Your Own
+           </Button>
         </div>
       </header>
-      <div className="flex-1 flex items-center justify-center bg-muted">
-        <p className="text-muted-foreground">Preview coming soon...</p>
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden">
+        {currentView === 'preview' ? (
+          <PreviewView
+            files={project.files}
+            projectType={project.projectType}
+            isLoading={false}
+          />
+        ) : (
+          <CodeView
+            files={project.files}
+            selectedFile={selectedFile}
+            onSelectFile={setSelectedFile}
+            onUpdateFile={() => {}} // Read only
+            readOnly={true}
+          />
+        )}
       </div>
     </div>
   );
