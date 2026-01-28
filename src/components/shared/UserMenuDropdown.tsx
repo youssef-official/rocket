@@ -11,9 +11,10 @@ interface UserMenuDropdownProps {
   user: User;
   signOut: () => void;
   onUpgradeClick?: () => void;
+  onSettingsClick?: () => void;
 }
 
-export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOut, onUpgradeClick }) => {
+export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOut, onUpgradeClick, onSettingsClick }) => {
   const [showMenu, setShowMenu] = useState(false);
   const { theme, cycleTheme } = useThemePreference();
   const { t, isRTL } = useLanguage();
@@ -75,14 +76,18 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
       closeTimeoutRef.current = null;
     }
     setShowMenu(false);
-    navigate('/settings');
+    if (onSettingsClick) {
+      onSettingsClick();
+    } else {
+      navigate('/settings');
+    }
   };
 
   const remainingCredits = getRemainingCredits();
   const planConfig = userPlan ? PLAN_CONFIG[userPlan.plan] : PLAN_CONFIG.spark;
 
   return (
-    <div 
+    <div
       ref={menuRef}
       className="relative"
       onMouseEnter={handleMouseEnter}
@@ -95,80 +100,80 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
       >
         <UserIcon className="w-5 h-5 text-white" />
       </button>
-      
+
       {showMenu && (
-        <div 
+        <div
           className={`absolute ${isRTL ? 'right-auto left-0' : 'right-0'} top-full mt-2 z-[9999]`}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-            <div className="w-56 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl">
-              <div className="p-3 border-b border-white/10">
-                <p className={`text-sm font-medium text-white truncate ${isRTL ? 'text-right' : ''}`}>{user.email}</p>
-                <div className={`flex items-center justify-between mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <span className="text-xs text-white/60">{planConfig.name} Plan</span>
-                </div>
+          <div className="w-56 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl">
+            <div className="p-3 border-b border-white/10">
+              <p className={`text-sm font-medium text-white truncate ${isRTL ? 'text-right' : ''}`}>{user.email}</p>
+              <div className={`flex items-center justify-between mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <span className="text-xs text-white/60">{planConfig.name} Plan</span>
               </div>
+            </div>
 
-              {/* Credits Display */}
-              <div className="p-3 border-b border-white/10 bg-white/5">
-                <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <Coins className="w-4 h-4 text-yellow-400" />
-                    <span className="text-sm text-white/80">{t('credits.remaining')}</span>
-                  </div>
-                  <span className="text-sm font-bold text-yellow-400">{remainingCredits}</span>
+            {/* Credits Display */}
+            <div className="p-3 border-b border-white/10 bg-white/5">
+              <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <Coins className="w-4 h-4 text-yellow-400" />
+                  <span className="text-sm text-white/80">{t('credits.remaining')}</span>
                 </div>
-                <p className="text-xs text-white/50 mt-1">
-                  {userPlan?.plan === 'spark' ? t('credits.daily') : t('credits.monthly')}
-                </p>
+                <span className="text-sm font-bold text-yellow-400">{remainingCredits}</span>
               </div>
+              <p className="text-xs text-white/50 mt-1">
+                {userPlan?.plan === 'spark' ? t('credits.daily') : t('credits.monthly')}
+              </p>
+            </div>
 
-              <div className="p-2">
-                {/* Upgrade Button */}
-                {userPlan?.plan === 'spark' && onUpgradeClick && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      onUpgradeClick();
-                    }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 mb-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg transition-colors text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
-                  >
-                    <Crown className="w-4 h-4" />
-                    {t('models.upgradeAccess')}
-                  </button>
-                )}
-
-                {/* Language Selector */}
-                <LanguageSelector />
-                
-                {/* Theme Toggle */}
+            <div className="p-2">
+              {/* Upgrade Button */}
+              {userPlan?.plan === 'spark' && onUpgradeClick && (
                 <button
                   type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    cycleTheme();
+                    setShowMenu(false);
+                    onUpgradeClick();
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
+                  className={`w-full flex items-center gap-2 px-3 py-2 mb-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg transition-colors text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
                 >
-                  <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    {getThemeIcon()}
-                    {t('common.theme')}
-                  </div>
-                  <span className="text-xs text-white/60">{getThemeLabel()}</span>
+                  <Crown className="w-4 h-4" />
+                  {t('models.upgradeAccess')}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleSettings}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
-                >
-                  <Settings className="w-4 h-4" />
-                  {t('common.settings')}
-                </button>
+              )}
+
+              {/* Language Selector */}
+              <LanguageSelector />
+
+              {/* Theme Toggle */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  cycleTheme();
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
+              >
+                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  {getThemeIcon()}
+                  {t('common.theme')}
+                </div>
+                <span className="text-xs text-white/60">{getThemeLabel()}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSettings}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
+              >
+                <Settings className="w-4 h-4" />
+                {t('common.settings')}
+              </button>
               <button
                 type="button"
                 onClick={handleSignOut}

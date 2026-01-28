@@ -19,7 +19,7 @@ export function useChatMessages(projectId: string | null) {
     try {
       const { data, error } = await supabase
         .from('chat_messages')
-        .select('*')
+        .select('id, project_id, user_id, role, content, image_url, created_at')
         .eq('project_id', projectId)
         .order('created_at', { ascending: true });
 
@@ -29,7 +29,7 @@ export function useChatMessages(projectId: string | null) {
         id: m.id,
         role: m.role as 'user' | 'assistant',
         content: m.content,
-        imageUrl: (m as any).image_url || undefined,
+        imageUrl: m.image_url,
         createdAt: m.created_at,
       }));
 
@@ -62,6 +62,7 @@ export function useChatMessages(projectId: string | null) {
     setMessages(prev => [...prev, newMessage]);
 
     try {
+      // Include image_url in insert as it exists in types.ts and migrations
       const { data, error } = await supabase
         .from('chat_messages')
         .insert({
@@ -72,10 +73,13 @@ export function useChatMessages(projectId: string | null) {
           content,
           image_url: imageUrl || null,
         })
-        .select()
+        .select('id, project_id, user_id, role, content, image_url, created_at')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error saving message:', error);
+        throw error;
+      }
 
       return newMessage;
     } catch (error) {

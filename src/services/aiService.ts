@@ -1,17 +1,18 @@
-import type { ProjectFile } from '@/types';
+import { callingDirectAI } from './directAiService';
 
-// Abort controller for stopping generation
-let currentAbortController: AbortController | null = null;
+const fallbackNames = [
+  'Initial Build',
+  'Feature Update',
+  'UI Enhancement',
+  'Bug Fixes',
+  'Performance Boost',
+  'Style Refresh',
+  'Component Upgrade',
+  'Layout Update',
+];
 
-interface StreamCallbacks {
-  onChunk: (chunk: string) => void;
-  onComplete: (fullResponse: string) => void;
-  onError: (error: Error) => void;
-  onFileStart?: (fileName: string) => void;
-  onStatusUpdate?: (status: string) => void;
-}
-
-interface ChatMessage {
+// Re-export types
+export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
@@ -21,256 +22,246 @@ export interface Suggestion {
   prompt: string;
 }
 
-// Enhanced system prompt for PREMIUM, PROFESSIONAL designs
-const ENHANCED_SYSTEM_PROMPT = `You are an ELITE web developer and UI/UX designer creating STUNNING, PROFESSIONAL applications.
+// Helper to parse AI response
+export function parseAIResponse(response: string): { files: Record<string, any>, fileList: string[] } {
+  try {
+    // Attempt to extract JSON from code blocks if present
+    const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/) ||
+      response.match(/```([\s\S]*?)```/);
 
-## 🎨 DESIGN EXCELLENCE STANDARDS
+    let jsonStr = jsonMatch ? jsonMatch[1] : response;
+    // Clean potential prefixes
+    jsonStr = jsonStr.trim();
 
-### Visual Design (CRITICAL)
-- Create interfaces that look like they cost $100,000+ to build
-- Use sophisticated, harmonious color palettes with PERFECT contrast
-- Implement smooth, delightful micro-interactions and animations with Framer Motion
-- Apply generous whitespace and CAREFUL spacing for elegant layouts
-- Use gradients, shadows, and depth for a PREMIUM feel
-- Design mobile-first, responsive across ALL devices
+    // Ensure we capture the JSON object if there's surrounding text
+    const startIdx = jsonStr.indexOf('{');
+    const endIdx = jsonStr.lastIndexOf('}');
+    if (startIdx !== -1 && endIdx !== -1) {
+      jsonStr = jsonStr.substring(startIdx, endIdx + 1);
+    }
 
-### Typography Hierarchy
-- Headlines: Large, bold, impactful (text-4xl to text-7xl)
-- Subheadings: Clear, medium weight (text-xl to text-2xl)  
-- Body: Readable, comfortable (text-base to text-lg)
-- Use proper line height and letter spacing
+    const parsed = JSON.parse(jsonStr);
 
-### Component Quality
-- Build REUSABLE, well-structured React components
-- Use semantic HTML elements (header, main, section, article, nav, footer)
-- Implement proper accessibility (ARIA labels, keyboard navigation)
-- Add hover states, focus states, and smooth transitions
+    const files: Record<string, any> = {};
+    let fileList: string[] = [];
 
-### Modern Patterns
-- Hero sections with compelling CTAs and animations
-- Feature grids with icons and descriptions
-- Testimonial carousels or cards
-- Pricing tables with highlighted plans
-- Contact forms with validation
-- Footer with links and social icons
-
-## 🛠 TECH STACK (Vite + React + TypeScript)
-
-**IMPORTANT FILE ORDER:**
-1. FIRST generate: src/index.css (with Tailwind and CSS variables)
-2. SECOND generate: tailwind.config.ts
-3. THEN generate all other files in order:
-   - package.json
-   - vite.config.ts
-   - tsconfig.json
-   - index.html
-   - src/main.tsx
-   - src/App.tsx
-   - src/components/* (create MULTIPLE component files)
-   - Additional pages and utilities
-
-## 📦 RESPONSE FORMAT
-You MUST respond with valid JSON in this EXACT structure:
-{
-  "files": {
-    "src/index.css": "/* CSS content */",
-    "tailwind.config.ts": "// config content",
-    "package.json": "{ package content }",
-    "src/App.tsx": "// React component"
+    if (parsed.files) {
+      fileList = Object.keys(parsed.files);
+      Object.entries(parsed.files).forEach(([path, content]) => {
+        files[path] = {
+          path,
+          content: content as string,
+          type: 'file'
+        };
+      });
+    }
+    return { files, fileList };
+  } catch (e) {
+    console.error("Failed to parse AI response", e);
+    return { files: {}, fileList: [] };
   }
 }
 
-## ⚠️ CRITICAL RULES
-1. Generate COMPLETE, RUNNABLE code - NO placeholders, NO TODOs
-2. Include ALL imports and dependencies
-3. Use Tailwind CSS for ALL styling with CSS variables
-4. Add Framer Motion animations for smooth UX
-5. Use Lucide React icons consistently
-6. Implement RESPONSIVE design (sm:, md:, lg:, xl:)
-7. Create MULTIPLE PAGES and COMPONENTS for large projects
-8. Generate AT LEAST 10-15 files for complex projects
-9. Make the UI VISUALLY STUNNING - this is the #1 priority
-10. Do NOT use 'import.meta.env' or 'import.meta' (it causes errors)
-11. Do NOT use 'react-hot-toast' (use 'sonner' instead)
+// Generate default project
+export function generateDefaultViteProject(): any[] {
+  return [
+    {
+      path: 'package.json',
+      content: JSON.stringify({
+        "name": "vite-react-project",
+        "private": true,
+        "version": "0.0.0",
+        "type": "module",
+        "scripts": {
+          "dev": "vite",
+          "build": "vite build",
+          "lint": "eslint .",
+          "preview": "vite preview"
+        },
+        "dependencies": {
+          "react": "^18.3.1",
+          "react-dom": "^18.3.1",
+          "lucide-react": "^0.344.0",
+          "clsx": "^2.1.0",
+          "tailwind-merge": "^2.2.1",
+          "framer-motion": "^11.0.8"
+        },
+        "devDependencies": {
+          "@types/react": "^18.2.66",
+          "@types/react-dom": "^18.2.22",
+          "@vitejs/plugin-react": "^4.2.1",
+          "autoprefixer": "^10.4.18",
+          "postcss": "^8.4.35",
+          "tailwindcss": "^3.4.1",
+          "typescript": "^5.2.2",
+          "vite": "^5.2.0"
+        }
+      }, null, 2),
+      type: 'file'
+    },
+    {
+      path: 'vite.config.ts',
+      content: `import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-CREATE SOMETHING EXCEPTIONAL!`;
+export default defineConfig({
+  plugins: [react()],
+})`,
+      type: 'file'
+    },
+    {
+      path: 'index.html',
+      content: `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React + TS</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>`,
+      type: 'file'
+    },
+    {
+      path: 'src/main.tsx',
+      content: `import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
 
-// System prompt for step-by-step status updates
-const STATUS_SYSTEM_PROMPT = `You are a helpful assistant that provides brief, one-line status updates.
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)`,
+      type: 'file'
+    },
+    {
+      path: 'src/App.tsx',
+      content: `import { useState } from 'react'
 
-When asked, respond with ONLY a short status message (max 8 words) describing what's being done.
+function App() {
+  const [count, setCount] = useState(0)
 
-Examples:
-- "Creating the design system..."
-- "Building the navigation components..."
-- "Setting up the page layouts..."
-- "Adding animations and interactions..."
-- "Configuring the project structure..."
+  return (
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-4">
+      <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+        Vite + React
+      </h1>
+      <div className="card p-8 bg-slate-900 rounded-xl border border-slate-800">
+        <button 
+          onClick={() => setCount((count) => count + 1)}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors"
+        >
+          count is {count}
+        </button>
+        <p className="mt-4 text-slate-400">
+          Edit <code>src/App.tsx</code> and save to test HMR
+        </p>
+      </div>
+    </div>
+  )
+}
 
-RULES:
-- Response should be ONE short sentence only
-- No code, no JSON, no markdown
-- Keep it friendly and professional
-- Max 8 words`;
+export default App`,
+      type: 'file'
+    },
+    {
+      path: 'src/index.css',
+      content: `@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-// System prompt for explanation only (no code)
-const EXPLANATION_SYSTEM_PROMPT = `You are a helpful AI assistant that explains project plans clearly and concisely.
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}`,
+      type: 'file'
+    },
+    {
+      path: 'tsconfig.json',
+      content: JSON.stringify({
+        "compilerOptions": {
+          "target": "ES2020",
+          "useDefineForClassFields": true,
+          "lib": ["ES2020", "DOM", "DOM.Iterable"],
+          "module": "ESNext",
+          "skipLibCheck": true,
+          "moduleResolution": "bundler",
+          "allowImportingTsExtensions": true,
+          "resolveJsonModule": true,
+          "isolatedModules": true,
+          "noEmit": true,
+          "jsx": "react-jsx",
+          "strict": true,
+          "noUnusedLocals": true,
+          "noUnusedParameters": true,
+          "noFallthroughCasesInSwitch": true,
+          "baseUrl": ".",
+          "paths": { "@/*": ["./src/*"] }
+        },
+        "include": ["src"],
+        "references": [{ "path": "./tsconfig.node.json" }]
+      }, null, 2),
+      type: 'file'
+    }
+  ];
+}
 
-When a user asks you to build something:
-1. Start with a friendly acknowledgment (1 sentence)
-2. List 4-6 key features you'll create (bullet points with •)
-3. End with "Now I'll start building..."
-
-IMPORTANT RULES:
-- Do NOT include any code, JSON, or technical file contents
-- Do NOT use markdown code blocks
-- Keep the response SHORT (max 100 words)
-- Focus on WHAT you'll build, not HOW
-- Use simple, friendly language
-
-Example response:
-"I'll create a stunning restaurant website for you! 🍽️
-
-Here's what I'm building:
-• Eye-catching hero with food photography
-• Interactive menu with categories and filters
-• Reservation booking system
-• Customer reviews section
-• Contact information and location map
-• Responsive design for all devices
-
-Now I'll start building..."`;
-
-// System prompt for generating a short project name (2 words)
-const PROJECT_NAME_SYSTEM_PROMPT = `You are a creative naming assistant. Generate a SHORT, CATCHY 2-WORD project name based on the user's project description.
-
-RULES:
-1. Return ONLY 2 words separated by a space
-2. The words should relate to the project theme
-3. Make it catchy, memorable, and professional
-4. No explanation, no extra text, just 2 words
-5. Use Title Case (first letter of each word capitalized)
-
-Examples:
-- Restaurant Website → Gourmet Hub
-- Portfolio Site → Creative Canvas
-- Blog Platform → Story Flow
-- E-commerce Store → Shop Swift
-- Task Manager → Task Master
-- Social Network → Connect Hub
-- Fitness App → Fit Track
-- Recipe App → Chef's Corner`;
-
-// System prompt for generating suggestions
-const SUGGESTIONS_SYSTEM_PROMPT = `You are a helpful assistant that generates feature suggestions for a project.
-
-Based on the project description and current state, generate 4 useful suggestions that the user might want to add or improve.
-
-RULES:
-1. Return ONLY valid JSON array with 4 objects
-2. Each object must have "label" (short display text, 2-4 words) and "prompt" (the full request to send)
-3. Make suggestions relevant and actionable
-4. Focus on common next steps users forget or might want
-
-Response format (JSON only, no markdown):
-[
-  {"label": "Add Dark Mode", "prompt": "Add a dark mode toggle that saves preference to localStorage"},
-  {"label": "Improve SEO", "prompt": "Add meta tags, Open Graph tags, and improve SEO optimization"},
-  {"label": "Add Animations", "prompt": "Add smooth page transitions and micro-interactions using Framer Motion"},
-  {"label": "Mobile Menu", "prompt": "Add a responsive mobile hamburger menu with smooth animations"}
-]`;
 
 // Generate short project name (2 words)
-export async function generateProjectName(prompt: string): Promise<string> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
+export async function generateProjectName(prompt: string, modelId?: string): Promise<string> {
   try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
-      },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: `Project: ${prompt}` }],
-        projectType: 'vite',
-        mode: 'project-name',
-      }),
-    });
+    const msgs = [{ role: 'user', content: `Project: ${prompt}` }];
+    const response = await callingDirectAI('project-name', msgs, modelId);
 
     if (!response.ok) {
-      // Generate fallback name from first 2 significant words
-      const words = prompt.split(/\s+/).filter(w => w.length > 2);
-      if (words.length >= 2) {
-        return words.slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-      }
-      return 'New Project';
+      throw new Error(`AI request failed: ${response.status}`);
     }
 
-    if (!response.body) {
-      return 'New Project';
-    }
-
-    const reader = response.body.getReader();
+    // Just read stream as text for project name, looking for data
+    const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let fullResponse = '';
-    let buffer = '';
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      
-      let newlineIndex: number;
-      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-        let line = buffer.slice(0, newlineIndex);
-        buffer = buffer.slice(newlineIndex + 1);
-
-        if (line.endsWith('\r')) line = line.slice(0, -1);
-        if (line.startsWith(':') || line.trim() === '') continue;
-        if (!line.startsWith('data: ')) continue;
-
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === '[DONE]') continue;
-
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) {
-            fullResponse += content;
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              const content = parsed.choices?.[0]?.delta?.content || '';
+              fullResponse += content;
+            } catch (e) { }
           }
-        } catch {
-          buffer = line + '\n' + buffer;
-          break;
         }
       }
     }
 
+    const content = fullResponse || 'New Project';
+
     // Clean and return the 2-word name
-    const cleaned = fullResponse.trim().replace(/[^a-zA-Z\s]/g, '').trim();
-    const words = cleaned.split(/\s+/).filter(w => w.length > 0);
+    const cleaned = content.trim().replace(/[^a-zA-Z\s]/g, '').trim();
+    const words = cleaned.split(/\s+/).filter((w: string) => w.length > 0);
     if (words.length >= 2) {
-      return words.slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      return words.slice(0, 2).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     }
     return cleaned || 'New Project';
+
   } catch (error) {
     console.error('Project name generation error:', error);
-    // Fallback: use first 2 words from prompt
-    const words = prompt.split(/\s+/).filter(w => w.length > 2);
-    if (words.length >= 2) {
-      return words.slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-    }
     return 'New Project';
   }
 }
 
 // Generate suggestions after project completion
-export async function generateSuggestions(projectDescription: string): Promise<Suggestion[]> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
+export async function generateSuggestions(projectDescription: string, modelId?: string): Promise<Suggestion[]> {
   const defaultSuggestions: Suggestion[] = [
     { label: "Add Dark Mode", prompt: "Add a dark mode toggle that saves user preference" },
     { label: "Improve Mobile", prompt: "Improve the mobile responsiveness and add a hamburger menu" },
@@ -279,64 +270,33 @@ export async function generateSuggestions(projectDescription: string): Promise<S
   ];
 
   try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
-      },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: `Project description: ${projectDescription}. Generate 4 relevant feature suggestions.` }],
-        projectType: 'vite',
-        mode: 'suggestions',
-      }),
-    });
+    const msgs = [{ role: 'user', content: `Project description: ${projectDescription}. Generate 4 relevant feature suggestions.` }];
+    const response = await callingDirectAI('suggestions', msgs, modelId);
 
-    if (!response.ok) {
-      return defaultSuggestions;
-    }
+    if (!response.ok) return defaultSuggestions;
 
-    if (!response.body) {
-      return defaultSuggestions;
-    }
-
-    const reader = response.body.getReader();
+    const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let fullResponse = '';
-    let buffer = '';
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      
-      let newlineIndex: number;
-      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-        let line = buffer.slice(0, newlineIndex);
-        buffer = buffer.slice(newlineIndex + 1);
-
-        if (line.endsWith('\r')) line = line.slice(0, -1);
-        if (line.startsWith(':') || line.trim() === '') continue;
-        if (!line.startsWith('data: ')) continue;
-
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === '[DONE]') continue;
-
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) {
-            fullResponse += content;
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              const content = parsed.choices?.[0]?.delta?.content || '';
+              fullResponse += content;
+            } catch (e) { }
           }
-        } catch {
-          buffer = line + '\n' + buffer;
-          break;
         }
       }
     }
 
-    // Try to parse the suggestions JSON
     try {
       const jsonMatch = fullResponse.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
@@ -359,73 +319,42 @@ export async function generateSuggestions(projectDescription: string): Promise<S
 // Chat-only response (no code generation)
 export async function generateChatResponse(
   prompt: string,
-  conversationHistory: Array<{ role: string; content: string }>
+  conversationHistory: Array<{ role: string; content: string }>,
+  modelId?: string
 ): Promise<string> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
   try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
-      },
-      body: JSON.stringify({
-        messages: [
-          ...conversationHistory.slice(-10).map(m => ({ role: m.role, content: m.content })),
-          { role: 'user', content: prompt }
-        ],
-        projectType: 'vite',
-        mode: 'chat',
-      }),
-    });
+    const msgs = [
+      ...conversationHistory.slice(-10).map(m => ({ role: m.role, content: m.content })),
+      { role: 'user', content: prompt }
+    ];
+    const response = await callingDirectAI('chat', msgs, modelId);
 
-    if (!response.ok) {
-      throw new Error(`Failed to generate chat response: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Status ${response.status}`);
 
-    if (!response.body) {
-      throw new Error('No response body');
-    }
-
-    const reader = response.body.getReader();
+    const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let fullResponse = '';
-    let buffer = '';
+
+    if (!reader) throw new Error('No body');
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      
-      let newlineIndex: number;
-      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-        let line = buffer.slice(0, newlineIndex);
-        buffer = buffer.slice(newlineIndex + 1);
-
-        if (line.endsWith('\r')) line = line.slice(0, -1);
-        if (line.startsWith(':') || line.trim() === '') continue;
-        if (!line.startsWith('data: ')) continue;
-
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === '[DONE]') continue;
-
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) {
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          try {
+            const parsed = JSON.parse(line.slice(6));
+            const content = parsed.choices?.[0]?.delta?.content || '';
             fullResponse += content;
-          }
-        } catch {
-          buffer = line + '\n' + buffer;
-          break;
+          } catch (e) { }
         }
       }
     }
 
     return fullResponse || "I'm here to help! What would you like to know about your project?";
+
   } catch (error) {
     console.error('Chat response error:', error);
     return "I'm having trouble connecting right now. Please try again in a moment.";
@@ -435,73 +364,42 @@ export async function generateChatResponse(
 // Generate explanation only (for chat display)
 export async function generateExplanation(
   prompt: string,
-  projectType: 'vite' | 'html'
+  projectType: 'vite' | 'html',
+  modelId?: string
 ): Promise<string> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
   try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
-      },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: prompt }],
-        projectType,
-        mode: 'explanation',
-      }),
-    });
+    const msgs = [{ role: 'user', content: prompt }];
+    const response = await callingDirectAI('explanation', msgs, modelId);
 
-    if (!response.ok) {
-      throw new Error(`Failed to generate explanation: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Status ${response.status}`);
 
-    if (!response.body) {
-      throw new Error('No response body');
-    }
-
-    const reader = response.body.getReader();
+    const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let fullResponse = '';
-    let buffer = '';
+
+    if (!reader) throw new Error('No body');
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      
-      let newlineIndex: number;
-      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-        let line = buffer.slice(0, newlineIndex);
-        buffer = buffer.slice(newlineIndex + 1);
-
-        if (line.endsWith('\r')) line = line.slice(0, -1);
-        if (line.startsWith(':') || line.trim() === '') continue;
-        if (!line.startsWith('data: ')) continue;
-
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === '[DONE]') continue;
-
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) {
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          try {
+            const parsed = JSON.parse(line.slice(6));
+            const content = parsed.choices?.[0]?.delta?.content || '';
             fullResponse += content;
-          }
-        } catch {
-          buffer = line + '\n' + buffer;
-          break;
+          } catch (e) { }
         }
       }
     }
 
     return fullResponse || "I'll create something amazing for you!";
+
   } catch (error) {
     console.error('Explanation generation error:', error);
-    return "I'm working on your project now...";
+    return "I'll build something great for you! 🚀";
   }
 }
 
@@ -509,72 +407,43 @@ export async function generateExplanation(
 export async function generateStatusUpdate(
   currentStep: string
 ): Promise<string> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
   try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
-      },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: `Current step: ${currentStep}. Give a brief status.` }],
-        projectType: 'vite',
-        mode: 'status',
-      }),
-    });
+    const msgs = [{ role: 'user', content: `Current step: ${currentStep}. Give a brief status.` }];
+    const response = await callingDirectAI('status', msgs);
 
-    if (!response.ok) {
-      return currentStep;
-    }
+    if (!response.ok) return currentStep;
 
-    if (!response.body) {
-      return currentStep;
-    }
-
-    const reader = response.body.getReader();
+    const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let fullResponse = '';
-    let buffer = '';
+
+    if (!reader) return currentStep;
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      
-      let newlineIndex: number;
-      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-        let line = buffer.slice(0, newlineIndex);
-        buffer = buffer.slice(newlineIndex + 1);
-
-        if (line.endsWith('\r')) line = line.slice(0, -1);
-        if (line.startsWith(':') || line.trim() === '') continue;
-        if (!line.startsWith('data: ')) continue;
-
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === '[DONE]') continue;
-
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) {
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          try {
+            const parsed = JSON.parse(line.slice(6));
+            const content = parsed.choices?.[0]?.delta?.content || '';
             fullResponse += content;
-          }
-        } catch {
-          buffer = line + '\n' + buffer;
-          break;
+          } catch (e) { }
         }
       }
     }
 
     return fullResponse || currentStep;
+
   } catch {
     return currentStep;
   }
 }
+
+// Abort controller for stopping generation
+let currentAbortController: AbortController | null = null;
 
 // Stop generation
 export function stopGeneration(): void {
@@ -584,58 +453,47 @@ export function stopGeneration(): void {
   }
 }
 
+interface StreamCallbacks {
+  onChunk: (chunk: string) => void;
+  onComplete: (fullResponse: string) => void;
+  onError: (error: Error) => void;
+  onFileStart?: (fileName: string) => void;
+  onStatusUpdate?: (status: string) => void;
+}
+
 // Stream AI code generation
 export async function streamAICodeGeneration(
   messages: ChatMessage[],
   projectType: 'vite' | 'html',
   callbacks: StreamCallbacks,
-  existingFiles?: string[]
+  existingFiles?: string[],
+  modelId?: string
 ): Promise<void> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-  // Create new abort controller
   currentAbortController = new AbortController();
   const { signal } = currentAbortController;
 
   try {
     callbacks.onStatusUpdate?.('Setting up project structure...');
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
-      },
-      body: JSON.stringify({ 
-        messages, 
-        projectType, 
-        mode: 'code',
-        existingFiles: existingFiles || []
-      }),
-      signal,
-    });
+    const response = await callingDirectAI(
+      'code',
+      messages,
+      modelId,
+      signal
+    );
 
     if (!response.ok) {
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please wait a moment and try again.');
-      }
-      if (response.status === 402) {
-        throw new Error('Credits exhausted. Please add more credits.');
-      }
-      throw new Error(`AI service error: ${response.status}`);
+      throw new Error('⚠️ Service temporarily unavailable. Please try again later.');
     }
 
     if (!response.body) {
-      throw new Error('No response body');
+      throw new Error('⚠️ Connection issue. Please check your internet and try again.');
     }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let fullResponse = '';
     let buffer = '';
-    let currentFileName = '';
-    let fileCount = 0;
 
     // Status messages that rotate
     const statusMessages = [
@@ -647,389 +505,57 @@ export async function streamAICodeGeneration(
       'Finalizing the build...',
     ];
 
+    let fileCount = 0;
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
-      
       let newlineIndex: number;
+
       while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
         let line = buffer.slice(0, newlineIndex);
         buffer = buffer.slice(newlineIndex + 1);
 
         if (line.endsWith('\r')) line = line.slice(0, -1);
-        if (line.startsWith(':') || line.trim() === '') continue;
-        if (!line.startsWith('data: ')) continue;
+        if (line.startsWith('data: ')) {
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') continue;
 
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              fullResponse += content;
+              callbacks.onChunk(content);
 
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) {
-            fullResponse += content;
-            callbacks.onChunk(content);
-
-            // Detect file being generated by matching file paths
-            const filePatterns = [
-              /"(src\/[^"]+\.(tsx?|jsx?|css))"/,
-              /"(tailwind\.config\.ts)"/,
-              /"(package\.json)"/,
-              /"(vite\.config\.ts)"/,
-              /"(tsconfig\.json)"/,
-              /"(index\.html)"/,
-            ];
-
-            for (const pattern of filePatterns) {
-              const fileMatch = content.match(pattern);
-              if (fileMatch && fileMatch[1] !== currentFileName) {
-                currentFileName = fileMatch[1];
-                fileCount++;
-                callbacks.onFileStart?.(currentFileName);
-                
-                // Update status periodically
-                const statusIndex = Math.min(fileCount - 1, statusMessages.length - 1);
-                callbacks.onStatusUpdate?.(statusMessages[statusIndex]);
+              // Simple heuristic to detect new file starts for status updates
+              if (content.includes('```') || content.includes('import ') || content.includes('export ')) {
+                if (Math.random() > 0.8) {
+                  const status = statusMessages[fileCount % statusMessages.length];
+                  callbacks.onStatusUpdate?.(status);
+                  fileCount++;
+                }
               }
             }
+          } catch (e) {
+            // ignore parse errors
           }
-        } catch {
-          buffer = line + '\n' + buffer;
-          break;
         }
       }
     }
 
-    callbacks.onStatusUpdate?.('Generation complete!');
     callbacks.onComplete(fullResponse);
+
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      callbacks.onError(new Error('Generation stopped by user.'));
+      console.log('Generation stopped by user');
     } else {
+      console.error('Stream error:', error);
       callbacks.onError(error instanceof Error ? error : new Error('Unknown error'));
     }
   } finally {
     currentAbortController = null;
   }
-}
-
-// Parse AI response to extract files
-export function parseAIResponse(response: string): { 
-  files: Record<string, ProjectFile>; 
-  explanation: string;
-  fileList: string[];
-} {
-  let files: Record<string, ProjectFile> = {};
-  let explanation = '';
-  const fileList: string[] = [];
-
-  // Clean the response - remove non-JSON prefix
-  let cleanedResponse = response.trim();
-  
-  // Find the start of JSON object
-  const jsonStartIndex = cleanedResponse.indexOf('{');
-  if (jsonStartIndex > 0) {
-    cleanedResponse = cleanedResponse.slice(jsonStartIndex);
-  }
-
-  // PRIORITY 1: Try to extract JSON from ```json blocks
-  const jsonBlockMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
-  if (jsonBlockMatch) {
-    try {
-      const parsed = JSON.parse(jsonBlockMatch[1]);
-      if (parsed.files && typeof parsed.files === 'object') {
-        for (const [path, content] of Object.entries(parsed.files)) {
-          if (typeof content === 'string' && path.includes('.')) {
-            const name = path.split('/').pop() || path;
-            files[path] = {
-              name,
-              path,
-              content: content as string,
-              language: getLanguageFromPath(path),
-            };
-            fileList.push(path);
-          }
-        }
-        if (fileList.length > 0) {
-          explanation = parsed.explanation || '';
-          return { files, explanation, fileList };
-        }
-      }
-    } catch (e) {
-      console.error('Failed to parse JSON block:', e);
-    }
-  }
-
-  // PRIORITY 2: Try direct JSON parse (full response is JSON)
-  try {
-    // Try to fix incomplete JSON by finding the last complete file entry
-    let jsonToParse = cleanedResponse;
-    
-    // Try parsing as-is first
-    const parsed = JSON.parse(jsonToParse);
-    if (parsed.files && typeof parsed.files === 'object') {
-      for (const [path, content] of Object.entries(parsed.files)) {
-        if (typeof content === 'string' && path.includes('.')) {
-          const name = path.split('/').pop() || path;
-          files[path] = {
-            name,
-            path,
-            content: content as string,
-            language: getLanguageFromPath(path),
-          };
-          fileList.push(path);
-        }
-      }
-      if (fileList.length > 0) {
-        explanation = parsed.explanation || '';
-        return { files, explanation, fileList };
-      }
-    }
-  } catch {
-    // Try to extract files using regex from partial JSON
-    const fileExtractRegex = /"((?:src\/)?[a-zA-Z0-9_\-./]+\.(?:tsx?|jsx?|css|html|json|ts))":\s*"((?:[^"\\]|\\.)*)"/g;
-    let fileMatch;
-    
-    while ((fileMatch = fileExtractRegex.exec(cleanedResponse)) !== null) {
-      const path = fileMatch[1];
-      // Decode escaped content
-      let content = fileMatch[2]
-        .replace(/\\n/g, '\n')
-        .replace(/\\t/g, '\t')
-        .replace(/\\"/g, '"')
-        .replace(/\\\\/g, '\\');
-      
-      if (path && content && !path.startsWith('file-')) {
-        const name = path.split('/').pop() || path;
-        files[path] = {
-          name,
-          path,
-          content,
-          language: getLanguageFromPath(path),
-        };
-        fileList.push(path);
-      }
-    }
-    
-    if (fileList.length > 0) {
-      return { files, explanation: '', fileList };
-    }
-  }
-
-  // PRIORITY 3: Extract code blocks with explicit file paths (```tsx // src/App.tsx)
-  const codeBlockRegex = /```(\w+)?\s*(?:\/\/\s*)?(\S+\.\w+)\n([\s\S]*?)```/g;
-  let match;
-
-  while ((match = codeBlockRegex.exec(response)) !== null) {
-    const language = match[1] || 'typescript';
-    const path = match[2];
-    const content = match[3].trim();
-    
-    if (path && content) {
-      const name = path.split('/').pop() || path;
-      files[path] = {
-        name,
-        path,
-        content,
-        language: getLanguageFromPath(path),
-      };
-      fileList.push(path);
-    }
-  }
-
-  // Extract explanation text (everything before first code block or JSON)
-  const firstCodeIndex = Math.min(
-    response.indexOf('```') !== -1 ? response.indexOf('```') : response.length,
-    response.indexOf('{"files"') !== -1 ? response.indexOf('{"files"') : response.length
-  );
-  if (firstCodeIndex > 0) {
-    explanation = response.slice(0, firstCodeIndex).trim();
-  }
-
-  return { files, explanation, fileList };
-}
-
-// Helper function to get language from file path
-function getLanguageFromPath(path: string): string {
-  const ext = path.split('.').pop()?.toLowerCase();
-  switch (ext) {
-    case 'tsx': return 'tsx';
-    case 'ts': return 'typescript';
-    case 'jsx': return 'jsx';
-    case 'js': return 'javascript';
-    case 'css': return 'css';
-    case 'html': return 'html';
-    case 'json': return 'json';
-    case 'md': return 'markdown';
-    default: return 'plaintext';
-  }
-}
-
-// Generate default Vite project files
-export function generateDefaultViteProject(): Record<string, ProjectFile> {
-  const files: Record<string, ProjectFile> = {
-    'package.json': {
-      name: 'package.json',
-      path: 'package.json',
-      language: 'json',
-      content: JSON.stringify({
-        name: "vite-react-app",
-        private: true,
-        version: "0.0.0",
-        type: "module",
-        scripts: {
-          dev: "vite",
-          build: "tsc && vite build",
-          preview: "vite preview"
-        },
-        dependencies: {
-          "react": "^18.2.0",
-          "react-dom": "^18.2.0",
-          "framer-motion": "^10.16.4",
-          "lucide-react": "^0.294.0",
-          "sonner": "^1.4.0"
-        },
-        devDependencies: {
-          "@types/react": "^18.2.0",
-          "@types/react-dom": "^18.2.0",
-          "@vitejs/plugin-react": "^4.2.0",
-          "autoprefixer": "^10.4.16",
-          "postcss": "^8.4.31",
-          "tailwindcss": "^3.3.5",
-          "typescript": "^5.2.2",
-          "vite": "^5.0.0"
-        }
-      }, null, 2)
-    },
-    'index.html': {
-      name: 'index.html',
-      path: 'index.html',
-      language: 'html',
-      content: `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>`
-    },
-    'src/main.tsx': {
-      name: 'main.tsx',
-      path: 'src/main.tsx',
-      language: 'tsx',
-      content: `import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App'
-import './index.css'
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)`
-    },
-    'src/App.tsx': {
-      name: 'App.tsx',
-      path: 'src/App.tsx',
-      language: 'tsx',
-      content: `import { motion } from 'framer-motion';
-
-function App() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center"
-      >
-        <h1 className="text-5xl font-bold text-white mb-4">Welcome to Rocket! 🚀</h1>
-        <p className="text-xl text-blue-200">Start building something amazing</p>
-      </motion.div>
-    </div>
-  )
-}
-
-export default App`
-    },
-    'src/index.css': {
-      name: 'index.css',
-      path: 'src/index.css',
-      language: 'css',
-      content: `@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}`
-    },
-    'tailwind.config.ts': {
-      name: 'tailwind.config.ts',
-      path: 'tailwind.config.ts',
-      language: 'typescript',
-      content: `/** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}`
-    },
-    'vite.config.ts': {
-      name: 'vite.config.ts',
-      path: 'vite.config.ts',
-      language: 'typescript',
-      content: `import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-export default defineConfig({
-  plugins: [react()],
-})`
-    },
-    'tsconfig.json': {
-      name: 'tsconfig.json',
-      path: 'tsconfig.json',
-      language: 'json',
-      content: JSON.stringify({
-        compilerOptions: {
-          target: "ES2020",
-          useDefineForClassFields: true,
-          lib: ["ES2020", "DOM", "DOM.Iterable"],
-          module: "ESNext",
-          skipLibCheck: true,
-          moduleResolution: "bundler",
-          allowImportingTsExtensions: true,
-          resolveJsonModule: true,
-          isolatedModules: true,
-          noEmit: true,
-          jsx: "react-jsx",
-          strict: true,
-          noUnusedLocals: true,
-          noUnusedParameters: true,
-          noFallthroughCasesInSwitch: true
-        },
-        include: ["src"],
-        references: [{ path: "./tsconfig.node.json" }]
-      }, null, 2)
-    }
-  };
-
-  return files;
 }

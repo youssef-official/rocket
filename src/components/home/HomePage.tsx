@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Send, FolderOpen, Paperclip, Lock, Globe, User, Bell, HelpCircle, MessageSquare, X, Image as ImageIcon, ChevronDown } from 'lucide-react';
+import { ArrowRight, Send, FolderOpen, Paperclip, Lock, Globe, User, Bell, HelpCircle, MessageSquare, X, Image as ImageIcon, ChevronDown, Zap, Crown } from 'lucide-react';
 import { UserMenuDropdown } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -8,6 +8,10 @@ import { ProjectsSection } from './ProjectsSection';
 import { RocketLogo } from '@/components/shared/RocketLogo';
 import { FrameworkBar } from '@/components/shared/FrameworkLogos';
 import { Footer } from '@/components/shared/Footer';
+import { ModelSelector } from '@/components/shared/ModelSelector';
+import { UpgradeModal } from '@/components/shared/UpgradeModal';
+import { SettingsModal } from '@/components/shared/SettingsModal';
+import { useUserPlan, ROK_MODELS, PLAN_CONFIG } from '@/hooks/useUserPlan';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 interface Project {
@@ -20,7 +24,7 @@ interface Project {
   updatedAt: string;
 }
 interface HomePageProps {
-  onStartBuilding: (prompt: string, projectType: 'vite' | 'html') => void;
+  onStartBuilding: (prompt: string, projectType: 'vite' | 'html', modelId?: string) => void;
   onViewDashboard?: () => void;
   onOpenProject?: (id: string) => void;
   onDeleteProject?: (id: string) => void;
@@ -42,9 +46,13 @@ export const HomePage: React.FC<HomePageProps> = ({
 }) => {
   const { user, signOut } = useAuth();
   const { t, isRTL, language } = useLanguage();
-  
+  const { userPlan, shouldShowUpgradeBanner, canUsePrivateProjects, getRemainingCredits } = useUserPlan();
+
   const [prompt, setPrompt] = useState('');
   const [selectedFramework, setSelectedFramework] = useState('React');
+  const [selectedModel, setSelectedModel] = useState('rok-fast');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [typingIndex, setTypingIndex] = useState(0);
   const [displayText, setDisplayText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -140,13 +148,13 @@ export const HomePage: React.FC<HomePageProps> = ({
     e.preventDefault();
     if (prompt.trim()) {
       const projectType = selectedFramework === 'React' || selectedFramework === 'Next.js' ? 'vite' : 'html';
-      onStartBuilding(prompt, projectType);
+      onStartBuilding(prompt, projectType, selectedModel);
     }
   };
 
   return (
-    <div 
-      className="min-h-screen relative overflow-hidden" 
+    <div
+      className="min-h-screen relative overflow-hidden"
       dir={isRTL ? 'rtl' : 'ltr'}
       style={{
         backgroundImage: `url(${spaceHeroBg})`,
@@ -198,12 +206,17 @@ export const HomePage: React.FC<HomePageProps> = ({
                     <Bell className="w-5 h-5 text-white/80" />
                   </button>
                 </div>
-                
-                <UserMenuDropdown user={user} signOut={signOut} />
+
+                <UserMenuDropdown
+                  user={user}
+                  signOut={signOut}
+                  onSettingsClick={() => setShowSettingsModal(true)}
+                  onUpgradeClick={() => setShowUpgradeModal(true)}
+                />
               </>
             ) : (
-              <button 
-                onClick={() => window.location.href = '/login'} 
+              <button
+                onClick={() => window.location.href = '/login'}
                 className="px-4 md:px-5 py-2 md:py-2.5 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition-colors text-sm md:text-base"
               >
                 {t('common.signIn')}
@@ -216,9 +229,9 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* Main Content */}
       <main className="relative z-10 flex flex-col items-center justify-center px-4 md:px-6 pt-12 md:pt-20 pb-20 md:pb-32 pointer-events-auto">
         {/* Announcement Badge */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           className="mb-6 md:mb-8"
         >
           <div className={`flex items-center gap-2 px-3 md:px-4 py-2 bg-white/10 backdrop-blur-md rounded-full ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -229,10 +242,10 @@ export const HomePage: React.FC<HomePageProps> = ({
         </motion.div>
 
         {/* Hero Title */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ delay: 0.1 }} 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
           className="text-center mb-6"
         >
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-4">
@@ -248,27 +261,27 @@ export const HomePage: React.FC<HomePageProps> = ({
         </motion.div>
 
         {/* Main Input Card */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ delay: 0.2 }} 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
           className="w-full max-w-3xl"
         >
           <form onSubmit={handleSubmit}>
             {/* Hidden file input */}
-            <input 
-              ref={fileInputRef} 
-              type="file" 
-              accept="image/*" 
-              onChange={handleFileSelect} 
-              className="hidden" 
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
             />
-            
-            <div 
-              className={`bg-white rounded-2xl shadow-2xl overflow-hidden relative transition-colors ${isDragging ? 'ring-2 ring-pink-400' : ''}`} 
-              onDragEnter={handleDragEnter} 
-              onDragLeave={handleDragLeave} 
-              onDragOver={handleDragOver} 
+
+            <div
+              className={`bg-white rounded-2xl shadow-2xl overflow-hidden relative transition-colors ${isDragging ? 'ring-2 ring-pink-400' : ''}`}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
               onDrop={handleDrop}
             >
               {/* Drag overlay */}
@@ -286,14 +299,14 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div className={`px-4 pt-4 ${isRTL ? 'text-right' : ''}`}>
                   <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <div className="relative">
-                      <img 
-                        src={uploadedImage.preview} 
-                        alt="Uploaded" 
-                        className="w-16 h-16 object-cover rounded-lg border border-gray-200" 
+                      <img
+                        src={uploadedImage.preview}
+                        alt="Uploaded"
+                        className="w-16 h-16 object-cover rounded-lg border border-gray-200"
                       />
-                      <button 
-                        type="button" 
-                        onClick={removeUploadedImage} 
+                      <button
+                        type="button"
+                        onClick={removeUploadedImage}
                         className={`absolute -top-2 ${isRTL ? '-left-2' : '-right-2'} w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors`}
                       >
                         <X className="w-3 h-3" />
@@ -306,38 +319,45 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
               )}
 
-              <textarea 
-                value={prompt} 
-                onChange={e => setPrompt(e.target.value)} 
-                placeholder={t('home.placeholder')} 
+              <textarea
+                value={prompt}
+                onChange={e => setPrompt(e.target.value)}
+                placeholder={t('home.placeholder')}
                 className={`w-full px-6 py-5 text-gray-800 placeholder-gray-400 resize-none focus:outline-none text-lg ${isRTL ? 'text-right' : ''}`}
                 dir={isRTL ? 'rtl' : 'ltr'}
-                rows={4} 
+                rows={4}
               />
-              
+
               <div className={`flex items-center justify-between px-4 py-3 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <button 
-                    type="button" 
-                    onClick={() => fileInputRef.current?.click()} 
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     <Paperclip className="w-5 h-5 text-gray-400" />
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className={`flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
                   >
                     <span className="text-pink-500">🎨</span>
                     <span className="text-sm text-gray-600">{t('home.import')}</span>
                   </button>
+                  {/* Model Selector */}
+                  <ModelSelector
+                    selectedModel={selectedModel}
+                    onSelectModel={setSelectedModel}
+                    onUpgradeClick={() => setShowUpgradeModal(true)}
+                    variant="light"
+                  />
                 </div>
 
                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   {/* Visibility Toggle - Public/Private */}
                   <div className="relative">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setShowVisibilityMenu(!showVisibilityMenu)}
                       className={`flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-sm ${isRTL ? 'flex-row-reverse' : ''}`}
                     >
@@ -345,12 +365,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                       {isPublic ? t('home.public') : t('home.private')}
                       <ChevronDown className="w-3 h-3" />
                     </button>
-                    
+
                     <AnimatePresence>
                       {showVisibilityMenu && (
                         <>
-                          <div 
-                            className="fixed inset-0 z-40" 
+                          <div
+                            className="fixed inset-0 z-40"
                             onClick={() => setShowVisibilityMenu(false)}
                           />
                           <motion.div
@@ -392,12 +412,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                       )}
                     </AnimatePresence>
                   </div>
-                  
-                  <motion.button 
-                    type="submit" 
-                    whileHover={{ scale: 1.05 }} 
-                    whileTap={{ scale: 0.95 }} 
-                    disabled={!prompt.trim()} 
+
+                  <motion.button
+                    type="submit"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    disabled={!prompt.trim()}
                     className="w-10 h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
                   >
                     <ArrowRight className={`w-5 h-5 text-gray-600 ${isRTL ? 'rotate-180' : ''}`} />
@@ -409,30 +429,65 @@ export const HomePage: React.FC<HomePageProps> = ({
         </motion.div>
 
         {/* Frameworks & Integrations with real logos */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ delay: 0.3 }} 
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
           className="mt-8 w-full max-w-3xl"
         >
           <FrameworkBar selectedFramework={selectedFramework} onSelectFramework={setSelectedFramework} />
         </motion.div>
       </main>
 
+      {/* Upgrade Banner - Show when 50% credits used */}
+      {user && shouldShowUpgradeBanner() && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50"
+        >
+          <div className="flex items-center gap-4 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-2xl">
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-yellow-300 animate-pulse" />
+              <span className="text-white font-medium">{t('upgrade.banner')}</span>
+            </div>
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              className="flex items-center gap-2 px-4 py-1.5 bg-white text-purple-600 rounded-full font-bold text-sm hover:bg-white/90 transition-colors"
+            >
+              <Crown className="w-4 h-4" />
+              Upgrade
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Projects Section */}
       {projects.length > 0 && (
-        <ProjectsSection 
-          projects={projects} 
-          loading={projectsLoading} 
-          onOpenProject={onOpenProject || (() => {})} 
-          onDeleteProject={onDeleteProject || (() => {})} 
-          onForkProject={onForkProject || (() => {})} 
-          onNewProject={() => {}} 
+        <ProjectsSection
+          projects={projects}
+          loading={projectsLoading}
+          onOpenProject={onOpenProject || (() => { })}
+          onDeleteProject={onDeleteProject || (() => { })}
+          onForkProject={onForkProject || (() => { })}
+          onNewProject={() => { }}
         />
       )}
 
       {/* Footer */}
       <Footer />
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
     </div>
   );
 };

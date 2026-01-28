@@ -13,9 +13,9 @@ import { ThemeInitializer } from "@/components/shared/ThemeInitializer";
 import { useProjects } from "@/hooks/useProjects";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { 
-  streamAICodeGeneration, 
-  parseAIResponse, 
+import {
+  streamAICodeGeneration,
+  parseAIResponse,
   generateDefaultViteProject,
   generateExplanation,
   stopGeneration,
@@ -53,7 +53,7 @@ const ProjectEditorRoute = () => {
   const { t } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const { projects, loading: projectsLoading, updateProject, getProject } = useProjects();
-  
+
   const [localProject, setLocalProject] = useState<ProjectData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
@@ -67,11 +67,11 @@ const ProjectEditorRoute = () => {
   const isCancelled = useRef(false);
 
   // Use chat messages hook for persistence
-  const { 
-    messages, 
-    addMessage, 
-    setMessages, 
-    clearMessages 
+  const {
+    messages,
+    addMessage,
+    setMessages,
+    clearMessages
   } = useChatMessages(id || null);
 
   // Load project from database and restore generation state
@@ -90,12 +90,12 @@ const ProjectEditorRoute = () => {
           createdAt: dbProject.createdAt,
           updatedAt: dbProject.updatedAt,
         });
-        
+
         // Restore generation state from database if available
         if (dbProject.buildingPlan && dbProject.buildingPlan.length > 0) {
           const isComplete = dbProject.generationStatus === 'complete';
           const allStepsComplete = dbProject.buildingPlan.map((_, i) => i);
-          
+
           setGenerationPhase({
             phase: isComplete ? 'complete' : 'generating',
             message: isComplete ? t('chat.complete') : t('chat.generating'),
@@ -105,7 +105,7 @@ const ProjectEditorRoute = () => {
             stepFiles: {},
             summary: isComplete ? `✅ Project created successfully!` : undefined
           });
-          
+
           if (isComplete) {
             setHasStartedGeneration(true);
           }
@@ -124,9 +124,12 @@ const ProjectEditorRoute = () => {
       const startInitialGeneration = async () => {
         setHasStartedGeneration(true);
         isCancelled.current = false;
-        
+
         const prompt = localProject.description || '';
-        
+
+        // Get the selected model from sessionStorage
+        const savedModelId = sessionStorage.getItem(`project_model_${localProject.id}`) || 'rok-fast';
+
         // Add user message IMMEDIATELY (don't wait for name generation)
         addMessage('user', prompt);
         setIsGenerating(true);
@@ -134,9 +137,9 @@ const ProjectEditorRoute = () => {
         setFileActivities([]);
         setStatusMessage(t('chat.analyzing'));
         setGenerationPhase({ phase: 'planning', message: t('chat.analyzing') });
-        
+
         // Generate project name in background (don't block UI)
-        generateProjectName(prompt).then(async (generatedName) => {
+        generateProjectName(prompt, savedModelId).then(async (generatedName) => {
           try {
             await updateProject(localProject.id, { name: generatedName });
             setLocalProject(prev => prev ? { ...prev, name: generatedName } : null);
@@ -152,39 +155,39 @@ const ProjectEditorRoute = () => {
           const thinkingStartTime = Date.now();
           setStatusMessage(t('chat.thinking'));
           setGenerationPhase({ phase: 'thinking', message: t('chat.thinking'), thinkingTime: 0 });
-          
+
           // Update thinking time every second
           const thinkingInterval = setInterval(() => {
             const elapsed = Math.floor((Date.now() - thinkingStartTime) / 1000);
             setGenerationPhase(prev => prev ? { ...prev, thinkingTime: elapsed } : null);
           }, 1000);
-          
+
           let explanation = '';
           try {
-            explanation = await generateExplanation(prompt, localProject.projectType);
+            explanation = await generateExplanation(prompt, localProject.projectType, savedModelId);
           } catch (e) {
             explanation = "I'll create something amazing for you!";
           }
-          
+
           clearInterval(thinkingInterval);
           const finalThinkingTime = Math.floor((Date.now() - thinkingStartTime) / 1000);
-          
+
           // Parse plan from explanation
           const planLines = explanation.split('\n')
             .filter(line => /^\d+\.|^•|^\*/.test(line.trim()))
             .map(line => line.replace(/^\d+\.\s*|^•\s*|^\*\s*/, '').trim())
             .filter(line => line.length > 0)
             .slice(0, 6);
-          
+
           // Save plan to database
           await updateProject(localProject.id, {
             description: prompt,
             buildingPlan: planLines,
             generationStatus: 'generating',
           });
-          
-          setGenerationPhase({ 
-            phase: 'thinking', 
+
+          setGenerationPhase({
+            phase: 'thinking',
             message: t('chat.thinkingComplete'),
             thinkingTime: finalThinkingTime,
             plan: planLines,
@@ -192,27 +195,27 @@ const ProjectEditorRoute = () => {
             currentStep: 0,
             stepFiles: {}
           });
-          
+
           if (isCancelled.current) return;
-          
+
           // Add the explanation message (without duplication)
           await addMessage('assistant', explanation);
 
           // Step 2: Generate code step by step
           if (isCancelled.current) return;
-          
+
           // Start with first plan step
           const currentStepText = planLines[0] || t('chat.makingChanges');
-          setGenerationPhase(prev => ({ 
+          setGenerationPhase(prev => ({
             ...prev!,
-            phase: 'generating', 
+            phase: 'generating',
             message: t('chat.generating'),
             currentStep: 0,
             status: currentStepText
           }));
-          
+
           let fullResponse = '';
-          
+
           await streamAICodeGeneration(
             [{ role: 'user', content: prompt }],
             localProject.projectType,
@@ -224,16 +227,16 @@ const ProjectEditorRoute = () => {
               },
               onComplete: async (response) => {
                 if (isCancelled.current) return;
-                
+
                 const { files, fileList } = parseAIResponse(response);
-                
+
                 const activities = fileList.map(name => ({
                   name,
                   status: 'done' as const,
                   action: 'created' as const
                 }));
                 setFileActivities(activities);
-                
+
                 // Distribute files across plan steps
                 const filesPerStep = Math.ceil(fileList.length / Math.max(planLines.length, 1));
                 const stepFilesMap: Record<number, string[]> = {};
@@ -242,30 +245,30 @@ const ProjectEditorRoute = () => {
                   if (!stepFilesMap[stepIdx]) stepFilesMap[stepIdx] = [];
                   stepFilesMap[stepIdx].push(file);
                 });
-                
-                const finalFiles = Object.keys(files).length > 0 
+
+                const finalFiles = Object.keys(files).length > 0
                   ? { ...localProject.files, ...files }
                   : localProject.files;
 
-                await updateProject(localProject.id, { 
+                await updateProject(localProject.id, {
                   files: finalFiles,
                   generationStatus: 'complete'
                 });
                 setLocalProject(prev => prev ? { ...prev, files: finalFiles } : null);
-                
+
                 // Mark all steps as complete
                 const allStepsComplete = planLines.map((_, i) => i);
-                
+
                 // Create summary
                 const summary = `✅ Project created successfully! Created ${activities.length} file${activities.length > 1 ? 's' : ''}. Your project is ready to use!`;
-                
+
                 setIsGenerating(false);
                 setStreamingContent('');
                 setStatusMessage('');
                 setCurrentVersion(1);
-                setGenerationPhase(prev => ({ 
+                setGenerationPhase(prev => ({
                   ...prev!,
-                  phase: 'complete', 
+                  phase: 'complete',
                   message: t('chat.complete'),
                   status: t('chat.complete'),
                   completedSteps: allStepsComplete,
@@ -273,10 +276,10 @@ const ProjectEditorRoute = () => {
                   stepFiles: stepFilesMap,
                   summary
                 }));
-                
+
                 // Generate suggestions after completion
                 if (localProject.description) {
-                  generateSuggestions(localProject.description).then(setSuggestions);
+                  generateSuggestions(localProject.description, savedModelId).then(setSuggestions);
                 }
               },
               onError: async (error) => {
@@ -290,37 +293,37 @@ const ProjectEditorRoute = () => {
               },
               onFileStart: (fileName) => {
                 if (isCancelled.current) return;
-                
+
                 // Calculate which step we're on based on file count
                 setGenerationPhase(prev => {
                   if (!prev || !prev.plan) return prev;
-                  
+
                   const currentFiles = prev.stepFiles || {};
                   const totalFiles = Object.values(currentFiles).flat().length;
                   const filesPerStep = Math.ceil(15 / Math.max(prev.plan.length, 1)); // Estimate 15 files
                   const currentStepIdx = Math.min(Math.floor(totalFiles / filesPerStep), prev.plan.length - 1);
-                  
+
                   // Add file to current step
                   const updatedStepFiles = { ...currentFiles };
                   if (!updatedStepFiles[currentStepIdx]) updatedStepFiles[currentStepIdx] = [];
                   if (!updatedStepFiles[currentStepIdx].includes(fileName)) {
                     updatedStepFiles[currentStepIdx].push(fileName);
                   }
-                  
+
                   // Mark previous steps as complete
                   const completedSteps = Array.from({ length: currentStepIdx }, (_, i) => i);
-                  
+
                   const currentStepText = prev.plan[currentStepIdx] || 'Building components';
-                  
-                  return { 
-                    ...prev, 
+
+                  return {
+                    ...prev,
                     status: currentStepText,
                     currentStep: currentStepIdx,
                     completedSteps,
                     stepFiles: updatedStepFiles
                   };
                 });
-                
+
                 setFileActivities(prev => {
                   const exists = prev.find(f => f.name === fileName);
                   if (exists) {
@@ -334,7 +337,9 @@ const ProjectEditorRoute = () => {
                 if (isCancelled.current) return;
                 setStatusMessage(status);
               },
-            }
+            },
+            undefined,  // existingFiles
+            savedModelId  // modelId
           );
         } catch (error) {
           if (isCancelled.current) return;
@@ -347,7 +352,7 @@ const ProjectEditorRoute = () => {
           setFileActivities([]);
         }
       };
-      
+
       startInitialGeneration();
     }
   }, [localProject, messages, hasStartedGeneration, addMessage, updateProject]);
@@ -376,23 +381,26 @@ const ProjectEditorRoute = () => {
 
     isCancelled.current = false;
 
+    // Get the selected model from sessionStorage
+    const savedModelId = sessionStorage.getItem(`project_model_${localProject.id}`) || 'rok-fast';
+
     // Add user message OPTIMISTICALLY (don't await - show immediately in UI)
     addMessage('user', content, imageUrl);
-    
+
     // If chat-only mode, just respond conversationally without code generation
     if (isChatOnly) {
       setIsChatMode(true);
       setIsGenerating(true);
       setStatusMessage(t('chat.thinking'));
-      
+
       try {
         const { generateChatResponse } = await import('@/services/aiService');
-        const response = await generateChatResponse(content, messages);
+        const response = await generateChatResponse(content, messages, savedModelId);
         addMessage('assistant', response);
       } catch (error) {
         addMessage('assistant', "I'm here to help! Ask me anything about your project or web development.");
       }
-      
+
       setIsGenerating(false);
       setStatusMessage('');
       return;
@@ -412,32 +420,32 @@ const ProjectEditorRoute = () => {
       if (isCancelled.current) return;
       setStatusMessage(t('chat.thinking'));
       setGenerationPhase({ phase: 'thinking', message: t('chat.thinking'), thinkingTime: 0 });
-      
+
       // Update thinking time every second
       const thinkingInterval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - thinkingStartTime) / 1000);
         setGenerationPhase(prev => prev ? { ...prev, thinkingTime: elapsed } : null);
       }, 1000);
-      
+
       let explanation = '';
       try {
-        explanation = await generateExplanation(content, localProject.projectType);
+        explanation = await generateExplanation(content, localProject.projectType, savedModelId);
       } catch (e) {
         explanation = "I'll make those changes for you!";
       }
-      
+
       clearInterval(thinkingInterval);
       const finalThinkingTime = Math.floor((Date.now() - thinkingStartTime) / 1000);
-      
+
       // Parse plan from explanation
       const planLines = explanation.split('\n')
         .filter(line => /^\d+\.|^•|^\*/.test(line.trim()))
         .map(line => line.replace(/^\d+\.\s*|^•\s*|^\*\s*/, '').trim())
         .filter(line => line.length > 0)
         .slice(0, 6);
-      
-      setGenerationPhase({ 
-        phase: 'thinking', 
+
+      setGenerationPhase({
+        phase: 'thinking',
         message: t('chat.thinkingComplete'),
         thinkingTime: finalThinkingTime,
         plan: planLines,
@@ -445,9 +453,9 @@ const ProjectEditorRoute = () => {
         currentStep: 0,
         stepFiles: {}
       });
-      
+
       if (isCancelled.current) return;
-      
+
       // Add the explanation message
       const explanationMessage = explanation + '\n\n**Now I\'ll start building...**';
       await addMessage('assistant', explanationMessage);
@@ -455,14 +463,14 @@ const ProjectEditorRoute = () => {
       // Step 2: Generate code (goes to code view, not shown in chat)
       if (isCancelled.current) return;
       const currentStepText = planLines[0] || t('chat.makingChanges');
-      setGenerationPhase(prev => ({ 
+      setGenerationPhase(prev => ({
         ...prev!,
-        phase: 'generating', 
+        phase: 'generating',
         message: t('chat.generating'),
         currentStep: 0,
         status: currentStepText
       }));
-      
+
       const conversationHistory = [
         ...messages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
         { role: 'user' as const, content },
@@ -472,7 +480,7 @@ const ProjectEditorRoute = () => {
 
       // Pass existing file list so AI knows what files exist and can do targeted edits
       const existingFilesList = Object.keys(localProject.files);
-      
+
       await streamAICodeGeneration(
         conversationHistory,
         localProject.projectType,
@@ -484,7 +492,7 @@ const ProjectEditorRoute = () => {
           },
           onComplete: async (response) => {
             if (isCancelled.current) return;
-            
+
             const { files: newFiles, fileList } = parseAIResponse(response);
 
             // Update file activities
@@ -522,9 +530,9 @@ const ProjectEditorRoute = () => {
             setStreamingContent('');
             setStatusMessage('');
             setCurrentVersion(prev => (prev || 0) + 1);
-            setGenerationPhase(prev => ({ 
+            setGenerationPhase(prev => ({
               ...prev!,
-              phase: 'complete', 
+              phase: 'complete',
               message: t('chat.changesApplied'),
               status: t('chat.complete'),
               completedSteps: allStepsComplete,
@@ -543,37 +551,37 @@ const ProjectEditorRoute = () => {
           },
           onFileStart: (fileName) => {
             if (isCancelled.current) return;
-            
+
             // Calculate which step we're on based on file count
             setGenerationPhase(prev => {
               if (!prev || !prev.plan) return prev;
-              
+
               const currentFiles = prev.stepFiles || {};
               const totalFiles = Object.values(currentFiles).flat().length;
               const filesPerStep = Math.ceil(10 / Math.max(prev.plan.length, 1)); // Estimate
               const currentStepIdx = Math.min(Math.floor(totalFiles / filesPerStep), prev.plan.length - 1);
-              
+
               // Add file to current step
               const updatedStepFiles = { ...currentFiles };
               if (!updatedStepFiles[currentStepIdx]) updatedStepFiles[currentStepIdx] = [];
               if (!updatedStepFiles[currentStepIdx].includes(fileName)) {
                 updatedStepFiles[currentStepIdx].push(fileName);
               }
-              
+
               // Mark previous steps as complete
               const completedSteps = Array.from({ length: currentStepIdx }, (_, i) => i);
-              
+
               const currentStepText = prev.plan[currentStepIdx] || t('chat.makingChanges');
-              
-              return { 
-                ...prev, 
+
+              return {
+                ...prev,
                 status: `${t('chat.makingChanges')}: ${currentStepText}`,
                 currentStep: currentStepIdx,
                 completedSteps,
                 stepFiles: updatedStepFiles
               };
             });
-            
+
             setFileActivities(prev => {
               const exists = prev.find(f => f.name === fileName);
               if (exists) {
@@ -589,7 +597,8 @@ const ProjectEditorRoute = () => {
             setStatusMessage(status);
           },
         },
-        existingFilesList
+        existingFilesList,
+        savedModelId  // modelId
       );
     } catch (error) {
       if (isCancelled.current) return;
@@ -604,14 +613,14 @@ const ProjectEditorRoute = () => {
 
   const handleUpdateProject = useCallback((updates: Partial<ProjectData>) => {
     if (!localProject) return;
-    
+
     setLocalProject(prev => prev ? { ...prev, ...updates } : null);
-    
+
     const dbUpdates: Partial<{ name: string; description: string; files: Record<string, ProjectFile> }> = {};
     if (updates.name) dbUpdates.name = updates.name;
     if (updates.description) dbUpdates.description = updates.description;
     if (updates.files) dbUpdates.files = updates.files;
-    
+
     if (Object.keys(dbUpdates).length > 0) {
       updateProject(localProject.id, dbUpdates);
     }
@@ -677,16 +686,16 @@ const ProjectEditorRoute = () => {
 const AppContent = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { 
-    projects, 
-    loading: projectsLoading, 
-    createProject, 
-    updateProject, 
-    deleteProject, 
+  const {
+    projects,
+    loading: projectsLoading,
+    createProject,
+    updateProject,
+    deleteProject,
     forkProject,
-    getProject 
+    getProject
   } = useProjects();
-  
+
   const [showAuth, setShowAuth] = useState(false);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [localProject, setLocalProject] = useState<ProjectData | null>(null);
@@ -699,11 +708,11 @@ const AppContent = () => {
   const isCancelled = useRef(false);
 
   // Use chat messages hook for persistence
-  const { 
-    messages, 
-    addMessage, 
-    setMessages, 
-    clearMessages 
+  const {
+    messages,
+    addMessage,
+    setMessages,
+    clearMessages
   } = useChatMessages(currentProjectId);
 
   // Theme is handled globally via ThemeInitializer + user toggles
@@ -747,19 +756,19 @@ const AppContent = () => {
     });
   }, []);
 
-  const handleStartBuilding = useCallback(async (prompt: string, projectType: 'vite' | 'html') => {
+  const handleStartBuilding = useCallback(async (prompt: string, projectType: 'vite' | 'html', modelId?: string) => {
     if (!user) return;
 
     isCancelled.current = false;
 
     // Create project in DB first
     const projectName = prompt.slice(0, 50) || 'New Project';
-    const defaultFiles = projectType === 'vite' 
-      ? generateDefaultViteProject() 
+    const defaultFiles = projectType === 'vite'
+      ? generateDefaultViteProject()
       : {};
-    
+
     const newProject = await createProject(projectName, projectType, defaultFiles, prompt);
-    
+
     if (!newProject) {
       toast({
         title: 'Error',
@@ -767,6 +776,11 @@ const AppContent = () => {
         variant: 'destructive',
       });
       return;
+    }
+
+    // Store selectedModel in sessionStorage so it can be used when generating
+    if (modelId) {
+      sessionStorage.setItem(`project_model_${newProject.id}`, modelId);
     }
 
     // Navigate to project page
@@ -795,12 +809,12 @@ const AppContent = () => {
   }
 
   // Handle build attempt - require login if not authenticated
-  const handleBuildAttempt = async (prompt: string, projectType: 'vite' | 'html') => {
+  const handleBuildAttempt = async (prompt: string, projectType: 'vite' | 'html', modelId?: string) => {
     if (!user) {
       setShowAuth(true);
       return;
     }
-    await handleStartBuilding(prompt, projectType);
+    await handleStartBuilding(prompt, projectType, modelId);
   };
 
   // Show auth page only if explicitly requested
@@ -810,7 +824,7 @@ const AppContent = () => {
 
   // Home view
   return (
-    <HomePage 
+    <HomePage
       onStartBuilding={handleBuildAttempt}
       onViewDashboard={() => navigate('/dashboard')}
       onOpenProject={handleOpenProject}

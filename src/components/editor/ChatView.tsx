@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Coins, Eye } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
@@ -81,22 +81,22 @@ const cleanAIMessage = (content: string): string => {
   if (content.trim().startsWith('{') && (content.includes('"files"') || content.includes('"src/'))) {
     return "";
   }
-  
+
   let cleaned = content;
   cleaned = cleaned.replace(/(\*?\*?Now I['']ll start building\.{2,3}\*?\*?\s*){2,}/gi, 'Now I\'ll start building...\n\n');
   cleaned = cleaned.replace(/```[\s\S]*?```/g, '');
   cleaned = cleaned.replace(/\{\s*"files"\s*:\s*\{[\s\S]*$/g, '');
   cleaned = cleaned.replace(/\{\s*"[^"]+"\s*:\s*"[\s\S]*$/g, '');
   cleaned = cleaned.replace(/"src\/[^"]+"\s*:\s*"[^"]*"/g, '');
-  
+
   // Remove Summary section
   cleaned = cleaned.replace(/\*?\*?Summary:?\*?\*?[\s\S]*?(?=\*\*What I['']m Building|\*\*Now I['']ll|$)/gi, '');
-  
+
   cleaned = cleaned.split('\n').filter(line => {
     const trimmed = line.trim();
-    if (trimmed.startsWith('"src/') || trimmed.startsWith('"package.json"') || 
-        trimmed.startsWith('"tailwind.config') || trimmed.startsWith('"vite.config') ||
-        trimmed.startsWith('"index.html"') || trimmed.startsWith('"tsconfig')) {
+    if (trimmed.startsWith('"src/') || trimmed.startsWith('"package.json"') ||
+      trimmed.startsWith('"tailwind.config') || trimmed.startsWith('"vite.config') ||
+      trimmed.startsWith('"index.html"') || trimmed.startsWith('"tsconfig')) {
       return false;
     }
     if (trimmed.startsWith('{') && trimmed.includes('"files"')) return false;
@@ -105,9 +105,9 @@ const cleanAIMessage = (content: string): string => {
     if (trimmed.toLowerCase().startsWith('summary:')) return false;
     return true;
   }).join('\n');
-  
+
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
-  
+
   return cleaned;
 };
 
@@ -115,19 +115,19 @@ const cleanAIMessage = (content: string): string => {
 const extractBuildingPlan = (content: string): string[] => {
   const planMatch = content.match(/\*?\*?What I['']m Building:?\*?\*?\s*([\s\S]*?)(?=\*\*|Now I['']ll|$)/i);
   if (!planMatch) return [];
-  
+
   const planText = planMatch[1];
   const lines = planText.split('\n')
     .filter(line => /^\d+\.|^•|^\*|^-/.test(line.trim()))
     .map(line => line.replace(/^\d+\.\s*|^•\s*|^\*\s*|^-\s*/, '').trim())
     .filter(line => line.length > 0);
-  
+
   return lines;
 };
 
-export const ChatView: React.FC<ChatViewProps> = ({ 
-  messages, 
-  onSendMessage, 
+export const ChatView: React.FC<ChatViewProps> = ({
+  messages,
+  onSendMessage,
   isGenerating,
   fileActivities = [],
   generationPhase,
@@ -204,14 +204,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
     e.preventDefault();
     if (input.trim() && !isGenerating) {
       let imageUrl: string | undefined;
-      
+
       if (uploadedImage && onImageUpload) {
         const url = await onImageUpload(uploadedImage.file);
         if (url) {
           imageUrl = url;
         }
       }
-      
+
       onSendMessage(input.trim(), isChatMode, imageUrl);
       setInput('');
       setUploadedImage(null);
@@ -270,7 +270,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     const actionsCount = files.length;
 
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="mt-4"
@@ -296,7 +296,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         {/* File List - Expandable */}
         <AnimatePresence>
           {isExpanded && (
-            <motion.div 
+            <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -307,7 +307,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   const isEditing = file.status === 'editing';
                   const actionLabel = file.action === 'edited' ? t('chat.edited') : t('chat.wrote');
                   const ActionIcon = file.action === 'edited' ? Pencil : FileOutput;
-                  
+
                   return (
                     <motion.div
                       key={file.name}
@@ -317,26 +317,23 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       className="flex items-center gap-3 py-1.5 group"
                     >
                       {/* Action Icon */}
-                      <ActionIcon className={`w-3.5 h-3.5 flex-shrink-0 ${
-                        isEditing ? 'text-primary' : 'text-muted-foreground'
-                      }`} />
-                      
+                      <ActionIcon className={`w-3.5 h-3.5 flex-shrink-0 ${isEditing ? 'text-primary' : 'text-muted-foreground'
+                        }`} />
+
                       {/* Action Label */}
-                      <span className={`text-sm w-12 flex-shrink-0 ${
-                        isEditing ? 'text-primary' : 'text-muted-foreground'
-                      }`}>
+                      <span className={`text-sm w-12 flex-shrink-0 ${isEditing ? 'text-primary' : 'text-muted-foreground'
+                        }`}>
                         {actionLabel}
                       </span>
-                      
+
                       {/* File Name with Background */}
-                      <span className={`text-sm font-mono px-2 py-0.5 rounded ${
-                        isEditing 
-                          ? 'bg-primary/10 text-primary' 
-                          : 'bg-secondary text-foreground/70'
-                      }`}>
+                      <span className={`text-sm font-mono px-2 py-0.5 rounded ${isEditing
+                        ? 'bg-primary/10 text-primary'
+                        : 'bg-secondary text-foreground/70'
+                        }`}>
                         {file.name}
                       </span>
-                      
+
                       {/* Loading indicator for active file */}
                       {isEditing && (
                         <Loader2 className="w-3 h-3 text-primary animate-spin ml-auto" />
@@ -344,7 +341,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     </motion.div>
                   );
                 })}
-                
+
                 {/* Build status message */}
                 {!isLive && files.length > 0 && (
                   <motion.div
@@ -372,7 +369,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     if (!generationPhase || generationPhase.phase !== 'thinking') return null;
 
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center gap-3 py-2"
@@ -401,7 +398,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     const currentStep = generationPhase?.currentStep;
 
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="mt-6"
@@ -424,18 +421,16 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 className="flex items-start gap-3"
               >
                 {/* Numbered marker */}
-                <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                  isCompleted 
-                    ? 'bg-green-500/20 text-green-400' 
-                    : isCurrent 
-                      ? 'bg-primary/20 text-primary' 
-                      : 'bg-muted text-muted-foreground'
-                }`}>
+                <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isCompleted
+                  ? 'bg-green-500/20 text-green-400'
+                  : isCurrent
+                    ? 'bg-primary/20 text-primary'
+                    : 'bg-muted text-muted-foreground'
+                  }`}>
                   {i + 1}
                 </span>
-                <span className={`text-sm leading-relaxed pt-0.5 ${
-                  isCompleted ? 'text-green-400' : isCurrent ? 'text-foreground' : 'text-foreground/70'
-                }`}>
+                <span className={`text-sm leading-relaxed pt-0.5 ${isCompleted ? 'text-green-400' : isCurrent ? 'text-foreground' : 'text-foreground/70'
+                  }`}>
                   {step}
                 </span>
               </motion.li>
@@ -455,7 +450,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     const currentStatus = generationPhase?.status || statusMessage;
 
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary border border-border"
@@ -493,15 +488,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           onClick={() => onSelectVersion?.(version)}
-          className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
-            isActive 
-              ? 'bg-primary/20 border-2 border-primary shadow-lg shadow-primary/20' 
-              : 'bg-secondary border border-border hover:border-foreground/20'
-          }`}
+          className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${isActive
+            ? 'bg-primary/20 border-2 border-primary shadow-lg shadow-primary/20'
+            : 'bg-secondary border border-border hover:border-foreground/20'
+            }`}
         >
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-            isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
-          }`}>
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+            }`}>
             <Bookmark className="w-4 h-4" />
           </div>
           <div className="flex-1 min-w-0">
@@ -524,8 +517,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
               title={t('chat.rollback')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
               </svg>
             </button>
           )}
@@ -535,20 +528,24 @@ export const ChatView: React.FC<ChatViewProps> = ({
   };
 
   // Render Success message + Version card for completed generation
-  const renderCompletionBlock = (version?: ProjectVersion, isActive?: boolean) => {
+  const renderCompletionBlock = (version?: ProjectVersion, isActive?: boolean, isLatest?: boolean) => {
+    const isLatestVersion = versions.length > 0 && version?.versionNumber === Math.max(...versions.map(v => v.versionNumber));
+
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="mt-4 space-y-3"
       >
-        {/* Success message */}
-        <div className="flex items-center gap-2 py-2">
-          <span className="text-sm text-foreground font-medium">{t('chat.readyMessage')}</span>
-        </div>
+        {/* Success message - only for latest version */}
+        {isLatest && (
+          <div className="flex items-center gap-2 py-2">
+            <span className="text-sm text-foreground font-medium">{t('chat.readyMessage')}</span>
+          </div>
+        )}
 
-        {/* Version Card */}
-        {version && renderVersionCard(version, isActive || false, versions.length > 0 && version.versionNumber === Math.max(...versions.map(v => v.versionNumber)))}
+        {/* Version Card - Blue for current, gray for past */}
+        {version && renderVersionCard(version, isActive || false, isLatestVersion)}
       </motion.div>
     );
   };
@@ -560,7 +557,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     const displaySuggestions = suggestions.slice(0, 3);
 
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center gap-2 mb-3 flex-nowrap overflow-x-auto no-scrollbar"
@@ -588,7 +585,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     const result: { msg: ChatMessage; version?: ProjectVersion; isLastAssistant: boolean; msgIndex: number }[] = [];
     let assistantCount = 0;
     const lastAssistantIndex = messages.reduce((last, msg, i) => msg.role === 'assistant' ? i : last, -1);
-    
+
     messages.forEach((msg, msgIndex) => {
       if (msg.role === 'assistant') {
         assistantCount++;
@@ -598,7 +595,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         result.push({ msg, version: undefined, isLastAssistant: false, msgIndex });
       }
     });
-    
+
     return result;
   };
 
@@ -623,17 +620,17 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
               const cleanedContent = !isUser ? cleanAIMessage(msg.content) : null;
               const hasContent = isUser || (cleanedContent && cleanedContent.length > 0);
-              
+
               // Extract plan from this message
               const messagePlan = !isUser ? extractBuildingPlan(msg.content) : [];
-              
+
               // Get activities for this version from stored data
-              const versionActivities: FileActivity[] = version?.actionsTaken 
-                ? (version.actionsTaken as unknown as FileActivity[]) 
+              const versionActivities: FileActivity[] = version?.actionsTaken
+                ? (version.actionsTaken as unknown as FileActivity[])
                 : [];
-              
+
               // Check if this version is the currently active one
-              const isActiveVersion = currentVersion === version?.versionNumber || 
+              const isActiveVersion = currentVersion === version?.versionNumber ||
                 (!currentVersion && version?.versionNumber === versions[0]?.versionNumber);
 
               return (
@@ -642,9 +639,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm text-[15px] break-words whitespace-pre-wrap overflow-hidden bg-secondary text-foreground ml-auto">
                       {msg.imageUrl && (
                         <div className="mb-2">
-                          <img 
-                            src={msg.imageUrl} 
-                            alt="Attached" 
+                          <img
+                            src={msg.imageUrl}
+                            alt="Attached"
                             className="max-w-full max-h-48 rounded-lg object-cover"
                           />
                         </div>
@@ -652,12 +649,25 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       {msg.content}
                     </div>
                   ) : (
-                    <div className="w-full flex flex-col min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden">
-                          <img src={rocketLogo} alt="Rocket" className="w-full h-full object-contain" />
+                    <div className="w-full flex flex-col min-w-0 group">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden">
+                            <img src={rocketLogo} alt="Rocket" className="w-full h-full object-contain" />
+                          </div>
+                          <span className="text-foreground text-xs font-bold">Rocket</span>
                         </div>
-                        <span className="text-foreground text-xs font-bold">Rocket</span>
+                        {/* Message Options - Shows credits used */}
+                        {!isGenerating && version && (
+                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-1 px-2 py-1 bg-yellow-500/10 rounded-full">
+                              <Coins className="w-3 h-3 text-yellow-500" />
+                              <span className="text-xs text-yellow-500 font-medium">
+                                ~{(version.versionNumber * 1.2).toFixed(1)}
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div className="break-words overflow-hidden w-full">
                         {hasContent && cleanedContent && (
@@ -668,7 +678,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
                         {/* Always show plan for this message if it exists */}
                         {messagePlan.length > 0 && !isLastAssistant && (
-                          <motion.div 
+                          <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="mt-6"
@@ -708,14 +718,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           renderFileActivityPanelForMessage(msg.id, versionActivities, false)
                         )}
 
-                        {/* Show version card for each assistant message that has a version */}
-                        {version && !isGenerating && isLastAssistant && (
-                          renderCompletionBlock(version, isActiveVersion)
+                        {/* Show version card for EVERY assistant message that has a version */}
+                        {version && !isGenerating && (
+                          renderCompletionBlock(version, isActiveVersion, isLastAssistant)
                         )}
 
                         {/* Show current generation completion for last message */}
                         {isLastAssistant && generationPhase?.phase === 'complete' && !version && (
-                          <motion.div 
+                          <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="mt-4 space-y-3"
@@ -756,7 +766,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       </div>
 
       {/* Input Area - Matching test.tsx exactly */}
-      <div 
+      <div
         className={`shrink-0 p-4 pt-2 pb-[env(safe-area-inset-bottom,24px)] md:pb-4 border-t bg-card border-border transition-colors ${isDragging ? 'bg-primary/5' : ''}`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -778,9 +788,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
         {uploadedImage && (
           <div className="mb-3 flex items-center gap-2">
             <div className="relative">
-              <img 
-                src={uploadedImage.preview} 
-                alt="Upload preview" 
+              <img
+                src={uploadedImage.preview}
+                alt="Upload preview"
                 className="h-16 w-16 object-cover rounded-lg border border-border"
               />
               <button
@@ -799,7 +809,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <div className="max-w-3xl mx-auto rounded-2xl border shadow-sm flex items-end p-2 transition-colors bg-secondary border-border">
             {/* Plus Button */}
             <div className="relative">
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowPlusMenu(!showPlusMenu)}
                 className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mb-0.5 ml-1 transition-colors bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -813,7 +823,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute bottom-full left-0 mb-2 bg-card rounded-lg overflow-hidden shadow-xl z-50 border border-border"
+                    className="absolute bottom-full left-0 mb-2 w-56 bg-card rounded-xl overflow-hidden shadow-2xl z-50 border border-border"
                   >
                     <button
                       type="button"
@@ -866,14 +876,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
             />
 
             {/* Plan Mode Toggle */}
-            <button 
+            <button
               type="button"
               onClick={() => setIsChatMode(!isChatMode)}
-              className={`flex items-center gap-1.5 h-9 px-3 rounded-full text-xs transition-all shrink-0 mb-0.5 ${
-                isChatMode 
-                  ? 'bg-primary/10 text-primary' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
+              className={`flex items-center gap-1.5 h-9 px-3 rounded-full text-xs transition-all shrink-0 mb-0.5 ${isChatMode
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+                }`}
             >
               <Lightbulb className="w-4 h-4" />
               <span className="font-medium">{t('chat.planMode')}</span>
@@ -881,7 +890,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
             {/* Send/Stop button */}
             {isGenerating ? (
-              <button 
+              <button
                 type="button"
                 onClick={onStop}
                 className="w-9 h-9 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center shrink-0 mb-0.5 mr-1 transition-all"
@@ -894,11 +903,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 disabled={!input.trim()}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 mb-0.5 mr-1 transition-all ${
-                  input.trim()
-                    ? 'bg-primary text-primary-foreground shadow-md hover:opacity-90'
-                    : 'bg-muted text-muted-foreground'
-                }`}
+                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 mb-0.5 mr-1 transition-all ${input.trim()
+                  ? 'bg-primary text-primary-foreground shadow-md hover:opacity-90'
+                  : 'bg-muted text-muted-foreground'
+                  }`}
               >
                 <Send className="w-4 h-4" />
               </motion.button>
@@ -943,8 +951,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 ) : (
                   <>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                      <path d="M3 3v5h5"/>
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                      <path d="M3 3v5h5" />
                     </svg>
                     {t('chat.rollback')}
                   </>
