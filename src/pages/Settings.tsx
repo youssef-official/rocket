@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, Github, Settings as SettingsIcon, User, 
+import {
+  ArrowLeft, Settings as SettingsIcon, User,
   Check, X, Loader2, Eye, EyeOff, ExternalLink, Camera
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -22,20 +22,15 @@ const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t, isRTL } = useLanguage();
-  const { 
-    integrations, 
-    loading, 
-    saveGitHubToken, 
+  const {
+    integrations,
+    loading,
     saveVercelToken,
-    disconnectGitHub,
-    disconnectVercel 
+    disconnectVercel
   } = useIntegrations();
 
-  const [githubToken, setGithubToken] = useState('');
   const [vercelToken, setVercelToken] = useState('');
-  const [showGithubToken, setShowGithubToken] = useState(false);
   const [showVercelToken, setShowVercelToken] = useState(false);
-  const [savingGithub, setSavingGithub] = useState(false);
   const [savingVercel, setSavingVercel] = useState(false);
 
   // Profile editing
@@ -47,25 +42,25 @@ const Settings: React.FC = () => {
   useEffect(() => {
     const loadProfile = async () => {
       if (!user) return;
-      
+
       const { data } = await supabase
         .from('profiles')
         .select('display_name, avatar_url')
         .eq('user_id', user.id)
         .maybeSingle();
-      
+
       if (data) {
         setDisplayName(data.display_name || '');
         setAvatarUrl(data.avatar_url || '');
       }
     };
-    
+
     loadProfile();
   }, [user]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
-    
+
     setSavingProfile(true);
     try {
       const { error } = await supabase
@@ -76,9 +71,9 @@ const Settings: React.FC = () => {
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);
-      
+
       if (error) throw error;
-      
+
       toast({
         title: t('common.success'),
         description: t('settings.profileUpdated'),
@@ -95,13 +90,7 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleSaveGitHub = async () => {
-    if (!githubToken.trim()) return;
-    setSavingGithub(true);
-    const success = await saveGitHubToken(githubToken.trim());
-    if (success) setGithubToken('');
-    setSavingGithub(false);
-  };
+  // GitHub removed - only Vercel
 
   const handleSaveVercel = async () => {
     if (!vercelToken.trim()) return;
@@ -125,8 +114,8 @@ const Settings: React.FC = () => {
       <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur">
         <div className={`max-w-4xl mx-auto px-4 h-16 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="icon"
               onClick={() => navigate(-1)}
             >
@@ -163,9 +152,9 @@ const Settings: React.FC = () => {
             <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <div className="relative">
                 {avatarUrl ? (
-                  <img 
-                    src={avatarUrl} 
-                    alt="Avatar" 
+                  <img
+                    src={avatarUrl}
+                    alt="Avatar"
                     className="w-20 h-20 rounded-full object-cover border-2 border-border"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
@@ -205,7 +194,7 @@ const Settings: React.FC = () => {
               />
             </div>
 
-            <Button 
+            <Button
               onClick={handleSaveProfile}
               disabled={savingProfile}
               className="w-full"
@@ -226,103 +215,6 @@ const Settings: React.FC = () => {
             <h2 className="text-xl font-bold text-foreground">{t('footer.integrations')}</h2>
           </div>
 
-          {/* GitHub Integration */}
-          <Card>
-            <CardHeader>
-              <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <div className="w-10 h-10 rounded-lg bg-[#24292e] flex items-center justify-center">
-                    <Github className="w-5 h-5 text-white" />
-                  </div>
-                  <div className={isRTL ? 'text-right' : ''}>
-                    <CardTitle className="text-base">GitHub</CardTitle>
-                    <CardDescription>
-                      {t('editor.connectGitHub')}
-                    </CardDescription>
-                  </div>
-                </div>
-                {integrations?.github_connected ? (
-                  <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-                    <Check className="w-3 h-3 mr-1" />
-                    Connected
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-muted-foreground">
-                    <X className="w-3 h-3 mr-1" />
-                    Not Connected
-                  </Badge>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {integrations?.github_connected ? (
-                <div className={`flex items-center justify-between p-4 bg-secondary/50 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <div className="w-8 h-8 rounded-full bg-[#24292e] flex items-center justify-center">
-                      <Github className="w-4 h-4 text-white" />
-                    </div>
-                    <div className={isRTL ? 'text-right' : ''}>
-                      <p className="font-medium text-foreground">@{integrations.github_username}</p>
-                      <p className="text-xs text-muted-foreground">Connected account</p>
-                    </div>
-                  </div>
-                  <Button 
-                    variant="destructive" 
-                    size="sm"
-                    onClick={disconnectGitHub}
-                  >
-                    Disconnect
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="github-token">Personal Access Token</Label>
-                    <div className="relative">
-                      <Input
-                        id="github-token"
-                        type={showGithubToken ? 'text' : 'password'}
-                        placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                        value={githubToken}
-                        onChange={(e) => setGithubToken(e.target.value)}
-                        className={`${isRTL ? 'pl-10 pr-3' : 'pr-10'}`}
-                        dir="ltr"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowGithubToken(!showGithubToken)}
-                        className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground`}
-                      >
-                        {showGithubToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Create a token with <code className="bg-secondary px-1 rounded">repo</code> scope.{' '}
-                      <a 
-                        href="https://github.com/settings/tokens/new" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className={`text-primary hover:underline inline-flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}
-                      >
-                        Generate token <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </p>
-                  </div>
-                  <Button 
-                    onClick={handleSaveGitHub} 
-                    disabled={!githubToken.trim() || savingGithub}
-                    className="w-full"
-                  >
-                    {savingGithub ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Connecting...</>
-                    ) : (
-                      <><Github className="w-4 h-4 mr-2" /> Connect GitHub</>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
           {/* Vercel Integration */}
           <Card>
@@ -364,8 +256,8 @@ const Settings: React.FC = () => {
                       <p className="text-xs text-muted-foreground">Connected account</p>
                     </div>
                   </div>
-                  <Button 
-                    variant="destructive" 
+                  <Button
+                    variant="destructive"
                     size="sm"
                     onClick={disconnectVercel}
                   >
@@ -396,9 +288,9 @@ const Settings: React.FC = () => {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Create a token in Vercel dashboard.{' '}
-                      <a 
-                        href="https://vercel.com/account/tokens" 
-                        target="_blank" 
+                      <a
+                        href="https://vercel.com/account/tokens"
+                        target="_blank"
                         rel="noopener noreferrer"
                         className={`text-primary hover:underline inline-flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}
                       >
@@ -406,8 +298,8 @@ const Settings: React.FC = () => {
                       </a>
                     </p>
                   </div>
-                  <Button 
-                    onClick={handleSaveVercel} 
+                  <Button
+                    onClick={handleSaveVercel}
                     disabled={!vercelToken.trim() || savingVercel}
                     className="w-full"
                   >

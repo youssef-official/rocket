@@ -1,15 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   Code2, Eye, LogOut, Settings, HelpCircle, CreditCard, Moon, Sun,
   ChevronDown, Download, Home, ArrowLeft, Clock, Pencil, Eye as EyeIcon,
-  Github, FolderOpen, Upload
+  FolderOpen, Upload, Coins
 } from 'lucide-react';
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
 import { VisualEditMode } from './VisualEditMode';
-import { GitHubConnectDialog, VercelDeployDialog } from './IntegrationDialogs';
+import { VercelDeployDialog } from './IntegrationDialogs';
 import { RocketLogo } from '@/components/shared/RocketLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVersions, type ProjectVersion } from '@/hooks/useVersions';
@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
 
 interface FileActivity {
   name: string;
@@ -85,19 +86,20 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
+  const { userPlan, getRemainingCredits } = useUserPlan();
   const [currentView, setCurrentView] = useState<'code' | 'preview'>('preview');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProjectMenu, setShowProjectMenu] = useState(false);
   const [chatWidth, setChatWidth] = useState(450);
   const [theme, setTheme] = useState<'dark' | 'light' | 'system'>('system');
-  
+
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number | null>(null);
   const [showHomeDialog, setShowHomeDialog] = useState(false);
   const [showVisualEdit, setShowVisualEdit] = useState(false);
-  const [showGitHubDialog, setShowGitHubDialog] = useState(false);
+  // GitHub removed - Vercel only
   const [showVercelDialog, setShowVercelDialog] = useState(false);
-  const [connectedRepoUrl, setConnectedRepoUrl] = useState<string | null>(null);
+  // connectedRepoUrl removed
   const [deployedUrl, setDeployedUrl] = useState<string | null>(null);
   const isResizing = useRef(false);
   const prevIsGenerating = useRef(isGenerating);
@@ -126,44 +128,44 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   useEffect(() => {
     const wasGenerating = prevIsGenerating.current;
     const nowNotGenerating = !isGenerating;
-    
+
     if (wasGenerating && nowNotGenerating && project?.files && !versionCreatedForSession.current && !isChatMode) {
       const hasFiles = Object.keys(project.files).length > 0;
       const hasMessages = messages.length > 0;
-      
+
       if (hasFiles && hasMessages) {
         // Generate AI version name
         const createVersionWithAIName = async () => {
           const versionNumber = versions.length + 1;
           const projectDescription = project.description || project.name || '';
           const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
-          
+
           // Generate descriptive name based on what was built
           const versionName = await generateVersionName(
             projectDescription,
             lastUserMessage,
             versionNumber
           );
-          
+
           // Save version with actions_taken
           await createVersion(
-            project.files, 
-            messages, 
-            versionName, 
+            project.files,
+            messages,
+            versionName,
             lastFileActivitiesRef.current.length > 0 ? lastFileActivitiesRef.current : undefined
           );
           setCurrentVersionNumber(null);
           versionCreatedForSession.current = true;
         };
-        
+
         createVersionWithAIName();
       }
     }
-    
+
     if (!wasGenerating && isGenerating) {
       versionCreatedForSession.current = false;
     }
-    
+
     prevIsGenerating.current = isGenerating;
   }, [isGenerating, messages, project?.files, project?.description, project?.name, createVersion, versions.length, isChatMode]);
 
@@ -247,12 +249,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   // Download project as ZIP
   const handleDownload = async () => {
     if (!project) return;
-    
+
     const zip = new JSZip();
     Object.entries(project.files).forEach(([path, file]) => {
       zip.file(path, file.content);
     });
-    
+
     const blob = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -274,7 +276,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     const handleOpenVisualEdit = () => {
       setShowVisualEdit(true);
     };
-    
+
     window.addEventListener('open-visual-edit', handleOpenVisualEdit);
     return () => window.removeEventListener('open-visual-edit', handleOpenVisualEdit);
   }, []);
@@ -287,11 +289,11 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   ) => {
     console.log('Visual edit changes:', changes);
     console.log('Updated files:', Object.keys(updatedFiles));
-    
+
     // Update project files
     if (project && Object.keys(updatedFiles).length > 0) {
       onUpdateProject({ files: updatedFiles });
-      
+
       // Create a new version with the visual changes
       await createVersion(
         updatedFiles,
@@ -300,7 +302,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         [{ name: 'Visual Edit', status: 'done', action: 'edited' }]
       );
     }
-    
+
     setShowVisualEdit(false);
   };
   // Apply theme
@@ -313,9 +315,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         document.documentElement.classList.toggle('dark', theme === 'dark');
       }
     };
-    
+
     applyTheme();
-    
+
     if (theme === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handler = () => applyTheme();
@@ -358,8 +360,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
           {/* Logo - Clickable to go home */}
           <button onClick={handleLogoClick} className="hover:opacity-80 transition-opacity">
-            <RocketLogo 
-              size="md" 
+            <RocketLogo
+              size="md"
               showText={false}
               className={isRTL ? 'rotate-180' : ''}
             />
@@ -382,8 +384,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <AnimatePresence>
               {showProjectMenu && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-[9998]" 
+                  <div
+                    className="fixed inset-0 z-[9998]"
                     onClick={() => setShowProjectMenu(false)}
                   />
                   <motion.div
@@ -445,22 +447,20 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         <div className={`hidden md:flex items-center bg-secondary rounded-full p-1 border border-border absolute left-1/2 transform -translate-x-1/2`}>
           <button
             onClick={() => setCurrentView('preview')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
-              currentView === 'preview'
-                ? 'bg-accent text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            } ${isRTL ? 'flex-row-reverse' : ''}`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${currentView === 'preview'
+              ? 'bg-accent text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+              } ${isRTL ? 'flex-row-reverse' : ''}`}
           >
             <Eye className="w-3.5 h-3.5" />
             <span>{t('editor.preview')}</span>
           </button>
           <button
             onClick={() => setCurrentView('code')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
-              currentView === 'code'
-                ? 'bg-accent text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            } ${isRTL ? 'flex-row-reverse' : ''}`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${currentView === 'code'
+              ? 'bg-accent text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+              } ${isRTL ? 'flex-row-reverse' : ''}`}
           >
             <Code2 className="w-3.5 h-3.5" />
             <span>{t('editor.code')}</span>
@@ -469,19 +469,11 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
         {/* Right Section */}
         <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          {/* GitHub Button */}
-          <button
-            onClick={() => setShowGitHubDialog(true)}
-            disabled={!project || Object.keys(project.files).length === 0}
-            className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
-              connectedRepoUrl 
-                ? 'bg-emerald-500/10 text-emerald-500' 
-                : 'hover:bg-accent text-muted-foreground hover:text-foreground'
-            }`}
-            title={connectedRepoUrl ? t('editor.connectedGitHub') : t('editor.connectGitHub')}
-          >
-            <Github className="w-4 h-4" />
-          </button>
+          {/* Credits Display */}
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <Coins className="w-4 h-4 text-yellow-500" />
+            <span className="text-sm font-medium text-yellow-500">Credits</span>
+          </div>
 
           {/* Download ZIP */}
           <button
@@ -499,7 +491,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </button>
 
           {/* Publish Button */}
-          <button 
+          <button
             onClick={() => setShowVercelDialog(true)}
             className={`flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
           >
@@ -519,8 +511,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <AnimatePresence>
               {showUserMenu && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-[9998]" 
+                  <div
+                    className="fixed inset-0 z-[9998]"
                     onClick={() => setShowUserMenu(false)}
                   />
                   <motion.div
@@ -550,6 +542,32 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                       <CreditCard className="w-4 h-4 text-muted-foreground" />
                       <span>{t('nav.pricing')}</span>
                     </button>
+                    {/* Credits Display */}
+                    {userPlan && (
+                      <div className="px-4 py-3 border-t border-border">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Coins className="w-4 h-4 text-yellow-500" />
+                            <span className="text-sm font-medium text-foreground">Credits</span>
+                          </div>
+                          <span className="text-sm font-bold text-yellow-500">
+                            {getRemainingCredits().total.toFixed(1)}
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 transition-all duration-300"
+                            style={{
+                              width: `${Math.min(100, (getRemainingCredits().total / (userPlan.dailyCredits + PLAN_CONFIG[userPlan.plan].monthlyCredits || 5)) * 100)}%`
+                            }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
+                          <span>Daily: {getRemainingCredits().daily.toFixed(1)}</span>
+                          <span>Monthly: {getRemainingCredits().monthly.toFixed(1)}</span>
+                        </div>
+                      </div>
+                    )}
                     {/* Theme Toggle */}
                     <button
                       onClick={() => {
@@ -588,27 +606,24 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         <div className={`md:hidden fixed bottom-0 left-0 right-0 h-14 bg-card border-t border-border flex items-center justify-around z-50 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <button
             onClick={() => setMobilePanel('chat')}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${
-              mobilePanel === 'chat' ? 'text-primary' : 'text-muted-foreground'
-            }`}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${mobilePanel === 'chat' ? 'text-primary' : 'text-muted-foreground'
+              }`}
           >
             <Code2 className="w-5 h-5" />
             <span className="text-xs">{t('editor.chat')}</span>
           </button>
           <button
             onClick={() => setMobilePanel('preview')}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${
-              mobilePanel === 'preview' ? 'text-primary' : 'text-muted-foreground'
-            }`}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${mobilePanel === 'preview' ? 'text-primary' : 'text-muted-foreground'
+              }`}
           >
             <Eye className="w-5 h-5" />
             <span className="text-xs">{t('editor.preview')}</span>
           </button>
           <button
             onClick={() => setMobilePanel('code')}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${
-              mobilePanel === 'code' ? 'text-primary' : 'text-muted-foreground'
-            }`}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${mobilePanel === 'code' ? 'text-primary' : 'text-muted-foreground'
+              }`}
           >
             <Code2 className="w-5 h-5" />
             <span className="text-xs">{t('editor.code')}</span>
@@ -618,7 +633,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         {/* Desktop Layout */}
         <div className="hidden md:flex flex-1 overflow-hidden">
           {/* Chat Panel */}
-          <div 
+          <div
             className="flex-shrink-0 border-r border-border"
             style={{ width: chatWidth }}
           >
@@ -648,8 +663,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           {/* Main Panel - Code/Preview */}
           <div className="flex-1 overflow-hidden">
             {currentView === 'preview' ? (
-              <PreviewView 
-                files={project?.files || {}} 
+              <PreviewView
+                files={project?.files || {}}
                 projectType={project?.projectType || 'vite'}
                 isLoading={isGenerating}
               />
@@ -684,8 +699,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             />
           )}
           {mobilePanel === 'preview' && (
-            <PreviewView 
-              files={project?.files || {}} 
+            <PreviewView
+              files={project?.files || {}}
               projectType={project?.projectType || 'vite'}
               isLoading={isGenerating}
             />
@@ -701,14 +716,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         </div>
       </div>
 
-      {/* Integration Dialogs */}
-      <GitHubConnectDialog
-        open={showGitHubDialog}
-        onOpenChange={setShowGitHubDialog}
-        projectName={project?.name || 'untitled-project'}
-        projectFiles={project?.files || {}}
-        onConnected={setConnectedRepoUrl}
-      />
+      {/* Integration Dialogs - Vercel only */}
 
       <VercelDeployDialog
         open={showVercelDialog}
