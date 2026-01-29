@@ -1,15 +1,20 @@
 (function () {
   if (document.getElementById("youssef-branding")) return;
 
-  const link = document.createElement("a");
+  const wrapper = document.createElement("div");
+  wrapper.id = "youssef-branding";
 
-  link.id = "youssef-branding";
-  link.href = "https://youssef.ymoo.site";
-  link.target = "_blank";
+  wrapper.innerHTML = `
+    <a
+      href="https://youssef.ymoo.site"
+      target="_blank"
+      class="y-link"
+    >
+      <img src="https://youssef.ymoo.site/assets/rocket-logo-Dtwvl5Ty.png" />
+      <span>Built with Youssef</span>
+    </a>
 
-  link.innerHTML = `
-    <img src="https://youssef.ymoo.site/assets/rocket-logo-Dtwvl5Ty.png" />
-    <span>Built with Youssef</span>
+    <button class="y-close">×</button>
   `;
 
   const style = document.createElement("style");
@@ -28,23 +33,23 @@
       background: rgba(0,0,0,0.75);
       backdrop-filter: blur(6px);
 
-      padding: 6px 10px;
+      padding: 6px 8px 6px 10px;
       border-radius: 999px;
 
       font-family: Arial, sans-serif;
       font-size: 12px;
       color: white;
 
-      text-decoration: none;
-
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-
-      transition: all .2s ease;
     }
 
-    #youssef-branding:hover {
-      transform: scale(1.05);
-      background: rgba(0,0,0,0.9);
+    #youssef-branding .y-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      color: white;
+      text-decoration: none;
     }
 
     #youssef-branding img {
@@ -52,8 +57,32 @@
       height: 18px;
       border-radius: 50%;
     }
+
+    #youssef-branding .y-close {
+      background: transparent;
+      border: none;
+
+      color: #ccc;
+      font-size: 16px;
+      cursor: pointer;
+
+      padding: 0 4px;
+      margin-left: 2px;
+
+      transition: .2s;
+    }
+
+    #youssef-branding .y-close:hover {
+      color: white;
+      transform: scale(1.2);
+    }
   `;
 
   document.head.appendChild(style);
-  document.body.appendChild(link);
+  document.body.appendChild(wrapper);
+
+  // Close button
+  wrapper.querySelector(".y-close").onclick = () => {
+    wrapper.remove();
+  };
 })();
