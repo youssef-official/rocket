@@ -6,6 +6,7 @@ import { useThemePreference } from '@/hooks/useThemePreference';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
 import { LanguageSelector } from './LanguageSelector';
+import { Progress } from '@/components/ui/progress';
 
 interface UserMenuDropdownProps {
   user: User;
@@ -18,7 +19,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
   const [showMenu, setShowMenu] = useState(false);
   const { theme, cycleTheme } = useThemePreference();
   const { t, isRTL } = useLanguage();
-  const { userPlan, getRemainingCredits } = useUserPlan();
+  const { userPlan, getRemainingCredits, shouldShowUpgradeBanner } = useUserPlan();
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -85,6 +86,10 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
 
   const remainingCredits = getRemainingCredits();
   const planConfig = userPlan ? PLAN_CONFIG[userPlan.plan] : PLAN_CONFIG.spark;
+  const totalCredits = (userPlan?.dailyCredits || 5) + planConfig.monthlyCredits;
+  const usedCredits = totalCredits - remainingCredits.total;
+  const usagePercent = totalCredits > 0 ? (usedCredits / totalCredits) * 100 : 0;
+  const showBanner = shouldShowUpgradeBanner();
 
   return (
     <div
@@ -107,7 +112,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          <div className="w-56 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl">
+          <div className="w-72 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl">
             <div className="p-3 border-b border-white/10">
               <p className={`text-sm font-medium text-white truncate ${isRTL ? 'text-right' : ''}`}>{user.email}</p>
               <div className={`flex items-center justify-between mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -115,23 +120,61 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
               </div>
             </div>
 
-            {/* Credits Display */}
+            {/* Credits Display with Progress Bar */}
             <div className="p-3 border-b border-white/10 bg-white/5">
-              <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <Coins className="w-4 h-4 text-yellow-400" />
                   <span className="text-sm text-white/80">{t('credits.remaining')}</span>
                 </div>
-                <span className="text-sm font-bold text-yellow-400">{remainingCredits}</span>
+                <span className="text-sm font-bold text-yellow-400">{remainingCredits.total.toFixed(1)}</span>
               </div>
-              <p className="text-xs text-white/50 mt-1">
-                {userPlan?.plan === 'spark' ? t('credits.daily') : t('credits.monthly')}
+              
+              {/* Progress Bar */}
+              <div className="mb-2">
+                <Progress 
+                  value={100 - usagePercent} 
+                  className="h-2 bg-white/10"
+                />
+              </div>
+              
+              {/* Breakdown */}
+              <div className="flex justify-between text-xs text-white/50">
+                <span>{t('credits.daily')}: {remainingCredits.daily.toFixed(1)}</span>
+                {planConfig.monthlyCredits > 0 && (
+                  <span>{t('credits.monthly')}: {remainingCredits.monthly.toFixed(1)}</span>
+                )}
+              </div>
+              
+              <p className="text-xs text-white/40 mt-1">
+                {t('credits.resetsDaily')} (UTC)
               </p>
             </div>
 
+            {/* Upgrade Banner when 50% used */}
+            {showBanner && onUpgradeClick && (
+              <div className="p-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-b border-white/10">
+                <p className="text-xs text-white/80 mb-2">
+                  🚀 {t('credits.runningLow')}
+                </p>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowMenu(false);
+                    onUpgradeClick();
+                  }}
+                  className="w-full py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  {t('models.upgradeAccess')}
+                </button>
+              </div>
+            )}
+
             <div className="p-2">
-              {/* Upgrade Button */}
-              {userPlan?.plan === 'spark' && onUpgradeClick && (
+              {/* Upgrade Button for Spark users */}
+              {userPlan?.plan === 'spark' && !showBanner && onUpgradeClick && (
                 <button
                   type="button"
                   onClick={(e) => {

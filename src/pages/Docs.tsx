@@ -5,7 +5,7 @@ import {
   Share2, Settings, MessageSquare, ArrowLeft,
   ChevronRight, Search, Globe, Lock, GitBranch,
   Sparkles, Layers, Rocket, Image as ImageIcon,
-  Github, RefreshCw, Languages
+  RefreshCw, Languages
 } from 'lucide-react';
 import { RocketLogo } from '@/components/shared/RocketLogo';
 import { Footer } from '@/components/shared/Footer';
@@ -78,39 +78,6 @@ export const Docs: React.FC = () => {
             'Include functionality: "Add a contact form that validates email and shows success message"',
             'Describe the style: "Modern, minimalist design with subtle hover animations and gradient backgrounds"',
             'Mention components: "Use cards for product display with image, title, price, and add-to-cart button"',
-          ],
-        },
-      ],
-    },
-    {
-      id: 'github',
-      title: t('docs.github'),
-      icon: Github,
-      content: [
-        {
-          title: 'GitHub Integration',
-          description: 'Connect your project to GitHub for version control and collaboration. Rocket supports full two-way sync between your project and GitHub repository.',
-        },
-        {
-          title: 'Features',
-          description: 'GitHub integration provides:',
-          steps: [
-            'Automatic repository creation with your project files',
-            'Two-way sync: push local changes to GitHub',
-            'Pull remote changes from GitHub to your project',
-            'Automatic README generation with Rocket branding',
-            'Support for existing repositories',
-          ],
-        },
-        {
-          title: 'How to Connect',
-          description: 'Follow these steps to connect your project to GitHub:',
-          steps: [
-            'Go to Settings and add your GitHub Personal Access Token',
-            'Click the GitHub icon in the editor header',
-            'Enter a repository name or use the generated one',
-            'Click "Create & Push" to create the repository and upload files',
-            'Use "Sync" button to push/pull changes anytime',
           ],
         },
       ],
@@ -428,10 +395,7 @@ export const Docs: React.FC = () => {
         </div>
       </div>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
 };
-
-export default Docs;

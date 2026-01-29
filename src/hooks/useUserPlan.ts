@@ -87,14 +87,14 @@ export const ROK_MODELS: RokModel[] = [
   }
 ];
 
-// Plan configurations
+// Plan configurations - Updated credits
 export const PLAN_CONFIG = {
   spark: {
     name: 'Spark',
     price: 0,
     monthlyCredits: 0,
     dailyCredits: 5,
-    maxDailyCredits: 25,
+    maxDailyCredits: 5, // Only 5 daily, no monthly
     models: ['rok-fast', 'rok-smart'],
     features: {
       zipExport: false,
@@ -111,9 +111,9 @@ export const PLAN_CONFIG = {
   builder: {
     name: 'Builder',
     price: 8,
-    monthlyCredits: 700,
-    dailyCredits: 0,
-    maxDailyCredits: 0,
+    monthlyCredits: 100, // 100 monthly + 5 daily
+    dailyCredits: 5,
+    maxDailyCredits: 5,
     models: ['rok-fast', 'rok-smart', 'rok-turbo'],
     features: {
       zipExport: true,
@@ -130,9 +130,9 @@ export const PLAN_CONFIG = {
   creator: {
     name: 'Creator',
     price: 19,
-    monthlyCredits: 2500,
-    dailyCredits: 0,
-    maxDailyCredits: 0,
+    monthlyCredits: 300, // 300 monthly + 5 daily
+    dailyCredits: 5,
+    maxDailyCredits: 5,
     models: ['rok-fast', 'rok-smart', 'rok-turbo', 'rok-ultra'],
     features: {
       zipExport: true,
@@ -149,9 +149,9 @@ export const PLAN_CONFIG = {
   scale: {
     name: 'Scale',
     price: 49,
-    monthlyCredits: 8000,
-    dailyCredits: 0,
-    maxDailyCredits: 0,
+    monthlyCredits: 700, // 700 monthly + 5 daily
+    dailyCredits: 5,
+    maxDailyCredits: 5,
     models: ['rok-fast', 'rok-smart', 'rok-turbo', 'rok-ultra', 'rok-reson'],
     features: {
       zipExport: true,
@@ -167,15 +167,67 @@ export const PLAN_CONFIG = {
   }
 };
 
-// Credit estimation based on work type
-export const CREDIT_COSTS = {
-  'small_edit': 0.4,
-  'section_edit': 0.8,
-  'login_system': 1.3,
-  'full_layout': 2.0,
-  'admin_panel': 4.0,
-  'default': 1.0
-};
+// Smart credit estimation based on actual work complexity
+export function estimateCredits(
+  prompt: string,
+  filesChanged: number,
+  linesOfCode: number
+): number {
+  // Base credit calculation
+  let baseCredits = 0.2;
+  
+  // Analyze prompt complexity (ignore user claims like "small edit")
+  const promptLower = prompt.toLowerCase();
+  
+  // Complex features detection
+  const complexKeywords = [
+    'dashboard', 'admin', 'authentication', 'auth', 'login', 'signup',
+    'database', 'api', 'backend', 'game', 'animation', 'chart', 'graph',
+    'e-commerce', 'shop', 'cart', 'payment', 'stripe'
+  ];
+  
+  const mediumKeywords = [
+    'page', 'component', 'form', 'table', 'list', 'modal', 'dialog',
+    'navigation', 'menu', 'header', 'footer', 'layout'
+  ];
+  
+  const simpleKeywords = [
+    'color', 'text', 'font', 'size', 'margin', 'padding', 'border',
+    'icon', 'button', 'link', 'image'
+  ];
+  
+  // Check for complex features
+  const hasComplex = complexKeywords.some(k => promptLower.includes(k));
+  const hasMedium = mediumKeywords.some(k => promptLower.includes(k));
+  const hasSimple = simpleKeywords.some(k => promptLower.includes(k));
+  
+  if (hasComplex) {
+    baseCredits = 2.5;
+  } else if (hasMedium) {
+    baseCredits = 1.0;
+  } else if (hasSimple) {
+    baseCredits = 0.4;
+  }
+  
+  // Adjust based on files changed
+  if (filesChanged > 10) {
+    baseCredits *= 1.5;
+  } else if (filesChanged > 5) {
+    baseCredits *= 1.2;
+  }
+  
+  // Adjust based on lines of code
+  if (linesOfCode > 1000) {
+    baseCredits *= 1.8;
+  } else if (linesOfCode > 500) {
+    baseCredits *= 1.4;
+  } else if (linesOfCode > 200) {
+    baseCredits *= 1.2;
+  }
+  
+  // Cap at reasonable max
+  return Math.min(Math.max(baseCredits, 0.2), 6.0);
+}
 
 export function useUserPlan() {
   const { user } = useAuth();
@@ -205,7 +257,8 @@ export function useUserPlan() {
               user_id: user.id,
               plan: 'spark',
               daily_credits: 5,
-              max_daily_credits: 25
+              max_daily_credits: 5,
+              monthly_credits: 0
             }])
             .select()
             .single();
@@ -250,15 +303,19 @@ export function useUserPlan() {
     fetchUserPlan();
   }, [fetchUserPlan]);
 
-  const getRemainingCredits = useCallback((): number => {
-    if (!userPlan) return 0;
+  // Get remaining credits - daily first, then monthly
+  const getRemainingCredits = useCallback((): { daily: number; monthly: number; total: number } => {
+    if (!userPlan) return { daily: 0, monthly: 0, total: 0 };
     
     const planConfig = PLAN_CONFIG[userPlan.plan];
-    if (userPlan.plan === 'spark') {
-      return Math.max(0, userPlan.dailyCredits - userPlan.creditsUsedToday);
-    } else {
-      return Math.max(0, planConfig.monthlyCredits - userPlan.totalCreditsUsed);
-    }
+    const dailyRemaining = Math.max(0, userPlan.dailyCredits - userPlan.creditsUsedToday);
+    const monthlyRemaining = Math.max(0, planConfig.monthlyCredits - userPlan.totalCreditsUsed);
+    
+    return {
+      daily: dailyRemaining,
+      monthly: monthlyRemaining,
+      total: dailyRemaining + monthlyRemaining
+    };
   }, [userPlan]);
 
   const getAvailableModels = useCallback((): RokModel[] => {
@@ -286,6 +343,7 @@ export function useUserPlan() {
     return modelPlanIndex <= userPlanIndex;
   }, [userPlan]);
 
+  // Use credits - daily first, then monthly
   const useCredits = useCallback(async (
     credits: number,
     modelId: string,
@@ -298,14 +356,21 @@ export function useUserPlan() {
 
     const model = ROK_MODELS.find(m => m.id === modelId);
     const finalCredits = credits * (model?.multiplier || 1);
+    
+    const remaining = getRemainingCredits();
+    if (remaining.total < finalCredits) return false;
+
+    // Deduct from daily first, then monthly
+    let dailyDeduct = Math.min(finalCredits, remaining.daily);
+    let monthlyDeduct = finalCredits - dailyDeduct;
 
     try {
       // Update user plan credits
       const { error: updateError } = await supabase
         .from('user_plans')
         .update({
-          credits_used_today: userPlan.creditsUsedToday + finalCredits,
-          total_credits_used: userPlan.totalCreditsUsed + finalCredits
+          credits_used_today: userPlan.creditsUsedToday + dailyDeduct,
+          total_credits_used: userPlan.totalCreditsUsed + monthlyDeduct
         })
         .eq('user_id', user.id);
 
@@ -331,15 +396,14 @@ export function useUserPlan() {
       console.error('Error using credits:', error);
       return false;
     }
-  }, [user, userPlan, fetchUserPlan]);
+  }, [user, userPlan, fetchUserPlan, getRemainingCredits]);
 
   const shouldShowUpgradeBanner = useCallback((): boolean => {
     if (!userPlan) return false;
     const remaining = getRemainingCredits();
-    const total = userPlan.plan === 'spark' 
-      ? userPlan.dailyCredits 
-      : PLAN_CONFIG[userPlan.plan].monthlyCredits;
-    return remaining <= total * 0.5;
+    const planConfig = PLAN_CONFIG[userPlan.plan];
+    const total = userPlan.dailyCredits + planConfig.monthlyCredits;
+    return remaining.total <= total * 0.5;
   }, [userPlan, getRemainingCredits]);
 
   const canUsePrivateProjects = useCallback((): boolean => {
@@ -363,6 +427,7 @@ export function useUserPlan() {
     shouldShowUpgradeBanner,
     canUsePrivateProjects,
     canExportZip,
+    estimateCredits,
     ROK_MODELS,
     PLAN_CONFIG
   };
