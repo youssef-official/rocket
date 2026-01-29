@@ -21,10 +21,13 @@ import {
   stopGeneration,
   generateProjectName,
   generateSuggestions,
+  generateImagePrompt,
   type Suggestion
 } from "@/services/aiService";
 import type { ProjectData, ChatMessage, ProjectFile } from "@/types";
 import { toast } from "@/hooks/use-toast";
+import { generateProjectLogo } from "@/services/imageService";
+import { urlToBase64 } from "@/lib/utils";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +67,7 @@ const ProjectEditorRoute = () => {
   const [hasStartedGeneration, setHasStartedGeneration] = useState(false);
   const [isChatMode, setIsChatMode] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [generatedLogoUrl, setGeneratedLogoUrl] = useState<string | null>(null);
   const isCancelled = useRef(false);
 
   // Use chat messages hook for persistence
@@ -201,7 +205,94 @@ const ProjectEditorRoute = () => {
           // Add the explanation message (without duplication)
           await addMessage('assistant', explanation);
 
-          // Step 2: Generate code step by step
+          // Step 1.5: Generate High-Quality Image Prompt using Gemini
+          setStatusMessage("Crafting professional image prompt...");
+          const aiImagePrompt = await generateImagePrompt(prompt, savedModelId);
+          console.log('[App] Gemini-generated image prompt:', aiImagePrompt);
+
+          // Step 2: Generate Logo AFTER plan is shown
+          let logoUrl: string | undefined;
+
+          // Show logo generation in actions
+          setFileActivities([{ name: t('chat.checkingAttachments'), status: 'editing' as const, action: 'created' as const }]);
+
+          const logoResult = await generateProjectLogo(aiImagePrompt, [], {
+            onCheckingAttachments: () => {
+              setFileActivities([{ name: t('chat.checkingAttachments'), status: 'editing' as const, action: 'created' as const }]);
+            },
+            onGeneratingLogo: () => {
+              setFileActivities([
+                { name: t('chat.checkingAttachments'), status: 'done' as const, action: 'created' as const },
+                { name: t('chat.generatingLogo'), status: 'editing' as const, action: 'created' as const }
+              ]);
+            },
+            onCopyingToPublic: () => {
+              setFileActivities([
+                { name: t('chat.checkingAttachments'), status: 'done' as const, action: 'created' as const },
+                { name: t('chat.generatingLogo'), status: 'done' as const, action: 'created' as const },
+                { name: t('chat.copyingLogo'), status: 'editing' as const, action: 'created' as const }
+              ]);
+            },
+            onComplete: (url) => {
+              logoUrl = url;
+              setGeneratedLogoUrl(url);
+              setFileActivities([
+                { name: t('chat.checkingAttachments'), status: 'done' as const, action: 'created' as const },
+                { name: t('chat.generatingLogo'), status: 'done' as const, action: 'created' as const },
+                { name: t('chat.copyingLogo'), status: 'done' as const, action: 'created' as const }
+              ]);
+            }
+          });
+
+          if (logoResult.success && logoResult.logoUrl) {
+            logoUrl = logoResult.logoUrl;
+          }
+
+          // Add logo to project files if generated
+          if (logoUrl) {
+            try {
+              const base64Logo = await urlToBase64(logoUrl);
+              const logoFile = {
+                path: 'public/logo.png',
+                content: base64Logo,
+                type: 'file' as const
+              };
+
+              // CRITICAL: Update project files BEFORE code generation so AI knows it exists
+              const updatedFiles = { ...localProject.files, 'public/logo.png': logoFile };
+              await updateProject(localProject.id, { files: updatedFiles });
+              setLocalProject(prev => prev ? { ...prev, files: updatedFiles } : null);
+
+              setFileActivities(prev => [
+                ...prev,
+                { name: 'public/logo.png', status: 'done' as const, action: 'created' as const }
+              ]);
+            } catch (e) {
+              console.error('Failed to save logo as image data:', e);
+              // Fallback to URL if base64 fails
+              const logoFile = {
+                path: 'public/logo.png',
+                content: `/* URL: ${logoUrl} */`,
+                type: 'file' as const
+              };
+              const updatedFiles = { ...localProject.files, 'public/logo.png': logoFile };
+              await updateProject(localProject.id, { files: updatedFiles });
+              setLocalProject(prev => prev ? { ...prev, files: updatedFiles } : null);
+            }
+          }
+
+          // Keep logo activities and add to them during code generation
+          const logoActivities = logoUrl ? [
+            { name: t('chat.checkingAttachments'), status: 'done' as const, action: 'created' as const },
+            { name: t('chat.generatingLogo'), status: 'done' as const, action: 'created' as const },
+            { name: 'public/logo.png', status: 'done' as const, action: 'created' as const }
+          ] : [];
+
+          setFileActivities(logoActivities);
+
+          if (isCancelled.current) return;
+
+          // Step 3: Generate code step by step
           if (isCancelled.current) return;
 
           // Start with first plan step
@@ -215,15 +306,41 @@ const ProjectEditorRoute = () => {
           }));
 
           let fullResponse = '';
+          const detectedFiles = new Set<string>();
+
+          // Build prompt with logo and safety rules
+          const userPrompt = logoUrl
+            ? `${prompt}\n\n[CRITICAL: A professional logo is ready at "/public/logo.png". USE IT in the UI (navbar/header).]\n[CRITICAL: If using framer-motion AnimatePresence, you MUST import it: import { motion, AnimatePresence } from "framer-motion"]`
+            : `${prompt}\n\n[CRITICAL: If using framer-motion AnimatePresence, you MUST import it: import { motion, AnimatePresence } from "framer-motion"]`;
 
           await streamAICodeGeneration(
-            [{ role: 'user', content: prompt }],
+            [{ role: 'user', content: userPrompt }],
             localProject.projectType,
             {
               onChunk: (chunk) => {
                 if (isCancelled.current) return;
                 fullResponse += chunk;
                 setStreamingContent(fullResponse);
+
+                // Live file detection - look for file paths in the streaming JSON
+                const filePathMatches = fullResponse.match(/"([^"]+\.(tsx?|jsx?|css|json|html|md))"\s*:/g);
+                if (filePathMatches) {
+                  filePathMatches.forEach(match => {
+                    const fileName = match.replace(/["':]/g, '').trim();
+                    if (fileName && !detectedFiles.has(fileName)) {
+                      detectedFiles.add(fileName);
+                      // Add file to activities as it's being written
+                      setFileActivities(prev => {
+                        const exists = prev.find(f => f.name === fileName);
+                        if (exists) return prev;
+                        return [
+                          ...prev.map(f => ({ ...f, status: 'done' as const })),
+                          { name: fileName, status: 'editing' as const, action: 'created' as const }
+                        ];
+                      });
+                    }
+                  });
+                }
               },
               onComplete: async (response) => {
                 if (isCancelled.current) return;
@@ -246,9 +363,21 @@ const ProjectEditorRoute = () => {
                   stepFilesMap[stepIdx].push(file);
                 });
 
-                const finalFiles = Object.keys(files).length > 0
+                let finalFiles = Object.keys(files).length > 0
                   ? { ...localProject.files, ...files }
                   : localProject.files;
+
+                // Add logo file if generated
+                if (logoUrl) {
+                  finalFiles = {
+                    ...finalFiles,
+                    'public/logo.png': {
+                      path: 'public/logo.png',
+                      content: logoUrl, // Store the URL directly
+                      type: 'file'
+                    }
+                  };
+                }
 
                 await updateProject(localProject.id, {
                   files: finalFiles,
@@ -379,6 +508,8 @@ const ProjectEditorRoute = () => {
   const handleSendMessage = useCallback(async (content: string, isChatOnly: boolean = false, imageUrl?: string) => {
     if (!localProject) return;
 
+    const imageUrls = imageUrl ? imageUrl.split(',').filter(Boolean) : [];
+
     isCancelled.current = false;
 
     // Get the selected model from sessionStorage
@@ -472,11 +603,22 @@ const ProjectEditorRoute = () => {
       }));
 
       const conversationHistory = [
-        ...messages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-        { role: 'user' as const, content },
+        ...messages.map(m => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+          imageUrls: m.imageUrl ? m.imageUrl.split(',').filter(Boolean) : undefined
+        })),
+        {
+          role: 'user' as const,
+          content: localProject.files['public/logo.png']
+            ? `${content}\n\nNOTE: The project logo is available at "/public/logo.png".`
+            : content,
+          imageUrls: imageUrls.length > 0 ? imageUrls : undefined
+        },
       ];
 
       let fullResponse = '';
+      const detectedFiles = new Set<string>();
 
       // Pass existing file list so AI knows what files exist and can do targeted edits
       const existingFilesList = Object.keys(localProject.files);
@@ -489,6 +631,27 @@ const ProjectEditorRoute = () => {
             if (isCancelled.current) return;
             fullResponse += chunk;
             setStreamingContent(fullResponse);
+
+            // Live file detection - look for file paths in the streaming JSON
+            const filePathMatches = fullResponse.match(/"([^"]+\.(tsx?|jsx?|css|json|html|md))"\s*:/g);
+            if (filePathMatches) {
+              filePathMatches.forEach(match => {
+                const fileName = match.replace(/["':]/g, '').trim();
+                if (fileName && !detectedFiles.has(fileName)) {
+                  detectedFiles.add(fileName);
+                  // Add file to activities as it's being written
+                  const isEdit = localProject.files[fileName] !== undefined;
+                  setFileActivities(prev => {
+                    const exists = prev.find(f => f.name === fileName);
+                    if (exists) return prev;
+                    return [
+                      ...prev.map(f => ({ ...f, status: 'done' as const })),
+                      { name: fileName, status: 'editing' as const, action: isEdit ? 'edited' : 'created' }
+                    ];
+                  });
+                }
+              });
+            }
           },
           onComplete: async (response) => {
             if (isCancelled.current) return;
@@ -540,6 +703,15 @@ const ProjectEditorRoute = () => {
               stepFiles: stepFilesMap,
               summary
             }));
+
+            // Refresh suggestions after update
+            try {
+              const { generateSuggestions } = await import('@/services/aiService');
+              const newSuggestions = await generateSuggestions(content, savedModelId);
+              setSuggestions(newSuggestions);
+            } catch (e) {
+              console.error('Failed to update suggestions:', e);
+            }
           },
           onError: async (error) => {
             await addMessage('assistant', `Sorry, I encountered an error: ${error.message}`);

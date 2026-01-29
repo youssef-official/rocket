@@ -1,4 +1,4 @@
-import { callingDirectAI } from './directAiService';
+import { callingDirectAI, generateImagePrompt as directGenerateImagePrompt } from './directAiService';
 
 const fallbackNames = [
   'Initial Build',
@@ -46,15 +46,44 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
     let fileList: string[] = [];
 
     if (parsed.files) {
-      fileList = Object.keys(parsed.files);
-      Object.entries(parsed.files).forEach(([path, content]) => {
-        files[path] = {
-          path,
-          content: content as string,
-          type: 'file'
-        };
-      });
+      // Check if files is an array (some AI models return array format)
+      if (Array.isArray(parsed.files)) {
+        parsed.files.forEach((file: any) => {
+          if (file.path && file.content !== undefined) {
+            const path = file.path;
+            // Ignore numeric file names or paths without extensions (hallucinations)
+            if (/^\d+$/.test(path)) return;
+
+            fileList.push(path);
+            files[path] = {
+              path,
+              content: file.content as string,
+              type: 'file'
+            };
+          }
+        });
+      } else {
+        // Standard object format { "path": "content" }
+        Object.entries(parsed.files).forEach(([path, content]) => {
+          // Ignore numeric file names or paths without extensions (hallucinations)
+          if (/^\d+$/.test(path)) return;
+
+          // Handle case where content might be an object with content property
+          const fileContent = typeof content === 'object' && content !== null && 'content' in content
+            ? (content as any).content
+            : content;
+
+          fileList.push(path);
+          files[path] = {
+            path,
+            content: fileContent as string,
+            type: 'file'
+          };
+        });
+      }
     }
+
+    console.log('[parseAIResponse] Parsed files:', fileList);
     return { files, fileList };
   } catch (e) {
     console.error("Failed to parse AI response", e);
@@ -64,150 +93,7 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
 
 // Generate default project
 export function generateDefaultViteProject(): any[] {
-  return [
-    {
-      path: 'package.json',
-      content: JSON.stringify({
-        "name": "vite-react-project",
-        "private": true,
-        "version": "0.0.0",
-        "type": "module",
-        "scripts": {
-          "dev": "vite",
-          "build": "vite build",
-          "lint": "eslint .",
-          "preview": "vite preview"
-        },
-        "dependencies": {
-          "react": "^18.3.1",
-          "react-dom": "^18.3.1",
-          "lucide-react": "^0.344.0",
-          "clsx": "^2.1.0",
-          "tailwind-merge": "^2.2.1",
-          "framer-motion": "^11.0.8"
-        },
-        "devDependencies": {
-          "@types/react": "^18.2.66",
-          "@types/react-dom": "^18.2.22",
-          "@vitejs/plugin-react": "^4.2.1",
-          "autoprefixer": "^10.4.18",
-          "postcss": "^8.4.35",
-          "tailwindcss": "^3.4.1",
-          "typescript": "^5.2.2",
-          "vite": "^5.2.0"
-        }
-      }, null, 2),
-      type: 'file'
-    },
-    {
-      path: 'vite.config.ts',
-      content: `import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-export default defineConfig({
-  plugins: [react()],
-})`,
-      type: 'file'
-    },
-    {
-      path: 'index.html',
-      content: `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>`,
-      type: 'file'
-    },
-    {
-      path: 'src/main.tsx',
-      content: `import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)`,
-      type: 'file'
-    },
-    {
-      path: 'src/App.tsx',
-      content: `import { useState } from 'react'
-
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-4">
-      <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
-        Vite + React
-      </h1>
-      <div className="card p-8 bg-slate-900 rounded-xl border border-slate-800">
-        <button 
-          onClick={() => setCount((count) => count + 1)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors"
-        >
-          count is {count}
-        </button>
-        <p className="mt-4 text-slate-400">
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-    </div>
-  )
-}
-
-export default App`,
-      type: 'file'
-    },
-    {
-      path: 'src/index.css',
-      content: `@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-}`,
-      type: 'file'
-    },
-    {
-      path: 'tsconfig.json',
-      content: JSON.stringify({
-        "compilerOptions": {
-          "target": "ES2020",
-          "useDefineForClassFields": true,
-          "lib": ["ES2020", "DOM", "DOM.Iterable"],
-          "module": "ESNext",
-          "skipLibCheck": true,
-          "moduleResolution": "bundler",
-          "allowImportingTsExtensions": true,
-          "resolveJsonModule": true,
-          "isolatedModules": true,
-          "noEmit": true,
-          "jsx": "react-jsx",
-          "strict": true,
-          "noUnusedLocals": true,
-          "noUnusedParameters": true,
-          "noFallthroughCasesInSwitch": true,
-          "baseUrl": ".",
-          "paths": { "@/*": ["./src/*"] }
-        },
-        "include": ["src"],
-        "references": [{ "path": "./tsconfig.node.json" }]
-      }, null, 2),
-      type: 'file'
-    }
-  ];
+  return [];
 }
 
 
@@ -441,6 +327,9 @@ export async function generateStatusUpdate(
     return currentStep;
   }
 }
+
+// Re-export generateImagePrompt
+export const generateImagePrompt = directGenerateImagePrompt;
 
 // Abort controller for stopping generation
 let currentAbortController: AbortController | null = null;

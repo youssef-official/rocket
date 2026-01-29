@@ -24,13 +24,13 @@ export const translations: Translations = {
   'common.loading': { en: 'Loading...', ar: 'جاري التحميل...', zh: '加载中...', ja: '読み込み中...', fr: 'Chargement...' },
   'common.error': { en: 'Error', ar: 'خطأ', zh: '错误', ja: 'エラー', fr: 'Erreur' },
   'common.success': { en: 'Success', ar: 'نجاح', zh: '成功', ja: '成功', fr: 'Succès' },
-  
+
   // Navigation
   'nav.pricing': { en: 'Pricing', ar: 'الأسعار', zh: '定价', ja: '料金', fr: 'Tarifs' },
   'nav.docs': { en: 'Docs', ar: 'المستندات', zh: '文档', ja: 'ドキュメント', fr: 'Documentation' },
   'nav.resources': { en: 'Resources', ar: 'الموارد', zh: '资源', ja: 'リソース', fr: 'Ressources' },
   'nav.backToHome': { en: 'Back to Home', ar: 'العودة للرئيسية', zh: '返回首页', ja: 'ホームに戻る', fr: 'Retour à l\'accueil' },
-  
+
   // Home page
   'home.title1': { en: 'Think It.', ar: 'فكر بها.', zh: '想一想.', ja: '考えて.', fr: 'Pensez-y.' },
   'home.title2': { en: 'Type It.', ar: 'اكتبها.', zh: '输入它.', ja: '入力して.', fr: 'Tapez-le.' },
@@ -45,14 +45,14 @@ export const translations: Translations = {
   'home.newBadge': { en: 'New', ar: 'جديد', zh: '新', ja: '新着', fr: 'Nouveau' },
   'home.mobileAnnouncement': { en: 'Rocket Mobile for iPhone is here', ar: 'تطبيق Rocket للآيفون متاح الآن', zh: 'Rocket iPhone 版已上线', ja: 'Rocket iPhone版が登場', fr: 'Rocket Mobile pour iPhone est disponible' },
   'home.dropImage': { en: 'Drop image here', ar: 'أفلت الصورة هنا', zh: '将图片拖放到此处', ja: 'ここに画像をドロップ', fr: 'Déposez l\'image ici' },
-  
+
   // Typing words
   'typing.dashboard': { en: 'dashboard.', ar: 'لوحة تحكم.', zh: '仪表板.', ja: 'ダッシュボード.', fr: 'tableau de bord.' },
   'typing.landingPage': { en: 'landing page.', ar: 'صفحة هبوط.', zh: '着陆页.', ja: 'ランディングページ.', fr: 'page d\'atterrissage.' },
   'typing.ecommerce': { en: 'e-commerce site.', ar: 'موقع تجارة إلكترونية.', zh: '电商网站.', ja: 'ECサイト.', fr: 'site e-commerce.' },
   'typing.portfolio': { en: 'portfolio.', ar: 'معرض أعمال.', zh: '作品集.', ja: 'ポートフォリオ.', fr: 'portfolio.' },
   'typing.blog': { en: 'blog.', ar: 'مدونة.', zh: '博客.', ja: 'ブログ.', fr: 'blog.' },
-  
+
   // Editor
   'editor.share': { en: 'Share', ar: 'مشاركة', zh: '分享', ja: '共有', fr: 'Partager' },
   'editor.publish': { en: 'Publish', ar: 'نشر', zh: '发布', ja: '公開', fr: 'Publier' },
@@ -72,7 +72,7 @@ export const translations: Translations = {
   'editor.database': { en: 'Database', ar: 'قاعدة البيانات', zh: '数据库', ja: 'データベース', fr: 'Base de données' },
   'editor.repoName': { en: 'Repository name', ar: 'اسم المستودع', zh: '仓库名称', ja: 'リポジトリ名', fr: 'Nom du dépôt' },
   'editor.syncToGitHub': { en: 'Sync to GitHub', ar: 'مزامنة مع GitHub', zh: '同步到 GitHub', ja: 'GitHubに同期', fr: 'Synchroniser avec GitHub' },
-  
+
   // Projects
   'projects.title': { en: 'Your Projects', ar: 'مشاريعك', zh: '您的项目', ja: 'あなたのプロジェクト', fr: 'Vos projets' },
   'projects.empty': { en: 'No projects yet', ar: 'لا توجد مشاريع بعد', zh: '暂无项目', ja: 'プロジェクトはまだありません', fr: 'Aucun projet' },
@@ -83,7 +83,7 @@ export const translations: Translations = {
   'projects.delete': { en: 'Delete', ar: 'حذف', zh: '删除', ja: '削除', fr: 'Supprimer' },
   'projects.viewAll': { en: 'View all {count} projects', ar: 'عرض جميع المشاريع ({count})', zh: '查看所有 {count} 个项目', ja: '全 {count} 件のプロジェクトを表示', fr: 'Voir les {count} projets' },
   'projects.count': { en: '{count} project{s}', ar: '{count} مشروع', zh: '{count} 个项目', ja: '{count} 件のプロジェクト', fr: '{count} projet{s}' },
-  
+
   // Footer
   'footer.product': { en: 'Product', ar: 'المنتج', zh: '产品', ja: '製品', fr: 'Produit' },
   'footer.company': { en: 'Company', ar: 'الشركة', zh: '公司', ja: '会社', fr: 'Entreprise' },
@@ -98,7 +98,7 @@ export const translations: Translations = {
   'footer.terms': { en: 'Terms of Service', ar: 'شروط الخدمة', zh: '服务条款', ja: '利用規約', fr: 'Conditions d\'utilisation' },
   'footer.copyright': { en: '© 2025 Rocket. All rights reserved.', ar: '© 2025 Rocket. جميع الحقوق محفوظة.', zh: '© 2025 Rocket. 保留所有权利.', ja: '© 2025 Rocket. 全著作権所有.', fr: '© 2025 Rocket. Tous droits réservés.' },
   'footer.tagline': { en: 'Build production-ready web applications with AI-powered code generation.', ar: 'ابنِ تطبيقات ويب جاهزة للإنتاج بتوليد الكود بالذكاء الاصطناعي.', zh: '使用AI代码生成构建生产就绪的Web应用程序。', ja: 'AI搭載のコード生成で本番対応のWebアプリケーションを構築。', fr: 'Créez des applications web prêtes pour la production avec la génération de code par IA.' },
-  
+
   // Docs
   'docs.title': { en: 'Documentation', ar: 'المستندات', zh: '文档', ja: 'ドキュメント', fr: 'Documentation' },
   'docs.search': { en: 'Search docs...', ar: 'البحث في المستندات...', zh: '搜索文档...', ja: 'ドキュメントを検索...', fr: 'Rechercher dans les docs...' },
@@ -113,7 +113,7 @@ export const translations: Translations = {
   'docs.github': { en: 'GitHub Integration', ar: 'تكامل GitHub', zh: 'GitHub集成', ja: 'GitHub連携', fr: 'Intégration GitHub' },
   'docs.vercel': { en: 'Vercel Deployment', ar: 'نشر Vercel', zh: 'Vercel部署', ja: 'Vercelデプロイ', fr: 'Déploiement Vercel' },
   'docs.multilingual': { en: 'Multi-language Support', ar: 'دعم اللغات المتعددة', zh: '多语言支持', ja: '多言語対応', fr: 'Support multilingue' },
-  
+
   // Pricing
   'pricing.title': { en: 'Simple, Transparent', ar: 'بسيط وشفاف', zh: '简单透明', ja: 'シンプルで透明', fr: 'Simple et transparent' },
   'pricing.subtitle': { en: 'Pricing', ar: 'التسعير', zh: '定价', ja: '料金', fr: 'Tarification' },
@@ -171,6 +171,10 @@ export const translations: Translations = {
   'chat.wrote': { en: 'Wrote', ar: 'تمت الكتابة', zh: '已写', ja: '作成済み', fr: 'Écrit' },
   'chat.built': { en: 'Built the project to ensure everything works', ar: 'تم بناء المشروع للتأكد من أن كل شيء يعمل', zh: '构建项目以确保一切正常', ja: 'すべてが機能することを確認するためにプロジェクトをビルドしました', fr: 'Projet construit pour s\'assurer que tout fonctionne' },
   'chat.whatImBuilding': { en: "What I'm Building:", ar: "ما أقوم ببنائه:", zh: "我正在构建的内容:", ja: "作成中のもの:", fr: "Ce que je construis :" },
+  'chat.checkingAttachments': { en: 'Checking for attached images...', ar: 'جاري التحقق من الصور المرفقة...', zh: '正在检查附件图片...', ja: '添付画像を確認中...', fr: 'Vérification des images jointes...' },
+  'chat.analyzingImages': { en: 'Analyzing attached images...', ar: 'جاري تحليل الصور المرفقة...', zh: '正在分析附件图片...', ja: '添付画像を分析中...', fr: 'Analyse des images jointes...' },
+  'chat.generatingLogo': { en: 'Generating logo image...', ar: 'جاري توليد صورة اللوجو...', zh: '正在生成标志图片...', ja: 'ロゴ画像を生成中...', fr: 'Génération de l\'image du logo...' },
+  'chat.copyingLogo': { en: 'Copying generated image to public folder...', ar: 'جاري نسخ الصورة المولدة إلى مجلد المشروع...', zh: '正在将生成的图片复制到公共文件夹...', ja: '生成した画像をpublicフォルダにコピー中...', fr: 'Copie de l\'image générée dans le dossier public...' },
 
   // Models
   'models.selectModel': { en: 'Select AI Model', ar: 'اختر نموذج الذكاء الاصطناعي', zh: '选择AI模型', ja: 'AIモデルを選択', fr: 'Sélectionner le modèle IA' },
@@ -267,13 +271,13 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const t = (key: string, params?: Record<string, string | number>): string => {
     let translation = translations[key]?.[language] || key;
-    
+
     if (params) {
       Object.entries(params).forEach(([paramKey, value]) => {
         translation = translation.replace(`{${paramKey}}`, String(value));
       });
     }
-    
+
     return translation;
   };
 

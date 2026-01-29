@@ -6,7 +6,8 @@ import {
     PROJECT_NAME_SYSTEM_PROMPT,
     SUGGESTIONS_SYSTEM_PROMPT,
     CHAT_ONLY_PROMPT,
-    VERSION_NAME_PROMPT
+    VERSION_NAME_PROMPT,
+    IMAGE_PROMPT_SYSTEM_PROMPT
 } from './aiPrompts';
 
 // Standard OpenAI/Vercel AI SDK compatible payload
@@ -47,7 +48,7 @@ function mapModel(modelId: string): string {
 
 // Main function to call AI directly from client
 export async function callingDirectAI(
-    mode: 'code' | 'status' | 'explanation' | 'project-name' | 'suggestions' | 'chat' | 'version-name',
+    mode: 'code' | 'status' | 'explanation' | 'project-name' | 'suggestions' | 'chat' | 'version-name' | 'image-prompt' | 'image-logic',
     messages: any[],
     modelId: string = 'rok-fast',
     signal?: AbortSignal
@@ -67,16 +68,34 @@ export async function callingDirectAI(
         case 'suggestions': systemPrompt = SUGGESTIONS_SYSTEM_PROMPT; break;
         case 'chat': systemPrompt = CHAT_ONLY_PROMPT; break;
         case 'version-name': systemPrompt = VERSION_NAME_PROMPT; break;
+        case 'image-prompt': systemPrompt = IMAGE_PROMPT_SYSTEM_PROMPT; break;
+        case 'image-logic': systemPrompt = "Analyze images and user intent. Which image index (0-based) is the logo? Answer ONLY index or 'generate'."; break;
     }
 
     const actualModel = mapModel(modelId);
 
-    // Construct payload
+    // Construct payload with support for images if provided
+    const formattedMessages = messages.map(msg => {
+        if (msg.role === 'user' && msg.imageUrls && Array.isArray(msg.imageUrls)) {
+            return {
+                role: 'user',
+                content: [
+                    { type: 'text', text: msg.content },
+                    ...msg.imageUrls.map((url: string) => ({
+                        type: 'image_url',
+                        image_url: { url }
+                    }))
+                ]
+            };
+        }
+        return msg;
+    });
+
     const payload: any = {
         model: actualModel,
         messages: [
             { role: 'system', content: systemPrompt },
-            ...messages
+            ...formattedMessages
         ],
         stream: true,
         max_tokens: 32000,
@@ -100,3 +119,44 @@ export async function callingDirectAI(
         signal
     });
 }
+
+// Helper to generate a professional image prompt using Gemini
+export async function generateImagePrompt(userPrompt: string, modelId: string = 'rok-fast'): Promise<string> {
+    try {
+        const response = await callingDirectAI('image-prompt', [{ role: 'user', content: userPrompt }], modelId);
+        if (!response.ok) return userPrompt;
+
+        // Handle stream to get full text
+        const reader = response.body?.getReader();
+        if (!reader) return userPrompt;
+
+        let fullContent = '';
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    if (data === '[DONE]') break;
+                    try {
+                        const parsed = JSON.parse(data);
+                        const content = parsed.choices[0]?.delta?.content || '';
+                        fullContent += content;
+                    } catch (e) { }
+                }
+            }
+        }
+
+        return fullContent.trim() || userPrompt;
+    } catch (e) {
+        console.error('Failed to generate image prompt:', e);
+        return userPrompt;
+    }
+}
+

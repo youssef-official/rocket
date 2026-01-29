@@ -145,7 +145,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [input, setInput] = useState('');
   const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({});
   const [isChatMode, setIsChatMode] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState<{ file: File; preview: string } | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<{ file: File; preview: string }[]>([]);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [rollbackVersionId, setRollbackVersionId] = useState<number | null>(null);
@@ -178,12 +178,15 @@ export const ChatView: React.FC<ChatViewProps> = ({
     e.stopPropagation();
     setIsDragging(false);
 
-    const files = e.dataTransfer.files;
-    if (files && files[0] && files[0].type.startsWith('image/')) {
-      const file = files[0];
-      const preview = URL.createObjectURL(file);
-      setUploadedImage({ file, preview });
-    }
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(f => f.type.startsWith('image/')).slice(0, 3 - uploadedImages.length);
+
+    const newImages = imageFiles.map(file => ({
+      file,
+      preview: URL.createObjectURL(file)
+    }));
+
+    setUploadedImages(prev => [...prev, ...newImages]);
   };
 
   useEffect(() => {
@@ -203,18 +206,21 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim() && !isGenerating) {
-      let imageUrl: string | undefined;
+      let imageUrls: string[] = [];
 
-      if (uploadedImage && onImageUpload) {
-        const url = await onImageUpload(uploadedImage.file);
-        if (url) {
-          imageUrl = url;
-        }
+      if (uploadedImages.length > 0 && onImageUpload) {
+        // Upload all images and get their URLs
+        const uploadPromises = uploadedImages.map(img => onImageUpload(img.file));
+        const urls = await Promise.all(uploadPromises);
+        imageUrls = urls.filter((url): url is string => url !== null);
       }
 
-      onSendMessage(input.trim(), isChatMode, imageUrl);
+      // If we have multiple images, we'll pass the first one for backward compatibility 
+      // but we should eventually update the whole chain to support arrays
+      onSendMessage(input.trim(), isChatMode, imageUrls.length > 0 ? imageUrls.join(',') : undefined);
+
       setInput('');
-      setUploadedImage(null);
+      setUploadedImages([]);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
     }
   };
@@ -227,19 +233,25 @@ export const ChatView: React.FC<ChatViewProps> = ({
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      const preview = URL.createObjectURL(file);
-      setUploadedImage({ file, preview });
-    }
+    const files = Array.from(e.target.files || []);
+    const imageFiles = files.filter(f => f.type.startsWith('image/')).slice(0, 3 - uploadedImages.length);
+
+    const newImages = imageFiles.map(file => ({
+      file,
+      preview: URL.createObjectURL(file)
+    }));
+
+    setUploadedImages(prev => [...prev, ...newImages]);
     setShowPlusMenu(false);
   };
 
-  const removeUploadedImage = () => {
-    if (uploadedImage) {
-      URL.revokeObjectURL(uploadedImage.preview);
-      setUploadedImage(null);
-    }
+  const removeUploadedImage = (index: number) => {
+    setUploadedImages(prev => {
+      const updated = [...prev];
+      URL.revokeObjectURL(updated[index].preview);
+      updated.splice(index, 1);
+      return updated;
+    });
   };
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
@@ -638,12 +650,15 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   {isUser ? (
                     <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm text-[15px] break-words whitespace-pre-wrap overflow-hidden bg-secondary text-foreground ml-auto">
                       {msg.imageUrl && (
-                        <div className="mb-2">
-                          <img
-                            src={msg.imageUrl}
-                            alt="Attached"
-                            className="max-w-full max-h-48 rounded-lg object-cover"
-                          />
+                        <div className="mb-2 flex flex-wrap gap-2">
+                          {msg.imageUrl.split(',').map((url, i) => (
+                            <img
+                              key={i}
+                              src={url}
+                              alt={`Attached ${i + 1}`}
+                              className="max-w-full max-h-48 rounded-lg object-cover"
+                            />
+                          ))}
                         </div>
                       )}
                       {msg.content}
@@ -785,22 +800,24 @@ export const ChatView: React.FC<ChatViewProps> = ({
         {/* Suggestions */}
         {renderSuggestions()}
 
-        {uploadedImage && (
-          <div className="mb-3 flex items-center gap-2">
-            <div className="relative">
-              <img
-                src={uploadedImage.preview}
-                alt="Upload preview"
-                className="h-16 w-16 object-cover rounded-lg border border-border"
-              />
-              <button
-                onClick={removeUploadedImage}
-                className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-            <span className="text-sm text-muted-foreground">{uploadedImage.file.name}</span>
+        {uploadedImages.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {uploadedImages.map((img, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={img.preview}
+                  alt={`Upload preview ${index + 1}`}
+                  className="h-16 w-16 object-cover rounded-lg border border-border"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeUploadedImage(index)}
+                  className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
           </div>
         )}
 
