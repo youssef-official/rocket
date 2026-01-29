@@ -18,12 +18,12 @@ const getFeaturesList = (planKey: PlanType) => {
   const features: { text: string; included: boolean }[] = [];
 
   if (planKey === 'spark') {
-    features.push({ text: `${config.dailyCredits} Credits / day (Max ${config.maxDailyCredits})`, included: true });
+    features.push({ text: `${config.dailyCredits} Credits / day`, included: true });
   } else {
-    features.push({ text: `${config.monthlyCredits.toLocaleString()} Credits / month`, included: true });
+    features.push({ text: `${config.dailyCredits} Credits / day + ${config.monthlyCredits} / month`, included: true });
   }
 
-  // Models
+  // Models - show only name without real model
   const modelNames = config.models.map(id => {
     const model = ROK_MODELS.find(m => m.id === id);
     return model ? `${model.icon} ${model.name}` : id;
@@ -175,7 +175,7 @@ export const Pricing: React.FC = () => {
             })}
           </div>
 
-          {/* Rok AI Engines Section */}
+          {/* Rok AI Engines Section - WITHOUT Real Model column */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -193,10 +193,10 @@ export const Pricing: React.FC = () => {
                 <thead>
                   <tr className="border-b border-white/10">
                     <th className={`py-3 ${isRTL ? 'text-right' : 'text-left'} text-white/60`}>Rok Name</th>
-                    <th className={`py-3 ${isRTL ? 'text-right' : 'text-left'} text-white/60`}>Real Model</th>
                     <th className={`py-3 ${isRTL ? 'text-right' : 'text-left'} text-white/60`}>Best For</th>
                     <th className="py-3 text-center text-white/60">Speed</th>
                     <th className="py-3 text-center text-white/60">Quality</th>
+                    <th className="py-3 text-center text-white/60">Multiplier</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -205,7 +205,6 @@ export const Pricing: React.FC = () => {
                       <td className="py-3 text-white font-medium">
                         {model.icon} {model.name}
                       </td>
-                      <td className="py-3 text-white/60 font-mono text-xs">{model.realModel}</td>
                       <td className="py-3 text-white/80">{model.description}</td>
                       <td className="py-3">
                         <div className="flex justify-center gap-0.5">
@@ -220,6 +219,9 @@ export const Pricing: React.FC = () => {
                             <Star key={i} className={`w-3 h-3 ${i < model.quality ? 'text-blue-400' : 'text-white/20'}`} />
                           ))}
                         </div>
+                      </td>
+                      <td className="py-3 text-center">
+                        <span className="text-pink-400 font-bold">×{model.multiplier}</span>
                       </td>
                     </tr>
                   ))}
@@ -237,7 +239,7 @@ export const Pricing: React.FC = () => {
           >
             <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-8">
               <h2 className="text-2xl font-bold text-white mb-2">💳 Smart Credit System</h2>
-              <p className="text-white/70 mb-6">You only pay for real work done.</p>
+              <p className="text-white/70 mb-6">You only pay for real work done. Credits are calculated based on actual complexity.</p>
 
               <h3 className="text-lg font-semibold text-white mb-4">Example Costs</h3>
               <div className="space-y-3">
@@ -261,6 +263,7 @@ export const Pricing: React.FC = () => {
               <div className="mt-6 space-y-2 text-sm text-white/60">
                 <p>💡 Bigger work = more credits</p>
                 <p>💡 Small edits = very cheap</p>
+                <p>⚠️ Credits are based on actual output, not your description</p>
               </div>
             </div>
 
@@ -304,7 +307,7 @@ export const Pricing: React.FC = () => {
               {[
                 { q: 'Can I choose my engine?', a: 'Yes. Based on your plan.' },
                 { q: 'Why Spark is limited?', a: 'To let you test before upgrading.' },
-                { q: 'Are these real models?', a: 'Yes. We use trusted providers (Xiaomi, MiniMax, Google, Anthropic).' },
+                { q: 'How are credits calculated?', a: 'Based on actual work complexity (files changed, lines of code), not your description.' },
               ].map((faq) => (
                 <div key={faq.q} className="bg-white/5 rounded-xl p-5 border border-white/10">
                   <h3 className="font-semibold text-white mb-2">{faq.q}</h3>
