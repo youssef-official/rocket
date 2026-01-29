@@ -68,6 +68,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: {
           emailRedirectTo: window.location.origin,
+          data: {
+            display_name: email.split('@')[0],
+          }
         },
       });
       if (error) throw error;

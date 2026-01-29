@@ -38,7 +38,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
         onSuccess();
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+      let message = err.message || 'Authentication failed';
+      if (message.includes('Email not confirmed')) {
+        message = 'Please check your email to confirm your account before logging in.';
+      } else if (message.includes('Invalid login credentials')) {
+        message = 'Invalid email or password. Please try again.';
+      }
+      setError(message);
     } finally {
       setIsLoading(false);
     }
