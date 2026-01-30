@@ -15,8 +15,13 @@ export const CREDIT_EXAMPLES = {
 export function calculateCredits(
   filesChanged: number,
   linesOfCode: number,
-  modelMultiplier: number = 1
+  modelMultiplier: number = 1,
+  isFirstVersion: boolean = false
 ): number {
+  if (isFirstVersion) {
+    return 2.0;
+  }
+
   let baseCredits = 0.2;
 
   // Files changed
@@ -120,4 +125,3 @@ export async function deductCredits(
 export function getModelMultiplier(modelId: string): number {
   const model = ROK_MODELS.find(m => m.id === modelId);
   return model?.multiplier || 1;
-}
