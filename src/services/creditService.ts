@@ -125,3 +125,4 @@ export async function deductCredits(
 export function getModelMultiplier(modelId: string): number {
   const model = ROK_MODELS.find(m => m.id === modelId);
   return model?.multiplier || 1;
+}
