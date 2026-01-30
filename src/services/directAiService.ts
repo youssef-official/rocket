@@ -51,10 +51,11 @@ export async function deductPointsAfterGeneration(
     filesChanged: number,
     linesOfCode: number,
     projectId?: string,
-    workDescription?: string
+    workDescription?: string,
+    isFirstVersion: boolean = false
 ): Promise<{ creditsDeducted: number; success: boolean }> {
     const multiplier = getModelMultiplier(modelId);
-    const credits = calculateCredits(filesChanged, linesOfCode, multiplier);
+    const credits = calculateCredits(filesChanged, linesOfCode, multiplier, isFirstVersion);
     
     const result = await deductCredits(userId, credits, modelId, projectId, workDescription);
     
