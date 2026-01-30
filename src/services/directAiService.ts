@@ -116,8 +116,9 @@ export async function callingDirectAI(
         ],
         stream: true,
         max_tokens: 32000,
-        temperature: 0.15,
-        top_p: 0.9
+       temperature: 0.7,
+       top_p: 0.95
+
     };
 
     if (mode === 'project-name' || mode === 'version-name') {
