@@ -19,7 +19,7 @@ export function useChatMessages(projectId: string | null) {
     try {
       const { data, error } = await supabase
         .from('chat_messages')
-        .select('id, project_id, user_id, role, content, image_url, actions_taken, created_at')
+        .select('id, project_id, user_id, role, content, image_url, actions_taken, credits_used, created_at')
         .eq('project_id', projectId)
         .order('created_at', { ascending: true });
 
@@ -31,7 +31,7 @@ export function useChatMessages(projectId: string | null) {
         content: m.content,
         imageUrl: m.image_url,
         actionsTaken: m.actions_taken as any,
-        creditsUsed: 0, // credits_used column missing in DB
+        creditsUsed: m.credits_used,
         createdAt: m.created_at,
       }));
 
@@ -77,8 +77,9 @@ export function useChatMessages(projectId: string | null) {
           content,
           image_url: imageUrl || null,
           actions_taken: actionsTaken || null,
+          credits_used: creditsUsed || null,
         })
-        .select('id, project_id, user_id, role, content, image_url, actions_taken, created_at')
+        .select('id, project_id, user_id, role, content, image_url, actions_taken, credits_used, created_at')
         .single();
 
       if (error) {
