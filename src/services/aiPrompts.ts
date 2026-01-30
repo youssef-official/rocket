@@ -139,6 +139,55 @@ server: {
 - No implicit any
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧩 DESIGN SYSTEM & UI COMPONENTS LAW (MANDATORY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You MUST build a reusable UI system.
+
+ALWAYS generate the following files:
+
+src/components/ui/Button.tsx  
+src/components/ui/Card.tsx  
+src/components/ui/Input.tsx  
+src/components/ui/Modal.tsx (if dialogs are needed)
+
+RULES:
+
+- No inline buttons using <button> directly in pages.
+- No raw cards using <div> for layout.
+- All buttons MUST use <Button /> component.
+- All cards MUST use <Card /> component.
+- UI components MUST support:
+  → variant
+  → size
+  → disabled/loading state (for Button)
+  → className override
+
+Button requirements:
+
+- variants: primary | secondary | ghost | danger
+- sizes: sm | md | lg
+- loading spinner support
+- keyboard accessible
+
+Card requirements:
+
+- Header / Content / Footer slots
+- Shadow + border + hover effect
+- Responsive padding
+
+Input requirements:
+
+- label support
+- error state
+- focus styles
+- full accessibility
+
+All pages MUST use these UI components.
+No duplicated styling.
+
+Missing UI system = FAILURE.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ## 8️⃣ OUTPUT FORMAT (MANDATORY)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
