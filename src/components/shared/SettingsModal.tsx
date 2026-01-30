@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    X, Github, Settings as SettingsIcon, User,
+    X, Settings as SettingsIcon, User,
     Check, Loader2, Eye, EyeOff, ExternalLink, Camera
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,18 +26,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     const {
         integrations,
         loading,
-        saveGitHubToken,
         saveVercelToken,
-        disconnectGitHub,
         disconnectVercel
     } = useIntegrations();
 
     const [activeTab, setActiveTab] = useState<'profile' | 'integrations'>('profile');
-    const [githubToken, setGithubToken] = useState('');
     const [vercelToken, setVercelToken] = useState('');
-    const [showGithubToken, setShowGithubToken] = useState(false);
     const [showVercelToken, setShowVercelToken] = useState(false);
-    const [savingGithub, setSavingGithub] = useState(false);
     const [savingVercel, setSavingVercel] = useState(false);
 
     // Profile editing
@@ -97,14 +92,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         } finally {
             setSavingProfile(false);
         }
-    };
-
-    const handleSaveGitHub = async () => {
-        if (!githubToken.trim()) return;
-        setSavingGithub(true);
-        const success = await saveGitHubToken(githubToken.trim());
-        if (success) setGithubToken('');
-        setSavingGithub(false);
     };
 
     const handleSaveVercel = async () => {
@@ -178,7 +165,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                         : 'text-white/60 hover:text-white hover:bg-white/5'
                                     }`}
                             >
-                                <Github className="w-4 h-4" />
+                                <SettingsIcon className="w-4 h-4" />
                                 {t('footer.integrations')}
                             </button>
                         </div>
@@ -253,96 +240,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                 </div>
                             ) : (
                                 <div className="space-y-6">
-                                    {/* GitHub Integration */}
-                                    <div className="p-4 rounded-xl border border-white/10 bg-white/5">
-                                        <div className={`flex items-center justify-between mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                                            <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                                                <div className="w-10 h-10 rounded-lg bg-[#24292e] flex items-center justify-center">
-                                                    <Github className="w-5 h-5 text-white" />
-                                                </div>
-                                                <div className={isRTL ? 'text-right' : ''}>
-                                                    <h3 className="font-semibold text-white">GitHub</h3>
-                                                    <p className="text-xs text-white/60">{t('editor.connectGitHub')}</p>
-                                                </div>
-                                            </div>
-                                            {integrations?.github_connected ? (
-                                                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                                                    <Check className="w-3 h-3 mr-1" />
-                                                    Connected
-                                                </Badge>
-                                            ) : (
-                                                <Badge variant="outline" className="text-white/60 border-white/20">
-                                                    <X className="w-3 h-3 mr-1" />
-                                                    Not Connected
-                                                </Badge>
-                                            )}
-                                        </div>
-
-                                        {integrations?.github_connected ? (
-                                            <div className={`flex items-center justify-between p-3 bg-white/5 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}>
-                                                <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                                                    <div className="w-8 h-8 rounded-full bg-[#24292e] flex items-center justify-center">
-                                                        <Github className="w-4 h-4 text-white" />
-                                                    </div>
-                                                    <div className={isRTL ? 'text-right' : ''}>
-                                                        <p className="font-medium text-white">@{integrations.github_username}</p>
-                                                        <p className="text-xs text-white/60">{t('integrations.connectedAccount')}</p>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    onClick={disconnectGitHub}
-                                                    className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border-0"
-                                                >
-                                                    Disconnect
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                <div className="relative">
-                                                    <Input
-                                                        type={showGithubToken ? 'text' : 'password'}
-                                                        placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                                                        value={githubToken}
-                                                        onChange={(e) => setGithubToken(e.target.value)}
-                                                        className="bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-10"
-                                                        dir="ltr"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowGithubToken(!showGithubToken)}
-                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
-                                                    >
-                                                        {showGithubToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                    </button>
-                                                </div>
-                                                <p className="text-xs text-white/50">
-                                                    Create a token with <code className="bg-white/10 px-1 rounded">repo</code> scope.{' '}
-                                                    <a
-                                                        href="https://github.com/settings/tokens/new"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-purple-400 hover:underline inline-flex items-center gap-1"
-                                                    >
-                                                        Generate token <ExternalLink className="w-3 h-3" />
-                                                    </a>
-                                                </p>
-                                                <Button
-                                                    onClick={handleSaveGitHub}
-                                                    disabled={!githubToken.trim() || savingGithub}
-                                                    className="w-full bg-[#24292e] hover:bg-[#363d45] text-white border-0"
-                                                >
-                                                    {savingGithub ? (
-                                                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Connecting...</>
-                                                    ) : (
-                                                        <><Github className="w-4 h-4 mr-2" /> Connect GitHub</>
-                                                    )}
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-
                                     {/* Vercel Integration */}
                                     <div className="p-4 rounded-xl border border-white/10 bg-white/5">
                                         <div className={`flex items-center justify-between mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -421,7 +318,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                                 <Button
                                                     onClick={handleSaveVercel}
                                                     disabled={!vercelToken.trim() || savingVercel}
-                                                    className="w-full bg-black hover:bg-gray-900 text-white border-0"
+                                                    className="w-full bg-black hover:bg-zinc-800 text-white border-0"
                                                 >
                                                     {savingVercel ? (
                                                         <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Connecting...</>
