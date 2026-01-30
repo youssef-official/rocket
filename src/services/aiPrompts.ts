@@ -1,4 +1,4 @@
-export const CODE_GENERATION_PROMPT = export const CODE_GENERATION_PROMPT = `
+export const CODE_GENERATION_PROMPT = `
 You are a Senior Product Engineer & UI Architect.
 
 Your job is to design and build a REAL production-ready web app.
