@@ -35,12 +35,12 @@ function getAIUrl(): string {
 // Model ID to real model mapping
 function mapModel(modelId: string): string {
     switch (modelId) {
-        case 'rok-fast': return 'google/gemini-2.0-flash';
+        case 'rok-fast': return 'google/gemini-2.5-flash-lite';
         case 'rok-smart': return 'xai/grok-4.1-fast-reasoning';
         case 'rok-turbo': return 'google/gemini-3-flash';
         case 'rok-ultra': return 'anthropic/claude-haiku-4.5';
         case 'rok-reson': return 'anthropic/claude-opus-4.5';
-        default: return modelId.includes('/') ? modelId : 'google/gemini-2.0-flash';
+        default: return modelId.includes('/') ? modelId : 'google/gemini-2.5-flash-lite';
     }
 }
 
