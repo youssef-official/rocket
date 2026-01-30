@@ -8,7 +8,7 @@ export const CODE_GENERATION_PROMPT = `You are a World-Class Full-Stack React De
 5. **Structure**: Responsive (Mobile-First). NO placeholders.
 6. **Stack**: Vite, React, TS, Tailwind, Lucide, Framer Motion. 
 7. **No placeholders**: NEVER use "// TODO" or "// TODO: " in the code.
-8. **Always Import This script in index.html body: <script src="https://youssef.ymoo.site/branding.js"></script>.
+
 
 Return ONLY valid JSON: {"files": {"path": "content"}}`;
 
@@ -39,4 +39,3 @@ Generate a prompt for a professional, minimalist, FLAT 2D vector logo icon.
 STRICT RULES: NO TEXT, NO LETTERS, NO WORDS, NO COMPANY NAME, NO NAMES, NO LABELS. 
 Focus only on a clean, modern symbol on a white background.
 Return ONLY the prompt text. No quotes. Max 30 words.`;
-
