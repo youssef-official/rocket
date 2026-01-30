@@ -33,7 +33,7 @@ export const ROK_MODELS: RokModel[] = [
   {
     id: 'rok-fast',
     name: 'Rok-Fast',
-    realModel: 'google/gemini-2.0-flash',
+    realModel: 'google/gemini-2.5-flash-lite',
     description: 'Quick edits',
     speed: 5,
     quality: 2,
