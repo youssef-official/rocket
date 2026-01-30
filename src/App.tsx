@@ -21,13 +21,11 @@ import {
   stopGeneration,
   generateProjectName,
   generateSuggestions,
-  generateImagePrompt,
+  deductPointsAfterGeneration,
   type Suggestion
 } from "@/services/aiService";
 import type { ProjectData, ChatMessage, ProjectFile } from "@/types";
 import { toast } from "@/hooks/use-toast";
-import { generateProjectLogo } from "@/services/imageService";
-import { urlToBase64 } from "@/lib/utils";
 
 const queryClient = new QueryClient();
 
@@ -67,7 +65,6 @@ const ProjectEditorRoute = () => {
   const [hasStartedGeneration, setHasStartedGeneration] = useState(false);
   const [isChatMode, setIsChatMode] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [generatedLogoUrl, setGeneratedLogoUrl] = useState<string | null>(null);
   const isCancelled = useRef(false);
 
   // Use chat messages hook for persistence
@@ -202,100 +199,7 @@ const ProjectEditorRoute = () => {
 
           if (isCancelled.current) return;
 
-          // Add the explanation message (without duplication)
-          await addMessage('assistant', explanation);
-
-          // Step 1.5: Generate High-Quality Image Prompt using Gemini
-          setStatusMessage("Crafting professional image prompt...");
-          const aiImagePrompt = await generateImagePrompt(prompt, savedModelId);
-          console.log('[App] Gemini-generated image prompt:', aiImagePrompt);
-
-          // Step 2: Generate Logo AFTER plan is shown
-          let logoUrl: string | undefined;
-
-          // Show logo generation in actions
-          setFileActivities([{ name: t('chat.checkingAttachments'), status: 'editing' as const, action: 'created' as const }]);
-
-          const logoResult = await generateProjectLogo(aiImagePrompt, [], {
-            onCheckingAttachments: () => {
-              setFileActivities([{ name: t('chat.checkingAttachments'), status: 'editing' as const, action: 'created' as const }]);
-            },
-            onGeneratingLogo: () => {
-              setFileActivities([
-                { name: t('chat.checkingAttachments'), status: 'done' as const, action: 'created' as const },
-                { name: t('chat.generatingLogo'), status: 'editing' as const, action: 'created' as const }
-              ]);
-            },
-            onCopyingToPublic: () => {
-              setFileActivities([
-                { name: t('chat.checkingAttachments'), status: 'done' as const, action: 'created' as const },
-                { name: t('chat.generatingLogo'), status: 'done' as const, action: 'created' as const },
-                { name: t('chat.copyingLogo'), status: 'editing' as const, action: 'created' as const }
-              ]);
-            },
-            onComplete: (url) => {
-              logoUrl = url;
-              setGeneratedLogoUrl(url);
-              setFileActivities([
-                { name: t('chat.checkingAttachments'), status: 'done' as const, action: 'created' as const },
-                { name: t('chat.generatingLogo'), status: 'done' as const, action: 'created' as const },
-                { name: t('chat.copyingLogo'), status: 'done' as const, action: 'created' as const }
-              ]);
-            }
-          });
-
-          if (logoResult.success && logoResult.logoUrl) {
-            logoUrl = logoResult.logoUrl;
-          }
-
-          // Add logo to project files if generated
-          if (logoUrl) {
-            try {
-              const base64Logo = await urlToBase64(logoUrl);
-              const logoFile: ProjectFile = {
-                name: 'logo.png',
-                path: 'public/logo.png',
-                content: base64Logo,
-                language: 'image'
-              };
-
-              // CRITICAL: Update project files BEFORE code generation so AI knows it exists
-              const updatedFiles = { ...localProject.files, 'public/logo.png': logoFile };
-              await updateProject(localProject.id, { files: updatedFiles });
-              setLocalProject(prev => prev ? { ...prev, files: updatedFiles } : null);
-
-              setFileActivities(prev => [
-                ...prev,
-                { name: 'public/logo.png', status: 'done' as const, action: 'created' as const }
-              ]);
-            } catch (e) {
-              console.error('Failed to save logo as image data:', e);
-              // Fallback to URL if base64 fails
-              const logoFile: ProjectFile = {
-                name: 'logo.png',
-                path: 'public/logo.png',
-                content: `/* URL: ${logoUrl} */`,
-                language: 'image'
-              };
-              const updatedFiles = { ...localProject.files, 'public/logo.png': logoFile };
-              await updateProject(localProject.id, { files: updatedFiles });
-              setLocalProject(prev => prev ? { ...prev, files: updatedFiles } : null);
-            }
-          }
-
-          // Keep logo activities and add to them during code generation
-          const logoActivities = logoUrl ? [
-            { name: t('chat.checkingAttachments'), status: 'done' as const, action: 'created' as const },
-            { name: t('chat.generatingLogo'), status: 'done' as const, action: 'created' as const },
-            { name: 'public/logo.png', status: 'done' as const, action: 'created' as const }
-          ] : [];
-
-          setFileActivities(logoActivities);
-
-          if (isCancelled.current) return;
-
-          // Step 3: Generate code step by step
-          if (isCancelled.current) return;
+          // Step 2: Start code generation (no logo generation)
 
           // Start with first plan step
           const currentStepText = planLines[0] || t('chat.makingChanges');
@@ -310,10 +214,8 @@ const ProjectEditorRoute = () => {
           let fullResponse = '';
           const detectedFiles = new Set<string>();
 
-          // Build prompt with logo and safety rules
-          const userPrompt = logoUrl
-            ? `${prompt}\n\n[CRITICAL: A professional logo is ready at "/public/logo.png". USE IT in the UI (navbar/header).]\n[CRITICAL: If using framer-motion AnimatePresence, you MUST import it: import { motion, AnimatePresence } from "framer-motion"]`
-            : `${prompt}\n\n[CRITICAL: If using framer-motion AnimatePresence, you MUST import it: import { motion, AnimatePresence } from "framer-motion"]`;
+          // Build prompt with safety rules
+          const userPrompt = `${prompt}\n\n[CRITICAL: If using framer-motion AnimatePresence, you MUST import it: import { motion, AnimatePresence } from "framer-motion"]`;
 
           await streamAICodeGeneration(
             [{ role: 'user', content: userPrompt }],
@@ -369,19 +271,6 @@ const ProjectEditorRoute = () => {
                   ? { ...localProject.files, ...files }
                   : localProject.files;
 
-                // Add logo file if generated
-                if (logoUrl) {
-                  finalFiles = {
-                    ...finalFiles,
-                    'public/logo.png': {
-                      name: 'logo.png',
-                      path: 'public/logo.png',
-                      content: logoUrl,
-                      language: 'image'
-                    }
-                  };
-                }
-
                 await updateProject(localProject.id, {
                   files: finalFiles,
                   generationStatus: 'complete'
@@ -408,6 +297,21 @@ const ProjectEditorRoute = () => {
                   stepFiles: stepFilesMap,
                   summary
                 }));
+
+                // DEDUCT CREDITS after generation completes
+                if (user) {
+                  const linesOfCode = Object.values(files).reduce((acc, f: any) => acc + (f.content?.split('\n').length || 0), 0);
+                  deductPointsAfterGeneration(
+                    user.id,
+                    savedModelId,
+                    fileList.length,
+                    linesOfCode,
+                    localProject.id,
+                    `Created ${fileList.length} files`
+                  ).then(result => {
+                    console.log(`[Credits] Deducted ${result.creditsDeducted} credits`);
+                  });
+                }
 
                 // Generate suggestions after completion
                 if (localProject.description) {

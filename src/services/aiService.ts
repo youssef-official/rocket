@@ -1,4 +1,4 @@
-import { callingDirectAI, generateImagePrompt as directGenerateImagePrompt } from './directAiService';
+import { callingDirectAI, deductPointsAfterGeneration } from './directAiService';
 
 const fallbackNames = [
   'Initial Build',
@@ -328,8 +328,8 @@ export async function generateStatusUpdate(
   }
 }
 
-// Re-export generateImagePrompt
-export const generateImagePrompt = directGenerateImagePrompt;
+// Re-export credit deduction
+export { deductPointsAfterGeneration };
 
 // Abort controller for stopping generation
 let currentAbortController: AbortController | null = null;

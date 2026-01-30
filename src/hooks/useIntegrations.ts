@@ -6,9 +6,6 @@ import { toast } from '@/hooks/use-toast';
 interface UserIntegrations {
   id: string;
   user_id: string;
-  github_token: string | null;
-  github_username: string | null;
-  github_connected: boolean;
   vercel_token: string | null;
   vercel_username: string | null;
   vercel_connected: boolean;
@@ -46,26 +43,6 @@ export function useIntegrations() {
     fetchIntegrations();
   }, [fetchIntegrations]);
 
-  const validateGitHubToken = async (token: string): Promise<{ valid: boolean; username?: string }> => {
-    try {
-      const response = await fetch('https://api.github.com/user', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return { valid: true, username: data.login };
-      }
-      return { valid: false };
-    } catch (error) {
-      console.error('GitHub validation error:', error);
-      return { valid: false };
-    }
-  };
-
   const validateVercelToken = async (token: string): Promise<{ valid: boolean; username?: string }> => {
     try {
       const response = await fetch('https://api.vercel.com/v2/user', {
@@ -82,49 +59,6 @@ export function useIntegrations() {
     } catch (error) {
       console.error('Vercel validation error:', error);
       return { valid: false };
-    }
-  };
-
-  const saveGitHubToken = async (token: string): Promise<boolean> => {
-    if (!user) return false;
-
-    const validation = await validateGitHubToken(token);
-    if (!validation.valid) {
-      toast({
-        title: 'Invalid Token',
-        description: 'The GitHub token is invalid. Please check and try again.',
-        variant: 'destructive',
-      });
-      return false;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('user_integrations')
-        .upsert({
-          user_id: user.id,
-          github_token: token,
-          github_username: validation.username,
-          github_connected: true,
-        }, { onConflict: 'user_id' });
-
-      if (error) throw error;
-
-      toast({
-        title: 'GitHub Connected',
-        description: `Connected as ${validation.username}`,
-      });
-
-      await fetchIntegrations();
-      return true;
-    } catch (error) {
-      console.error('Error saving GitHub token:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save GitHub token',
-        variant: 'destructive',
-      });
-      return false;
     }
   };
 
@@ -171,34 +105,6 @@ export function useIntegrations() {
     }
   };
 
-  const disconnectGitHub = async (): Promise<boolean> => {
-    if (!user) return false;
-
-    try {
-      const { error } = await supabase
-        .from('user_integrations')
-        .update({
-          github_token: null,
-          github_username: null,
-          github_connected: false,
-        })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'GitHub Disconnected',
-        description: 'Your GitHub account has been disconnected.',
-      });
-
-      await fetchIntegrations();
-      return true;
-    } catch (error) {
-      console.error('Error disconnecting GitHub:', error);
-      return false;
-    }
-  };
-
   const disconnectVercel = async (): Promise<boolean> => {
     if (!user) return false;
 
@@ -230,11 +136,8 @@ export function useIntegrations() {
   return {
     integrations,
     loading,
-    saveGitHubToken,
     saveVercelToken,
-    disconnectGitHub,
     disconnectVercel,
-    validateGitHubToken,
     validateVercelToken,
     refetch: fetchIntegrations,
   };
