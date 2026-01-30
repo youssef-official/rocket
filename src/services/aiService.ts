@@ -40,7 +40,29 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
       jsonStr = jsonStr.substring(startIdx, endIdx + 1);
     }
 
-    const parsed = JSON.parse(jsonStr);
+    // Sanitize JSON string before parsing to handle unterminated strings or common AI errors
+    let sanitizedJson = jsonStr.trim();
+    
+    // If JSON is truncated (common with AI), try to fix it
+    if (!sanitizedJson.endsWith('}')) {
+      // Find the last complete object or try to close it
+      const lastBrace = sanitizedJson.lastIndexOf('}');
+      if (lastBrace !== -1) {
+        sanitizedJson = sanitizedJson.substring(0, lastBrace + 1);
+      } else {
+        // If no closing brace at all, it's likely very broken, but let's try a basic fix
+        sanitizedJson += '"}}'; 
+      }
+    }
+    
+    // Final check for unterminated strings which cause the specific error reported
+    const quoteCount = (sanitizedJson.match(/"/g) || []).length;
+    if (quoteCount % 2 !== 0) {
+      sanitizedJson += '"';
+      if (!sanitizedJson.endsWith('}')) sanitizedJson += '}}';
+    }
+
+    const parsed = JSON.parse(sanitizedJson);
 
     const files: Record<string, any> = {};
     let fileList: string[] = [];
@@ -413,7 +435,29 @@ export async function streamAICodeGeneration(
           if (jsonStr === '[DONE]') continue;
 
           try {
-            const parsed = JSON.parse(jsonStr);
+            // Sanitize JSON string before parsing to handle unterminated strings or common AI errors
+    let sanitizedJson = jsonStr.trim();
+    
+    // If JSON is truncated (common with AI), try to fix it
+    if (!sanitizedJson.endsWith('}')) {
+      // Find the last complete object or try to close it
+      const lastBrace = sanitizedJson.lastIndexOf('}');
+      if (lastBrace !== -1) {
+        sanitizedJson = sanitizedJson.substring(0, lastBrace + 1);
+      } else {
+        // If no closing brace at all, it's likely very broken, but let's try a basic fix
+        sanitizedJson += '"}}'; 
+      }
+    }
+    
+    // Final check for unterminated strings which cause the specific error reported
+    const quoteCount = (sanitizedJson.match(/"/g) || []).length;
+    if (quoteCount % 2 !== 0) {
+      sanitizedJson += '"';
+      if (!sanitizedJson.endsWith('}')) sanitizedJson += '}}';
+    }
+
+    const parsed = JSON.parse(sanitizedJson);
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) {
               fullResponse += content;
