@@ -249,13 +249,15 @@ const ProjectEditorRoute = () => {
               onComplete: async (response) => {
                 if (isCancelled.current) return;
 
-                const { files, fileList } = parseAIResponse(response);
+                const { files, fileList, actionsTaken } = parseAIResponse(response);
 
-                const activities = fileList.map(name => ({
-                  name,
-                  status: 'done' as const,
-                  action: 'created' as const
-                }));
+                const activities = actionsTaken && actionsTaken.length > 0 
+                  ? actionsTaken 
+                  : fileList.map(name => ({
+                      name,
+                      status: 'done' as const,
+                      action: 'created' as const
+                    }));
                 setFileActivities(activities);
 
                 // Distribute files across plan steps
@@ -282,6 +284,9 @@ const ProjectEditorRoute = () => {
 
                 // Create summary
                 const summary = `✅ Project created successfully! Created ${activities.length} file${activities.length > 1 ? 's' : ''}. Your project is ready to use!`;
+
+                // Add assistant message with actions taken
+                await addMessage('assistant', summary, undefined, activities);
 
                 setIsGenerating(false);
                 setStreamingContent('');
@@ -563,14 +568,16 @@ const ProjectEditorRoute = () => {
           onComplete: async (response) => {
             if (isCancelled.current) return;
 
-            const { files: newFiles, fileList } = parseAIResponse(response);
+            const { files: newFiles, fileList, actionsTaken } = parseAIResponse(response);
 
             // Update file activities
-            const activities = fileList.map(name => ({
-              name,
-              status: 'done' as const,
-              action: (localProject.files[name] ? 'edited' : 'created') as 'edited' | 'created'
-            }));
+            const activities = actionsTaken && actionsTaken.length > 0 
+              ? actionsTaken 
+              : fileList.map(name => ({
+                  name,
+                  status: 'done' as const,
+                  action: (localProject.files[name] ? 'edited' : 'created') as 'edited' | 'created'
+                }));
             setFileActivities(activities);
 
             // Distribute files across plan steps
@@ -595,6 +602,9 @@ const ProjectEditorRoute = () => {
             const editedCount = activities.filter(a => a.action === 'edited').length;
             const createdCount = activities.filter(a => a.action === 'created').length;
             const summary = `✅ Completed! ${createdCount > 0 ? `Created ${createdCount} file${createdCount > 1 ? 's' : ''}` : ''}${createdCount > 0 && editedCount > 0 ? ' and ' : ''}${editedCount > 0 ? `edited ${editedCount} file${editedCount > 1 ? 's' : ''}` : ''}. Your project is ready!`;
+
+            // Add assistant message with actions taken
+            await addMessage('assistant', summary, undefined, activities);
 
             setIsGenerating(false);
             setStreamingContent('');

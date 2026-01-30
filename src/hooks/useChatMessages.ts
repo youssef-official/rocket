@@ -19,7 +19,7 @@ export function useChatMessages(projectId: string | null) {
     try {
       const { data, error } = await supabase
         .from('chat_messages')
-        .select('id, project_id, user_id, role, content, image_url, created_at')
+        .select('id, project_id, user_id, role, content, image_url, actions_taken, created_at')
         .eq('project_id', projectId)
         .order('created_at', { ascending: true });
 
@@ -30,6 +30,7 @@ export function useChatMessages(projectId: string | null) {
         role: m.role as 'user' | 'assistant',
         content: m.content,
         imageUrl: m.image_url,
+        actionsTaken: m.actions_taken as any,
         createdAt: m.created_at,
       }));
 
@@ -47,7 +48,7 @@ export function useChatMessages(projectId: string | null) {
   }, [fetchMessages]);
 
   // Add a new message
-  const addMessage = useCallback(async (role: 'user' | 'assistant', content: string, imageUrl?: string): Promise<ChatMessage | null> => {
+  const addMessage = useCallback(async (role: 'user' | 'assistant', content: string, imageUrl?: string, actionsTaken?: any[]): Promise<ChatMessage | null> => {
     if (!projectId || !user) return null;
 
     const newMessage: ChatMessage = {
@@ -55,6 +56,7 @@ export function useChatMessages(projectId: string | null) {
       role,
       content,
       imageUrl,
+      actionsTaken,
       createdAt: new Date().toISOString(),
     };
 
@@ -72,8 +74,9 @@ export function useChatMessages(projectId: string | null) {
           role,
           content,
           image_url: imageUrl || null,
+          actions_taken: actionsTaken || null,
         })
-        .select('id, project_id, user_id, role, content, image_url, created_at')
+        .select('id, project_id, user_id, role, content, image_url, actions_taken, created_at')
         .single();
 
       if (error) {

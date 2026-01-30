@@ -24,6 +24,10 @@ export const translations: Translations = {
   'common.loading': { en: 'Loading...', ar: 'جاري التحميل...', zh: '加载中...', ja: '読み込み中...', fr: 'Chargement...' },
   'common.error': { en: 'Error', ar: 'خطأ', zh: '错误', ja: 'エラー', fr: 'Erreur' },
   'common.success': { en: 'Success', ar: 'نجاح', zh: '成功', ja: '成功', fr: 'Succès' },
+  'action.read': { en: 'Reading', ar: 'قراءة', zh: '阅读', ja: '読み取り', fr: 'Lecture' },
+  'action.edited': { en: 'Editing', ar: 'تعديل', zh: '编辑', ja: '編集', fr: 'Modification' },
+  'action.created': { en: 'Creating', ar: 'إنشاء', zh: '创建', ja: '作成', fr: 'Création' },
+  'action.analyzed_image': { en: 'Analyzing Image', ar: 'تحليل الصورة', zh: '分析图像', ja: '画像を分析', fr: 'Analyse de l\'image' },
 
   // Navigation
   'nav.pricing': { en: 'Pricing', ar: 'الأسعار', zh: '定价', ja: '料金', fr: 'Tarifs' },

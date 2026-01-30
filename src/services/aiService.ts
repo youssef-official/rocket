@@ -22,8 +22,14 @@ export interface Suggestion {
   prompt: string;
 }
 
+export interface FileActivity {
+  name: string;
+  status: 'editing' | 'done';
+  action: 'read' | 'edited' | 'created' | 'analyzed_image';
+}
+
 // Helper to parse AI response
-export function parseAIResponse(response: string): { files: Record<string, any>, fileList: string[] } {
+export function parseAIResponse(response: string): { files: Record<string, any>, fileList: string[], actionsTaken?: FileActivity[] } {
   try {
     // Attempt to extract JSON from code blocks if present
     const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/) ||
@@ -66,6 +72,7 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
 
     const files: Record<string, any> = {};
     let fileList: string[] = [];
+    let actionsTaken: FileActivity[] = [];
 
     if (parsed.files) {
       // Check if files is an array (some AI models return array format)
@@ -105,8 +112,17 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
       }
     }
 
+    // Parse actions_taken if present
+    if (parsed.actions_taken && Array.isArray(parsed.actions_taken)) {
+      actionsTaken = parsed.actions_taken.map((action: any) => ({
+        name: action.name,
+        action: action.action,
+        status: action.status || 'done'
+      }));
+    }
+
     console.log('[parseAIResponse] Parsed files:', fileList);
-    return { files, fileList };
+    return { files, fileList, actionsTaken };
   } catch (e) {
     console.error("Failed to parse AI response", e);
     return { files: {}, fileList: [] };
@@ -307,188 +323,61 @@ export async function generateExplanation(
 
   } catch (error) {
     console.error('Explanation generation error:', error);
-    return "I'll build something great for you! 🚀";
+    return "I'll create something amazing for you!";
   }
 }
 
-// Generate status update
-export async function generateStatusUpdate(
-  currentStep: string
-): Promise<string> {
+// Stream code generation
+export async function streamAICodeGeneration(
+  messages: any[],
+  projectType: 'vite' | 'html',
+  options: {
+    onChunk: (chunk: string) => void;
+    onComplete: (fullResponse: string) => void;
+    modelId?: string;
+    signal?: AbortSignal;
+  }
+) {
   try {
-    const msgs = [{ role: 'user', content: `Current step: ${currentStep}. Give a brief status.` }];
-    const response = await callingDirectAI('status', msgs);
+    const response = await callingDirectAI('code', messages, options.modelId, options.signal);
 
-    if (!response.ok) return currentStep;
+    if (!response.ok) {
+      throw new Error(`AI request failed: ${response.status}`);
+    }
 
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let fullResponse = '';
 
-    if (!reader) return currentStep;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
-      for (const line of lines) {
-        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-          try {
-            const parsed = JSON.parse(line.slice(6));
-            const content = parsed.choices?.[0]?.delta?.content || '';
-            fullResponse += content;
-          } catch (e) { }
-        }
-      }
-    }
-
-    return fullResponse || currentStep;
-
-  } catch {
-    return currentStep;
-  }
-}
-
-// Re-export credit deduction
-export { deductPointsAfterGeneration };
-
-// Abort controller for stopping generation
-let currentAbortController: AbortController | null = null;
-
-// Stop generation
-export function stopGeneration(): void {
-  if (currentAbortController) {
-    currentAbortController.abort();
-    currentAbortController = null;
-  }
-}
-
-interface StreamCallbacks {
-  onChunk: (chunk: string) => void;
-  onComplete: (fullResponse: string) => void;
-  onError: (error: Error) => void;
-  onFileStart?: (fileName: string) => void;
-  onStatusUpdate?: (status: string) => void;
-}
-
-// Stream AI code generation
-export async function streamAICodeGeneration(
-  messages: ChatMessage[],
-  projectType: 'vite' | 'html',
-  callbacks: StreamCallbacks,
-  existingFiles?: string[],
-  modelId?: string
-): Promise<void> {
-  currentAbortController = new AbortController();
-  const { signal } = currentAbortController;
-
-  try {
-    callbacks.onStatusUpdate?.('Setting up project structure...');
-
-    const response = await callingDirectAI(
-      'code',
-      messages,
-      modelId,
-      signal
-    );
-
-    if (!response.ok) {
-      throw new Error('⚠️ Service temporarily unavailable. Please try again later.');
-    }
-
-    if (!response.body) {
-      throw new Error('⚠️ Connection issue. Please check your internet and try again.');
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let fullResponse = '';
-    let buffer = '';
-
-    // Status messages that rotate
-    const statusMessages = [
-      'Setting up project structure...',
-      'Creating design system...',
-      'Building components...',
-      'Adding styles and animations...',
-      'Generating pages...',
-      'Finalizing the build...',
-    ];
-
-    let fileCount = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      let newlineIndex: number;
-
-      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-        let line = buffer.slice(0, newlineIndex);
-        buffer = buffer.slice(newlineIndex + 1);
-
-        if (line.endsWith('\r')) line = line.slice(0, -1);
-        if (line.startsWith('data: ')) {
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === '[DONE]') continue;
-
-          try {
-            // Sanitize JSON string before parsing to handle unterminated strings or common AI errors
-    let sanitizedJson = jsonStr.trim();
-    
-    // If JSON is truncated (common with AI), try to fix it
-    if (!sanitizedJson.endsWith('}')) {
-      // Find the last complete object or try to close it
-      const lastBrace = sanitizedJson.lastIndexOf('}');
-      if (lastBrace !== -1) {
-        sanitizedJson = sanitizedJson.substring(0, lastBrace + 1);
-      } else {
-        // If no closing brace at all, it's likely very broken, but let's try a basic fix
-        sanitizedJson += '"}}'; 
-      }
-    }
-    
-    // Final check for unterminated strings which cause the specific error reported
-    const quoteCount = (sanitizedJson.match(/"/g) || []).length;
-    if (quoteCount % 2 !== 0) {
-      sanitizedJson += '"';
-      if (!sanitizedJson.endsWith('}')) sanitizedJson += '}}';
-    }
-
-    const parsed = JSON.parse(sanitizedJson);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              const content = parsed.choices?.[0]?.delta?.content || '';
               fullResponse += content;
-              callbacks.onChunk(content);
-
-              // Simple heuristic to detect new file starts for status updates
-              if (content.includes('```') || content.includes('import ') || content.includes('export ')) {
-                if (Math.random() > 0.8) {
-                  const status = statusMessages[fileCount % statusMessages.length];
-                  callbacks.onStatusUpdate?.(status);
-                  fileCount++;
-                }
-              }
-            }
-          } catch (e) {
-            // ignore parse errors
+              options.onChunk(content);
+            } catch (e) { }
           }
         }
       }
     }
 
-    callbacks.onComplete(fullResponse);
-
+    options.onComplete(fullResponse);
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      console.log('Generation stopped by user');
-    } else {
-      console.error('Stream error:', error);
-      callbacks.onError(error instanceof Error ? error : new Error('Unknown error'));
-    }
-  } finally {
-    currentAbortController = null;
+    console.error('Code generation error:', error);
+    options.onComplete('');
   }
 }
+
+// Stop generation (placeholder for now as fetch signal is used)
+export function stopGeneration() {
+  // Implementation handled via AbortController in calling components
+}
+
+export { deductPointsAfterGeneration };

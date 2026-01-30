@@ -28,6 +28,7 @@ export interface ChatMessage {
   content: string;
   imageUrl?: string;
   imageUrls?: string[];
+  actionsTaken?: FileActivity[];
   createdAt: string;
 }
 
@@ -57,5 +58,5 @@ export interface Project {
 export interface FileActivity {
   name: string;
   status: 'editing' | 'done';
-  action: 'edited' | 'created';
+  action: 'read' | 'edited' | 'created' | 'analyzed_image';
 }

@@ -317,8 +317,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <div className="py-2 space-y-1">
                 {files.map((file, i) => {
                   const isEditing = file.status === 'editing';
-                  const actionLabel = file.action === 'edited' ? t('chat.edited') : t('chat.wrote');
-                  const ActionIcon = file.action === 'edited' ? Pencil : FileOutput;
+                  const actionLabel = t(`action.${file.action}`);
+                  const ActionIcon = file.action === 'edited' ? Pencil : 
+                                   file.action === 'created' ? FileOutput :
+                                   file.action === 'read' ? Eye :
+                                   file.action === 'analyzed_image' ? ImageIcon : FileOutput;
 
                   return (
                     <motion.div
@@ -639,7 +642,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               // Get activities for this version from stored data
               const versionActivities: FileActivity[] = version?.actionsTaken
                 ? (version.actionsTaken as unknown as FileActivity[])
-                : [];
+                : (msg.actionsTaken ? (msg.actionsTaken as unknown as FileActivity[]) : []);
 
               // Check if this version is the currently active one
               const isActiveVersion = currentVersion === version?.versionNumber ||
