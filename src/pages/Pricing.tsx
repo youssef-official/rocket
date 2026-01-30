@@ -1,4 +1,4 @@
-import React from 'react';
+mport React from 'react';
 import { motion } from 'framer-motion';
 import { Check, X, Zap, Star, Crown, Rocket, ArrowLeft, Sparkles, Bot } from 'lucide-react';
 import { RocketLogo } from '@/components/shared/RocketLogo';
@@ -193,6 +193,7 @@ export const Pricing: React.FC = () => {
                 <thead>
                   <tr className="border-b border-white/10">
                     <th className={`py-3 ${isRTL ? 'text-right' : 'text-left'} text-white/60`}>Rok Name</th>
+                    <th className={`py-3 ${isRTL ? 'text-right' : 'text-left'} text-white/60`}>API Model</th>
                     <th className={`py-3 ${isRTL ? 'text-right' : 'text-left'} text-white/60`}>Best For</th>
                     <th className="py-3 text-center text-white/60">Speed</th>
                     <th className="py-3 text-center text-white/60">Quality</th>
@@ -204,6 +205,12 @@ export const Pricing: React.FC = () => {
                     <tr key={model.id} className="border-b border-white/5">
                       <td className="py-3 text-white font-medium">
                         {model.icon} {model.name}
+                      </td>
+                      <td className="py-3 text-white/60 font-mono text-xs">
+                        {model.realModel}
+                        {model.id === 'rok-turbo' && (
+                          <span className="block text-[10px] text-red-400 mt-1">No Image Support</span>
+                        )}
                       </td>
                       <td className="py-3 text-white/80">{model.description}</td>
                       <td className="py-3">
