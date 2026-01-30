@@ -215,7 +215,7 @@ const ProjectEditorRoute = () => {
           const detectedFiles = new Set<string>();
 
           // Build prompt with safety rules
-          const userPrompt = `${prompt}\n\n[CRITICAL: If using framer-motion AnimatePresence, you MUST import it: import { motion, AnimatePresence } from "framer-motion"]`;
+          const userPrompt = `${prompt}\n\n[STRICT RULE: Every component used MUST be imported. If you use <AnimatePresence>, you MUST add: import { motion, AnimatePresence } from "framer-motion"; at the top of the file. NO EXCEPTIONS.]`;
 
           await streamAICodeGeneration(
             [{ role: 'user', content: userPrompt }],
