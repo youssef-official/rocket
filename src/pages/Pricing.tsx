@@ -1,4 +1,4 @@
-mport React from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Check, X, Zap, Star, Crown, Rocket, ArrowLeft, Sparkles, Bot } from 'lucide-react';
 import { RocketLogo } from '@/components/shared/RocketLogo';
