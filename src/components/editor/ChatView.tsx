@@ -336,7 +336,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         }`} />
 
                       {/* Action Label */}
-                      <span className={`text-sm w-12 flex-shrink-0 ${isEditing ? 'text-primary' : 'text-muted-foreground'
+                      <span className={`text-sm flex-shrink-0 min-w-[70px] ${isEditing ? 'text-primary' : 'text-muted-foreground'
                         }`}>
                         {actionLabel}
                       </span>

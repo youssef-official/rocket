@@ -131,8 +131,8 @@ const ProjectEditorRoute = () => {
         // Get the selected model from sessionStorage
         const savedModelId = sessionStorage.getItem(`project_model_${localProject.id}`) || 'rok-fast';
 
-        // Add user message IMMEDIATELY (don't wait for name generation)
-        addMessage('user', prompt);
+        // Add user message and AWAIT it to ensure it's saved in the database
+        await addMessage('user', prompt);
         setIsGenerating(true);
         setStreamingContent('');
         setFileActivities([]);
@@ -427,8 +427,8 @@ const ProjectEditorRoute = () => {
     // Get the selected model from sessionStorage
     const savedModelId = sessionStorage.getItem(`project_model_${localProject.id}`) || 'rok-fast';
 
-    // Add user message OPTIMISTICALLY (don't await - show immediately in UI)
-    addMessage('user', content, imageUrl);
+    // Add user message and AWAIT it to ensure it's saved in the database
+    await addMessage('user', content, imageUrl);
 
     // If chat-only mode, just respond conversationally without code generation
     if (isChatOnly) {

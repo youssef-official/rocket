@@ -469,11 +469,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
         {/* Right Section */}
         <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          {/* Credits Display */}
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-            <Coins className="w-4 h-4 text-yellow-500" />
-            <span className="text-sm font-medium text-yellow-500">Credits</span>
-          </div>
+          {/* Credits Display Removed as requested */}
 
           {/* Download ZIP */}
           <button

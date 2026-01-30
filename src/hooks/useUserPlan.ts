@@ -225,8 +225,8 @@ export function estimateCredits(
     baseCredits *= 1.2;
   }
   
-  // Cap at reasonable max
-  return Math.min(Math.max(baseCredits, 0.2), 6.0);
+  // Fixed to 2 credits for the first version as requested
+  return 2.0;
 }
 
 export function useUserPlan() {
