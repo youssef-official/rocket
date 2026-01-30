@@ -19,6 +19,7 @@ export interface ProjectVersion {
   files: Record<string, ProjectFile>;
   chatMessages: ChatMessage[];
   actionsTaken?: FileActivity[];
+  creditsUsed?: number;
   createdAt: string;
 }
 
@@ -50,6 +51,7 @@ export function useVersions(projectId: string | null) {
         files: v.files as Record<string, ProjectFile>,
         chatMessages: v.chat_messages as ChatMessage[],
         actionsTaken: v.actions_taken as FileActivity[] | undefined,
+        creditsUsed: v.credits_used,
         createdAt: v.created_at,
       }));
 
@@ -65,7 +67,8 @@ export function useVersions(projectId: string | null) {
     files: Record<string, ProjectFile>,
     chatMessages: ChatMessage[],
     name?: string,
-    actionsTaken?: FileActivity[]
+    actionsTaken?: FileActivity[],
+    creditsUsed?: number
   ): Promise<ProjectVersion | null> => {
     if (!user || !projectId) return null;
 
@@ -92,6 +95,7 @@ export function useVersions(projectId: string | null) {
           files: files as any,
           chat_messages: chatMessages as any,
           actions_taken: actionsTaken as any || [],
+          credits_used: creditsUsed,
         }])
         .select()
         .single();
@@ -107,6 +111,7 @@ export function useVersions(projectId: string | null) {
         files: data.files as unknown as Record<string, ProjectFile>,
         chatMessages: data.chat_messages as unknown as ChatMessage[],
         actionsTaken: data.actions_taken as unknown as FileActivity[] | undefined,
+        creditsUsed: data.credits_used,
         createdAt: data.created_at,
       };
 
