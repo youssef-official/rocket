@@ -369,8 +369,8 @@ export function useUserPlan() {
       const { error: updateError } = await supabase
         .from('user_plans')
         .update({
-          credits_used_today: Math.ceil(userPlan.creditsUsedToday + dailyDeduct),
-          total_credits_used: Math.ceil(userPlan.totalCreditsUsed + monthlyDeduct)
+          credits_used_today: userPlan.creditsUsedToday + dailyDeduct,
+          total_credits_used: userPlan.totalCreditsUsed + monthlyDeduct
         })
         .eq('user_id', user.id);
 

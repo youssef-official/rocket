@@ -87,8 +87,8 @@ export async function deductCredits(
     const { error: updateError } = await supabase
       .from('user_plans')
       .update({
-        credits_used_today: Math.ceil(userPlan.credits_used_today + dailyDeduct),
-        total_credits_used: Math.ceil((userPlan.total_credits_used || 0) + monthlyDeduct)
+        credits_used_today: userPlan.credits_used_today + dailyDeduct,
+        total_credits_used: (userPlan.total_credits_used || 0) + monthlyDeduct
       })
       .eq('user_id', userId);
 
