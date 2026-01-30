@@ -116,8 +116,8 @@ export async function callingDirectAI(
         ],
         stream: true,
         max_tokens: 32000,
-       temperature: 0.7,
-       top_p: 0.95
+       temperature: stream ? 0.2 : 0.25,
+       top_p: 0.9,
 
     };
 
