@@ -35,12 +35,12 @@ function getAIUrl(): string {
 // Model ID to real model mapping
 function mapModel(modelId: string): string {
     switch (modelId) {
-        case 'rok-fast': return 'google/gemini-2.5-flash-lite';
-        case 'rok-smart': return 'xai/grok-4.1-fast-reasoning';
-        case 'rok-turbo': return 'google/gemini-3-flash';
-        case 'rok-ultra': return 'anthropic/claude-haiku-4.5';
-        case 'rok-reson': return 'anthropic/claude-opus-4.5';
-        default: return modelId.includes('/') ? modelId : 'google/gemini-2.5-flash-lite';
+        case 'rok-fast': return 'xai/grok-code-fast-1';
+        case 'rok-smart': return 'zai/glm-4.7';
+        case 'rok-turbo': return 'moonshotai/kimi-k2-thinking';
+        case 'rok-ultra': return 'google/gemini-3-flash';
+        case 'rok-reson': return 'anthropic/claude-haiku-4.5';
+        default: return modelId.includes('/') ? modelId : 'xai/grok-code-fast-1';
     }
 }
 
@@ -135,4 +135,3 @@ export async function callingDirectAI(
         signal
     });
 }
-
