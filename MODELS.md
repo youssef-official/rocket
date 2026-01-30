@@ -10,11 +10,11 @@
 
 | الاسم المعروض | الاسم الحقيقي (API) | الوصف | السرعة | الجودة | الخطة المطلوبة | المُضاعف |
 |---------------|---------------------|-------|--------|--------|----------------|----------|
-| 🤖 **Rok-Fast** | `google/gemini-2.0-flash` | Quick edits | ⚡⚡⚡⚡⚡ (5/5) | ⭐⭐ (2/6) | Spark (Free) | 1x |
-| 🧠 **Rok-Smart** | `xai/grok-4.1-fast-reasoning` | Stable coding | ⚡⚡⚡⚡ (4/5) | ⭐⭐⭐ (3/6) | Spark (Free) | 1.3x |
-| ⚡ **Rok-Turbo** | `google/gemini-3-flash` | Production apps | ⚡⚡⚡ (3/5) | ⭐⭐⭐⭐ (4/6) | Builder ($8/mo) | 2.2x |
-| 👑 **Rok-Ultra** | `anthropic/claude-haiku-4.5` | Smart logic | ⚡⚡ (2/5) | ⭐⭐⭐⭐⭐ (5/6) | Creator ($19/mo) | 3x |
-| 🧠 **Rok-Reson** | `anthropic/claude-opus-4.5` | Deep systems | ⚡ (1/5) | ⭐⭐⭐⭐⭐⭐ (6/6) | Scale ($49/mo) | 4x |
+| 🤖 **Rok-Fast** | `xai/grok-code-fast-1` | Quick edits | ⚡⚡⚡⚡⚡ (5/5) | ⭐⭐ (2/6) | Spark (Free) | 1x |
+| 🧠 **Rok-Smart** | `zai/glm-4.7` | Stable coding | ⚡⚡⚡⚡ (4/5) | ⭐⭐⭐ (3/6) | Spark (Free) | 1.3x |
+| ⚡ **Rok-Turbo** | `moonshotai/kimi-k2-thinking` | Production apps | ⚡⚡⚡ (3/5) | ⭐⭐⭐⭐ (4/6) | Builder ($8/mo) | 2.2x |
+| 👑 **Rok-Ultra** | `google/gemini-3-flash` | Smart logic | ⚡⚡ (2/5) | ⭐⭐⭐⭐⭐ (5/6) | Creator ($19/mo) | 3x |
+| 🧠 **Rok-Reson** | `anthropic/claude-haiku-4.5` | Deep systems | ⚡ (1/5) | ⭐⭐⭐⭐⭐⭐ (6/6) | Scale ($49/mo) | 4x |
 
 ---
 
@@ -22,7 +22,7 @@
 
 ### 1. Rok-Fast 🤖
 - **ID:** `rok-fast`
-- **Real Model:** `google/gemini-2.0-flash`
+- **Real Model:** `xai/grok-code-fast-1`
 - **Description:** Quick edits - سريع جداً للتعديلات البسيطة
 - **Speed:** 5/5 ⚡⚡⚡⚡⚡
 - **Quality:** 2/6 ⭐⭐
@@ -33,7 +33,7 @@
 
 ### 2. Rok-Smart 🧠
 - **ID:** `rok-smart`
-- **Real Model:** `xai/grok-4.1-fast-reasoning`
+- **Real Model:** `zai/glm-4.7`
 - **Description:** Stable coding - كتابة كود مستقر
 - **Speed:** 4/5 ⚡⚡⚡⚡
 - **Quality:** 3/6 ⭐⭐⭐
@@ -44,7 +44,7 @@
 
 ### 3. Rok-Turbo ⚡
 - **ID:** `rok-turbo`
-- **Real Model:** `google/gemini-3-flash`
+- **Real Model:** `moonshotai/kimi-k2-thinking`
 - **Description:** Production apps - تطبيقات إنتاجية
 - **Speed:** 3/5 ⚡⚡⚡
 - **Quality:** 4/6 ⭐⭐⭐⭐
@@ -55,7 +55,7 @@
 
 ### 4. Rok-Ultra 👑
 - **ID:** `rok-ultra`
-- **Real Model:** `anthropic/claude-haiku-4.5`
+- **Real Model:** `google/gemini-3-flash`
 - **Description:** Smart logic - منطق ذكي ومتقدم
 - **Speed:** 2/5 ⚡⚡
 - **Quality:** 5/6 ⭐⭐⭐⭐⭐
@@ -66,7 +66,7 @@
 
 ### 5. Rok-Reson 🧠
 - **ID:** `rok-reson`
-- **Real Model:** `anthropic/claude-opus-4.5`
+- **Real Model:** `anthropic/claude-haiku-4.5`
 - **Description:** Deep systems - أنظمة عميقة ومعقدة
 - **Speed:** 1/5 ⚡
 - **Quality:** 6/6 ⭐⭐⭐⭐⭐⭐
@@ -111,7 +111,7 @@ export const ROK_MODELS: RokModel[] = [
   {
     id: 'rok-fast',
     name: 'Rok-Fast',
-    realModel: 'google/gemini-2.0-flash',
+    realModel: 'xai/grok-code-fast-1',
     description: 'Quick edits',
     speed: 5,
     quality: 2,
@@ -122,7 +122,7 @@ export const ROK_MODELS: RokModel[] = [
   {
     id: 'rok-smart',
     name: 'Rok-Smart',
-    realModel: 'xai/grok-4.1-fast-reasoning',
+    realModel: 'zai/glm-4.7',
     description: 'Stable coding',
     speed: 4,
     quality: 3,
@@ -133,7 +133,7 @@ export const ROK_MODELS: RokModel[] = [
   {
     id: 'rok-turbo',
     name: 'Rok-Turbo',
-    realModel: 'google/gemini-3-flash',
+    realModel: 'moonshotai/kimi-k2-thinking',
     description: 'Production apps',
     speed: 3,
     quality: 4,
@@ -144,7 +144,7 @@ export const ROK_MODELS: RokModel[] = [
   {
     id: 'rok-ultra',
     name: 'Rok-Ultra',
-    realModel: 'anthropic/claude-haiku-4.5',
+    realModel: 'google/gemini-3-flash',
     description: 'Smart logic',
     speed: 2,
     quality: 5,
@@ -155,7 +155,7 @@ export const ROK_MODELS: RokModel[] = [
   {
     id: 'rok-reson',
     name: 'Rok-Reson',
-    realModel: 'anthropic/claude-opus-4.5',
+    realModel: 'anthropic/claude-haiku-4.5',
     description: 'Deep systems',
     speed: 1,
     quality: 6,

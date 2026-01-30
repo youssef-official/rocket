@@ -33,7 +33,7 @@ export const ROK_MODELS: RokModel[] = [
   {
     id: 'rok-fast',
     name: 'Rok-Fast',
-    realModel: 'google/gemini-2.5-flash-lite',
+    realModel: 'xai/grok-code-fast-1',
     description: 'Quick edits',
     speed: 5,
     quality: 2,
@@ -44,7 +44,7 @@ export const ROK_MODELS: RokModel[] = [
   {
     id: 'rok-smart',
     name: 'Rok-Smart',
-    realModel: 'xai/grok-4.1-fast-reasoning',
+    realModel: 'zai/glm-4.7',
     description: 'Stable coding',
     speed: 4,
     quality: 3,
@@ -55,7 +55,7 @@ export const ROK_MODELS: RokModel[] = [
   {
     id: 'rok-turbo',
     name: 'Rok-Turbo',
-    realModel: 'google/gemini-3-flash',
+    realModel: 'moonshotai/kimi-k2-thinking',
     description: 'Production apps',
     speed: 3,
     quality: 4,
@@ -66,7 +66,7 @@ export const ROK_MODELS: RokModel[] = [
   {
     id: 'rok-ultra',
     name: 'Rok-Ultra',
-    realModel: 'anthropic/claude-haiku-4.5',
+    realModel: 'google/gemini-3-flash',
     description: 'Smart logic',
     speed: 2,
     quality: 5,
@@ -77,7 +77,7 @@ export const ROK_MODELS: RokModel[] = [
   {
     id: 'rok-reson',
     name: 'Rok-Reson',
-    realModel: 'anthropic/claude-opus-4.5',
+    realModel: 'anthropic/claude-haiku-4.5',
     description: 'Deep systems',
     speed: 1,
     quality: 6,
