@@ -33,7 +33,7 @@ export const ROK_MODELS: RokModel[] = [
   {
     id: 'rok-fast',
     name: 'Rok-Fast',
-    realModel: 'xiaomi/mimo-v2-flash',
+    realModel: 'google/gemini-2.0-flash',
     description: 'Quick edits',
     speed: 5,
     quality: 2,
@@ -44,7 +44,7 @@ export const ROK_MODELS: RokModel[] = [
   {
     id: 'rok-smart',
     name: 'Rok-Smart',
-    realModel: 'minimax/minimax-m2.1',
+    realModel: 'xai/grok-4.1-fast-reasoning',
     description: 'Stable coding',
     speed: 4,
     quality: 3,

@@ -252,10 +252,11 @@ const ProjectEditorRoute = () => {
           if (logoUrl) {
             try {
               const base64Logo = await urlToBase64(logoUrl);
-              const logoFile = {
+              const logoFile: ProjectFile = {
+                name: 'logo.png',
                 path: 'public/logo.png',
                 content: base64Logo,
-                type: 'file' as const
+                language: 'image'
               };
 
               // CRITICAL: Update project files BEFORE code generation so AI knows it exists
@@ -270,10 +271,11 @@ const ProjectEditorRoute = () => {
             } catch (e) {
               console.error('Failed to save logo as image data:', e);
               // Fallback to URL if base64 fails
-              const logoFile = {
+              const logoFile: ProjectFile = {
+                name: 'logo.png',
                 path: 'public/logo.png',
                 content: `/* URL: ${logoUrl} */`,
-                type: 'file' as const
+                language: 'image'
               };
               const updatedFiles = { ...localProject.files, 'public/logo.png': logoFile };
               await updateProject(localProject.id, { files: updatedFiles });
@@ -372,9 +374,10 @@ const ProjectEditorRoute = () => {
                   finalFiles = {
                     ...finalFiles,
                     'public/logo.png': {
+                      name: 'logo.png',
                       path: 'public/logo.png',
-                      content: logoUrl, // Store the URL directly
-                      type: 'file'
+                      content: logoUrl,
+                      language: 'image'
                     }
                   };
                 }
