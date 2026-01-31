@@ -681,7 +681,7 @@ const ProjectEditorRoute = () => {
             setStatusMessage(status);
           },
         },
-        existingFilesList
+        existingFilesList.join(', ')
       );
     } catch (error) {
       if (isCancelled.current) return;

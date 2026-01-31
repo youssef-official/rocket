@@ -24,7 +24,7 @@ import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
 interface FileActivity {
   name: string;
   status: 'editing' | 'done';
-  action: 'edited' | 'created';
+  action: 'read' | 'edited' | 'created' | 'analyzed_image';
 }
 
 interface GenerationPhase {

@@ -453,6 +453,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             onOpenProject={onOpenProject}
             onDeleteProject={onDeleteProject}
             onForkProject={onForkProject}
+            onNewProject={() => {}}
           />
         )}
       </main>
