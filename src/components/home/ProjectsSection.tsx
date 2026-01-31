@@ -50,7 +50,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
   }
 
   return (
-    <section className="relative z-10 px-6 pb-20 w-full max-w-7xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+    <section className="relative z-10 px-6 pb-20" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
         <div className={`flex items-center justify-between mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -88,7 +88,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
               className="group cursor-pointer"
               onClick={() => onOpenProject(project.id)}
             >
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden hover:bg-white/15 hover:border-white/20 transition-all duration-300 h-full flex flex-col">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden hover:bg-white/15 hover:border-white/20 transition-all duration-300">
                 {/* Preview Thumbnail */}
                 <div className="aspect-[16/10] bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center relative overflow-hidden">
                   <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTAgMGg0MHY0MEgweiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
@@ -110,7 +110,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                 </div>
 
                 {/* Info */}
-                <div className="p-4 flex-1 flex flex-col">
+                <div className="p-4">
                   <div className={`flex items-start justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <div className={`flex-1 min-w-0 ${isRTL ? 'text-right' : 'text-left'}`}>
                       <h3 className="font-semibold text-white truncate">
@@ -170,7 +170,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                     </div>
                   </div>
 
-                  <div className={`mt-auto flex items-center gap-2 text-xs text-white/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className={`flex items-center gap-2 text-xs text-white/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <Clock className="w-3 h-3" />
                     <span>
                       {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}

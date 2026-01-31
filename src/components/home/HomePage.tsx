@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, FolderOpen, Paperclip, Lock, Globe, Bell, HelpCircle, MessageSquare, X, ChevronDown, Zap, Crown } from 'lucide-react';
+import { ArrowRight, Send, FolderOpen, Paperclip, Lock, Globe, User, Bell, HelpCircle, MessageSquare, X, Image as ImageIcon, ChevronDown, Zap, Crown } from 'lucide-react';
 import { UserMenuDropdown } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -8,7 +8,6 @@ import { ProjectsSection } from './ProjectsSection';
 import { RocketLogo } from '@/components/shared/RocketLogo';
 import { FrameworkBar } from '@/components/shared/FrameworkLogos';
 import { Footer } from '@/components/shared/Footer';
-
 import { UpgradeModal } from '@/components/shared/UpgradeModal';
 import { SettingsModal } from '@/components/shared/SettingsModal';
 import { useUserPlan } from '@/hooks/useUserPlan';
@@ -53,7 +52,6 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   const [prompt, setPrompt] = useState('');
   const [selectedFramework, setSelectedFramework] = useState('React');
-
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [typingIndex, setTypingIndex] = useState(0);
@@ -271,26 +269,43 @@ export const HomePage: React.FC<HomePageProps> = ({
           </p>
         </motion.div>
 
-        {/* Main Input Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="w-full max-w-3xl"
         >
-          <form
-            onSubmit={handleSubmit}
-            onDragEnter={handleDragEnter}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`relative bg-white rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${isDragging ? 'ring-4 ring-pink-400 ring-opacity-50 scale-[1.02]' : ''}`}
-          >
-            <div className="flex flex-col">
-              {/* Image Upload Preview */}
+          <form onSubmit={handleSubmit}>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            <div
+              className={`bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative transition-colors ${isDragging ? 'ring-2 ring-pink-400' : ''}`}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
+              {/* Drag overlay */}
+              {isDragging && (
+                <div className="absolute inset-0 z-10 bg-pink-50 border-2 border-dashed border-pink-400 rounded-[2.5rem] flex items-center justify-center pointer-events-none">
+                  <div className="flex flex-col items-center gap-2 text-pink-500">
+                    <ImageIcon className="w-8 h-8" />
+                    <span className="font-medium">{t('home.dropImage')}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Uploaded Image Preview */}
               {uploadedImage && (
-                <div className="px-6 pt-4">
-                  <div className={`flex items-center gap-3 p-2 bg-gray-50 rounded-xl border border-gray-100 w-fit ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className={`px-4 pt-4 ${isRTL ? 'text-right' : ''}`}>
+                  <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <div className="relative">
                       <img
                         src={uploadedImage.preview}
@@ -316,12 +331,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                 value={prompt}
                 onChange={handlePromptChange}
                 placeholder={t('home.placeholder')}
-                className={`w-full px-6 py-5 text-gray-800 placeholder-gray-400 resize-none focus:outline-none text-lg ${isRTL ? 'text-right' : ''}`}
+                className={`w-full px-8 py-6 text-gray-800 placeholder-gray-400 resize-none focus:outline-none text-lg ${isRTL ? 'text-right' : ''}`}
                 dir={isRTL ? 'rtl' : 'ltr'}
                 rows={4}
               />
 
-              <div className={`flex items-center justify-between px-4 py-3 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex items-center justify-between px-6 py-4 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <button
                     type="button"
@@ -330,13 +345,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                   >
                     <Paperclip className="w-5 h-5 text-gray-400" />
                   </button>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    accept="image/*"
-                    className="hidden"
-                  />
                   <button
                     type="button"
                     className={`flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
@@ -344,10 +352,14 @@ export const HomePage: React.FC<HomePageProps> = ({
                     <span className="text-pink-500">🎨</span>
                     <span className="text-sm text-gray-600">{t('home.import')}</span>
                   </button>
-
                 </div>
 
                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  {/* Character Count */}
+                  <span className={`text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                    {prompt.length}/{MAX_PROMPT_LENGTH}
+                  </span>
+
                   {/* Visibility Toggle - Public/Private */}
                   <div className="relative">
                     <button
@@ -422,27 +434,15 @@ export const HomePage: React.FC<HomePageProps> = ({
           </form>
         </motion.div>
 
-        {/* Framework Logos */}
+        {/* Frameworks & Integrations with real logos */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mt-12 md:mt-16"
+          className="mt-8 w-full max-w-3xl"
         >
           <FrameworkBar selectedFramework={selectedFramework} onSelectFramework={setSelectedFramework} />
         </motion.div>
-
-        {/* Projects Section (for logged-in users) */}
-        {user && projects.length > 0 && (
-          <ProjectsSection
-            projects={projects}
-            loading={projectsLoading}
-            onOpenProject={onOpenProject || (() => {})}
-            onDeleteProject={onDeleteProject || (() => {})}
-            onForkProject={onForkProject || (() => {})}
-            onNewProject={() => {}}
-          />
-        )}
       </main>
 
       {/* Upgrade Banner - Show when 50% credits used */}
@@ -468,15 +468,28 @@ export const HomePage: React.FC<HomePageProps> = ({
         </motion.div>
       )}
 
+      {/* Projects Section */}
+      {projects.length > 0 && (
+        <ProjectsSection
+          projects={projects}
+          loading={projectsLoading}
+          onOpenProject={onOpenProject || (() => { })}
+          onDeleteProject={onDeleteProject || (() => { })}
+          onForkProject={onForkProject || (() => { })}
+          onNewProject={() => { }}
+        />
+      )}
+
       {/* Footer */}
       <Footer />
 
-      {/* Modals */}
+      {/* Upgrade Modal */}
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
       />
 
+      {/* Settings Modal */}
       <SettingsModal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
