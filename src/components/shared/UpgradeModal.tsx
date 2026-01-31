@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Crown, Zap, Star, Rocket, Sparkles, Bot } from 'lucide-react';
-import { useUserPlan, PLAN_CONFIG, ROK_MODELS, type PlanType } from '@/hooks/useUserPlan';
+import { X, Check, Zap, Star, Crown, Rocket } from 'lucide-react';
+import { useUserPlan, PLAN_CONFIG, type PlanType } from '@/hooks/useUserPlan';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UpgradeModalProps {
@@ -35,11 +35,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
       features.push({ text: `${config.dailyCredits} Credits / day + ${config.monthlyCredits} / month`, included: true });
     }
 
-    features.push({ text: `${config.models.length} AI Models`, included: true });
     features.push({ text: 'ZIP Export', included: config.features.zipExport });
-    features.push({ text: 'No Watermark', included: config.features.noWatermark });
-    features.push({ text: 'Private Projects', included: config.features.privateProjects });
-    features.push({ text: 'AI Memory', included: config.features.aiMemory });
 
     return features;
   };
@@ -59,7 +55,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl"
+            className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl"
           >
             {/* Header */}
             <div className={`flex items-center justify-between p-6 border-b border-border ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -158,51 +154,21 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
               })}
             </div>
 
-            {/* Rok AI Engines Section */}
+            {/* Credit System Info */}
             <div className="px-6 pb-6">
               <div className="bg-accent/30 rounded-xl border border-border p-6">
-                <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Bot className="w-5 h-5 text-pink-400" />
-                  🤖 Rok AI Engines
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                  {ROK_MODELS.map((model) => (
-                    <div key={model.id} className="bg-background/50 rounded-lg p-3 border border-border/50">
-                      <div className="text-lg mb-1">{model.icon}</div>
-                      <div className="font-medium text-foreground text-sm">{model.name}</div>
-                      <div className="text-xs text-muted-foreground">{model.description}</div>
-                      <div className="mt-2 flex items-center justify-between">
-                        <div className="flex gap-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <Sparkles key={i} className={`w-2.5 h-2.5 ${i < model.speed ? 'text-yellow-400' : 'text-muted-foreground/30'}`} />
-                          ))}
-                        </div>
-                        <span className="text-xs text-pink-400 font-bold">×{model.multiplier}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Smart Credit System */}
-            <div className="px-6 pb-6">
-              <div className="bg-accent/30 rounded-xl border border-border p-6">
-                <h3 className="text-lg font-bold text-foreground mb-4">💳 Smart Credit System</h3>
-                <p className="text-muted-foreground text-sm mb-4">Credits are calculated based on actual work complexity, not your description.</p>
-                
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {[
-                    { work: 'Small edit', credits: '~0.4' },
-                    { work: 'Section edit', credits: '~0.8' },
-                    { work: 'Login system', credits: '~1.3' },
-                    { work: 'Full layout', credits: '~2.0' },
-                    { work: 'Admin panel', credits: '~4.0' },
-                  ].map((item) => (
-                    <div key={item.work} className="bg-background/50 rounded-lg p-3 border border-border/50 text-center">
-                      <div className="text-yellow-400 font-bold text-lg">{item.credits}</div>
-                      <div className="text-xs text-muted-foreground">{item.work}</div>
+                <h3 className="text-lg font-bold text-foreground mb-4">💳 Credit System</h3>
+                <p className="text-muted-foreground text-sm mb-4">
+                  Each successful generation costs 1 credit. Daily credits reset at UTC midnight.
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {Object.entries(PLAN_CONFIG).map(([key, config]) => (
+                    <div key={key} className="bg-background/50 rounded-lg p-3 border border-border/50 text-center">
+                      <div className="text-yellow-400 font-bold text-lg">{config.dailyCredits}/day</div>
+                      {config.monthlyCredits > 0 && (
+                        <div className="text-green-400 text-sm">+{config.monthlyCredits}/mo</div>
+                      )}
+                      <div className="text-xs text-muted-foreground">{config.name}</div>
                     </div>
                   ))}
                 </div>

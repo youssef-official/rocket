@@ -1,14 +1,8 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import type { ProjectFile, ChatMessage } from '@/types';
+import type { ProjectFile, ChatMessage, FileActivity } from '@/types';
 import { toast } from '@/hooks/use-toast';
-
-interface FileActivity {
-  name: string;
-  status: 'editing' | 'done';
-  action: 'edited' | 'created';
-}
 
 export interface ProjectVersion {
   id: string;
@@ -51,7 +45,7 @@ export function useVersions(projectId: string | null) {
         files: v.files as Record<string, ProjectFile>,
         chatMessages: v.chat_messages as ChatMessage[],
         actionsTaken: v.actions_taken as FileActivity[] | undefined,
-        creditsUsed: v.credits_used,
+        creditsUsed: v.credits_used ?? undefined,
         createdAt: v.created_at,
       }));
 
@@ -111,7 +105,7 @@ export function useVersions(projectId: string | null) {
         files: data.files as unknown as Record<string, ProjectFile>,
         chatMessages: data.chat_messages as unknown as ChatMessage[],
         actionsTaken: data.actions_taken as unknown as FileActivity[] | undefined,
-        creditsUsed: data.credits_used,
+        creditsUsed: data.credits_used ?? undefined,
         createdAt: data.created_at,
       };
 

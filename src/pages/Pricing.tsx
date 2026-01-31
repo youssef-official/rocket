@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, X, Zap, Star, Crown, Rocket, ArrowLeft, Sparkles, Bot } from 'lucide-react';
+import { Check, X, Zap, Star, Crown, Rocket, ArrowLeft } from 'lucide-react';
 import { RocketLogo } from '@/components/shared/RocketLogo';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ROK_MODELS, PLAN_CONFIG, type PlanType } from '@/hooks/useUserPlan';
+import { PLAN_CONFIG, type PlanType } from '@/hooks/useUserPlan';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 const plans: { key: PlanType; icon: React.ReactNode; color: string; popular?: boolean }[] = [
@@ -23,25 +23,7 @@ const getFeaturesList = (planKey: PlanType) => {
     features.push({ text: `${config.dailyCredits} Credits / day + ${config.monthlyCredits} / month`, included: true });
   }
 
-  // Models - show only name without real model
-  const modelNames = config.models.map(id => {
-    const model = ROK_MODELS.find(m => m.id === id);
-    return model ? `${model.icon} ${model.name}` : id;
-  });
-  modelNames.forEach(name => {
-    features.push({ text: name, included: true });
-  });
-
-  // Features
   features.push({ text: 'ZIP Export', included: config.features.zipExport });
-  features.push({ text: 'No Watermark', included: config.features.noWatermark });
-  features.push({ text: 'Private Projects', included: config.features.privateProjects });
-  features.push({ text: 'AI Memory', included: config.features.aiMemory });
-  features.push({ text: 'Auto Refactor', included: config.features.autoRefactor });
-  features.push({ text: 'Team Workspace (5 Users)', included: config.features.teamWorkspace });
-  features.push({ text: 'API Access', included: config.features.apiAccess });
-  features.push({ text: 'White Label', included: config.features.whiteLabel });
-  features.push({ text: 'Custom Domain', included: config.features.customDomain });
 
   return features;
 };
@@ -175,128 +157,28 @@ export const Pricing: React.FC = () => {
             })}
           </div>
 
-          {/* Rok AI Engines Section - WITHOUT Real Model column */}
+          {/* Credit System Info */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-8 mb-16"
           >
-            <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3">
-              <Bot className="w-6 h-6 text-pink-400" />
-              🤖 Rok AI Engines
-            </h2>
-            <p className="text-white/70 mb-6">Powered by top global models.</p>
+            <h2 className="text-2xl font-bold text-white mb-4">💳 Credit System</h2>
+            <p className="text-white/70 mb-6">
+              Each successful code generation costs 1 credit. Daily credits reset at UTC midnight.
+            </p>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/10">
-                    <th className={`py-3 ${isRTL ? 'text-right' : 'text-left'} text-white/60`}>Rok Name</th>
-                    <th className={`py-3 ${isRTL ? 'text-right' : 'text-left'} text-white/60`}>API Model</th>
-                    <th className={`py-3 ${isRTL ? 'text-right' : 'text-left'} text-white/60`}>Best For</th>
-                    <th className="py-3 text-center text-white/60">Speed</th>
-                    <th className="py-3 text-center text-white/60">Quality</th>
-                    <th className="py-3 text-center text-white/60">Multiplier</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ROK_MODELS.map((model) => (
-                    <tr key={model.id} className="border-b border-white/5">
-                      <td className="py-3 text-white font-medium">
-                        {model.icon} {model.name}
-                      </td>
-                      <td className="py-3 text-white/60 font-mono text-xs">
-                        {model.realModel}
-                        {model.id === 'rok-turbo' && (
-                          <span className="block text-[10px] text-red-400 mt-1">No Image Support</span>
-                        )}
-                      </td>
-                      <td className="py-3 text-white/80">{model.description}</td>
-                      <td className="py-3">
-                        <div className="flex justify-center gap-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <Sparkles key={i} className={`w-3 h-3 ${i < model.speed ? 'text-yellow-400' : 'text-white/20'}`} />
-                          ))}
-                        </div>
-                      </td>
-                      <td className="py-3">
-                        <div className="flex justify-center gap-0.5">
-                          {[...Array(6)].map((_, i) => (
-                            <Star key={i} className={`w-3 h-3 ${i < model.quality ? 'text-blue-400' : 'text-white/20'}`} />
-                          ))}
-                        </div>
-                      </td>
-                      <td className="py-3 text-center">
-                        <span className="text-pink-400 font-bold">×{model.multiplier}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
-
-          {/* Smart Credit System */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="grid md:grid-cols-2 gap-8 mb-16"
-          >
-            <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-8">
-              <h2 className="text-2xl font-bold text-white mb-2">💳 Smart Credit System</h2>
-              <p className="text-white/70 mb-6">You only pay for real work done. Credits are calculated based on actual complexity.</p>
-
-              <h3 className="text-lg font-semibold text-white mb-4">Example Costs</h3>
-              <div className="space-y-3">
-                {[
-                  { request: 'Change color', work: 'Small edit', credits: '~0.4' },
-                  { request: 'Remove footer', work: 'Section edit', credits: '~0.8' },
-                  { request: 'Add auth', work: 'Login system', credits: '~1.3' },
-                  { request: 'Landing page', work: 'Full layout', credits: '~2.0' },
-                  { request: 'Dashboard', work: 'Admin panel', credits: '~4.0' },
-                ].map((item, i) => (
-                  <div key={i} className={`flex items-center justify-between py-2 border-b border-white/5 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <div>
-                      <p className="text-white font-medium">{item.request}</p>
-                      <p className="text-white/60 text-sm">{item.work}</p>
-                    </div>
-                    <span className="text-yellow-400 font-bold">{item.credits}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6 space-y-2 text-sm text-white/60">
-                <p>💡 Bigger work = more credits</p>
-                <p>💡 Small edits = very cheap</p>
-                <p>⚠️ Credits are based on actual output, not your description</p>
-              </div>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-8">
-              <h2 className="text-2xl font-bold text-white mb-2">📊 Engine Cost Multipliers</h2>
-              <p className="text-white/70 mb-6">Different engines have different costs.</p>
-
-              <div className="space-y-3">
-                {ROK_MODELS.map((model) => (
-                  <div key={model.id} className={`flex items-center justify-between py-2 border-b border-white/5 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <span className="text-white">
-                      {model.icon} {model.name}
-                    </span>
-                    <span className="text-pink-400 font-bold">×{model.multiplier}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-8 p-4 bg-white/5 rounded-xl">
-                <h3 className="text-lg font-semibold text-white mb-3">➕ Extra Credits</h3>
-                <div className="space-y-2">
-                  <p className="text-white/80">+500 Credits → <span className="text-green-400 font-bold">$4</span></p>
-                  <p className="text-white/80">+2000 Credits → <span className="text-green-400 font-bold">$12</span></p>
+            <div className="grid md:grid-cols-4 gap-4">
+              {Object.entries(PLAN_CONFIG).map(([key, config]) => (
+                <div key={key} className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
+                  <div className="text-2xl font-bold text-yellow-400">{config.dailyCredits}/day</div>
+                  {config.monthlyCredits > 0 && (
+                    <div className="text-green-400 font-medium">+{config.monthlyCredits}/month</div>
+                  )}
+                  <div className="text-white/60 text-sm mt-1">{config.name}</div>
                 </div>
-                <p className="text-white/60 text-sm mt-3">Instant activation.</p>
-              </div>
+              ))}
             </div>
           </motion.div>
 
@@ -304,7 +186,7 @@ export const Pricing: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.5 }}
             className="text-center"
           >
             <h2 className="text-2xl font-bold text-white mb-4">❓ {t('pricing.faq')}</h2>
@@ -312,9 +194,9 @@ export const Pricing: React.FC = () => {
             
             <div className="grid md:grid-cols-3 gap-6 text-left max-w-4xl mx-auto">
               {[
-                { q: 'Can I choose my engine?', a: 'Yes. Based on your plan.' },
-                { q: 'Why Spark is limited?', a: 'To let you test before upgrading.' },
-                { q: 'How are credits calculated?', a: 'Based on actual work complexity (files changed, lines of code), not your description.' },
+                { q: 'How are credits used?', a: 'Each successful generation uses 1 credit.' },
+                { q: 'When do credits reset?', a: 'Daily credits reset at UTC midnight.' },
+                { q: 'Can I buy more credits?', a: 'Extra credits can be purchased at any time.' },
               ].map((faq) => (
                 <div key={faq.q} className="bg-white/5 rounded-xl p-5 border border-white/10">
                   <h3 className="font-semibold text-white mb-2">{faq.q}</h3>

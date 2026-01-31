@@ -32,7 +32,7 @@ const queryClient = new QueryClient();
 interface FileActivity {
   name: string;
   status: 'editing' | 'done';
-  action: 'edited' | 'created';
+  action: 'read' | 'edited' | 'created' | 'analyzed_image';
 }
 
 interface GenerationPhase {
@@ -140,7 +140,7 @@ const ProjectEditorRoute = () => {
         setGenerationPhase({ phase: 'planning', message: t('chat.analyzing') });
 
         // Generate project name in background (don't block UI)
-        generateProjectName(prompt, savedModelId).then(async (generatedName) => {
+        generateProjectName(prompt).then(async (generatedName) => {
           try {
             await updateProject(localProject.id, { name: generatedName });
             setLocalProject(prev => prev ? { ...prev, name: generatedName } : null);
@@ -165,7 +165,7 @@ const ProjectEditorRoute = () => {
 
           let explanation = '';
           try {
-            explanation = await generateExplanation(prompt, localProject.projectType, savedModelId);
+            explanation = await generateExplanation(prompt, localProject.projectType);
           } catch (e) {
             explanation = "I'll create something amazing for you!";
           }
@@ -306,11 +306,8 @@ const ProjectEditorRoute = () => {
                 // DEDUCT CREDITS after generation completes
                 if (user) {
                   const linesOfCode = Object.values(files).reduce((acc, f: any) => acc + (f.content?.split('\n').length || 0), 0);
-                  deductPointsAfterGeneration(
+                deductPointsAfterGeneration(
                     user.id,
-                    savedModelId,
-                    fileList.length,
-                    linesOfCode,
                     localProject.id,
                     `Created ${fileList.length} files`
                   ).then(result => {
@@ -320,7 +317,7 @@ const ProjectEditorRoute = () => {
 
                 // Generate suggestions after completion
                 if (localProject.description) {
-                  generateSuggestions(localProject.description, savedModelId).then(setSuggestions);
+                  generateSuggestions(localProject.description).then(setSuggestions);
                 }
               },
               onError: async (error) => {
@@ -378,9 +375,7 @@ const ProjectEditorRoute = () => {
                 if (isCancelled.current) return;
                 setStatusMessage(status);
               },
-            },
-            undefined,  // existingFiles
-            savedModelId  // modelId
+            }
           );
         } catch (error) {
           if (isCancelled.current) return;
@@ -438,7 +433,7 @@ const ProjectEditorRoute = () => {
 
       try {
         const { generateChatResponse } = await import('@/services/aiService');
-        const response = await generateChatResponse(content, messages, savedModelId);
+        const response = await generateChatResponse(content, messages);
         addMessage('assistant', response);
       } catch (error) {
         addMessage('assistant', "I'm here to help! Ask me anything about your project or web development.");
@@ -472,7 +467,7 @@ const ProjectEditorRoute = () => {
 
       let explanation = '';
       try {
-        explanation = await generateExplanation(content, localProject.projectType, savedModelId);
+        explanation = await generateExplanation(content, localProject.projectType);
       } catch (e) {
         explanation = "I'll make those changes for you!";
       }
@@ -624,7 +619,7 @@ const ProjectEditorRoute = () => {
             // Refresh suggestions after update
             try {
               const { generateSuggestions } = await import('@/services/aiService');
-              const newSuggestions = await generateSuggestions(content, savedModelId);
+              const newSuggestions = await generateSuggestions(content);
               setSuggestions(newSuggestions);
             } catch (e) {
               console.error('Failed to update suggestions:', e);
@@ -686,8 +681,7 @@ const ProjectEditorRoute = () => {
             setStatusMessage(status);
           },
         },
-        existingFilesList,
-        savedModelId  // modelId
+        existingFilesList
       );
     } catch (error) {
       if (isCancelled.current) return;
