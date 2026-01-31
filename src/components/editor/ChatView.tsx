@@ -78,42 +78,56 @@ const getFileIcon = (filename: string) => {
 
 // AGGRESSIVE cleaning - remove ALL JSON/code and summary from AI messages
 const cleanAIMessage = (content: string): string => {
-  if (content.trim().startsWith('{') && (content.includes('"files"') || content.includes('"src/'))) {
+  if (!content) return "";
+
+  // If it's a raw JSON response, hide it (it will be handled by file updates)
+  const trimmedS = content.trim();
+  if (trimmedS.startsWith('{') && (trimmedS.includes('"files"') || trimmedS.includes('"src/'))) {
     return "";
   }
 
   let cleaned = content;
-  cleaned = cleaned.replace(/(\*?\*?Now I['']ll start building\.{2,3}\*?\*?\s*){2,}/gi, 'Now I\'ll start building...\n\n');
-  cleaned = cleaned.replace(/```[\s\S]*?```/g, '');
+
+  // Remove multiple building triggers
+  cleaned = cleaned.replace(/(\*?\*?Now I['’]ll start building\.{2,3}\*?\*?\s*){2,}/gi, 'Now I\'ll start building...\n\n');
+
+  // Remove code blocks that are part of JSON responses but not actual message text
+  cleaned = cleaned.replace(/```(json)?\s*\{\s*"files"[\s\S]*?```/gi, '');
+
+  // Remove trailing JSON garbage if any
   cleaned = cleaned.replace(/\{\s*"files"\s*:\s*\{[\s\S]*$/g, '');
-  cleaned = cleaned.replace(/\{\s*"[^"]+"\s*:\s*"[\s\S]*$/g, '');
-  cleaned = cleaned.replace(/"src\/[^"]+"\s*:\s*"[^"]*"/g, '');
 
-  // Remove Summary section
-  cleaned = cleaned.replace(/\*?\*?Summary:?\*?\*?[\s\S]*?(?=\*\*What I['']m Building|\*\*Now I['']ll|$)/gi, '');
+  // Remove technical summary sections if they appear in the text
+  cleaned = cleaned.replace(/\*?\*?Summary:?\*?\*?[\s\S]*?(?=\*\*What I['’]m Building|\*\*Now I['’]ll|$)/gi, '');
 
+  // Filter out technical lines
   cleaned = cleaned.split('\n').filter(line => {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('"src/') || trimmed.startsWith('"package.json"') ||
-      trimmed.startsWith('"tailwind.config') || trimmed.startsWith('"vite.config') ||
-      trimmed.startsWith('"index.html"') || trimmed.startsWith('"tsconfig')) {
+    const t = line.trim();
+    if (t.startsWith('"src/') || t.startsWith('"package.json"') ||
+      t.startsWith('"tailwind.config') || t.startsWith('"vite.config') ||
+      t.startsWith('"index.html"') || t.startsWith('"tsconfig')) {
       return false;
     }
-    if (trimmed.startsWith('{') && trimmed.includes('"files"')) return false;
-    if (trimmed === '{' || trimmed === '}' || trimmed === '",') return false;
-    // Remove lines starting with "Summary:"
-    if (trimmed.toLowerCase().startsWith('summary:')) return false;
+    if (t.startsWith('{') && t.includes('"files"')) return false;
+    if (t === '{' || t === '}' || t === '",') return false;
+    if (t.toLowerCase().startsWith('summary:')) return false;
     return true;
   }).join('\n');
 
-  cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
+  // Clean up the trigger headers but KEEP the explanation text
+  cleaned = cleaned.replace(/###? \*\*What I['’]m Building:\*\*?/gi, '');
+  cleaned = cleaned.replace(/\*\*Now I['’]ll start building\.\.\.\*\*/gi, '');
 
-  return cleaned;
+  return cleaned.replace(/\n{3,}/g, '\n\n').trim();
 };
 
 // Extract "What I'm Building" section from message
 const extractBuildingPlan = (content: string): string[] => {
-  const planMatch = content.match(/\*?\*?What I['']m Building:?\*?\*?\s*([\s\S]*?)(?=\*\*|Now I['']ll|$)/i);
+  if (!content) return [];
+
+  // Look for the "What I'm Building" section, supporting various formats
+  // Handles possible ### markers and different quote styles
+  const planMatch = content.match(/What I['’]m Building:?[\s\S]*?\n([\s\S]*?)(?=\*\*|Now I['’]ll|$)/i);
   if (!planMatch) return [];
 
   const planText = planMatch[1];
@@ -318,10 +332,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 {files.map((file, i) => {
                   const isEditing = file.status === 'editing';
                   const actionLabel = t(`action.${file.action}`);
-                  const ActionIcon = file.action === 'edited' ? Pencil : 
-                                   file.action === 'created' ? FileOutput :
-                                   file.action === 'read' ? Eye :
-                                   file.action === 'analyzed_image' ? ImageIcon : FileOutput;
+                  const ActionIcon = file.action === 'edited' ? Pencil :
+                    file.action === 'created' ? FileOutput :
+                      file.action === 'read' ? Eye :
+                        file.action === 'analyzed_image' ? ImageIcon : FileOutput;
 
                   return (
                     <motion.div
@@ -459,6 +473,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   // Render Status Message (during generation)
   const renderStatusMessage = () => {
     if (generationPhase?.plan && generationPhase.plan.length > 0) return null;
+    if (generationPhase?.phase === 'thinking') return null;
     if (!generationPhase?.status && !statusMessage) return null;
     if (!isGenerating && !generationPhase?.status) return null;
 
@@ -598,14 +613,37 @@ export const ChatView: React.FC<ChatViewProps> = ({
   // Group messages with their associated versions
   const getMessagesWithVersions = (): { msg: ChatMessage; version?: ProjectVersion; isLastAssistant: boolean; msgIndex: number }[] => {
     const result: { msg: ChatMessage; version?: ProjectVersion; isLastAssistant: boolean; msgIndex: number }[] = [];
-    let assistantCount = 0;
     const lastAssistantIndex = messages.reduce((last, msg, i) => msg.role === 'assistant' ? i : last, -1);
+
+    // Sort versions by versionNumber ascending for mapping
+    const sortedVersions = [...versions].sort((a, b) => a.versionNumber - b.versionNumber);
+
+    // Counter for versions found
+    let versionCounter = 0;
 
     messages.forEach((msg, msgIndex) => {
       if (msg.role === 'assistant') {
-        assistantCount++;
-        const version = versions.find(v => v.versionNumber === assistantCount);
-        result.push({ msg, version, isLastAssistant: msgIndex === lastAssistantIndex, msgIndex });
+        // A completion message is one that:
+        // 1. Has recorded actions
+        // 2. Has a completion checkmark
+        // 3. OR contains the specific "Now I'll start building" trigger (which means it WAS a build attempt)
+        const hasActions = msg.actionsTaken && msg.actionsTaken.length > 0;
+        const hasCheckmark = msg.content.includes('✅') || msg.content.includes('Completed!');
+        const hasBuildTrigger = msg.content.includes("Now I'll start building") || msg.content.includes("Now I'll start building");
+
+        const isCompletion = hasActions || hasCheckmark || hasBuildTrigger;
+
+        let version: ProjectVersion | undefined;
+        // Map versions in order of completion messages
+        if (isCompletion && versionCounter < sortedVersions.length) {
+          version = sortedVersions[versionCounter];
+          versionCounter++;
+        }
+
+        const noUserMessagesAfter = !messages.slice(msgIndex + 1).some(m => m.role === 'user');
+        const isLastAssistantActive = msgIndex === lastAssistantIndex && noUserMessagesAfter;
+
+        result.push({ msg, version, isLastAssistant: isLastAssistantActive, msgIndex });
       } else {
         result.push({ msg, version: undefined, isLastAssistant: false, msgIndex });
       }
@@ -632,6 +670,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <>
             {messagesWithVersions.map(({ msg, version, isLastAssistant, msgIndex }) => {
               const isUser = msg.role === 'user';
+
+              const prevMsg = msgIndex > 0 ? messages[msgIndex - 1] : null;
+              const showHeader = !prevMsg || prevMsg.role !== msg.role;
 
               const cleanedContent = !isUser ? cleanAIMessage(msg.content) : null;
               const hasContent = isUser || (cleanedContent && cleanedContent.length > 0);
@@ -668,25 +709,27 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     </div>
                   ) : (
                     <div className="w-full flex flex-col min-w-0 group">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden">
-                            <img src={rocketLogo} alt="Rocket" className="w-full h-full object-contain" />
-                          </div>
-                          <span className="text-foreground text-xs font-bold">Rocket</span>
-                        </div>
-                        {/* Message Options - Shows credits used */}
-                        {!isGenerating && version && (
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="flex items-center gap-1 px-2 py-1 bg-yellow-500/10 rounded-full">
-                              <Coins className="w-3 h-3 text-yellow-500" />
-                              <span className="text-xs text-yellow-500 font-medium">
-                                ~{(version.versionNumber * 1.2).toFixed(1)}
-                              </span>
+                      {showHeader && (
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden">
+                              <img src={rocketLogo} alt="Rocket" className="w-full h-full object-contain" />
                             </div>
+                            <span className="text-foreground text-xs font-bold">Rocket</span>
                           </div>
-                        )}
-                      </div>
+                          {/* Message Options - Shows credits used */}
+                          {!isGenerating && version && (
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center gap-1 px-2 py-1 bg-yellow-500/10 rounded-full">
+                                <Coins className="w-3 h-3 text-yellow-500" />
+                                <span className="text-xs text-yellow-500 font-medium">
+                                  ~{(version.versionNumber * 1.2).toFixed(1)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <div className="break-words overflow-hidden w-full">
                         {hasContent && cleanedContent && (
                           <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground/80 prose-strong:text-foreground prose-li:text-foreground/80">
@@ -694,12 +737,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           </div>
                         )}
 
-                        {/* Always show plan for this message if it exists */}
-                        {messagePlan.length > 0 && !isLastAssistant && (
+                        {/* Show plan for any assistant message that has one */}
+                        {messagePlan.length > 0 && (
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="mt-6"
+                            className="mt-6 mb-4"
                           >
                             <p className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
                               <ListOrdered className="w-4 h-4 text-primary" />
@@ -721,11 +764,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           </motion.div>
                         )}
 
-                        {/* Show current generation UI only for last assistant message */}
+                        {/* Show current generation state only for last message */}
                         {isLastAssistant && (
                           <>
                             {renderThinkingIndicator()}
-                            {generationPhase?.plan && generationPhase.plan.length > 0 && renderPlanSection()}
                             {renderStatusMessage()}
                             {isGenerating && fileActivities.length > 0 && renderFileActivityPanelForMessage(msg.id, fileActivities, true)}
                           </>
@@ -736,22 +778,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           renderFileActivityPanelForMessage(msg.id, versionActivities, false)
                         )}
 
-                        {/* Show version card for EVERY assistant message that has a version */}
-                        {version && !isGenerating && (
+                        {/* Show version card for message */}
+                        {version && (
                           renderCompletionBlock(version, isActiveVersion, isLastAssistant)
-                        )}
-
-                        {/* Show current generation completion for last message */}
-                        {isLastAssistant && generationPhase?.phase === 'complete' && !version && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="mt-4 space-y-3"
-                          >
-                            <div className="flex items-center gap-2 py-2">
-                              <span className="text-sm text-foreground font-medium">{t('chat.readyMessage')}</span>
-                            </div>
-                          </motion.div>
                         )}
                       </div>
                     </div>

@@ -33,16 +33,16 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
     }
 
     let sanitizedJson = jsonStr.trim();
-    
+
     if (!sanitizedJson.endsWith('}')) {
       const lastBrace = sanitizedJson.lastIndexOf('}');
       if (lastBrace !== -1) {
         sanitizedJson = sanitizedJson.substring(0, lastBrace + 1);
       } else {
-        sanitizedJson += '"}}'; 
+        sanitizedJson += '"}}';
       }
     }
-    
+
     const quoteCount = (sanitizedJson.match(/"/g) || []).length;
     if (quoteCount % 2 !== 0) {
       sanitizedJson += '"';
@@ -311,7 +311,15 @@ export async function streamAICodeGeneration(
   existingFiles?: string
 ) {
   try {
-    const response = await callingDirectAI('code', messages, options.signal);
+    let finalMessages = [...messages];
+    if (existingFiles && finalMessages.length > 0) {
+      const lastMsg = finalMessages[finalMessages.length - 1];
+      if (lastMsg.role === 'user') {
+        lastMsg.content = `${lastMsg.content}\n\nExisting files in project: ${existingFiles}\nPLEASE FOCUS ON TARGETED EDITS.`;
+      }
+    }
+
+    const response = await callingDirectAI('code', finalMessages, options.signal);
 
     if (!response.ok) {
       throw new Error(`AI request failed: ${response.status}`);

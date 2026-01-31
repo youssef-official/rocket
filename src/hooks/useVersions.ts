@@ -24,7 +24,7 @@ export function useVersions(projectId: string | null) {
 
   const fetchVersions = useCallback(async () => {
     if (!user || !projectId) return;
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -75,8 +75,8 @@ export function useVersions(projectId: string | null) {
         .order('version_number', { ascending: false })
         .limit(1);
 
-      const nextVersion = existing && existing.length > 0 
-        ? (existing[0] as any).version_number + 1 
+      const nextVersion = existing && existing.length > 0
+        ? (existing[0] as any).version_number + 1
         : 1;
 
       const { data, error } = await supabase
@@ -110,7 +110,7 @@ export function useVersions(projectId: string | null) {
       };
 
       setVersions(prev => [newVersion, ...prev]);
-      
+
       toast({
         title: 'Version saved',
         description: `Version ${nextVersion} created successfully`,
@@ -154,6 +154,15 @@ export function useVersions(projectId: string | null) {
 
         if (error) throw error;
       }
+
+      // 2. Delete all chat messages after the target version's creation time
+      const { error: msgError } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('project_id', projectId)
+        .gt('created_at', targetVersion.createdAt);
+
+      if (msgError) throw msgError;
 
       // Update local state
       setVersions(prev => prev.filter(v => v.versionNumber <= versionNumber));

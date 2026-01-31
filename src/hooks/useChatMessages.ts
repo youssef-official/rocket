@@ -19,7 +19,7 @@ export function useChatMessages(projectId: string | null) {
     try {
       const { data, error } = await supabase
         .from('chat_messages')
-        .select('id, project_id, user_id, role, content, image_url, credits_used, created_at')
+        .select('id, project_id, user_id, role, content, image_url, credits_used, actions_taken, created_at')
         .eq('project_id', projectId)
         .order('created_at', { ascending: true });
 
@@ -31,6 +31,7 @@ export function useChatMessages(projectId: string | null) {
         content: m.content,
         imageUrl: m.image_url ?? undefined,
         creditsUsed: m.credits_used ?? undefined,
+        actionsTaken: m.actions_taken as unknown as FileActivity[] | undefined,
         createdAt: m.created_at,
       }));
 
@@ -53,12 +54,13 @@ export function useChatMessages(projectId: string | null) {
     content: string,
     imageUrl?: string,
     actionsTaken?: FileActivity[],
-    creditsUsed?: number
+    creditsUsed?: number,
+    customId?: string
   ): Promise<ChatMessage | null> => {
     if (!projectId || !user) return null;
 
     const newMessage: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: customId || crypto.randomUUID(),
       role,
       content,
       imageUrl,
@@ -81,6 +83,7 @@ export function useChatMessages(projectId: string | null) {
           content,
           image_url: imageUrl || null,
           credits_used: creditsUsed || null,
+          actions_taken: (actionsTaken || []) as any,
         });
 
       if (error) {
@@ -107,12 +110,58 @@ export function useChatMessages(projectId: string | null) {
     setMessages([]);
   }, []);
 
+  // Delete messages created after a certain timestamp
+  const deleteMessagesAfter = useCallback(async (timestamp: string) => {
+    if (!projectId || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('project_id', projectId)
+        .gt('created_at', timestamp);
+
+      if (error) throw error;
+
+      // Update local state
+      setMessages(prev => prev.filter(m => m.createdAt && m.createdAt <= timestamp));
+    } catch (error) {
+      console.error('Error deleting messages:', error);
+    }
+  }, [projectId, user]);
+
+  // Update an existing message
+  const updateMessage = useCallback(async (id: string, updates: Partial<ChatMessage>) => {
+    if (!projectId || !user) return;
+
+    try {
+      // Update local state
+      setMessages(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+
+      // Update in Supabase
+      const { error } = await supabase
+        .from('chat_messages')
+        .update({
+          content: updates.content,
+          actions_taken: updates.actionsTaken as any,
+          credits_used: updates.creditsUsed
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating message:', error);
+    }
+  }, [projectId, user]);
+
   return {
     messages,
     loading,
     addMessage,
+    updateMessage,
     setMessages: setMessagesDirectly,
     clearMessages,
+    deleteMessagesAfter,
     refetch: fetchMessages,
   };
 }

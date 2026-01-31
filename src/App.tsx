@@ -12,6 +12,7 @@ import { ProjectsDashboard } from "@/components/dashboard/ProjectsDashboard";
 import { ThemeInitializer } from "@/components/shared/ThemeInitializer";
 import { useProjects } from "@/hooks/useProjects";
 import { useChatMessages } from "@/hooks/useChatMessages";
+import { useVersions } from "@/hooks/useVersions";
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   streamAICodeGeneration,
@@ -66,14 +67,19 @@ const ProjectEditorRoute = () => {
   const [isChatMode, setIsChatMode] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const isCancelled = useRef(false);
+  const lastAssistantMessageId = useRef<string | null>(null);
 
   // Use chat messages hook for persistence
   const {
     messages,
+    loading: messagesLoading,
     addMessage,
+    updateMessage,
     setMessages,
     clearMessages
   } = useChatMessages(id || null);
+
+  const { createVersion } = useVersions(id || null);
 
   // Load project from database and restore generation state
   useEffect(() => {
@@ -120,7 +126,15 @@ const ProjectEditorRoute = () => {
 
   // Auto-start generation for new projects (description = prompt, no messages yet)
   useEffect(() => {
-    if (localProject && !hasStartedGeneration && messages.length === 0 && localProject.description) {
+    // Only start if: 
+    // 1. Project exists
+    // 2. Not already started
+    // 3. Not currently loading messages from DB
+    // 4. No messages exist yet
+    // 5. Project has NO files (true initial state)
+    const hasFiles = localProject && Object.keys(localProject.files).length > 0;
+
+    if (localProject && !hasStartedGeneration && !messagesLoading && messages.length === 0 && localProject.description && !hasFiles) {
       // This is a newly created project, start generation
       const startInitialGeneration = async () => {
         setHasStartedGeneration(true);
@@ -199,9 +213,16 @@ const ProjectEditorRoute = () => {
 
           if (isCancelled.current) return;
 
-          // Step 2: Start code generation (no logo generation)
+          // Add explanation message for initial generation
+          const assistantId = crypto.randomUUID();
+          const planContent = planLines.length > 0
+            ? `### **What I'm Building:**\n${planLines.map((line, i) => `${i + 1}. ${line}`).join('\n')}\n\n`
+            : '';
+          const explanationMessage = planContent + explanation + '\n\n**Now I\'ll start building...**';
+          await addMessage('assistant', explanationMessage, undefined, undefined, undefined, assistantId);
+          lastAssistantMessageId.current = assistantId;
 
-          // Start with first plan step
+          // Step 2: Start code generation (no logo generation)
           const currentStepText = planLines[0] || t('chat.makingChanges');
           setGenerationPhase(prev => ({
             ...prev!,
@@ -251,13 +272,13 @@ const ProjectEditorRoute = () => {
 
                 const { files, fileList, actionsTaken } = parseAIResponse(response);
 
-                const activities = actionsTaken && actionsTaken.length > 0 
-                  ? actionsTaken 
+                const activities = actionsTaken && actionsTaken.length > 0
+                  ? actionsTaken
                   : fileList.map(name => ({
-                      name,
-                      status: 'done' as const,
-                      action: 'created' as const
-                    }));
+                    name,
+                    status: 'done' as const,
+                    action: 'created' as const
+                  }));
                 setFileActivities(activities);
 
                 // Distribute files across plan steps
@@ -285,8 +306,20 @@ const ProjectEditorRoute = () => {
                 // Create summary
                 const summary = `✅ Project created successfully! Created ${activities.length} file${activities.length > 1 ? 's' : ''}. Your project is ready to use!`;
 
-                // Add assistant message with actions taken
-                await addMessage('assistant', summary, undefined, activities);
+                // Update original explanation message instead of adding a new one
+                if (assistantId) {
+                  const finalContent = explanationMessage
+                    .replace(/\*\*Now I['']ll start building\.\.\.\*\*/gi, '')
+                    .replace(/Now I['']ll start building\.\.\./gi, '')
+                    .trim() + '\n\n' + summary;
+
+                  await updateMessage(assistantId, {
+                    content: finalContent,
+                    actionsTaken: activities
+                  });
+                } else {
+                  await addMessage('assistant', summary, undefined, activities);
+                }
 
                 setIsGenerating(false);
                 setStreamingContent('');
@@ -306,7 +339,7 @@ const ProjectEditorRoute = () => {
                 // DEDUCT CREDITS after generation completes
                 if (user) {
                   const linesOfCode = Object.values(files).reduce((acc, f: any) => acc + (f.content?.split('\n').length || 0), 0);
-                deductPointsAfterGeneration(
+                  deductPointsAfterGeneration(
                     user.id,
                     localProject.id,
                     `Created ${fileList.length} files`
@@ -393,12 +426,12 @@ const ProjectEditorRoute = () => {
     }
   }, [localProject, messages, hasStartedGeneration, addMessage, updateProject]);
 
-  const handleVersionRestore = useCallback((files: Record<string, ProjectFile>, restoredMessages: ChatMessage[]) => {
+  const handleVersionRestore = useCallback(async (files: Record<string, ProjectFile>, restoredMessages: ChatMessage[]) => {
     if (localProject) {
       setLocalProject(prev => prev ? { ...prev, files } : null);
-      setMessages(restoredMessages);
+      setMessages(restoredMessages); await updateProject(localProject.id, { files });
     }
-  }, [localProject, setMessages]);
+  }, [localProject, setMessages, updateProject]);
 
   const handleStopGeneration = useCallback(() => {
     isCancelled.current = true;
@@ -494,9 +527,14 @@ const ProjectEditorRoute = () => {
 
       if (isCancelled.current) return;
 
-      // Add the explanation message
-      const explanationMessage = explanation + '\n\n**Now I\'ll start building...**';
-      await addMessage('assistant', explanationMessage);
+      // Add the explanation message with the plan included in the content
+      const assistantId = crypto.randomUUID();
+      const planContent = planLines.length > 0
+        ? `### **What I'm Building:**\n${planLines.map((line, i) => `${i + 1}. ${line}`).join('\n')}\n\n`
+        : '';
+      const explanationMessage = planContent + explanation + '\n\n**Now I\'ll start building...**';
+      await addMessage('assistant', explanationMessage, undefined, undefined, undefined, assistantId);
+      lastAssistantMessageId.current = assistantId;
 
       // Step 2: Generate code (goes to code view, not shown in chat)
       if (isCancelled.current) return;
@@ -566,13 +604,13 @@ const ProjectEditorRoute = () => {
             const { files: newFiles, fileList, actionsTaken } = parseAIResponse(response);
 
             // Update file activities
-            const activities = actionsTaken && actionsTaken.length > 0 
-              ? actionsTaken 
+            const activities = actionsTaken && actionsTaken.length > 0
+              ? actionsTaken
               : fileList.map(name => ({
-                  name,
-                  status: 'done' as const,
-                  action: (localProject.files[name] ? 'edited' : 'created') as 'edited' | 'created'
-                }));
+                name,
+                status: 'done' as const,
+                action: (localProject.files[name] ? 'edited' : 'created') as 'edited' | 'created'
+              }));
             setFileActivities(activities);
 
             // Distribute files across plan steps
@@ -598,8 +636,20 @@ const ProjectEditorRoute = () => {
             const createdCount = activities.filter(a => a.action === 'created').length;
             const summary = `✅ Completed! ${createdCount > 0 ? `Created ${createdCount} file${createdCount > 1 ? 's' : ''}` : ''}${createdCount > 0 && editedCount > 0 ? ' and ' : ''}${editedCount > 0 ? `edited ${editedCount} file${editedCount > 1 ? 's' : ''}` : ''}. Your project is ready!`;
 
-            // Add assistant message with actions taken
-            await addMessage('assistant', summary, undefined, activities);
+            // Update original explanation message instead of adding a new one
+            if (assistantId) {
+              const finalContent = explanationMessage
+                .replace(/\*\*Now I['']ll start building\.\.\.\*\*/gi, '')
+                .replace(/Now I['']ll start building\.\.\./gi, '')
+                .trim() + '\n\n' + summary;
+
+              await updateMessage(assistantId, {
+                content: finalContent,
+                actionsTaken: activities
+              });
+            } else {
+              await addMessage('assistant', summary, undefined, activities);
+            }
 
             setIsGenerating(false);
             setStreamingContent('');
@@ -615,6 +665,20 @@ const ProjectEditorRoute = () => {
               stepFiles: stepFilesMap,
               summary
             }));
+
+            // Create a new version for this completion
+            if (assistantId && activities.length > 0) {
+              await createVersion(
+                files.files,
+                messages, // Current messages state might be slightly stale, but acceptable for now
+                undefined, // Auto-name
+                activities,
+                undefined
+              );
+            }
+
+            // Switch view to preview to show results
+            setActiveView('preview');
 
             // Refresh suggestions after update
             try {
@@ -820,12 +884,13 @@ const AppContent = () => {
     }
   }, [currentProjectId, projects, localProject]);
 
-  const handleVersionRestore = useCallback((files: Record<string, ProjectFile>, restoredMessages: ChatMessage[]) => {
+  const handleVersionRestore = useCallback(async (files: Record<string, ProjectFile>, restoredMessages: ChatMessage[]) => {
     if (localProject) {
       setLocalProject(prev => prev ? { ...prev, files } : null);
       setMessages(restoredMessages);
+      await updateProject(localProject.id, { files });
     }
-  }, [localProject, setMessages]);
+  }, [localProject, setMessages, updateProject]);
 
   const handleStopGeneration = useCallback(() => {
     isCancelled.current = true;
