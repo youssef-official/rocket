@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Paperclip, Lock, Globe, Bell, HelpCircle, MessageSquare, X, Image as ImageIcon, ChevronDown } from 'lucide-react';
+import { ArrowRight, FolderOpen, Paperclip, Lock, Globe, Bell, HelpCircle, MessageSquare, X, ChevronDown, Zap, Crown } from 'lucide-react';
 import { UserMenuDropdown } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -8,6 +8,7 @@ import { ProjectsSection } from './ProjectsSection';
 import { RocketLogo } from '@/components/shared/RocketLogo';
 import { FrameworkBar } from '@/components/shared/FrameworkLogos';
 import { Footer } from '@/components/shared/Footer';
+import { ModelSelector } from '@/components/shared/ModelSelector';
 import { UpgradeModal } from '@/components/shared/UpgradeModal';
 import { SettingsModal } from '@/components/shared/SettingsModal';
 import { useUserPlan } from '@/hooks/useUserPlan';
@@ -24,7 +25,7 @@ interface Project {
 }
 
 interface HomePageProps {
-  onStartBuilding: (prompt: string, projectType: 'vite' | 'html') => void;
+  onStartBuilding: (prompt: string, projectType: 'vite' | 'html', modelId?: string) => void;
   onViewDashboard?: () => void;
   onOpenProject?: (id: string) => void;
   onDeleteProject?: (id: string) => void;
@@ -52,6 +53,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   const [prompt, setPrompt] = useState('');
   const [selectedFramework, setSelectedFramework] = useState('React');
+  const [selectedModel, setSelectedModel] = useState('rok-fast');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [typingIndex, setTypingIndex] = useState(0);
@@ -157,7 +159,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     e.preventDefault();
     if (prompt.trim()) {
       const projectType = selectedFramework === 'React' || selectedFramework === 'Next.js' ? 'vite' : 'html';
-      onStartBuilding(prompt, projectType);
+      onStartBuilding(prompt, projectType, selectedModel);
     }
   };
 
@@ -276,37 +278,19 @@ export const HomePage: React.FC<HomePageProps> = ({
           transition={{ delay: 0.2 }}
           className="w-full max-w-3xl"
         >
-          <form onSubmit={handleSubmit}>
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-
-            <div
-              className={`bg-white rounded-2xl shadow-2xl overflow-hidden relative transition-colors ${isDragging ? 'ring-2 ring-pink-400' : ''}`}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            >
-              {/* Drag overlay */}
-              {isDragging && (
-                <div className="absolute inset-0 z-10 bg-pink-50 border-2 border-dashed border-pink-400 rounded-2xl flex items-center justify-center pointer-events-none">
-                  <div className="flex flex-col items-center gap-2 text-pink-500">
-                    <ImageIcon className="w-8 h-8" />
-                    <span className="font-medium">{t('home.dropImage')}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Uploaded Image Preview */}
+          <form
+            onSubmit={handleSubmit}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`relative bg-white rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 ${isDragging ? 'ring-4 ring-pink-400 ring-opacity-50 scale-[1.02]' : ''}`}
+          >
+            <div className="flex flex-col">
+              {/* Image Upload Preview */}
               {uploadedImage && (
-                <div className={`px-4 pt-4 ${isRTL ? 'text-right' : ''}`}>
-                  <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="px-6 pt-4">
+                  <div className={`flex items-center gap-3 p-2 bg-gray-50 rounded-xl border border-gray-100 w-fit ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <div className="relative">
                       <img
                         src={uploadedImage.preview}
@@ -332,7 +316,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                 value={prompt}
                 onChange={handlePromptChange}
                 placeholder={t('home.placeholder')}
-                maxLength={MAX_PROMPT_LENGTH}
                 className={`w-full px-6 py-5 text-gray-800 placeholder-gray-400 resize-none focus:outline-none text-lg ${isRTL ? 'text-right' : ''}`}
                 dir={isRTL ? 'rtl' : 'ltr'}
                 rows={4}
@@ -347,6 +330,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                   >
                     <Paperclip className="w-5 h-5 text-gray-400" />
                   </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    accept="image/*"
+                    className="hidden"
+                  />
                   <button
                     type="button"
                     className={`flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
@@ -354,10 +344,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                     <span className="text-pink-500">🎨</span>
                     <span className="text-sm text-gray-600">{t('home.import')}</span>
                   </button>
-                  {/* Character count */}
-                  <span className={`text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500' : 'text-gray-400'}`}>
-                    {prompt.length}/{MAX_PROMPT_LENGTH}
-                  </span>
+                  {/* Model Selector */}
+                  <ModelSelector
+                    selectedModel={selectedModel}
+                    onSelectModel={setSelectedModel}
+                    onUpgradeClick={() => setShowUpgradeModal(true)}
+                    variant="light"
+                  />
                 </div>
 
                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -442,7 +435,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           transition={{ delay: 0.3 }}
           className="mt-12 md:mt-16"
         >
-          <FrameworkBar />
+          <FrameworkBar selectedFramework={selectedFramework} onSelectFramework={setSelectedFramework} />
         </motion.div>
 
         {/* Projects Section (for logged-in users) */}
@@ -450,13 +443,36 @@ export const HomePage: React.FC<HomePageProps> = ({
           <ProjectsSection
             projects={projects}
             loading={projectsLoading}
-            onOpenProject={onOpenProject}
-            onDeleteProject={onDeleteProject}
-            onForkProject={onForkProject}
+            onOpenProject={onOpenProject || (() => {})}
+            onDeleteProject={onDeleteProject || (() => {})}
+            onForkProject={onForkProject || (() => {})}
             onNewProject={() => {}}
           />
         )}
       </main>
+
+      {/* Upgrade Banner - Show when 50% credits used */}
+      {user && shouldShowUpgradeBanner() && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50"
+        >
+          <div className="flex items-center gap-4 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-2xl">
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-yellow-300 animate-pulse" />
+              <span className="text-white font-medium">{t('upgrade.banner')}</span>
+            </div>
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              className="flex items-center gap-2 px-4 py-1.5 bg-white text-purple-600 rounded-full font-bold text-sm hover:bg-white/90 transition-colors"
+            >
+              <Crown className="w-4 h-4" />
+              Upgrade
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       {/* Footer */}
       <Footer />
