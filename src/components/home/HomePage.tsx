@@ -8,7 +8,7 @@ import { ProjectsSection } from './ProjectsSection';
 import { RocketLogo } from '@/components/shared/RocketLogo';
 import { FrameworkBar } from '@/components/shared/FrameworkLogos';
 import { Footer } from '@/components/shared/Footer';
-import { ModelSelector } from '@/components/shared/ModelSelector';
+
 import { UpgradeModal } from '@/components/shared/UpgradeModal';
 import { SettingsModal } from '@/components/shared/SettingsModal';
 import { useUserPlan } from '@/hooks/useUserPlan';
@@ -53,7 +53,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   const [prompt, setPrompt] = useState('');
   const [selectedFramework, setSelectedFramework] = useState('React');
-  const [selectedModel, setSelectedModel] = useState('rok-fast');
+
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [typingIndex, setTypingIndex] = useState(0);
@@ -159,7 +159,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     e.preventDefault();
     if (prompt.trim()) {
       const projectType = selectedFramework === 'React' || selectedFramework === 'Next.js' ? 'vite' : 'html';
-      onStartBuilding(prompt, projectType, selectedModel);
+      onStartBuilding(prompt, projectType);
     }
   };
 
@@ -344,13 +344,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     <span className="text-pink-500">🎨</span>
                     <span className="text-sm text-gray-600">{t('home.import')}</span>
                   </button>
-                  {/* Model Selector */}
-                  <ModelSelector
-                    selectedModel={selectedModel}
-                    onSelectModel={setSelectedModel}
-                    onUpgradeClick={() => setShowUpgradeModal(true)}
-                    variant="light"
-                  />
+
                 </div>
 
                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
