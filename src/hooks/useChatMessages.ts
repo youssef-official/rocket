@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import type { ChatMessage } from '@/types';
+import type { ChatMessage, FileActivity } from '@/types';
 
 export function useChatMessages(projectId: string | null) {
   const { user } = useAuth();
@@ -19,7 +19,7 @@ export function useChatMessages(projectId: string | null) {
     try {
       const { data, error } = await supabase
         .from('chat_messages')
-        .select('id, project_id, user_id, role, content, image_url, actions_taken, credits_used, created_at')
+        .select('id, project_id, user_id, role, content, image_url, credits_used, created_at')
         .eq('project_id', projectId)
         .order('created_at', { ascending: true });
 
@@ -29,9 +29,8 @@ export function useChatMessages(projectId: string | null) {
         id: m.id,
         role: m.role as 'user' | 'assistant',
         content: m.content,
-        imageUrl: m.image_url,
-        actionsTaken: m.actions_taken as any,
-        creditsUsed: m.credits_used,
+        imageUrl: m.image_url ?? undefined,
+        creditsUsed: m.credits_used ?? undefined,
         createdAt: m.created_at,
       }));
 
@@ -49,7 +48,13 @@ export function useChatMessages(projectId: string | null) {
   }, [fetchMessages]);
 
   // Add a new message
-  const addMessage = useCallback(async (role: 'user' | 'assistant', content: string, imageUrl?: string, actionsTaken?: any[], creditsUsed?: number): Promise<ChatMessage | null> => {
+  const addMessage = useCallback(async (
+    role: 'user' | 'assistant',
+    content: string,
+    imageUrl?: string,
+    actionsTaken?: FileActivity[],
+    creditsUsed?: number
+  ): Promise<ChatMessage | null> => {
     if (!projectId || !user) return null;
 
     const newMessage: ChatMessage = {
@@ -66,8 +71,7 @@ export function useChatMessages(projectId: string | null) {
     setMessages(prev => [...prev, newMessage]);
 
     try {
-      // Include image_url in insert as it exists in types.ts and migrations
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('chat_messages')
         .insert({
           id: newMessage.id,
@@ -76,11 +80,8 @@ export function useChatMessages(projectId: string | null) {
           role,
           content,
           image_url: imageUrl || null,
-          actions_taken: actionsTaken || null,
           credits_used: creditsUsed || null,
-        })
-        .select('id, project_id, user_id, role, content, image_url, actions_taken, credits_used, created_at')
-        .single();
+        });
 
       if (error) {
         console.error('Supabase error saving message:', error);

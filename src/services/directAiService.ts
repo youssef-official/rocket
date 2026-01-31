@@ -1,4 +1,3 @@
-import type { Suggestion, ChatMessage } from './aiService';
 import {
     CODE_GENERATION_PROMPT,
     STATUS_SYSTEM_PROMPT,
@@ -8,12 +7,12 @@ import {
     CHAT_ONLY_PROMPT,
     VERSION_NAME_PROMPT
 } from './aiPrompts';
-import { calculateCredits, deductCredits, getModelMultiplier } from './creditService';
+import { deductCredits } from './creditService';
 
 // Standard OpenAI/Vercel AI SDK compatible payload
 interface AIRequestPayload {
     model: string;
-    messages: Array<{ role: string; content: string }>;
+    messages: Array<{ role: string; content: string | any[] }>;
     stream?: boolean;
     max_tokens?: number;
     temperature?: number;
@@ -32,33 +31,16 @@ function getAIUrl(): string {
     return "https://ai-gateway.vercel.sh/v1/chat/completions";
 }
 
-// Model ID to real model mapping
-function mapModel(modelId: string): string {
-    switch (modelId) {
-        case 'rok-fast': return 'xai/grok-code-fast-1';
-        case 'rok-smart': return 'zai/glm-4.7';
-        case 'rok-turbo': return 'moonshotai/kimi-k2-thinking';
-        case 'rok-ultra': return 'google/gemini-3-flash';
-        case 'rok-reson': return 'anthropic/claude-haiku-4.5';
-        default: return modelId.includes('/') ? modelId : 'xai/grok-code-fast-1';
-    }
-}
+// Single model for all generation
+const GENERATION_MODEL = 'google/gemini-3-flash';
 
-// DEDUCT_POINTS: Calculate and deduct credits after generation
+// DEDUCT_POINTS: Deduct 1 credit after successful generation
 export async function deductPointsAfterGeneration(
     userId: string,
-    modelId: string,
-    filesChanged: number,
-    linesOfCode: number,
     projectId?: string,
-    workDescription?: string,
-    isFirstVersion: boolean = false
+    workDescription?: string
 ): Promise<{ creditsDeducted: number; success: boolean }> {
-    const multiplier = getModelMultiplier(modelId);
-    const credits = calculateCredits(filesChanged, linesOfCode, multiplier, isFirstVersion);
-    
-    const result = await deductCredits(userId, credits, modelId, projectId, workDescription);
-    
+    const result = await deductCredits(userId, projectId, workDescription);
     return {
         creditsDeducted: result.creditsDeducted,
         success: result.success
@@ -69,7 +51,6 @@ export async function deductPointsAfterGeneration(
 export async function callingDirectAI(
     mode: 'code' | 'status' | 'explanation' | 'project-name' | 'suggestions' | 'chat' | 'version-name',
     messages: any[],
-    modelId: string = 'rok-fast',
     signal?: AbortSignal
 ): Promise<Response> {
     const apiKey = getAIKey();
@@ -89,8 +70,6 @@ export async function callingDirectAI(
         case 'version-name': systemPrompt = VERSION_NAME_PROMPT; break;
     }
 
-    const actualModel = mapModel(modelId);
-
     // Construct payload with support for images if provided
     const formattedMessages = messages.map(msg => {
         if (msg.role === 'user' && msg.imageUrls && Array.isArray(msg.imageUrls)) {
@@ -108,24 +87,22 @@ export async function callingDirectAI(
         return msg;
     });
 
-    const payload: any = {
-        model: actualModel,
+    const payload: AIRequestPayload = {
+        model: GENERATION_MODEL,
         messages: [
             { role: 'system', content: systemPrompt },
             ...formattedMessages
         ],
         stream: true,
         max_tokens: 32000,
-       temperature: stream ? 0.2 : 0.25,
-       top_p: 0.9,
-
+        temperature: 0.15,
     };
 
     if (mode === 'project-name' || mode === 'version-name') {
         payload.max_tokens = 100;
     }
 
-    console.log(`[LocalAI] Calling Vercel AI Gateway (${actualModel}) for mode: ${mode}`);
+    console.log(`[AI] Calling ${GENERATION_MODEL} for mode: ${mode}`);
 
     return fetch(getAIUrl(), {
         method: 'POST',

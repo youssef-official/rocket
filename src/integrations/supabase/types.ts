@@ -16,8 +16,10 @@ export type Database = {
     Tables: {
       chat_messages: {
         Row: {
+          actions_taken: Json | null
           content: string
           created_at: string
+          credits_used: number | null
           id: string
           image_url: string | null
           project_id: string
@@ -25,8 +27,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          actions_taken?: Json | null
           content: string
           created_at?: string
+          credits_used?: number | null
           id?: string
           image_url?: string | null
           project_id: string
@@ -34,8 +38,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          actions_taken?: Json | null
           content?: string
           created_at?: string
+          credits_used?: number | null
           id?: string
           image_url?: string | null
           project_id?: string
@@ -131,6 +137,7 @@ export type Database = {
           actions_taken: Json | null
           chat_messages: Json
           created_at: string
+          credits_used: number | null
           files: Json
           id: string
           name: string | null
@@ -142,6 +149,7 @@ export type Database = {
           actions_taken?: Json | null
           chat_messages?: Json
           created_at?: string
+          credits_used?: number | null
           files?: Json
           id?: string
           name?: string | null
@@ -153,6 +161,7 @@ export type Database = {
           actions_taken?: Json | null
           chat_messages?: Json
           created_at?: string
+          credits_used?: number | null
           files?: Json
           id?: string
           name?: string | null

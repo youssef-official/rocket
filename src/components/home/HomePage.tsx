@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Send, FolderOpen, Paperclip, Lock, Globe, User, Bell, HelpCircle, MessageSquare, X, Image as ImageIcon, ChevronDown, Zap, Crown } from 'lucide-react';
+import { ArrowRight, Paperclip, Lock, Globe, Bell, HelpCircle, MessageSquare, X, Image as ImageIcon, ChevronDown } from 'lucide-react';
 import { UserMenuDropdown } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -8,10 +8,9 @@ import { ProjectsSection } from './ProjectsSection';
 import { RocketLogo } from '@/components/shared/RocketLogo';
 import { FrameworkBar } from '@/components/shared/FrameworkLogos';
 import { Footer } from '@/components/shared/Footer';
-import { ModelSelector } from '@/components/shared/ModelSelector';
 import { UpgradeModal } from '@/components/shared/UpgradeModal';
 import { SettingsModal } from '@/components/shared/SettingsModal';
-import { useUserPlan, ROK_MODELS, PLAN_CONFIG } from '@/hooks/useUserPlan';
+import { useUserPlan } from '@/hooks/useUserPlan';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 interface Project {
@@ -23,8 +22,9 @@ interface Project {
   createdAt: string;
   updatedAt: string;
 }
+
 interface HomePageProps {
-  onStartBuilding: (prompt: string, projectType: 'vite' | 'html', modelId?: string) => void;
+  onStartBuilding: (prompt: string, projectType: 'vite' | 'html') => void;
   onViewDashboard?: () => void;
   onOpenProject?: (id: string) => void;
   onDeleteProject?: (id: string) => void;
@@ -33,6 +33,8 @@ interface HomePageProps {
   projects?: Project[];
   projectsLoading?: boolean;
 }
+
+const MAX_PROMPT_LENGTH = 500;
 
 export const HomePage: React.FC<HomePageProps> = ({
   onStartBuilding,
@@ -50,7 +52,6 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   const [prompt, setPrompt] = useState('');
   const [selectedFramework, setSelectedFramework] = useState('React');
-  const [selectedModel, setSelectedModel] = useState('rok-fast');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [typingIndex, setTypingIndex] = useState(0);
@@ -144,11 +145,19 @@ export const HomePage: React.FC<HomePageProps> = ({
       setUploadedImage(null);
     }
   };
+
+  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    if (value.length <= MAX_PROMPT_LENGTH) {
+      setPrompt(value);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (prompt.trim()) {
       const projectType = selectedFramework === 'React' || selectedFramework === 'Next.js' ? 'vite' : 'html';
-      onStartBuilding(prompt, projectType, selectedModel);
+      onStartBuilding(prompt, projectType);
     }
   };
 
@@ -321,8 +330,9 @@ export const HomePage: React.FC<HomePageProps> = ({
 
               <textarea
                 value={prompt}
-                onChange={e => setPrompt(e.target.value)}
+                onChange={handlePromptChange}
                 placeholder={t('home.placeholder')}
+                maxLength={MAX_PROMPT_LENGTH}
                 className={`w-full px-6 py-5 text-gray-800 placeholder-gray-400 resize-none focus:outline-none text-lg ${isRTL ? 'text-right' : ''}`}
                 dir={isRTL ? 'rtl' : 'ltr'}
                 rows={4}
@@ -344,13 +354,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                     <span className="text-pink-500">🎨</span>
                     <span className="text-sm text-gray-600">{t('home.import')}</span>
                   </button>
-                  {/* Model Selector */}
-                  <ModelSelector
-                    selectedModel={selectedModel}
-                    onSelectModel={setSelectedModel}
-                    onUpgradeClick={() => setShowUpgradeModal(true)}
-                    variant="light"
-                  />
+                  {/* Character count */}
+                  <span className={`text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500' : 'text-gray-400'}`}>
+                    {prompt.length}/{MAX_PROMPT_LENGTH}
+                  </span>
                 </div>
 
                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -428,62 +435,37 @@ export const HomePage: React.FC<HomePageProps> = ({
           </form>
         </motion.div>
 
-        {/* Frameworks & Integrations with real logos */}
+        {/* Framework Logos */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="mt-8 w-full max-w-3xl"
+          className="mt-12 md:mt-16"
         >
-          <FrameworkBar selectedFramework={selectedFramework} onSelectFramework={setSelectedFramework} />
+          <FrameworkBar />
         </motion.div>
+
+        {/* Projects Section (for logged-in users) */}
+        {user && projects.length > 0 && (
+          <ProjectsSection
+            projects={projects}
+            loading={projectsLoading}
+            onOpenProject={onOpenProject}
+            onDeleteProject={onDeleteProject}
+            onForkProject={onForkProject}
+          />
+        )}
       </main>
-
-      {/* Upgrade Banner - Show when 50% credits used */}
-      {user && shouldShowUpgradeBanner() && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50"
-        >
-          <div className="flex items-center gap-4 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-2xl">
-            <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-yellow-300 animate-pulse" />
-              <span className="text-white font-medium">{t('upgrade.banner')}</span>
-            </div>
-            <button
-              onClick={() => setShowUpgradeModal(true)}
-              className="flex items-center gap-2 px-4 py-1.5 bg-white text-purple-600 rounded-full font-bold text-sm hover:bg-white/90 transition-colors"
-            >
-              <Crown className="w-4 h-4" />
-              Upgrade
-            </button>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Projects Section */}
-      {projects.length > 0 && (
-        <ProjectsSection
-          projects={projects}
-          loading={projectsLoading}
-          onOpenProject={onOpenProject || (() => { })}
-          onDeleteProject={onDeleteProject || (() => { })}
-          onForkProject={onForkProject || (() => { })}
-          onNewProject={() => { }}
-        />
-      )}
 
       {/* Footer */}
       <Footer />
 
-      {/* Upgrade Modal */}
+      {/* Modals */}
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
       />
 
-      {/* Settings Modal */}
       <SettingsModal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}

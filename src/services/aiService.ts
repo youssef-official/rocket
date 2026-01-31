@@ -1,16 +1,5 @@
 import { callingDirectAI, deductPointsAfterGeneration } from './directAiService';
 
-const fallbackNames = [
-  'Initial Build',
-  'Feature Update',
-  'UI Enhancement',
-  'Bug Fixes',
-  'Performance Boost',
-  'Style Refresh',
-  'Component Upgrade',
-  'Layout Update',
-];
-
 // Re-export types
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -31,37 +20,29 @@ export interface FileActivity {
 // Helper to parse AI response
 export function parseAIResponse(response: string): { files: Record<string, any>, fileList: string[], actionsTaken?: FileActivity[] } {
   try {
-    // Attempt to extract JSON from code blocks if present
     const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/) ||
       response.match(/```([\s\S]*?)```/);
 
     let jsonStr = jsonMatch ? jsonMatch[1] : response;
-    // Clean potential prefixes
     jsonStr = jsonStr.trim();
 
-    // Ensure we capture the JSON object if there's surrounding text
     const startIdx = jsonStr.indexOf('{');
     const endIdx = jsonStr.lastIndexOf('}');
     if (startIdx !== -1 && endIdx !== -1) {
       jsonStr = jsonStr.substring(startIdx, endIdx + 1);
     }
 
-    // Sanitize JSON string before parsing to handle unterminated strings or common AI errors
     let sanitizedJson = jsonStr.trim();
     
-    // If JSON is truncated (common with AI), try to fix it
     if (!sanitizedJson.endsWith('}')) {
-      // Find the last complete object or try to close it
       const lastBrace = sanitizedJson.lastIndexOf('}');
       if (lastBrace !== -1) {
         sanitizedJson = sanitizedJson.substring(0, lastBrace + 1);
       } else {
-        // If no closing brace at all, it's likely very broken, but let's try a basic fix
         sanitizedJson += '"}}'; 
       }
     }
     
-    // Final check for unterminated strings which cause the specific error reported
     const quoteCount = (sanitizedJson.match(/"/g) || []).length;
     if (quoteCount % 2 !== 0) {
       sanitizedJson += '"';
@@ -75,12 +56,10 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
     let actionsTaken: FileActivity[] = [];
 
     if (parsed.files) {
-      // Check if files is an array (some AI models return array format)
       if (Array.isArray(parsed.files)) {
         parsed.files.forEach((file: any) => {
           if (file.path && file.content !== undefined) {
             const path = file.path;
-            // Ignore numeric file names or paths without extensions (hallucinations)
             if (/^\d+$/.test(path)) return;
 
             fileList.push(path);
@@ -92,12 +71,9 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
           }
         });
       } else {
-        // Standard object format { "path": "content" }
         Object.entries(parsed.files).forEach(([path, content]) => {
-          // Ignore numeric file names or paths without extensions (hallucinations)
           if (/^\d+$/.test(path)) return;
 
-          // Handle case where content might be an object with content property
           const fileContent = typeof content === 'object' && content !== null && 'content' in content
             ? (content as any).content
             : content;
@@ -112,7 +88,6 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
       }
     }
 
-    // Parse actions_taken if present
     if (parsed.actions_taken && Array.isArray(parsed.actions_taken)) {
       actionsTaken = parsed.actions_taken.map((action: any) => ({
         name: action.name,
@@ -134,18 +109,16 @@ export function generateDefaultViteProject(): any[] {
   return [];
 }
 
-
 // Generate short project name (2 words)
-export async function generateProjectName(prompt: string, modelId?: string): Promise<string> {
+export async function generateProjectName(prompt: string): Promise<string> {
   try {
     const msgs = [{ role: 'user', content: `Project: ${prompt}` }];
-    const response = await callingDirectAI('project-name', msgs, modelId);
+    const response = await callingDirectAI('project-name', msgs);
 
     if (!response.ok) {
       throw new Error(`AI request failed: ${response.status}`);
     }
 
-    // Just read stream as text for project name, looking for data
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     let fullResponse = '';
@@ -169,8 +142,6 @@ export async function generateProjectName(prompt: string, modelId?: string): Pro
     }
 
     const content = fullResponse || 'New Project';
-
-    // Clean and return the 2-word name
     const cleaned = content.trim().replace(/[^a-zA-Z\s]/g, '').trim();
     const words = cleaned.split(/\s+/).filter((w: string) => w.length > 0);
     if (words.length >= 2) {
@@ -185,7 +156,7 @@ export async function generateProjectName(prompt: string, modelId?: string): Pro
 }
 
 // Generate suggestions after project completion
-export async function generateSuggestions(projectDescription: string, modelId?: string): Promise<Suggestion[]> {
+export async function generateSuggestions(projectDescription: string): Promise<Suggestion[]> {
   const defaultSuggestions: Suggestion[] = [
     { label: "Add Dark Mode", prompt: "Add a dark mode toggle that saves user preference" },
     { label: "Improve Mobile", prompt: "Improve the mobile responsiveness and add a hamburger menu" },
@@ -195,7 +166,7 @@ export async function generateSuggestions(projectDescription: string, modelId?: 
 
   try {
     const msgs = [{ role: 'user', content: `Project description: ${projectDescription}. Generate 4 relevant feature suggestions.` }];
-    const response = await callingDirectAI('suggestions', msgs, modelId);
+    const response = await callingDirectAI('suggestions', msgs);
 
     if (!response.ok) return defaultSuggestions;
 
@@ -243,15 +214,14 @@ export async function generateSuggestions(projectDescription: string, modelId?: 
 // Chat-only response (no code generation)
 export async function generateChatResponse(
   prompt: string,
-  conversationHistory: Array<{ role: string; content: string }>,
-  modelId?: string
+  conversationHistory: Array<{ role: string; content: string }>
 ): Promise<string> {
   try {
     const msgs = [
       ...conversationHistory.slice(-10).map(m => ({ role: m.role, content: m.content })),
       { role: 'user', content: prompt }
     ];
-    const response = await callingDirectAI('chat', msgs, modelId);
+    const response = await callingDirectAI('chat', msgs);
 
     if (!response.ok) throw new Error(`Status ${response.status}`);
 
@@ -288,12 +258,11 @@ export async function generateChatResponse(
 // Generate explanation only (for chat display)
 export async function generateExplanation(
   prompt: string,
-  projectType: 'vite' | 'html',
-  modelId?: string
+  projectType: 'vite' | 'html'
 ): Promise<string> {
   try {
     const msgs = [{ role: 'user', content: prompt }];
-    const response = await callingDirectAI('explanation', msgs, modelId);
+    const response = await callingDirectAI('explanation', msgs);
 
     if (!response.ok) throw new Error(`Status ${response.status}`);
 
@@ -334,12 +303,15 @@ export async function streamAICodeGeneration(
   options: {
     onChunk: (chunk: string) => void;
     onComplete: (fullResponse: string) => void;
-    modelId?: string;
+    onError?: (error: Error) => void;
+    onFileStart?: (fileName: string) => void;
+    onStatusUpdate?: (status: string) => void;
     signal?: AbortSignal;
-  }
+  },
+  existingFiles?: string
 ) {
   try {
-    const response = await callingDirectAI('code', messages, options.modelId, options.signal);
+    const response = await callingDirectAI('code', messages, options.signal);
 
     if (!response.ok) {
       throw new Error(`AI request failed: ${response.status}`);
@@ -371,7 +343,11 @@ export async function streamAICodeGeneration(
     options.onComplete(fullResponse);
   } catch (error) {
     console.error('Code generation error:', error);
-    options.onComplete('');
+    if (options.onError) {
+      options.onError(error as Error);
+    } else {
+      options.onComplete('');
+    }
   }
 }
 
