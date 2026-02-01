@@ -10,7 +10,7 @@ import rocketLogo from '@/assets/rocket-logo.png';
 interface FileActivity {
   name: string;
   status: 'editing' | 'done';
-  action: 'edited' | 'created';
+  action: 'read' | 'edited' | 'created' | 'analyzed_image';
 }
 
 interface Suggestion {

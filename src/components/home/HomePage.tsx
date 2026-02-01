@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Send, FolderOpen, Paperclip, Lock, Globe, User, Bell, HelpCircle, MessageSquare, X, Image as ImageIcon, ChevronDown, Zap, Crown } from 'lucide-react';
+import { ArrowRight, Send, FolderOpen, Paperclip, Lock, Globe, User, Bell, HelpCircle, MessageSquare, X, Image as ImageIcon, ChevronDown, Zap, Crown, Sparkles } from 'lucide-react';
 import { UserMenuDropdown } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ProjectsSection } from './ProjectsSection';
-import { RocketLogo } from '@/components/shared/RocketLogo';
+import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { FrameworkBar } from '@/components/shared/FrameworkLogos';
 import { Footer } from '@/components/shared/Footer';
 import { UpgradeModal } from '@/components/shared/UpgradeModal';
@@ -34,7 +34,7 @@ interface HomePageProps {
   projectsLoading?: boolean;
 }
 
-const MAX_PROMPT_LENGTH = 50000;
+const MAX_PROMPT_LENGTH = 500;
 
 export const HomePage: React.FC<HomePageProps> = ({
   onStartBuilding,
@@ -180,7 +180,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
           {/* Logo */}
           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <RocketLogo size="md" className={isRTL ? 'ml-1' : ''} />
+            <VivoraLogo size="md" className={isRTL ? 'ml-1' : ''} />
             <span className="bg-white/20 text-white px-2 py-0.5 rounded-full hidden sm:inline text-xs">BETA</span>
           </div>
 
@@ -468,8 +468,8 @@ export const HomePage: React.FC<HomePageProps> = ({
         </motion.div>
       )}
 
-      {/* Projects Section */}
-      {projects.length > 0 && (
+      {/* Projects Section or Welcome Message */}
+      {projects.length > 0 ? (
         <ProjectsSection
           projects={projects}
           loading={projectsLoading}
@@ -478,6 +478,29 @@ export const HomePage: React.FC<HomePageProps> = ({
           onForkProject={onForkProject || (() => { })}
           onNewProject={() => { }}
         />
+      ) : user && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="relative z-10 max-w-3xl mx-auto px-4 mb-20 text-center"
+        >
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
+            <Sparkles className="w-12 h-12 text-pink-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">
+              Welcome to Vivora X!
+            </h2>
+            <p className="text-white/70 mb-6">
+              Start by describing your dream project above. Our AI will transform your ideas into a beautiful, production-ready web application in seconds.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">Landing Pages</span>
+              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">E-commerce</span>
+              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">Dashboards</span>
+              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">Portfolios</span>
+            </div>
+          </div>
+        </motion.div>
       )}
 
       {/* Footer */}

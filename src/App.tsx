@@ -668,8 +668,9 @@ const ProjectEditorRoute = () => {
 
             // Create a new version for this completion
             if (assistantId && activities.length > 0) {
+              const mergedFiles = { ...localProject.files, ...newFiles };
               await createVersion(
-                files.files,
+                mergedFiles,
                 messages, // Current messages state might be slightly stale, but acceptable for now
                 undefined, // Auto-name
                 activities,
@@ -677,8 +678,7 @@ const ProjectEditorRoute = () => {
               );
             }
 
-            // Switch view to preview to show results
-            setActiveView('preview');
+            // Note: Preview is already the default view in EditorLayout
 
             // Refresh suggestions after update
             try {
@@ -1032,6 +1032,9 @@ import { Docs } from "@/pages/Docs";
 import Settings from "@/pages/Settings";
 import { ProjectView } from "@/pages/ProjectView";
 import { OAuthConsent } from "@/pages/OAuthConsent";
+import FAQ from "@/pages/FAQ";
+import Privacy from "@/pages/Privacy";
+import Terms from "@/pages/Terms";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -1049,6 +1052,9 @@ const App = () => (
               <Route path="/view/:projectId" element={<ProjectView />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/docs" element={<Docs />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/oauth/consent" element={<OAuthConsent />} />
               <Route path="/" element={<AppContent />} />

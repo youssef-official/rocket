@@ -7,7 +7,7 @@ import {
   Sparkles, Layers, Rocket, Image as ImageIcon,
   RefreshCw, Languages
 } from 'lucide-react';
-import { RocketLogo } from '@/components/shared/RocketLogo';
+import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { Footer } from '@/components/shared/Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
@@ -24,23 +24,23 @@ export const Docs: React.FC = () => {
       icon: Zap,
       content: [
         {
-          title: 'Welcome to Rocket',
-          description: 'Rocket is an AI-powered web application builder that transforms your ideas into production-ready code. Simply describe what you want to build, and watch as Rocket generates complete React applications with TypeScript and Tailwind CSS.',
+          title: 'Welcome to Vivora X',
+          description: 'Vivora X is an AI-powered web application builder that transforms your ideas into production-ready code. Simply describe what you want to build, and watch as Vivora X generates complete React applications with TypeScript and Tailwind CSS.',
         },
         {
           title: 'Quick Start Guide',
           description: 'Create your first project in under a minute:',
           steps: [
-            'Sign up for a free Rocket account',
+            'Sign up for a free Vivora X account',
             'Navigate to the homepage input field',
             'Describe your project (e.g., "e-commerce site with product catalog and shopping cart")',
             'Press Enter or click the arrow button to start generation',
-            'Watch as Rocket creates your complete application with multiple pages and components!',
+            'Watch as Vivora X creates your complete application with multiple pages and components!',
           ],
         },
         {
           title: 'Understanding the Editor',
-          description: 'The Rocket editor is split into three main areas for maximum productivity:',
+          description: 'The Vivora X editor is split into three main areas for maximum productivity:',
           steps: [
             'Chat Panel - Communicate with AI to modify your project',
             'Preview Panel - See live updates to your application',
@@ -56,11 +56,11 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'How AI Generation Works',
-          description: 'Rocket uses advanced AI models to understand your natural language descriptions and convert them into production-ready code. The AI is trained to generate clean, maintainable React components with TypeScript type safety and modern Tailwind CSS styling.',
+          description: 'Vivora X uses advanced AI models to understand your natural language descriptions and convert them into production-ready code. The AI is trained to generate clean, maintainable React components with TypeScript type safety and modern Tailwind CSS styling.',
         },
         {
-          title: 'What Rocket Can Generate',
-          description: 'Rocket can create complete applications including:',
+          title: 'What Vivora X Can Generate',
+          description: 'Vivora X can create complete applications including:',
           steps: [
             'Multi-page websites with navigation and routing',
             'E-commerce stores with product catalogs and carts',
@@ -259,7 +259,7 @@ export const Docs: React.FC = () => {
         <header className="relative z-10 px-6 py-4 border-b border-white/10">
           <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
             <a href="/" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <RocketLogo size="md" />
+              <VivoraLogo size="md" />
               <span className="text-white/60">|</span>
               <span className="text-white font-medium">{t('docs.title')}</span>
             </a>

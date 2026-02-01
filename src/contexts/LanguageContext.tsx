@@ -47,7 +47,7 @@ export const translations: Translations = {
   'home.publicDesc': { en: 'Anyone can view & fork', ar: 'يمكن للجميع المشاهدة والنسخ', zh: '任何人都可以查看和分叉', ja: '誰でも閲覧・フォーク可能', fr: 'Tout le monde peut voir et forker' },
   'home.privateDesc': { en: 'Only you can access', ar: 'أنت فقط من يمكنه الوصول', zh: '仅您可以访问', ja: 'あなただけがアクセス可能', fr: 'Vous seul pouvez y accéder' },
   'home.newBadge': { en: 'New', ar: 'جديد', zh: '新', ja: '新着', fr: 'Nouveau' },
-  'home.mobileAnnouncement': { en: 'Rocket Mobile for iPhone is here', ar: 'تطبيق Rocket للآيفون متاح الآن', zh: 'Rocket iPhone 版已上线', ja: 'Rocket iPhone版が登場', fr: 'Rocket Mobile pour iPhone est disponible' },
+  'home.mobileAnnouncement': { en: 'Vivora X Mobile for iPhone is here', ar: 'تطبيق Vivora X للآيفون متاح الآن', zh: 'Vivora X iPhone 版已上线', ja: 'Vivora X iPhone版が登場', fr: 'Vivora X Mobile pour iPhone est disponible' },
   'home.dropImage': { en: 'Drop image here', ar: 'أفلت الصورة هنا', zh: '将图片拖放到此处', ja: 'ここに画像をドロップ', fr: 'Déposez l\'image ici' },
 
   // Typing words
@@ -100,7 +100,7 @@ export const translations: Translations = {
   'footer.blog': { en: 'Blog', ar: 'المدونة', zh: '博客', ja: 'ブログ', fr: 'Blog' },
   'footer.privacy': { en: 'Privacy Policy', ar: 'سياسة الخصوصية', zh: '隐私政策', ja: 'プライバシーポリシー', fr: 'Politique de confidentialité' },
   'footer.terms': { en: 'Terms of Service', ar: 'شروط الخدمة', zh: '服务条款', ja: '利用規約', fr: 'Conditions d\'utilisation' },
-  'footer.copyright': { en: '© 2025 Rocket. All rights reserved.', ar: '© 2025 Rocket. جميع الحقوق محفوظة.', zh: '© 2025 Rocket. 保留所有权利.', ja: '© 2025 Rocket. 全著作権所有.', fr: '© 2025 Rocket. Tous droits réservés.' },
+  'footer.copyright': { en: '© 2026 Force Digital. All Rights Reserved.', ar: '© 2026 Force Digital. جميع الحقوق محفوظة.', zh: '© 2026 Force Digital. 保留所有权利.', ja: '© 2026 Force Digital. 全著作権所有.', fr: '© 2026 Force Digital. Tous droits réservés.' },
   'footer.tagline': { en: 'Build production-ready web applications with AI-powered code generation.', ar: 'ابنِ تطبيقات ويب جاهزة للإنتاج بتوليد الكود بالذكاء الاصطناعي.', zh: '使用AI代码生成构建生产就绪的Web应用程序。', ja: 'AI搭載のコード生成で本番対応のWebアプリケーションを構築。', fr: 'Créez des applications web prêtes pour la production avec la génération de code par IA.' },
 
   // Docs
@@ -160,8 +160,8 @@ export const translations: Translations = {
   'chat.planMode': { en: 'Plan', ar: 'خطة', zh: '规划', ja: 'プラン', fr: 'Plan' },
   'chat.uploadImage': { en: 'Upload Image', ar: 'رفع صورة', zh: '上传图片', ja: '画像をアップロード', fr: 'Télécharger une image' },
   'chat.visualEdit': { en: 'Visual Edit', ar: 'تحرير مرئي', zh: '可视化编辑', ja: 'ビジュアル編集', fr: 'Édition visuelle' },
-  'chat.placeholder': { en: 'How can Rocket help you today?', ar: 'كيف يمكن لـ Rocket مساعدتك اليوم؟', zh: 'Rocket今天能为您做什么?', ja: '今日はRocketがどのようにお手伝いできますか?', fr: 'Comment Rocket peut-il vous aider aujourd\'hui?' },
-  'chat.planPlaceholder': { en: 'Plan with Rocket (no code changes)...', ar: 'خطط مع Rocket (بدون تغييرات في الكود)...', zh: '与Rocket规划（不更改代码）...', ja: 'Rocketと計画（コード変更なし）...', fr: 'Planifier avec Rocket (pas de changement de code)...' },
+  'chat.placeholder': { en: 'How can Vivora X help you today?', ar: 'كيف يمكن لـ Vivora X مساعدتك اليوم؟', zh: 'Vivora X今天能为您做什么?', ja: '今日はVivora Xがどのようにお手伝いできますか?', fr: 'Comment Vivora X peut-il vous aider aujourd\'hui?' },
+  'chat.planPlaceholder': { en: 'Plan with Vivora X (no code changes)...', ar: 'خطط مع Vivora X (بدون تغييرات في الكود)...', zh: '与Vivora X规划（不更改代码）...', ja: 'Vivora Xと計画（コード変更なし）...', fr: 'Planifier avec Vivora X (pas de changement de code)...' },
   'chat.analyzing': { en: 'Analyzing your request...', ar: 'جاري تحليل طلبك...', zh: '正在分析您的请求...', ja: 'リクエストを分析中...', fr: 'Analyse de votre demande...' },
   'chat.thinkingComplete': { en: 'Thinking complete!', ar: 'اكتمل التفكير!', zh: '思考完成!', ja: '思考完了!', fr: 'Réflexion terminée!' },
   'chat.makingChanges': { en: 'Making changes', ar: 'جاري إجراء التغييرات', zh: '正在进行更改', ja: '変更を行っています', fr: 'Modifications en cours' },
