@@ -21,8 +21,12 @@ function parseStreamingFiles(content: string): { path: string; content: string; 
   const jsonMatch = content.match(/```json\s*([\s\S]*?)(\s*```|$)/);
   if (jsonMatch) {
     try {
-      let jsonStr = jsonMatch[1];
-      if (!jsonStr.trim().endsWith('}')) {
+      let jsonStr = jsonMatch[1].trim();
+      
+      // Remove trailing commas before closing braces or brackets
+      jsonStr = jsonStr.replace(/,\s*([}\]])/g, '$1');
+
+      if (!jsonStr.endsWith('}')) {
         jsonStr = jsonStr + '"}}}';
       }
       const parsed = JSON.parse(jsonStr);

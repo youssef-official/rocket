@@ -34,6 +34,9 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
 
     let sanitizedJson = jsonStr.trim();
 
+    // Remove trailing commas before closing braces or brackets
+    sanitizedJson = sanitizedJson.replace(/,\s*([}\]])/g, '$1');
+
     if (!sanitizedJson.endsWith('}')) {
       const lastBrace = sanitizedJson.lastIndexOf('}');
       if (lastBrace !== -1) {
