@@ -16,6 +16,7 @@ export async function deductCredits(
       .single();
 
     if (planError || !userPlan) {
+      console.log('[Credits] User plan not found, skipping deduction');
       return { success: false, creditsDeducted: 0, error: 'User plan not found' };
     }
 
@@ -25,6 +26,7 @@ export async function deductCredits(
     const totalRemaining = dailyRemaining + monthlyRemaining;
 
     if (totalRemaining < 1) {
+      console.log('[Credits] Insufficient credits');
       return { success: false, creditsDeducted: 0, error: 'Insufficient credits' };
     }
 
@@ -42,7 +44,7 @@ export async function deductCredits(
       .eq('user_id', userId);
 
     if (updateError) {
-      console.error('Failed to update credits:', updateError);
+      console.error('[Credits] Failed to update credits:', updateError);
       return { success: false, creditsDeducted: 0, error: 'Failed to update credits' };
     }
 
@@ -58,9 +60,10 @@ export async function deductCredits(
         description: workDescription
       }]);
 
+    console.log('[Credits] Successfully deducted 1 credit');
     return { success: true, creditsDeducted: 1 };
   } catch (error) {
-    console.error('Credit deduction error:', error);
+    console.error('[Credits] Deduction error:', error);
     return { success: false, creditsDeducted: 0, error: 'Unknown error' };
   }
 }

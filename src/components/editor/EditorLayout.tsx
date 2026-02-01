@@ -10,7 +10,7 @@ import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
 import { VisualEditMode } from './VisualEditMode';
 import { VercelDeployDialog } from './IntegrationDialogs';
-import { RocketLogo } from '@/components/shared/RocketLogo';
+import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVersions, type ProjectVersion } from '@/hooks/useVersions';
 import { generateVersionName } from '@/services/versionNameService';
@@ -360,7 +360,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
           {/* Logo - Clickable to go home */}
           <button onClick={handleLogoClick} className="hover:opacity-80 transition-opacity">
-            <RocketLogo
+            <VivoraLogo
               size="md"
               showText={false}
               className={isRTL ? 'rotate-180' : ''}
