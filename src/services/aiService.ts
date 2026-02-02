@@ -20,6 +20,14 @@ export interface FileActivity {
 // Helper to parse AI response
 export function parseAIResponse(response: string): { files: Record<string, any>, fileList: string[], actionsTaken?: FileActivity[] } {
   try {
+    // Handle "json|..." format that sometimes comes from AI gateways
+    if (response.startsWith('json|')) {
+      const parts = response.split('|');
+      if (parts.length > 1) {
+        response = parts.slice(1).join('|');
+      }
+    }
+
     const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/) ||
       response.match(/```([\s\S]*?)```/);
 
@@ -28,8 +36,16 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
 
     const startIdx = jsonStr.indexOf('{');
     const endIdx = jsonStr.lastIndexOf('}');
+    
+    // If no JSON object found, return empty result
+    if (startIdx === -1) {
+      return { files: {}, fileList: [] };
+    }
+
     if (startIdx !== -1 && endIdx !== -1) {
       jsonStr = jsonStr.substring(startIdx, endIdx + 1);
+    } else if (startIdx !== -1) {
+      jsonStr = jsonStr.substring(startIdx);
     }
 
     let sanitizedJson = jsonStr.trim();
@@ -37,19 +53,17 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
     // Remove trailing commas before closing braces or brackets
     sanitizedJson = sanitizedJson.replace(/,\s*([}\]])/g, '$1');
 
-    if (!sanitizedJson.endsWith('}')) {
-      const lastBrace = sanitizedJson.lastIndexOf('}');
-      if (lastBrace !== -1) {
-        sanitizedJson = sanitizedJson.substring(0, lastBrace + 1);
-      } else {
-        sanitizedJson += '"}}';
-      }
-    }
-
+    // Fix unclosed quotes
     const quoteCount = (sanitizedJson.match(/"/g) || []).length;
     if (quoteCount % 2 !== 0) {
       sanitizedJson += '"';
-      if (!sanitizedJson.endsWith('}')) sanitizedJson += '}}';
+    }
+    
+    // Ensure it ends with proper braces if it started with one
+    const openBraces = (sanitizedJson.match(/\{/g) || []).length;
+    const closeBraces = (sanitizedJson.match(/\}/g) || []).length;
+    if (openBraces > closeBraces) {
+      sanitizedJson += '}'.repeat(openBraces - closeBraces);
     }
 
     const parsed = JSON.parse(sanitizedJson);
