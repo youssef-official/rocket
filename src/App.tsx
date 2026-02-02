@@ -605,7 +605,7 @@ const ProjectEditorRoute = () => {
 
             // Update file activities
             const activities = actionsTaken && actionsTaken.length > 0
-              ? actionsTaken
+              ? actionsTaken.map(a => ({ ...a, status: 'done' as const }))
               : fileList.map(name => ({
                 name,
                 status: 'done' as const,
