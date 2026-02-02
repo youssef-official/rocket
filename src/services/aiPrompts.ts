@@ -4,8 +4,7 @@ RULES (non-negotiable):
 1) Use TypeScript (.tsx) for all React components. Ensure proper typing.
 2) Targeted edits only; preserve existing behavior.
 3) Tailwind classes only (no inline styles). Keep files small + clean.
-4) index.html MUST contain: <script src="/branding.js"></script>
-5) Output MUST be ONLY valid JSON (no markdown, no comments, no extra text).
+4) Output MUST be ONLY valid JSON (no markdown, no comments, no extra text).
 
 DESIGN (premium + classic):
 - Strong hierarchy, spacing, glass/3D accents only when appropriate, smooth Framer Motion.
