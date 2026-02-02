@@ -418,57 +418,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Plan Section with numbered bullet points (for current generation only)
-  const renderPlanSection = (plan?: string[]) => {
-    const planToShow = plan || generationPhase?.plan;
-    if (!planToShow || planToShow.length === 0) return null;
 
-    const completedSteps = generationPhase?.completedSteps || [];
-    const currentStep = generationPhase?.currentStep;
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mt-6"
-      >
-        <p className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-          <ListOrdered className="w-4 h-4 text-primary" />
-          {t('chat.whatImBuilding')}
-        </p>
-        <ol className="space-y-3 pl-1">
-          {planToShow.map((step, i) => {
-            const isCompleted = completedSteps.includes(i);
-            const isCurrent = currentStep === i;
-
-            return (
-              <motion.li
-                key={i}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="flex items-start gap-3"
-              >
-                {/* Numbered marker */}
-                <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isCompleted
-                  ? 'bg-green-500/20 text-green-400'
-                  : isCurrent
-                    ? 'bg-primary/20 text-primary'
-                    : 'bg-muted text-muted-foreground'
-                  }`}>
-                  {i + 1}
-                </span>
-                <span className={`text-sm leading-relaxed pt-0.5 ${isCompleted ? 'text-green-400' : isCurrent ? 'text-foreground' : 'text-foreground/70'
-                  }`}>
-                  {step}
-                </span>
-              </motion.li>
-            );
-          })}
-        </ol>
-      </motion.div>
-    );
-  };
 
   // Render Status Message (during generation)
   const renderStatusMessage = () => {
@@ -512,13 +462,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const renderVersionCard = (version: ProjectVersion, isActive: boolean, isLatest: boolean = false) => {
     return (
       <div className="relative group">
-        <motion.button
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           onClick={() => onSelectVersion?.(version)}
-          className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${isActive
+          className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all cursor-pointer ${isActive
             ? 'bg-primary/20 border-2 border-primary shadow-lg shadow-primary/20'
             : 'bg-secondary border border-border hover:border-foreground/20'
             }`}
@@ -552,7 +502,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               </svg>
             </button>
           )}
-        </motion.button>
+        </motion.div>
       </div>
     );
   };
@@ -737,32 +687,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           </div>
                         )}
 
-                        {/* Show plan for any assistant message that has one */}
-                        {messagePlan.length > 0 && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="mt-6 mb-4"
-                          >
-                            <p className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-                              <ListOrdered className="w-4 h-4 text-primary" />
-                              {t('chat.whatImBuilding')}
-                            </p>
-                            <ol className="space-y-3 pl-1">
-                              {messagePlan.map((step, i) => (
-                                <motion.li
-                                  key={i}
-                                  className="flex items-start gap-3"
-                                >
-                                  <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-green-500/20 text-green-400">
-                                    {i + 1}
-                                  </span>
-                                  <span className="text-sm leading-relaxed pt-0.5 text-green-400">{step}</span>
-                                </motion.li>
-                              ))}
-                            </ol>
-                          </motion.div>
-                        )}
+
 
                         {/* Show current generation state only for last message */}
                         {isLastAssistant && (
@@ -801,7 +726,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   </div>
                   <div className="space-y-4">
                     {renderThinkingIndicator()}
-                    {renderPlanSection()}
+                    {/* Plan section removed to avoid duplication */}
                     {renderStatusMessage()}
                     {fileActivities.length > 0 && renderFileActivityPanelForMessage('live', fileActivities, true)}
                   </div>

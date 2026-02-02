@@ -1,12 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, Smartphone, Monitor, Loader2, Maximize2, RotateCcw, Minimize2 } from 'lucide-react';
-import { 
-  SandpackProvider, 
-  SandpackPreview as SandpackPreviewPane,
-} from '@codesandbox/sandpack-react';
+import { Smartphone, Monitor, RotateCcw, ExternalLink } from 'lucide-react';
 import type { ProjectFile } from '@/types';
 import rocketLogo from '@/assets/rocket-logo.png';
+import { toast } from 'sonner';
+
+// URL of your deployed Modal Function. 
+// For local dev, you might use something like:
+// "https://<your-username>--rocket-preview-create-sandbox-dev.modal.run"
+// TODO: Replace this with the actual URL or an environment variable
+const MODAL_CREATE_URL = import.meta.env.VITE_MODAL_API_URL || "";
 
 interface PreviewViewProps {
   files: Record<string, ProjectFile>;
@@ -15,7 +18,7 @@ interface PreviewViewProps {
 }
 
 // Loading placeholder with animation
-const LoadingPlaceholder: React.FC = () => {
+const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
   return (
     <div className="flex flex-col items-center justify-center h-full bg-white">
       <motion.div
@@ -25,20 +28,20 @@ const LoadingPlaceholder: React.FC = () => {
         className="text-center"
       >
         <motion.div
-          animate={{ 
+          animate={{
             opacity: [0.3, 0.6, 0.3],
             scale: [1, 1.05, 1]
           }}
-          transition={{ 
-            duration: 2, 
+          transition={{
+            duration: 2,
             repeat: Infinity,
             ease: "easeInOut"
           }}
           className="mb-6"
         >
-          <img 
-            src={rocketLogo} 
-            alt="Rocket" 
+          <img
+            src={rocketLogo}
+            alt="Rocket"
             className="w-20 h-20 mx-auto object-contain opacity-40"
           />
         </motion.div>
@@ -48,7 +51,7 @@ const LoadingPlaceholder: React.FC = () => {
           transition={{ delay: 0.3 }}
           className="text-gray-400 text-lg font-medium"
         >
-          Your preview will appear here
+          {status || "Your preview will appear here"}
         </motion.p>
         <motion.div
           initial={{ opacity: 0 }}
@@ -79,8 +82,15 @@ const LoadingPlaceholder: React.FC = () => {
 
 export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, isLoading }) => {
   const [viewMode, setViewMode] = React.useState<'desktop' | 'mobile'>('desktop');
-  const [isFullscreen, setIsFullscreen] = React.useState(false);
-  
+  const [sandboxId, setSandboxId] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [apiUrl, setApiUrl] = useState<string | null>(null);
+  const [sandboxStatus, setSandboxStatus] = useState<string>("Waiting for code...");
+  const [isSandboxReady, setIsSandboxReady] = useState(false);
+
+  // Ref to track if we've initialized the current set of files
+  const initializedHash = useRef<string | null>(null);
+
   const filesHash = React.useMemo(() => {
     const allContent = Object.entries(files)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -94,19 +104,27 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
     }
     return hash.toString(36);
   }, [files]);
-  
+
   const [key, setKey] = React.useState(0);
 
-  const sandpackFiles = useMemo(() => {
+  // Prepare files for the sandbox
+  const sandboxFiles = useMemo(() => {
     const spFiles: Record<string, string> = {};
-    
+
     Object.entries(files).forEach(([path, file]) => {
-      const sandpackPath = path.startsWith('/') ? path : `/${path}`;
-      spFiles[sandpackPath] = file.content;
+      const sandboxPath = path.startsWith('/') ? path : `/${path}`;
+      spFiles[sandboxPath] = file.content;
     });
 
     if (projectType === 'vite') {
+      // 1. Check where App exists
+      const hasRootApp = !!spFiles['/App.tsx'];
+      const hasSrcApp = !!spFiles['/src/App.tsx'];
+      const hasAnyApp = hasRootApp || hasSrcApp;
+
+      // 2. Ensure index.html exists
       if (!spFiles['/index.html']) {
+        const scriptSrc = hasSrcApp ? '/src/main.tsx' : '/main.tsx';
         spFiles['/index.html'] = `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -117,249 +135,248 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
   </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="${scriptSrc}"></script>
   </body>
 </html>`;
-      } else {
-        const indexHtml = spFiles['/index.html'];
-        if (!indexHtml.includes('tailwindcss')) {
-          spFiles['/index.html'] = indexHtml.replace(
-            '</head>',
-            '    <script src="https://cdn.tailwindcss.com"></script>\n  </head>'
-          );
-        }
       }
 
-      const hasAppFile = Object.keys(spFiles).some(path => 
-        path.includes('App.tsx') || path.includes('App.jsx') || path.includes('App.ts') || path.includes('App.js')
-      );
-      
-      if (!hasAppFile) {
+      // 3. Ensure App exists if missing (fallback)
+      if (!hasAnyApp) {
+        // Create a root App.tsx if neither exists
         spFiles['/App.tsx'] = `export default function App() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-8">
       <div className="text-center">
-        <div className="w-24 h-24 mx-auto mb-6 opacity-20">
-          <svg viewBox="0 0 100 100" className="w-full h-full text-gray-400">
-            <text x="50" y="70" textAnchor="middle" fontSize="80" fill="currentColor" fontWeight="bold">R</text>
-          </svg>
-        </div>
-        <p className="text-gray-400 text-lg">Your preview will appear here</p>
+        <h1 className="text-4xl font-bold mb-4">Ready</h1>
+        <p className="text-gray-400 text-lg">Your preview is ready</p>
       </div>
     </div>
   );
 }`;
       }
 
-      if (!spFiles['/main.tsx'] && !spFiles['/index.tsx'] && !spFiles['/src/main.tsx'] && !spFiles['/src/index.tsx']) {
-        spFiles['/main.tsx'] = `import React from "react";
+      // 4. Ensure main.tsx exists
+      // We look for any existing main entry
+      const hasMain = spFiles['/main.tsx'] || spFiles['/src/main.tsx'] || spFiles['/index.tsx'] || spFiles['/src/index.tsx'];
+
+      if (!hasMain) {
+        if (hasSrcApp) {
+          spFiles['/src/main.tsx'] = `import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
 const root = createRoot(document.getElementById("root"));
 root.render(<App />);`;
+        } else {
+          spFiles['/main.tsx'] = `import React from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./index.css";
+
+const root = createRoot(document.getElementById("root"));
+root.render(<App />);`;
+        }
       }
 
       if (!spFiles['/index.css'] && !spFiles['/src/index.css']) {
-        spFiles['/index.css'] = `@tailwind base;
+        const cssPath = hasSrcApp ? '/src/index.css' : '/index.css';
+        spFiles[cssPath] = `@tailwind base;
 @tailwind components;
 @tailwind utilities;`;
       }
 
-      const remappedFiles: Record<string, string> = {};
-      Object.entries(spFiles).forEach(([path, content]) => {
-        if (path.startsWith('/src/')) {
-          const newPath = path.replace('/src/', '/');
-          remappedFiles[newPath] = content;
-        } else {
-          remappedFiles[path] = content;
+      // Generate package.json if strictly needed by the server
+      spFiles['/package.json'] = JSON.stringify({
+        "name": "preview-app",
+        "private": true,
+        "version": "0.0.0",
+        "type": "module",
+        "scripts": {
+          "dev": "vite",
+          "build": "vite build",
+          "preview": "vite preview"
+        },
+        "dependencies": {
+          "react": "^18.2.0",
+          "react-dom": "^18.2.0",
+          "lucide-react": "latest",
+          "framer-motion": "latest",
+          "clsx": "latest",
+          "tailwind-merge": "latest"
+        },
+        "devDependencies": {
+          "@types/react": "^18.2.66",
+          "@types/react-dom": "^18.2.22",
+          "@vitejs/plugin-react": "^4.2.1",
+          "vite": "^5.2.0",
+          "tailwindcss": "^3.4.3",
+          "postcss": "^8.4.38",
+          "autoprefixer": "^10.4.19"
         }
-      });
+      }, null, 2);
 
-      return remappedFiles;
+      // Add vite config
+      // Inject allowedHosts: true to bypass Modal/Vite tunnel host checks
+      spFiles['/vite.config.ts'] = `import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from "path"
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  server: {
+    host: '::',
+    allowedHosts: true
+  }
+})`
     }
 
     return spFiles;
   }, [files, projectType]);
 
+  // Create Sandbox Logic
+  useEffect(() => {
+    const createSandbox = async () => {
+      // Don't create if already exists or invalid URL
+      if (sandboxId) return;
+
+      if (!MODAL_CREATE_URL) {
+        setSandboxStatus("Please configure MODAL_CREATE_URL in PreviewView.tsx or .env");
+        return;
+      }
+
+      try {
+        setSandboxStatus("Booting Modal Sandbox...");
+        const response = await fetch(MODAL_CREATE_URL, {
+          method: 'POST',
+        });
+
+        if (!response.ok) throw new Error('Failed to create sandbox');
+
+        const data = await response.json();
+        const { sandbox_id, api_url, preview_url } = data;
+
+        setSandboxId(sandbox_id);
+        setApiUrl(api_url);
+        setPreviewUrl(preview_url);
+        setSandboxStatus("Sandbox created. Initializing...");
+      } catch (error) {
+        console.error("Error creating sandbox:", error);
+        setSandboxStatus("Error creating sandbox. Check console.");
+        toast.error("Failed to create Modal sandbox");
+      }
+    };
+
+    if (Object.keys(files).length > 0) {
+      createSandbox();
+    }
+  }, [sandboxId, files, projectType]);
+
+  // Sync Files Logic
+  useEffect(() => {
+    const syncFiles = async () => {
+      if (!apiUrl || !sandboxFiles) return;
+      if (initializedHash.current === filesHash && isSandboxReady) return;
+
+      try {
+        const isFirstInit = !isSandboxReady;
+        setSandboxStatus(isFirstInit ? "Installing dependencies & Starting..." : "Updating files...");
+
+        const endpoint = isFirstInit ? '/init' : '/update';
+        console.log(`Sending ${Object.keys(sandboxFiles).length} files to ${endpoint}`);
+
+        const response = await fetch(`${apiUrl}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: sandboxFiles })
+        });
+
+        if (!response.ok) throw new Error("Failed to sync files");
+
+        initializedHash.current = filesHash;
+
+        if (isFirstInit) {
+          // Wait slightly for Vite to be ready?
+          // The server returns immediately after triggering background task.
+          setTimeout(() => {
+            setIsSandboxReady(true);
+            setSandboxStatus("Ready");
+          }, 6000); // Give 6 seconds for npm install
+        } else {
+          setSandboxStatus("Ready");
+        }
+
+      } catch (error) {
+        console.error("Sync error:", error);
+        setSandboxStatus("Error syncing files");
+      }
+    };
+
+    // Debounce slightly
+    const timer = setTimeout(syncFiles, 1000);
+    return () => clearTimeout(timer);
+  }, [apiUrl, sandboxFiles, filesHash, isSandboxReady]);
+
+
   const refresh = () => setKey(k => k + 1);
-  const toggleFullscreen = () => setIsFullscreen(prev => !prev);
 
-  // Show loading placeholder during generation
-  if (isLoading) {
+  // Show loading placeholder
+  if (isLoading || (sandboxId && !isSandboxReady)) {
     return (
-      <div className={`flex flex-col h-full bg-white ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
+      <div className={`flex flex-col h-full bg-white`}>
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setViewMode('desktop')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'desktop' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              <Monitor className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('mobile')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'mobile' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              <Smartphone className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              title="Refresh preview"
-              disabled
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              title="Fullscreen"
-              onClick={toggleFullscreen}
-            >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </button>
-          </div>
+          <div className="text-sm font-mono text-gray-500">{sandboxStatus}</div>
         </div>
         <div className="flex-1">
-          <LoadingPlaceholder />
+          <LoadingPlaceholder status={sandboxStatus} />
         </div>
       </div>
     );
   }
 
-  // Empty State - Clean White with animation
-  if (Object.keys(files).length === 0) {
-    return (
-      <div className={`flex flex-col h-full bg-white ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setViewMode('desktop')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'desktop' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              <Monitor className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('mobile')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'mobile' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              <Smartphone className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={toggleFullscreen}
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              title="Fullscreen"
-            >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-        <div className="flex-1">
-          <LoadingPlaceholder />
-        </div>
-      </div>
-    );
-  }
-
-  if (projectType === 'html') {
-    const indexFile = files['index.html'];
-    return (
-      <div className={`flex flex-col h-full bg-white ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setViewMode('desktop')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'desktop' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              <Monitor className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('mobile')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'mobile' ? 'bg-gray-200 text-gray-800' : 'text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              <Smartphone className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={refresh}
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              title="Refresh preview"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button
-              onClick={toggleFullscreen}
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              title="Fullscreen"
-            >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-4 overflow-hidden bg-gray-100">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className={`bg-white rounded-lg overflow-hidden shadow-lg ${
-              viewMode === 'mobile' ? 'w-[375px] h-[667px]' : 'w-full h-full'
-            }`}
-          >
-            {indexFile && (
-              <iframe
-                key={key}
-                srcDoc={indexFile.content}
-                className="w-full h-full border-none"
-                sandbox="allow-scripts allow-same-origin"
-                title="Preview"
-              />
-            )}
-          </motion.div>
-        </div>
-      </div>
-    );
-  }
-
-  // For Vite/React projects - White background preview
+  // Preview Frame
   return (
-    <div className={`flex flex-col h-full bg-white ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
+    <div className={`flex flex-col h-full bg-white`}>
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card">
         <div className="flex items-center gap-2">
+
           <button
             onClick={() => setViewMode('desktop')}
-            className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'desktop' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-secondary/50'
-            }`}
+            className={`p-2 rounded-lg transition-colors ${viewMode === 'desktop' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-secondary/50'
+              }`}
           >
             <Monitor className="w-4 h-4" />
           </button>
           <button
             onClick={() => setViewMode('mobile')}
-            className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'mobile' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-secondary/50'
-            }`}
+            className={`p-2 rounded-lg transition-colors ${viewMode === 'mobile' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-secondary/50'
+              }`}
           >
             <Smartphone className="w-4 h-4" />
           </button>
         </div>
 
         <div className="flex items-center gap-2">
+          <div className="text-xs text-muted-foreground mr-2 font-mono flex items-center">
+            {sandboxId ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>
+                Modal Sandbox Active
+              </>
+            ) : (
+              <>
+                <span className="w-2 h-2 rounded-full bg-yellow-500 mr-1.5"></span>
+                Initializing...
+              </>
+            )}
+          </div>
           <button
             onClick={refresh}
             className="p-2 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
@@ -368,77 +385,36 @@ root.render(<App />);`;
             <RotateCcw className="w-4 h-4" />
           </button>
           <button
-            onClick={toggleFullscreen}
+            onClick={() => previewUrl && window.open(previewUrl, '_blank')}
             className="p-2 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
-            title="Fullscreen"
+            title="Open in new tab"
+            disabled={!previewUrl}
           >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            <ExternalLink className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {/* Preview Frame */}
-      <div className="flex-1 overflow-hidden bg-gray-100">
-        {viewMode === 'mobile' ? (
-          <div className="flex items-center justify-center h-full p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="w-[375px] h-[667px] bg-white rounded-lg overflow-hidden shadow-lg"
-            >
-              <SandpackProvider
-                key={`${key}-${filesHash}`}
-                template="react-ts"
-                files={sandpackFiles}
-                theme="light"
-                options={{
-                  externalResources: ["https://cdn.tailwindcss.com"],
-                  recompileMode: 'delayed',
-                  recompileDelay: 300,
-                }}
-                customSetup={{
-                  dependencies: {
-                    'lucide-react': 'latest',
-                    'framer-motion': 'latest',
-                    'clsx': 'latest',
-                    'tailwind-merge': 'latest',
-                  },
-                }}
-              >
-                <SandpackPreviewPane
-                  showOpenInCodeSandbox={false}
-                  showRefreshButton={false}
-                  style={{ height: '100%', width: '100%' }}
-                />
-              </SandpackProvider>
-            </motion.div>
+      <div className="flex-1 overflow-hidden bg-gray-100 relative">
+        {!previewUrl || !isSandboxReady ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <LoadingPlaceholder status={sandboxStatus} />
           </div>
         ) : (
-          <SandpackProvider
-            key={`${key}-${filesHash}`}
-            template="react-ts"
-            files={sandpackFiles}
-            theme="light"
-            options={{
-              externalResources: ["https://cdn.tailwindcss.com"],
-              recompileMode: 'delayed',
-              recompileDelay: 300,
-            }}
-            customSetup={{
-              dependencies: {
-                'lucide-react': 'latest',
-                'framer-motion': 'latest',
-                'clsx': 'latest',
-                'tailwind-merge': 'latest',
-              },
-            }}
-          >
-            <SandpackPreviewPane
-              showOpenInCodeSandbox={false}
-              showRefreshButton={false}
-              style={{ height: '100%', width: '100%' }}
+          <div className={`h-full w-full flex justify-center ${viewMode === 'mobile' ? 'bg-gray-200 py-4 items-center' : 'bg-white'}`}>
+            <motion.iframe
+              key={key}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              src={previewUrl}
+              className={`bg-white shadow-xl ${viewMode === 'mobile'
+                ? 'w-[375px] h-[667px] rounded-xl border-4 border-gray-800'
+                : 'w-full h-full border-none'
+                }`}
+              title="Modal Preview"
             />
-          </SandpackProvider>
+          </div>
         )}
       </div>
     </div>
