@@ -322,6 +322,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_project_cascade: {
+        Args: { p_project_id: string }
+        Returns: undefined
+      }
       reset_daily_credits: { Args: never; Returns: undefined }
     }
     Enums: {

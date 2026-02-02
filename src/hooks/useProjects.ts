@@ -149,7 +149,10 @@ export function useProjects() {
 
   const deleteProject = async (id: string): Promise<boolean> => {
     try {
-      const { error } = await supabase.from('projects').delete().eq('id', id);
+      // Use backend-side cascade deletion to ensure ALL related data is removed.
+      const { error } = await supabase.rpc('delete_project_cascade', {
+        p_project_id: id,
+      });
 
       if (error) throw error;
 

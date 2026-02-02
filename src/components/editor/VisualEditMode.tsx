@@ -6,8 +6,9 @@ import {
   AlignLeft, AlignCenter, AlignRight, MousePointer, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { SandpackPreview, SandpackProvider } from '@codesandbox/sandpack-react';
+import { SandpackPreview, SandpackProvider, type SandpackPreviewRef } from '@codesandbox/sandpack-react';
 import type { ProjectFile } from '@/types';
+import { applyVisualChanges, generateChangeSummary, parseProjectElements } from '@/services/visualEditService';
 
 interface ElementStyles {
   color: string;
@@ -20,6 +21,7 @@ interface ElementStyles {
   backgroundColor?: string;
   padding?: string;
   borderRadius?: string;
+  opacity?: string;
 }
 
 interface SelectedElement {
@@ -73,7 +75,11 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
   const [showFontDropdown, setShowFontDropdown] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deviceView, setDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const previewRef = useRef<HTMLIFrameElement>(null);
+  const previewRef = useRef<SandpackPreviewRef | null>(null);
+
+  const parsedProjectElements = React.useMemo(() => {
+    return parseProjectElements(projectFiles);
+  }, [projectFiles]);
 
   // Convert project files to Sandpack format
   const sandpackFiles = React.useMemo(() => {
@@ -118,12 +124,19 @@ root.render(<App />);`
 
   // Inject click handler into preview
   const injectClickHandler = useCallback(() => {
-    const iframe = previewRef.current;
+    const iframe = previewRef.current?.getClient()?.iframe;
     if (!iframe?.contentWindow) return;
 
     try {
       const doc = iframe.contentDocument;
       if (!doc) return;
+
+      const win = iframe.contentWindow;
+
+      // Use design tokens for highlight color (fallback if missing)
+      const rootStyles = win.getComputedStyle(doc.documentElement);
+      const primary = rootStyles.getPropertyValue('--primary').trim();
+      const outlineColor = primary ? `hsl(${primary})` : '#6366f1';
 
       // Add click listener to editable elements
       const editableSelectors = 'h1, h2, h3, h4, h5, h6, p, span, button, a, label, div[class*="text"], img';
@@ -131,11 +144,16 @@ root.render(<App />);`
 
       elements.forEach((el, index) => {
         const htmlEl = el as HTMLElement;
+
+        // Avoid double-binding listeners when the preview re-renders.
+        if (htmlEl.dataset.visualEditBound === '1') return;
+
         htmlEl.dataset.visualEditId = `element-${index}`;
+        htmlEl.dataset.visualEditBound = '1';
         
         // Add hover effect
         htmlEl.addEventListener('mouseenter', () => {
-          htmlEl.style.outline = '2px solid #6366f1';
+          htmlEl.style.outline = `2px solid ${outlineColor}`;
           htmlEl.style.outlineOffset = '2px';
           htmlEl.style.cursor = 'pointer';
         });
@@ -150,7 +168,7 @@ root.render(<App />);`
           e.preventDefault();
           e.stopPropagation();
           
-          const computedStyle = window.getComputedStyle(htmlEl);
+          const computedStyle = win.getComputedStyle(htmlEl);
           const tagName = htmlEl.tagName.toLowerCase();
           
           let type: 'text' | 'button' | 'image' | 'container' = 'text';
@@ -191,7 +209,7 @@ root.render(<App />);`
           doc.querySelectorAll('[data-visual-edit-id]').forEach(e => {
             (e as HTMLElement).style.outline = 'none';
           });
-          htmlEl.style.outline = '3px solid #6366f1';
+          htmlEl.style.outline = `3px solid ${outlineColor}`;
           htmlEl.style.outlineOffset = '2px';
         });
       });
@@ -202,7 +220,7 @@ root.render(<App />);`
 
   // Apply changes to preview
   const applyChangesToPreview = useCallback(() => {
-    const iframe = previewRef.current;
+    const iframe = previewRef.current?.getClient()?.iframe;
     if (!iframe?.contentDocument) return;
 
     editedElements.forEach((element, id) => {
@@ -256,14 +274,91 @@ root.render(<App />);`
     setIsSaving(true);
     
     try {
-      const changes = Array.from(editedElements.values()).map(el => ({
+      const rawChanges = Array.from(editedElements.values()).map(el => ({
         elementId: el.id,
         newContent: el.content,
         newStyles: el.styles,
+        originalContent: el.originalContent,
+        tagName: (el.tagName || '').toLowerCase(),
+        type: el.type,
       }));
 
-      const summary = `Visual Edit: ${changes.length} element${changes.length > 1 ? 's' : ''} updated`;
-      onSave(changes, projectFiles, summary);
+      const normalize = (s: string) => s.trim().replace(/\s+/g, ' ');
+
+      const getSrcKey = (src: string) => {
+        try {
+          // Prefer stable part of URLs (strip query + origin)
+          const u = new URL(src);
+          return `${u.hostname}${u.pathname}`;
+        } catch {
+          return src.split('?')[0];
+        }
+      };
+
+      const pickBestMatch = (candidates: any[], target: { tagName: string; originalContent: string; type: string }) => {
+        const tag = target.tagName;
+        const original = normalize(target.originalContent);
+
+        // Strong preference: exact tag + exact content
+        const exact = candidates.find((c) => normalize(c.content || '') === original && (!tag || c.tagName === tag));
+        if (exact) return exact;
+
+        // Next: exact content regardless tag
+        const exact2 = candidates.find((c) => normalize(c.content || '') === original);
+        if (exact2) return exact2;
+
+        // Next: includes match
+        const inc = candidates.find((c) => {
+          const cc = normalize(c.content || '');
+          return cc.includes(original) || original.includes(cc);
+        });
+        return inc || null;
+      };
+
+      const mappedChanges = rawChanges
+        .map((c) => {
+          const tag = c.tagName;
+          const isHeading = /^h[1-6]$/.test(tag);
+          const desiredTypes: string[] = [];
+          if (c.type === 'image' || tag === 'img') desiredTypes.push('image');
+          else if (tag === 'a') desiredTypes.push('link', 'button');
+          else if (tag === 'button') desiredTypes.push('button');
+          else if (isHeading) desiredTypes.push('heading');
+          else if (tag === 'p') desiredTypes.push('paragraph');
+          else if (tag === 'div') desiredTypes.push('container', 'text', 'paragraph');
+          else desiredTypes.push('text');
+
+          let candidates = parsedProjectElements.filter((el: any) => desiredTypes.includes(el.type));
+          if (tag) {
+            const tagFiltered = candidates.filter((el: any) => (el.tagName || '').toLowerCase() === tag);
+            if (tagFiltered.length > 0) candidates = tagFiltered;
+          }
+
+          if (desiredTypes.includes('image')) {
+            const originalKey = getSrcKey(c.originalContent);
+            const match = candidates.find((el: any) => {
+              if (!el.src) return false;
+              const elKey = getSrcKey(el.src);
+              return elKey === originalKey || elKey.includes(originalKey) || originalKey.includes(elKey);
+            });
+            if (!match) return null;
+            return { elementId: match.id, newContent: c.newContent, newStyles: c.newStyles };
+          }
+
+          const match = pickBestMatch(candidates, c);
+          if (!match) return null;
+          return { elementId: match.id, newContent: c.newContent, newStyles: c.newStyles };
+        })
+        .filter(Boolean) as { elementId: string; newContent: string; newStyles: ElementStyles }[];
+
+      const updatedFiles = applyVisualChanges(
+        projectFiles,
+        mappedChanges as any,
+        parsedProjectElements as any
+      );
+
+      const summary = generateChangeSummary(mappedChanges as any, parsedProjectElements as any);
+      onSave(mappedChanges, updatedFiles, summary);
     } catch (error) {
       console.error('Error saving:', error);
     } finally {
@@ -600,14 +695,10 @@ root.render(<App />);`
                     showRefreshButton={false}
                     showOpenInCodeSandbox={false}
                     style={{ height: '100%' }}
-                    ref={(ref: any) => {
-                      if (ref?.iframe) {
-                        previewRef.current = ref.iframe;
-                        // Wait for iframe to load
-                        ref.iframe.onload = () => {
-                          setTimeout(injectClickHandler, 500);
-                        };
-                      }
+                    ref={(ref: SandpackPreviewRef | null) => {
+                      previewRef.current = ref;
+                      // Sandpack mounts/updates the iframe asynchronously
+                      setTimeout(injectClickHandler, 700);
                     }}
                   />
                 </div>
