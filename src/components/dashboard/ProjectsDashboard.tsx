@@ -58,7 +58,7 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-gray-900">rocket</span>
+            <span className="font-bold text-gray-900">Vivora X</span>
           </div>
 
           <div className="w-20" />

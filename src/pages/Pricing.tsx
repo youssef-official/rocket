@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Check, X, Zap, Star, Crown, Rocket, ArrowLeft } from 'lucide-react';
-import { RocketLogo } from '@/components/shared/RocketLogo';
+import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { PLAN_CONFIG, type PlanType } from '@/hooks/useUserPlan';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
@@ -49,7 +49,7 @@ export const Pricing: React.FC = () => {
       <header className="relative z-10 px-6 py-4">
         <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
           <a href="/" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <RocketLogo size="md" />
+            <VivoraXLogo size="md" />
           </a>
           <a 
             href="/"

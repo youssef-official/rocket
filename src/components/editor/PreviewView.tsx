@@ -2,7 +2,7 @@ import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Smartphone, Monitor, RotateCcw, ExternalLink } from 'lucide-react';
 import type { ProjectFile } from '@/types';
-import rocketLogo from '@/assets/rocket-logo.png';
+import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { toast } from 'sonner';
 
 // URL of your deployed Modal Function. 
@@ -39,11 +39,9 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
           }}
           className="mb-6"
         >
-          <img
-            src={rocketLogo}
-            alt="Rocket"
-            className="w-20 h-20 mx-auto object-contain opacity-40"
-          />
+          <div className="flex items-center justify-center opacity-40">
+            <VivoraLogo size="lg" showText={false} className="justify-center" />
+          </div>
         </motion.div>
         <motion.p
           initial={{ opacity: 0, y: 10 }}
@@ -92,16 +90,24 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
   const initializedHash = useRef<string | null>(null);
 
   const filesHash = React.useMemo(() => {
-    const allContent = Object.entries(files)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([path, file]) => `${path}:${(file.content || '').substring(0, 200)}`)
-      .join('|');
+    // IMPORTANT: previous implementation only hashed first 200 chars,
+    // which caused preview not to update when edits happened later in files.
+    const SAMPLE = 800;
     let hash = 0;
-    for (let i = 0; i < allContent.length; i++) {
-      const char = allContent.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
+
+    const entries = Object.entries(files).sort(([a], [b]) => a.localeCompare(b));
+    for (const [path, file] of entries) {
+      const content = file?.content || '';
+      const head = content.slice(0, SAMPLE);
+      const tail = content.length > SAMPLE ? content.slice(-SAMPLE) : '';
+      const sample = `${path}:${content.length}:${head}:${tail}`;
+      for (let i = 0; i < sample.length; i++) {
+        const char = sample.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash |= 0;
+      }
     }
+
     return hash.toString(36);
   }, [files]);
 

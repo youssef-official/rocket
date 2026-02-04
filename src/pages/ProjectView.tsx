@@ -5,7 +5,7 @@ import { Eye, Code2, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { RocketLogo } from '@/components/shared/RocketLogo';
+import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
 import type { ProjectFile } from '@/types';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
@@ -99,7 +99,7 @@ export const ProjectView: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="relative z-10 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 p-12 text-center max-w-md"
         >
-          <RocketLogo size="lg" className="mx-auto mb-6" />
+          <VivoraXLogo size="lg" className="mx-auto mb-6" />
           <h1 className="text-2xl font-bold text-white mb-4">{error}</h1>
           <p className="text-white/70 mb-6">
             {error === t('project.private') 
@@ -123,7 +123,7 @@ export const ProjectView: React.FC = () => {
     <div className="h-screen flex flex-col bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
       <header className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
         <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <a href="/"><RocketLogo size="sm" /></a>
+          <a href="/"><VivoraXLogo size="sm" /></a>
           <div className="h-4 w-px bg-border" />
           <h1 className="font-medium text-foreground">{project?.name || 'Untitled Project'}</h1>
           <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 text-xs rounded-full">

@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import type { ProjectFile } from '@/types';
 import { applyVisualChanges, generateChangeSummary, parseProjectElements } from '@/services/visualEditService';
-import rocketLogo from '@/assets/rocket-logo.png';
+import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { toast } from 'sonner';
 
 // URL of your deployed Modal Function.
@@ -81,11 +81,9 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
           }}
           className="mb-6"
         >
-          <img
-            src={rocketLogo}
-            alt="Rocket"
-            className="w-20 h-20 mx-auto object-contain opacity-40"
-          />
+          <div className="flex items-center justify-center opacity-40">
+            <VivoraLogo size="lg" showText={false} className="justify-center" />
+          </div>
         </motion.div>
         <motion.p
           initial={{ opacity: 0, y: 10 }}
