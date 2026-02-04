@@ -1,5 +1,6 @@
 // Credit Service - Simple 1 credit per successful generation
 import { supabase } from '@/integrations/supabase/client';
+import { PLAN_CONFIG, type PlanType } from '@/lib/plans';
 
 function toNumber(v: unknown): number {
   if (typeof v === 'number') return v;
@@ -59,11 +60,14 @@ export async function deductCredits(
     // Calculate remaining credits
     const dailyCredits = toNumber(userPlan.daily_credits);
     const usedToday = toNumber(userPlan.credits_used_today);
-    const monthlyCredits = toNumber(userPlan.monthly_credits);
     const totalUsed = toNumber(userPlan.total_credits_used);
 
+    const plan = (userPlan.plan as PlanType) || 'spark';
+    const monthlyMax = PLAN_CONFIG[plan]?.monthlyCredits ?? 0;
+
     const dailyRemaining = Math.max(0, dailyCredits - usedToday);
-    const monthlyRemaining = Math.max(0, monthlyCredits - totalUsed);
+    // Monthly remaining is derived from plan config (DB column may be informational)
+    const monthlyRemaining = Math.max(0, monthlyMax - totalUsed);
     const totalRemaining = dailyRemaining + monthlyRemaining;
 
     if (totalRemaining < 1) {

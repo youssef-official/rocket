@@ -1,57 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { PLAN_CONFIG, type PlanType } from '@/lib/plans';
 
-// Plan Types
-export type PlanType = 'spark' | 'builder' | 'creator' | 'scale';
-
-// Plan Configuration - Simplified (no models shown to user)
-export const PLAN_CONFIG: Record<PlanType, {
-  name: string;
-  price: number;
-  dailyCredits: number;
-  monthlyCredits: number;
-  features: {
-    zipExport: boolean;
-  };
-}> = {
-  spark: {
-    name: 'Spark',
-    price: 0,
-    dailyCredits: 5,
-    monthlyCredits: 0,
-    features: {
-      zipExport: false,
-    }
-  },
-  builder: {
-    name: 'Builder',
-    price: 8,
-    dailyCredits: 5,
-    monthlyCredits: 100,
-    features: {
-      zipExport: true,
-    }
-  },
-  creator: {
-    name: 'Creator',
-    price: 19,
-    dailyCredits: 5,
-    monthlyCredits: 300,
-    features: {
-      zipExport: true,
-    }
-  },
-  scale: {
-    name: 'Scale',
-    price: 49,
-    dailyCredits: 5,
-    monthlyCredits: 700,
-    features: {
-      zipExport: true,
-    }
-  }
-};
+// re-export for existing imports across the app
+export { PLAN_CONFIG };
+export type { PlanType };
 
 export interface UserPlan {
   id: string;

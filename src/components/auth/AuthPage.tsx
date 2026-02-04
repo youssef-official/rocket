@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { RocketLogo } from '@/components/shared/RocketLogo';
+import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
 import heroImg from '@/assets/hero-bg.webp';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
@@ -65,7 +65,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-10 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <RocketLogo size="md" onClick={() => window.location.href = '/'} />
+          <VivoraXLogo size="md" onClick={() => window.location.href = '/'} />
 
           <nav className="hidden md:flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-full px-2 py-1">
             <button className="px-4 py-2 text-white/80 hover:text-white transition-colors text-sm">
@@ -113,7 +113,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
           <div className="w-full lg:w-1/2 p-8 md:p-12">
             {/* Logo for mobile */}
             <div className="lg:hidden flex justify-center mb-8">
-              <RocketLogo size="lg" />
+              <VivoraXLogo size="lg" />
             </div>
 
             <AnimatePresence mode="wait">

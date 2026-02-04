@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIntegrations } from '@/hooks/useIntegrations';
-import { RocketLogo } from '@/components/shared/RocketLogo';
+import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import vercelLogo from '@/assets/logos/vercel.svg';
@@ -122,7 +122,7 @@ const Settings: React.FC = () => {
               <ArrowLeft className={`w-5 h-5 ${isRTL ? 'rotate-180' : ''}`} />
             </Button>
             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <RocketLogo size="sm" showText={false} />
+              <VivoraXLogo size="sm" showText={false} />
               <div className={isRTL ? 'text-right' : ''}>
                 <h1 className="text-lg font-bold text-foreground">{t('common.settings')}</h1>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>

@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Coins, Eye } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
 import type { ProjectVersion } from '@/hooks/useVersions';
-import rocketLogo from '@/assets/rocket-logo.png';
+import { VivoraLogo } from '@/components/shared/VivoraLogo';
 
 interface FileActivity {
   name: string;
@@ -611,8 +611,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
         {showEmptyState ? (
           // Empty State
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-24 h-24 mb-6 opacity-20">
-              <img src={rocketLogo} alt="Rocket" className="w-full h-full object-contain" />
+            <div className="mb-6 opacity-40">
+              <VivoraLogo size="lg" showText={false} className="justify-center" />
             </div>
             <p className="text-muted-foreground text-lg">Your preview will appear here</p>
           </div>
@@ -662,22 +662,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       {showHeader && (
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden">
-                              <img src={rocketLogo} alt="Rocket" className="w-full h-full object-contain" />
-                            </div>
-                            <span className="text-foreground text-xs font-bold">Rocket</span>
+                            <VivoraLogo size="sm" className="text-foreground" />
                           </div>
-                          {/* Message Options - Shows credits used */}
-                          {!isGenerating && version && (
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <div className="flex items-center gap-1 px-2 py-1 bg-yellow-500/10 rounded-full">
-                                <Coins className="w-3 h-3 text-yellow-500" />
-                                <span className="text-xs text-yellow-500 font-medium">
-                                  ~{(version.versionNumber * 1.2).toFixed(1)}
-                                </span>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       )}
                       <div className="break-words overflow-hidden w-full">
@@ -719,10 +705,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <div className="flex w-full justify-start">
                 <div className="w-full flex flex-col min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden">
-                      <img src={rocketLogo} alt="Rocket" className="w-full h-full object-contain animate-pulse" />
-                    </div>
-                    <span className="text-white text-xs font-bold">Rocket</span>
+                    <VivoraLogo size="sm" className="text-foreground" />
                   </div>
                   <div className="space-y-4">
                     {renderThinkingIndicator()}
