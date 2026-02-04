@@ -292,103 +292,36 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const renderFileActivityPanelForMessage = (messageId: string, files: FileActivity[], isLive: boolean = false) => {
     if (files.length === 0) return null;
 
-    const isExpanded = expandedActivities[messageId] ?? true;
-    const actionsCount = files.length;
-
     return (
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-4"
+        className="mt-3 flex flex-wrap gap-2"
       >
-        {/* Header - Actions taken */}
-        <button
-          onClick={() => toggleActivities(messageId)}
-          className="w-full flex items-center justify-between py-2 transition-colors group"
-        >
-          <div className="flex items-center gap-2">
-            {isLive ? (
-              <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
-            ) : (
-              <div className="w-4 h-4 rounded-full border-2 border-border" />
-            )}
-            <span className="text-sm text-muted-foreground">
-              <span className="text-foreground/80 font-medium">{actionsCount}</span> {t('chat.actionsTaken')}
-            </span>
-          </div>
-          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-        </button>
+        {files.map((file, i) => {
+          const isEditing = file.status === 'editing';
+          const ActionIcon = file.action === 'edited' ? Pencil :
+            file.action === 'created' ? FileOutput :
+              file.action === 'read' ? Eye :
+                file.action === 'analyzed_image' ? ImageIcon : FileOutput;
 
-        {/* File List - Expandable */}
-        <AnimatePresence>
-          {isExpanded && (
+          return (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
+              key={file.name}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.05 }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border w-fit text-xs ${isEditing
+                ? 'bg-primary/10 border-primary/20 text-primary'
+                : 'bg-muted/50 border-border/50 text-muted-foreground'
+                }`}
             >
-              <div className="py-2 space-y-1">
-                {files.map((file, i) => {
-                  const isEditing = file.status === 'editing';
-                  const actionLabel = t(`action.${file.action}`);
-                  const ActionIcon = file.action === 'edited' ? Pencil :
-                    file.action === 'created' ? FileOutput :
-                      file.action === 'read' ? Eye :
-                        file.action === 'analyzed_image' ? ImageIcon : FileOutput;
-
-                  return (
-                    <motion.div
-                      key={file.name}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.02 }}
-                      className="flex items-center gap-3 py-1.5 group"
-                    >
-                      {/* Action Icon */}
-                      <ActionIcon className={`w-3.5 h-3.5 flex-shrink-0 ${isEditing ? 'text-primary' : 'text-muted-foreground'
-                        }`} />
-
-                      {/* Action Label */}
-                      <span className={`text-sm flex-shrink-0 min-w-[70px] ${isEditing ? 'text-primary' : 'text-muted-foreground'
-                        }`}>
-                        {actionLabel}
-                      </span>
-
-                      {/* File Name with Background */}
-                      <span className={`text-sm font-mono px-2 py-0.5 rounded ${isEditing
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-secondary text-foreground/70'
-                        }`}>
-                        {file.name}
-                      </span>
-
-                      {/* Loading indicator for active file */}
-                      {isEditing && (
-                        <Loader2 className="w-3 h-3 text-primary animate-spin ml-auto" />
-                      )}
-                    </motion.div>
-                  );
-                })}
-
-                {/* Build status message */}
-                {!isLive && files.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="flex items-center gap-3 py-1.5 mt-2"
-                  >
-                    <Package className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">
-                      {t('chat.built')}
-                    </span>
-                  </motion.div>
-                )}
-              </div>
+              <ActionIcon className="w-3.5 h-3.5" />
+              <span className="font-mono truncate max-w-[200px]">{file.name}</span>
+              {isEditing && <Loader2 className="w-3 h-3 animate-spin" />}
             </motion.div>
-          )}
-        </AnimatePresence>
+          );
+        })}
       </motion.div>
     );
   };
@@ -461,49 +394,26 @@ export const ChatView: React.FC<ChatViewProps> = ({
   // Render Version Card for a specific message
   const renderVersionCard = (version: ProjectVersion, isActive: boolean, isLatest: boolean = false) => {
     return (
-      <div className="relative group">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
-          onClick={() => onSelectVersion?.(version)}
-          className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all cursor-pointer ${isActive
-            ? 'bg-primary/20 border-2 border-primary shadow-lg shadow-primary/20'
-            : 'bg-secondary border border-border hover:border-foreground/20'
-            }`}
-        >
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
-            }`}>
-            <Bookmark className="w-4 h-4" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
-              {version.name || `${t('chat.version')} ${version.versionNumber}`}
-            </p>
-            <p className={`text-xs mt-0.5 ${isActive ? 'text-primary/70' : 'text-muted-foreground'}`}>
-              {t('chat.version')} {version.versionNumber}{isActive && ` • ${t('chat.active')}`}
-            </p>
-          </div>
-
-          {/* Rollback button - only for non-latest versions */}
-          {!isLatest && onRollback && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setRollbackVersionId(version.versionNumber);
-              }}
-              className="p-2 rounded-lg bg-destructive/10 text-destructive opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20"
-              title={t('chat.rollback')}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-              </svg>
-            </button>
-          )}
-        </motion.div>
-      </div>
+      <button
+        onClick={() => onSelectVersion?.(version)}
+        className={`flex items-start text-start gap-2 border rounded-lg w-fit p-3 hover:bg-secondary transition-colors mt-3 ${isActive
+          ? 'bg-primary text-primary-foreground border-primary hover:bg-primary'
+          : 'bg-muted border-border'
+          }`}
+      >
+        <Code2 className="size-4 mt-0.5" />
+        <div className="flex flex-col flex-1">
+          <span className="text-sm font-medium line-clamp-1">
+            {version.name || `${t('chat.version')} ${version.versionNumber}`}
+          </span>
+          <span className="text-sm">
+            {t('chat.version')} {version.versionNumber}{isActive && ` • ${t('chat.active')}`}
+          </span>
+        </div>
+        <div className="flex items-center justify-center mt-0.5">
+          <ChevronDown className="size-4 -rotate-90" />
+        </div>
+      </button>
     );
   };
 
@@ -511,23 +421,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const renderCompletionBlock = (version?: ProjectVersion, isActive?: boolean, isLatest?: boolean) => {
     const isLatestVersion = versions.length > 0 && version?.versionNumber === Math.max(...versions.map(v => v.versionNumber));
 
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mt-4 space-y-3"
-      >
-        {/* Success message - only for latest version */}
-        {isLatest && (
-          <div className="flex items-center gap-2 py-2">
-            <span className="text-sm text-foreground font-medium">{t('chat.readyMessage')}</span>
-          </div>
-        )}
+    if (!version) return null;
 
-        {/* Version Card - Blue for current, gray for past */}
-        {version && renderVersionCard(version, isActive || false, isLatestVersion)}
-      </motion.div>
-    );
+    return renderVersionCard(version, isActive || false, isLatestVersion);
   };
 
   // Render Suggestions - Horizontal layout, max 3
@@ -605,9 +501,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const messagesWithVersions = getMessagesWithVersions();
 
   return (
-    <div className="relative w-full h-full flex flex-col overflow-hidden bg-card">
+    <div className="relative w-full h-full flex flex-col overflow-hidden bg-background">
       {/* Messages Area */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-6 min-h-0">
+      <div ref={containerRef} className="flex-1 overflow-y-auto px-3 py-4 space-y-4 min-h-0">
         {showEmptyState ? (
           // Empty State
           <div className="flex flex-col items-center justify-center h-full text-center">
@@ -640,40 +536,39 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 (!currentVersion && version?.versionNumber === versions[0]?.versionNumber);
 
               return (
-                <div key={msg.id} className="flex w-full justify-start">
+                <div key={msg.id} className="flex w-full">
                   {isUser ? (
-                    <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm text-[15px] break-words whitespace-pre-wrap overflow-hidden bg-secondary text-foreground ml-auto">
-                      {msg.imageUrl && (
-                        <div className="mb-2 flex flex-wrap gap-2">
-                          {msg.imageUrl.split(',').map((url, i) => (
-                            <img
-                              key={i}
-                              src={url}
-                              alt={`Attached ${i + 1}`}
-                              className="max-w-full max-h-48 rounded-lg object-cover"
-                            />
-                          ))}
-                        </div>
-                      )}
-                      {msg.content}
+                    <div className="flex justify-end pb-2 pr-2 pl-10 w-full">
+                      <div className="rounded-lg bg-muted p-3 shadow-none border-none max-w-[80%] break-words">
+                        {msg.imageUrl && (
+                          <div className="mb-2 flex flex-wrap gap-2">
+                            {msg.imageUrl.split(',').map((url, i) => (
+                              <img
+                                key={i}
+                                src={url}
+                                alt={`Attached ${i + 1}`}
+                                className="max-w-full max-h-48 rounded-lg object-cover"
+                              />
+                            ))}
+                          </div>
+                        )}
+                        {msg.content}
+                      </div>
                     </div>
                   ) : (
-                    <div className="w-full flex flex-col min-w-0 group">
+                    <div className="w-full flex flex-col pb-2 px-2 group">
                       {showHeader && (
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <VivoraLogo size="sm" className="text-foreground" />
-                          </div>
+                        <div className="flex items-center gap-2 pl-2 mb-2">
+                          <VivoraLogo size="sm" className="text-foreground" />
+                          <span className="text-sm font-medium">Vivora</span>
                         </div>
                       )}
-                      <div className="break-words overflow-hidden w-full">
+                      <div className="pl-8 flex flex-col gap-y-3 break-words overflow-hidden w-full">
                         {hasContent && cleanedContent && (
                           <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground/80 prose-strong:text-foreground prose-li:text-foreground/80">
                             <ReactMarkdown>{cleanedContent}</ReactMarkdown>
                           </div>
                         )}
-
-
 
                         {/* Show current generation state only for last message */}
                         {isLastAssistant && (
@@ -702,14 +597,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
             {/* Show generation UI when generating and no assistant message yet */}
             {isGenerating && (messages.length === 0 || messages[messages.length - 1].role !== 'assistant') && (
-              <div className="flex w-full justify-start">
-                <div className="w-full flex flex-col min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
+              <div className="flex w-full">
+                <div className="w-full flex flex-col px-2 pb-2">
+                  <div className="flex items-center gap-2 pl-2 mb-2">
                     <VivoraLogo size="sm" className="text-foreground" />
+                    <span className="text-sm font-medium">Vivora</span>
                   </div>
-                  <div className="space-y-4">
+                  <div className="pl-8 space-y-3">
                     {renderThinkingIndicator()}
-                    {/* Plan section removed to avoid duplication */}
                     {renderStatusMessage()}
                     {fileActivities.length > 0 && renderFileActivityPanelForMessage('live', fileActivities, true)}
                   </div>
@@ -720,16 +615,16 @@ export const ChatView: React.FC<ChatViewProps> = ({
         )}
       </div>
 
-      {/* Input Area - Matching test.tsx exactly */}
+      {/* Input Area - Clean and Modern */}
       <div
-        className={`shrink-0 p-4 pt-2 pb-[env(safe-area-inset-bottom,24px)] md:pb-4 border-t bg-card border-border transition-colors ${isDragging ? 'bg-primary/5' : ''}`}
+        className={`shrink-0 p-3 border-t bg-background border-border transition-colors ${isDragging ? 'bg-primary/5' : ''}`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
         {isDragging && (
-          <div className="absolute inset-0 z-10 bg-primary/10 border-2 border-dashed border-primary rounded-2xl flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 z-10 bg-primary/10 border-2 border-dashed border-primary rounded-xl flex items-center justify-center pointer-events-none">
             <div className="text-primary font-medium flex items-center gap-2">
               <ImageIcon className="w-5 h-5" />
               <span>{t('home.dropImage')}</span>
@@ -762,16 +657,15 @@ export const ChatView: React.FC<ChatViewProps> = ({
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Input Container - test.tsx style */}
-          <div className="max-w-3xl mx-auto rounded-2xl border shadow-sm flex items-end p-2 transition-colors bg-secondary border-border">
-            {/* Plus Button */}
+          {/* Input Container - Clean Design */}
+          <div className="relative border p-4 pt-1 rounded-xl bg-sidebar dark:bg-sidebar transition-all border-border">
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowPlusMenu(!showPlusMenu)}
-                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mb-0.5 ml-1 transition-colors bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
+                className="absolute left-0 top-3 w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
               >
-                <Plus className={`w-5 h-5 transition-transform ${showPlusMenu ? 'rotate-45' : ''}`} />
+                <Plus className={`w-4 h-4 transition-transform ${showPlusMenu ? 'rotate-45' : ''}`} />
               </button>
 
               <AnimatePresence>
@@ -796,9 +690,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        // Trigger visual edit mode - handled by parent
                         setShowPlusMenu(false);
-                        // Dispatch custom event for parent to handle
                         window.dispatchEvent(new CustomEvent('open-visual-edit'));
                       }}
                       className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left text-muted-foreground hover:text-foreground border-t border-border"
@@ -827,47 +719,49 @@ export const ChatView: React.FC<ChatViewProps> = ({
               onKeyDown={handleKeyDown}
               placeholder={isChatMode ? t('chat.planPlaceholder') : t('chat.placeholder')}
               disabled={isGenerating}
-              className="flex-1 bg-transparent resize-none max-h-32 py-2.5 px-3 text-[15px] outline-none text-foreground placeholder-muted-foreground"
-              rows={1}
-              style={{ minHeight: '40px' }}
+              className="pt-4 resize-none border-none w-full outline-none bg-transparent text-foreground placeholder-muted-foreground"
+              rows={2}
+              style={{ minHeight: '60px', maxHeight: '200px' }}
             />
 
-            {/* Plan Mode Toggle */}
-            <button
-              type="button"
-              onClick={() => setIsChatMode(!isChatMode)}
-              className={`flex items-center gap-1.5 h-9 px-3 rounded-full text-xs transition-all shrink-0 mb-0.5 ${isChatMode
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-                }`}
-            >
-              <Lightbulb className="w-4 h-4" />
-              <span className="font-medium">{t('chat.planMode')}</span>
-            </button>
+            <div className="flex gap-x-2 items-end justify-between pt-2">
+              <div className="flex items-center gap-2">
+                {/* Plan Mode Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setIsChatMode(!isChatMode)}
+                  className={`flex items-center gap-1.5 h-8 px-3 rounded-full text-xs transition-all ${isChatMode
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    }`}
+                >
+                  <Lightbulb className="w-3.5 h-3.5" />
+                  <span className="font-medium">{t('chat.planMode')}</span>
+                </button>
+              </div>
 
-            {/* Send/Stop button */}
-            {isGenerating ? (
-              <button
-                type="button"
-                onClick={onStop}
-                className="w-9 h-9 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center shrink-0 mb-0.5 mr-1 transition-all"
-              >
-                <StopCircle className="w-5 h-5" />
-              </button>
-            ) : (
-              <motion.button
-                type="submit"
-                disabled={!input.trim()}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 mb-0.5 mr-1 transition-all ${input.trim()
-                  ? 'bg-primary text-primary-foreground shadow-md hover:opacity-90'
-                  : 'bg-muted text-muted-foreground'
-                  }`}
-              >
-                <Send className="w-4 h-4" />
-              </motion.button>
-            )}
+              {/* Send/Stop button */}
+              {isGenerating ? (
+                <button
+                  type="button"
+                  onClick={onStop}
+                  className="size-8 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all"
+                >
+                  <StopCircle className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!input.trim()}
+                  className={`size-8 rounded-full flex items-center justify-center transition-all ${input.trim()
+                    ? 'bg-primary text-primary-foreground hover:opacity-90'
+                    : 'bg-muted-foreground border text-muted'
+                    }`}
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
         </form>
       </div>
