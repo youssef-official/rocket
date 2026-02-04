@@ -187,7 +187,6 @@ export type Database = {
           files: Json
           generated_name: string | null
           generation_status: string | null
-          github_repo_url: string | null
           id: string
           is_public: boolean
           is_published: boolean
@@ -205,7 +204,6 @@ export type Database = {
           files?: Json
           generated_name?: string | null
           generation_status?: string | null
-          github_repo_url?: string | null
           id?: string
           is_public?: boolean
           is_published?: boolean
@@ -223,7 +221,6 @@ export type Database = {
           files?: Json
           generated_name?: string | null
           generation_status?: string | null
-          github_repo_url?: string | null
           id?: string
           is_public?: boolean
           is_published?: boolean
@@ -239,9 +236,6 @@ export type Database = {
       user_integrations: {
         Row: {
           created_at: string
-          github_connected: boolean | null
-          github_token: string | null
-          github_username: string | null
           id: string
           updated_at: string
           user_id: string
@@ -251,9 +245,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          github_connected?: boolean | null
-          github_token?: string | null
-          github_username?: string | null
           id?: string
           updated_at?: string
           user_id: string
@@ -263,9 +254,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          github_connected?: boolean | null
-          github_token?: string | null
-          github_username?: string | null
           id?: string
           updated_at?: string
           user_id?: string
