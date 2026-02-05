@@ -2,12 +2,22 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const BRANDING_SCRIPT = `<script src="https://www.vivorax.online/branding.js"></script>`;
+// Available packages in the preview sandbox - AI MUST ONLY use these
+const AVAILABLE_PACKAGES = [
+  "react",
+  "react-dom",
+  "lucide-react",
+  "framer-motion",
+  "clsx",
+  "tailwind-merge",
+  "tailwindcss",
+];
 
-const CODE_GENERATION_PROMPT = `You are Vivora X, a senior React + TypeScript + Tailwind engineer that creates beautiful, responsive, mobile-first designs.
+const CODE_GENERATION_PROMPT = `You are Vivora X, a senior React + TypeScript + Tailwind engineer.
 
 **CRITICAL PACKAGE RESTRICTIONS:**
 You can ONLY use these packages - DO NOT import anything else:
@@ -25,108 +35,94 @@ You can ONLY use these packages - DO NOT import anything else:
 - axios ❌
 - Any other npm package not in the allowed list
 
-**MANDATORY BRANDING SCRIPT:**
-Every index.html file MUST include this script in the <head> section:
-${BRANDING_SCRIPT}
-
-Example index.html:
-\`\`\`html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>App</title>
-    ${BRANDING_SCRIPT}
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
-\`\`\`
-
-**MOBILE-FIRST RESPONSIVE DESIGN (CRITICAL):**
-- ALL designs must be mobile-first and fully responsive
-- Use Tailwind responsive prefixes: sm:, md:, lg:, xl:
-- Mobile breakpoints: default (mobile), sm: (640px), md: (768px), lg: (1024px)
-- ALWAYS test mental model for 375px width (iPhone SE)
-- Use flex-wrap, grid auto-fit/auto-fill for adaptive layouts
-- Touch-friendly: min 44px tap targets, proper spacing
-- Hide/show elements responsively: hidden md:block, md:hidden
-
-**FOR NAVIGATION (State-based, no react-router-dom):**
+**FOR NAVIGATION:**
+Instead of react-router-dom, use simple state-based navigation:
 \`\`\`tsx
 const [page, setPage] = useState<'home' | 'about' | 'contact'>('home');
 
-// Mobile menu
-const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+// Navigation
+<button onClick={() => setPage('about')}>About</button>
 
-return (
-  <nav className="flex items-center justify-between p-4">
-    {/* Mobile hamburger */}
-    <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-      <Menu className="w-6 h-6" />
-    </button>
-    
-    {/* Desktop nav */}
-    <div className="hidden md:flex gap-4">
-      <button onClick={() => setPage('home')}>Home</button>
-      <button onClick={() => setPage('about')}>About</button>
-    </div>
-    
-    {/* Mobile menu overlay */}
-    {mobileMenuOpen && (
-      <div className="fixed inset-0 z-50 bg-black/50 md:hidden">
-        <div className="bg-white w-64 h-full p-4">
-          <button onClick={() => { setPage('home'); setMobileMenuOpen(false); }}>Home</button>
-        </div>
-      </div>
-    )}
-  </nav>
-);
+// Rendering
+{page === 'home' && <HomePage />}
+{page === 'about' && <AboutPage />}
 \`\`\`
 
 **FOR TOASTS/NOTIFICATIONS:**
+Use simple state-based notifications:
 \`\`\`tsx
 const [notification, setNotification] = useState<string | null>(null);
-// Show: setNotification('Success!');
-// Auto-hide: setTimeout(() => setNotification(null), 3000);
+// Show with: setNotification('Success!');
+// Hide with: setTimeout(() => setNotification(null), 3000);
 \`\`\`
 
 MODE DETECTION:
-1) **IF BUG FIX or SMALL FEATURE**: MODIFY ONLY THE RELEVANT FILES. Preserve existing styles.
-2) **IF NEW PROJECT**: Build a COMPLETE, responsive app with mobile-first design.
+1) **IF BUG FIX or SMALL FEATURE**: MODIFY ONLY THE RELEVANT FILES.
+2) **IF NEW PROJECT**: Build a COMPLETE app with the allowed packages only.
 
 RULES:
 1) Use TypeScript (.tsx) for all React components.
 2) Tailwind classes only (no inline styles).
 3) Output MUST be ONLY valid JSON.
 4) NEVER use any package not in the allowed list.
-5) ALWAYS include the branding script in index.html.
-6) ALL layouts must be responsive (mobile-first).
 
 DESIGN SYSTEM:
-- Use Tailwind for all styling with responsive prefixes
+- Use Tailwind for all styling
 - Use "framer-motion" for animations
 - Use "lucide-react" for icons
-- Create beautiful, responsive designs that work on all devices
+- Create beautiful, responsive designs
 
 IMAGES:
-- Use Unsplash URLs: https://images.unsplash.com/photo-{id}?w=800
+- Use Unsplash URLs: https://images.unsplash.com/photo-{id}?w=800 
+
+MODE DETECTION (CRITICAL):
+1) **IF BUG FIX or SMALL FEATURE**:
+   - MODIFY ONLY THE RELEVANT FILES. Do NOT touch unrelated files.
+   - Do NOT redesign the entire app. Preserve existing vibe/styles unless explicitly asked to change them.
+   - FOCUS on the specific logic/UI fix requested.
+2) **IF NEW PROJECT**:
+   - Build a COMPLETE, PRODUCTION-READY app from scratch with the design rules below.
+
+RULES (non-negotiable):
+<<<<<<< HEAD
+1) **COMPLETE APPS ONLY**: Never leave "TODOs" or missing pages. If you link to a page, CREATE IT. If you add a button, MAKE IT WORK (even if it just updates local state or shows a toast).
+2) **FRONTEND-FIRST V1**: Unless a database is explicitly provided, use **ROBUST MOCK DATA** (arrays/objects) for all data. Do NOT generate code calling non-existent backends/APIs.
+3) Use TypeScript (.tsx) for all React components. Ensure proper typing.
+4) Tailwind classes only (no inline styles). Keep files small + clean.
+5) Output MUST be ONLY valid JSON.
+=======
+1) Use TypeScript (.tsx) for all React components. Ensure proper typing.
+2) Targeted edits only; preserve existing behavior.
+3) Tailwind classes only (no inline styles). Keep files small + clean.
+4) Output MUST be ONLY valid JSON (no markdown, no comments, no extra text).
+>>>>>>> 2ad3b2062924c652bd01335103b2c3af088c0e23
+
+DESIGN SYSTEM (GALAXY-CLASS AESTHETICS):
+- **Visuals**: Use "Bento Grid" layouts, "Aurora" gradients, and refined "Glassmorphism" (backdrop-blur-md).
+- **Typography**: Primary: "Plus Jakarta Sans" or "Inter". Headings: "Space Grotesk", "Outfit", or "Clash Display".
+- **Animation**: Use 'framer-motion' for silky smooth layout transitions (layoutId), hover states (whileHover), and scroll reveals.
+- **Interactions**: Buttons must have subtle scales/glows on hover. Inputs must have ring focus states.
+- **Colors**: Use rich, deep palettes (e.g., Zinc-950 background with vivid Indigo/Violet accents) or ultra-clean Swiss-style light modes.
+
+IMAGES:
+- Use REAL Unsplash images.
+- Classify site type (ecommerce, saas, etc) and pick matching high-quality photos.
+
+CRITICAL INSTRUCTION FOR E-COMMERCE/COMPLEX APPS:
+- You must generate ALL core pages: Home, Product Listing (Grid), Product Details (Dynamic Route), Cart, Checkout (Mock), and User Dashboard.
+- All interactivity (Add to Cart, Filter, Sort) must work with local state.
 
 OUTPUT JSON schema:
 {
   "files": { "path": "content" },
-  "actions_taken": [{"name":"path","action":"created"|"edited"|"read"|"analyzed_image","status":"done"}]
+  "actions_taken": [{"name":"path","action":"created"|"edited","status":"done"}]
 }`;
 
 const STATUS_PROMPT = `Generate ONE ultra-short status (Max 4 words). No emojis.`;
 
 const EXPLANATION_PROMPT = `You are Vivora X. Explain your implementation plan briefly.
 IMPORTANT: You can only use: react, react-dom, lucide-react, framer-motion, clsx, tailwind-merge.
-Do NOT mention react-router-dom or any other packages.
-Always mention that you'll create responsive, mobile-first designs.`;
+Do NOT mention react-router-dom or any other packages.`;
 
 const PROJECT_NAME_PROMPT = `Generate a 2-word premium project name. Title Case only. No quotes.`;
 
@@ -144,14 +140,22 @@ const VERSION_NAME_PROMPT = `Generate a 2-4 word descriptive version name. Title
 
 function getPromptForMode(mode: string): string {
   switch (mode) {
-    case 'code': return CODE_GENERATION_PROMPT;
-    case 'status': return STATUS_PROMPT;
-    case 'explanation': return EXPLANATION_PROMPT;
-    case 'project-name': return PROJECT_NAME_PROMPT;
-    case 'suggestions': return SUGGESTIONS_PROMPT;
-    case 'chat': return CHAT_PROMPT;
-    case 'version-name': return VERSION_NAME_PROMPT;
-    default: return CODE_GENERATION_PROMPT;
+    case "code":
+      return CODE_GENERATION_PROMPT;
+    case "status":
+      return STATUS_PROMPT;
+    case "explanation":
+      return EXPLANATION_PROMPT;
+    case "project-name":
+      return PROJECT_NAME_PROMPT;
+    case "suggestions":
+      return SUGGESTIONS_PROMPT;
+    case "chat":
+      return CHAT_PROMPT;
+    case "version-name":
+      return VERSION_NAME_PROMPT;
+    default:
+      return CODE_GENERATION_PROMPT;
   }
 }
 
@@ -163,26 +167,22 @@ serve(async (req) => {
   try {
     const { mode, messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
+
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const systemPrompt = getPromptForMode(mode);
-    
-    // Add package reminder and branding requirement to user messages for code mode
+
+    // Add package reminder to user messages for code mode
     let finalMessages = messages;
-    if (mode === 'code' && messages.length > 0) {
-      const lastUserMsgIndex = messages.findLastIndex((m: any) => m.role === 'user');
+    if (mode === "code" && messages.length > 0) {
+      const lastUserMsgIndex = messages.findLastIndex((m: any) => m.role === "user");
       if (lastUserMsgIndex >= 0) {
         finalMessages = [...messages];
         finalMessages[lastUserMsgIndex] = {
           ...finalMessages[lastUserMsgIndex],
-          content: `${finalMessages[lastUserMsgIndex].content}\n\n⚠️ CRITICAL REQUIREMENTS:
-1. Only use: react, react-dom, lucide-react, framer-motion, clsx, tailwind-merge. NO react-router-dom!
-2. MUST include ${BRANDING_SCRIPT} in index.html <head>
-3. ALL designs must be mobile-first and fully responsive
-4. Use Tailwind responsive prefixes (sm:, md:, lg:) for adaptive layouts`
+          content: `${finalMessages[lastUserMsgIndex].content}\n\n⚠️ REMINDER: Only use react, react-dom, lucide-react, framer-motion, clsx, tailwind-merge. NO react-router-dom or other packages!`,
         };
       }
     }
@@ -195,12 +195,9 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...finalMessages,
-        ],
+        messages: [{ role: "system", content: systemPrompt }, ...finalMessages],
         stream: true,
-        max_tokens: mode === 'project-name' || mode === 'version-name' ? 100 : 32000,
+        max_tokens: mode === "project-name" || mode === "version-name" ? 100 : 32000,
         temperature: 0.15,
       }),
     });
