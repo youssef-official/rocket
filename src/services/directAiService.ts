@@ -1,12 +1,3 @@
-import {
-    CODE_GENERATION_PROMPT,
-    STATUS_SYSTEM_PROMPT,
-    EXPLANATION_SYSTEM_PROMPT,
-    PROJECT_NAME_SYSTEM_PROMPT,
-    SUGGESTIONS_SYSTEM_PROMPT,
-    CHAT_ONLY_PROMPT,
-    VERSION_NAME_PROMPT
-} from './aiPrompts';
 import { deductCredits } from './creditService';
 
 // Standard OpenAI/Vercel AI SDK compatible payload
@@ -18,21 +9,10 @@ interface AIRequestPayload {
     temperature?: number;
 }
 
-// Get API Key from env
-function getAIKey(): string | null {
-    return import.meta.env.VITE_OPENAI_API_KEY ||
-        import.meta.env.VITE_VERCEL_AI_API_KEY ||
-        import.meta.env.VITE_AI_API_KEY ||
-        null;
+// Get Supabase URL from env
+function getSupabaseUrl(): string {
+    return import.meta.env.VITE_SUPABASE_URL || '';
 }
-
-// Get API URL from env or default to Vercel AI Gateway
-function getAIUrl(): string {
-    return "https://ai-gateway.vercel.sh/v1/chat/completions";
-}
-
-// Single model for all generation
-const GENERATION_MODEL = 'google/gemini-3-flash';
 
 // DEDUCT_POINTS: Deduct 1 credit after successful generation
 export async function deductPointsAfterGeneration(
@@ -47,27 +27,17 @@ export async function deductPointsAfterGeneration(
     };
 }
 
-// Main function to call AI directly from client
+// Main function to call AI via Supabase Edge Function
 export async function callingDirectAI(
     mode: 'code' | 'status' | 'explanation' | 'project-name' | 'suggestions' | 'chat' | 'version-name',
     messages: any[],
     signal?: AbortSignal
 ): Promise<Response> {
-    const apiKey = getAIKey();
+    const supabaseUrl = getSupabaseUrl();
+    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-    if (!apiKey) {
-        throw new Error("Missing API Key. Please add VITE_VERCEL_AI_API_KEY to your .env file.");
-    }
-
-    // Select system prompt
-    let systemPrompt = CODE_GENERATION_PROMPT;
-    switch (mode) {
-        case 'status': systemPrompt = STATUS_SYSTEM_PROMPT; break;
-        case 'explanation': systemPrompt = EXPLANATION_SYSTEM_PROMPT; break;
-        case 'project-name': systemPrompt = PROJECT_NAME_SYSTEM_PROMPT; break;
-        case 'suggestions': systemPrompt = SUGGESTIONS_SYSTEM_PROMPT; break;
-        case 'chat': systemPrompt = CHAT_ONLY_PROMPT; break;
-        case 'version-name': systemPrompt = VERSION_NAME_PROMPT; break;
+    if (!supabaseUrl) {
+        throw new Error("Missing Supabase URL. Please check your .env file.");
     }
 
     // Construct payload with support for images if provided
@@ -87,30 +57,18 @@ export async function callingDirectAI(
         return msg;
     });
 
-    const payload: AIRequestPayload = {
-        model: GENERATION_MODEL,
-        messages: [
-            { role: 'system', content: systemPrompt },
-            ...formattedMessages
-        ],
-        stream: true,
-        max_tokens: 32000,
-        temperature: 0.15,
-    };
+    console.log(`[AI] Calling Edge Function for mode: ${mode}`);
 
-    if (mode === 'project-name' || mode === 'version-name') {
-        payload.max_tokens = 100;
-    }
-
-    console.log(`[AI] Calling ${GENERATION_MODEL} for mode: ${mode}`);
-
-    return fetch(getAIUrl(), {
+    return fetch(`${supabaseUrl}/functions/v1/generate-code`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
+            'Authorization': `Bearer ${anonKey}`
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ 
+            mode, 
+            messages: formattedMessages 
+        }),
         signal
     });
 }
