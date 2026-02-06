@@ -310,6 +310,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_and_reset_user_credits: {
+        Args: { p_user_id: string }
+        Returns: {
+          credits_available: number
+          should_reset: boolean
+        }[]
+      }
       delete_project_cascade: {
         Args: { p_project_id: string }
         Returns: undefined

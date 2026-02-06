@@ -17,10 +17,107 @@ export interface FileActivity {
   action: 'read' | 'edited' | 'created' | 'analyzed_image';
 }
 
-// Helper to parse AI response
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🔧 ROBUST JSON EXTRACTION & PARSING
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Cleans and sanitizes JSON string from AI response
+ * Handles common issues like escaped characters, trailing commas, etc.
+ */
+function sanitizeJsonString(jsonStr: string): string {
+  let cleaned = jsonStr;
+
+  // Remove markdown code blocks if present
+  cleaned = cleaned.replace(/```json\s*/gi, '');
+  cleaned = cleaned.replace(/```\s*/gi, '');
+  
+  // Remove any text before first { or after last }
+  const startIdx = cleaned.indexOf('{');
+  const endIdx = cleaned.lastIndexOf('}');
+  
+  if (startIdx === -1 || endIdx === -1) {
+    throw new Error('No valid JSON object found');
+  }
+  
+  cleaned = cleaned.substring(startIdx, endIdx + 1);
+
+  // Fix common JSON issues
+  // Remove trailing commas before } or ]
+  cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
+  
+  // Fix improperly escaped characters
+  // Replace unescaped control characters
+  cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, (char) => {
+    if (char === '\n') return '\\n';
+    if (char === '\r') return '\\r';
+    if (char === '\t') return '\\t';
+    return '';
+  });
+
+  return cleaned;
+}
+
+/**
+ * Attempts to fix truncated JSON by closing open structures
+ */
+function attemptJsonRepair(jsonStr: string): string {
+  let repaired = jsonStr.trim();
+  
+  // Count brackets and braces
+  const openBraces = (repaired.match(/\{/g) || []).length;
+  const closeBraces = (repaired.match(/\}/g) || []).length;
+  const openBrackets = (repaired.match(/\[/g) || []).length;
+  const closeBrackets = (repaired.match(/\]/g) || []).length;
+
+  // Check if we have unbalanced quotes (potential truncation mid-string)
+  const quotes = (repaired.match(/(?<!\\)"/g) || []).length;
+  if (quotes % 2 !== 0) {
+    repaired += '"';
+  }
+
+  // Close any unclosed brackets
+  for (let i = 0; i < openBrackets - closeBrackets; i++) {
+    repaired += ']';
+  }
+
+  // Close any unclosed braces
+  for (let i = 0; i < openBraces - closeBraces; i++) {
+    repaired += '}';
+  }
+
+  return repaired;
+}
+
+/**
+ * Detects if a response appears to be truncated
+ */
+function detectTruncation(response: string): boolean {
+  const text = response.trim();
+  
+  // Check for unbalanced braces
+  const openBraces = (text.match(/\{/g) || []).length;
+  const closeBraces = (text.match(/\}/g) || []).length;
+  
+  if (openBraces !== closeBraces) {
+    return true;
+  }
+
+  // Check for common truncation indicators
+  const truncationPatterns = [
+    /\.\.\.$/,
+    /\u2026$/,  // ellipsis character
+    /\[truncated\]/i,
+    /\[continued\]/i,
+  ];
+
+  return truncationPatterns.some(p => p.test(text));
+}
+
+// Main parser with robust error handling
 export function parseAIResponse(response: string): { files: Record<string, any>, fileList: string[], actionsTaken?: FileActivity[] } {
   try {
-    // Handle "json|..." format that sometimes comes from AI gateways
+    // Handle "json|..." format from AI gateways
     if (response.startsWith('json|')) {
       const parts = response.split('|');
       if (parts.length > 1) {
@@ -28,46 +125,52 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
       }
     }
 
-    const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/) ||
-      response.match(/```([\s\S]*?)```/);
+    // Check for truncation
+    if (detectTruncation(response)) {
+      console.warn('[parseAIResponse] Response appears truncated, attempting repair...');
+    }
 
-    let jsonStr = jsonMatch ? jsonMatch[1] : response;
-    jsonStr = jsonStr.trim();
-
-    const startIdx = jsonStr.indexOf('{');
-    const endIdx = jsonStr.lastIndexOf('}');
-    
-    // If no JSON object found, return empty result
-    if (startIdx === -1) {
+    // Step 1: Sanitize the JSON string
+    let jsonStr: string;
+    try {
+      jsonStr = sanitizeJsonString(response);
+    } catch (e) {
+      console.error('[parseAIResponse] Failed to sanitize JSON:', e);
       return { files: {}, fileList: [] };
     }
 
-    if (startIdx !== -1 && endIdx !== -1) {
-      jsonStr = jsonStr.substring(startIdx, endIdx + 1);
-    } else if (startIdx !== -1) {
-      jsonStr = jsonStr.substring(startIdx);
+    // Step 2: Try direct parsing
+    let parsed: any;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch (firstError) {
+      console.warn('[parseAIResponse] First parse failed, attempting repair...');
+      
+      // Step 3: Try with repairs
+      try {
+        const repaired = attemptJsonRepair(jsonStr);
+        parsed = JSON.parse(repaired);
+      } catch (secondError) {
+        console.error('[parseAIResponse] JSON repair failed:', secondError);
+        
+        // Step 4: Final fallback - try to extract any valid file content
+        try {
+          const filesMatch = jsonStr.match(/"files"\s*:\s*\{([^]*)\}/);
+          if (filesMatch) {
+            const partialJson = `{"files":{${filesMatch[1]}}}`;
+            const cleanPartial = attemptJsonRepair(partialJson);
+            parsed = JSON.parse(cleanPartial);
+          } else {
+            throw new Error('Could not extract files object');
+          }
+        } catch (thirdError) {
+          console.error('[parseAIResponse] All parsing attempts failed');
+          return { files: {}, fileList: [] };
+        }
+      }
     }
 
-    let sanitizedJson = jsonStr.trim();
-
-    // Remove trailing commas before closing braces or brackets
-    sanitizedJson = sanitizedJson.replace(/,\s*([}\]])/g, '$1');
-
-    // Fix unclosed quotes
-    const quoteCount = (sanitizedJson.match(/"/g) || []).length;
-    if (quoteCount % 2 !== 0) {
-      sanitizedJson += '"';
-    }
-    
-    // Ensure it ends with proper braces if it started with one
-    const openBraces = (sanitizedJson.match(/\{/g) || []).length;
-    const closeBraces = (sanitizedJson.match(/\}/g) || []).length;
-    if (openBraces > closeBraces) {
-      sanitizedJson += '}'.repeat(openBraces - closeBraces);
-    }
-
-    const parsed = JSON.parse(sanitizedJson);
-
+    // Extract files and actions
     const files: Record<string, any> = {};
     let fileList: string[] = [];
     let actionsTaken: FileActivity[] = [];
@@ -78,29 +181,18 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
           if (file.path && file.content !== undefined) {
             const path = file.path;
             if (/^\d+$/.test(path)) return;
-
             fileList.push(path);
-            files[path] = {
-              path,
-              content: file.content as string,
-              type: 'file'
-            };
+            files[path] = { path, content: file.content as string, type: 'file' };
           }
         });
       } else {
         Object.entries(parsed.files).forEach(([path, content]) => {
           if (/^\d+$/.test(path)) return;
-
           const fileContent = typeof content === 'object' && content !== null && 'content' in content
             ? (content as any).content
             : content;
-
           fileList.push(path);
-          files[path] = {
-            path,
-            content: fileContent as string,
-            type: 'file'
-          };
+          files[path] = { path, content: fileContent as string, type: 'file' };
         });
       }
     }
@@ -113,10 +205,11 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
       }));
     }
 
-    console.log('[parseAIResponse] Parsed files:', fileList);
+    console.log('[parseAIResponse] Successfully parsed files:', fileList);
     return { files, fileList, actionsTaken };
+    
   } catch (e) {
-    console.error("Failed to parse AI response", e);
+    console.error('[parseAIResponse] Unexpected error:', e);
     return { files: {}, fileList: [] };
   }
 }
