@@ -88,6 +88,126 @@ function sanitizeJsonString(jsonStr: string): string {
 
   cleaned = bestJson || cleaned.slice(startIndices[0]);
 
+  return cleaned;
+}
+
+/**
+ * Fallback: Manually extracts files from a malformed or truncated JSON string
+ * using regex when JSON.parse fails completely.
+ */
+function manualExtractFiles(text: string): { files: Record<string, any>, fileList: string[] } {
+  const files: Record<string, any> = {};
+  const fileList: string[] = [];
+  
+  // Regex to find "path/to/file": "content" or "path/to/file": { "content": "..." }
+  // This is designed to be extremely forgiving
+  const fileRegex = /"([^"]+\.(tsx?|jsx?|css|json|html|md|js))"\s*:\s*(\{[\s\S]*?\}|"[^"]*")/g;
+  let match;
+  
+  while ((match = fileRegex.exec(text)) !== null) {
+    const path = match[1];
+    const rawValue = match[2];
+    
+    try {
+      if (rawValue.startsWith('{')) {
+        // Try to find content inside the object
+        const contentMatch = rawValue.match(/"content"\s*:\s*"([\s\S]*?)"/);
+        if (contentMatch) {
+          const content = contentMatch[1]
+            .replace(/\\n/g, '\n')
+            .replace(/\\r/g, '\r')
+            .replace(/\\t/g, '\t')
+            .replace(/\\"/g, '"')
+            .replace(/\\\\/g, '\\');
+          files[path] = { path, content, type: 'file' };
+          if (!fileList.includes(path)) fileList.push(path);
+        }
+      } else {
+        // Direct string value
+        const content = rawValue.slice(1, -1)
+          .replace(/\\n/g, '\n')
+          .replace(/\\r/g, '\r')
+          .replace(/\\t/g, '\t')
+          .replace(/\\"/g, '"')
+          .replace(/\\\\/g, '\\');
+        files[path] = { path, content, type: 'file' };
+        if (!fileList.includes(path)) fileList.push(path);
+      }
+    } catch (e) {
+      // Skip this file if extraction fails
+    }
+  }
+  
+  return { files, fileList };
+}
+
+/**
+ * Cleans and sanitizes JSON string from AI response
+ */
+function sanitizeJsonString(jsonStr: string): string {
+  let cleaned = jsonStr;
+
+  // Remove markdown code blocks
+  cleaned = cleaned.replace(/```json\s*/gi, '');
+  cleaned = cleaned.replace(/```\s*/gi, '');
+  
+  // Find all potential JSON objects and pick the one that looks most like our response
+  // We look for the object that contains "files" or "actions_taken"
+  const startIndices: number[] = [];
+  let pos = cleaned.indexOf('{');
+  while (pos !== -1) {
+    startIndices.push(pos);
+    pos = cleaned.indexOf('{', pos + 1);
+  }
+
+  if (startIndices.length === 0) return "{}";
+
+  let bestJson = "";
+  let maxScore = -1;
+
+  for (const startIdx of startIndices) {
+    let depth = 0;
+    let inString = false;
+    let escaping = false;
+    let endIdx = -1;
+
+    for (let i = startIdx; i < cleaned.length; i++) {
+      const ch = cleaned[i];
+      if (escaping) { escaping = false; continue; }
+      if (ch === '\\' && inString) { escaping = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{') depth++;
+      if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          endIdx = i;
+          break;
+        }
+      }
+    }
+
+    const candidate = endIdx === -1 
+      ? cleaned.slice(startIdx) 
+      : cleaned.slice(startIdx, endIdx + 1);
+    
+    // Score the candidate based on presence of expected keys
+    let score = 0;
+    if (candidate.includes('"files"') || candidate.includes('files:')) score += 10;
+    if (candidate.includes('"actions_taken"') || candidate.includes('actions_taken:')) score += 5;
+    if (candidate.includes('"content"') || candidate.includes('content:')) score += 2;
+    
+    if (score > maxScore) {
+      maxScore = score;
+      bestJson = candidate;
+    }
+    
+    // If we found a perfect match that is balanced, we can stop
+    if (score >= 10 && endIdx !== -1) break;
+  }
+
+  cleaned = bestJson || cleaned.slice(startIndices[0]);
+
   // Fix common JSON issues
   // Remove trailing commas before closing braces/brackets
   cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
@@ -257,6 +377,11 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
               throw new Error('Could not extract files object');
             }
           } catch (thirdError) {
+            console.warn('[parseAIResponse] All JSON.parse attempts failed, using manual extraction fallback...');
+            const manualResult = manualExtractFiles(response);
+            if (manualResult.fileList.length > 0) {
+              return { ...manualResult, actionsTaken: [] };
+            }
             console.error('[parseAIResponse] All parsing attempts failed');
             return { files: {}, fileList: [] };
           }
