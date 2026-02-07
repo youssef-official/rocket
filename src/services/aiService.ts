@@ -73,10 +73,10 @@ function sanitizeJsonString(jsonStr: string): string {
   }
 
   if (endIdx === -1) {
-    throw new Error('JSON appears truncated');
+    cleaned = cleaned.slice(startIdx);
+  } else {
+    cleaned = cleaned.slice(startIdx, endIdx + 1);
   }
-
-  cleaned = cleaned.slice(startIdx, endIdx + 1);
 
   // Fix common JSON issues
   // Remove trailing commas
@@ -102,26 +102,54 @@ function sanitizeJsonString(jsonStr: string): string {
 function attemptJsonRepair(jsonStr: string): string {
   let repaired = jsonStr.trim();
   
-  // Count brackets and braces
-  const openBraces = (repaired.match(/\{/g) || []).length;
-  const closeBraces = (repaired.match(/\}/g) || []).length;
-  const openBrackets = (repaired.match(/\[/g) || []).length;
-  const closeBrackets = (repaired.match(/\]/g) || []).length;
+  // Fix trailing colon (truncated after key)
+  if (repaired.endsWith(':')) {
+    repaired += '""';
+  }
+
+  // Count brackets and braces while ignoring content inside strings
+  let openBraces = 0;
+  let openBrackets = 0;
+  let inString = false;
+  let escaping = false;
+
+  for (let i = 0; i < repaired.length; i++) {
+    const ch = repaired[i];
+    if (escaping) {
+      escaping = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escaping = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (!inString) {
+      if (ch === '{') openBraces++;
+      if (ch === '}') openBraces--;
+      if (ch === '[') openBrackets++;
+      if (ch === ']') openBrackets--;
+    }
+  }
 
   // Fix unbalanced quotes
-  const quotes = (repaired.match(/(?<!\\)"/g) || []).length;
-  if (quotes % 2 !== 0) {
+  if (inString) {
     repaired += '"';
   }
 
   // Close unclosed brackets
-  for (let i = 0; i < openBrackets - closeBrackets; i++) {
+  while (openBrackets > 0) {
     repaired += ']';
+    openBrackets--;
   }
 
   // Close unclosed braces
-  for (let i = 0; i < openBraces - closeBraces; i++) {
+  while (openBraces > 0) {
     repaired += '}';
+    openBraces--;
   }
 
   return repaired;
