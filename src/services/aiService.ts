@@ -31,10 +31,10 @@ function sanitizeJsonString(jsonStr: string): string {
   cleaned = cleaned.replace(/```json\s*/gi, '');
   cleaned = cleaned.replace(/```\s*/gi, '');
   
-  // Find the FIRST balanced JSON object (do not rely on lastIndexOf('}') because file contents contain braces)
+  // Find the FIRST '{'
   const startIdx = cleaned.indexOf('{');
   if (startIdx === -1) {
-    throw new Error('No valid JSON object found');
+    return "{}"; // Return empty object if no JSON found
   }
 
   let depth = 0;
@@ -72,6 +72,7 @@ function sanitizeJsonString(jsonStr: string): string {
     }
   }
 
+  // If no balanced object found, take everything from first '{'
   if (endIdx === -1) {
     cleaned = cleaned.slice(startIdx);
   } else {
@@ -79,7 +80,7 @@ function sanitizeJsonString(jsonStr: string): string {
   }
 
   // Fix common JSON issues
-  // Remove trailing commas
+  // Remove trailing commas before closing braces/brackets
   cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
   
   // Fix unescaped control characters
@@ -102,16 +103,16 @@ function sanitizeJsonString(jsonStr: string): string {
 function attemptJsonRepair(jsonStr: string): string {
   let repaired = jsonStr.trim();
   
-  // Fix trailing colon (truncated after key)
-  if (repaired.endsWith(':')) {
-    repaired += '""';
-  }
+  // 1. Fix common unquoted keys
+  repaired = repaired.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
 
-  // Count brackets and braces while ignoring content inside strings
+  // 2. Balance braces and brackets while respecting strings
   let openBraces = 0;
   let openBrackets = 0;
   let inString = false;
   let escaping = false;
+  let lastValidChar = '';
+  let lastColonIdx = -1;
 
   for (let i = 0; i < repaired.length; i++) {
     const ch = repaired[i];
@@ -132,21 +133,35 @@ function attemptJsonRepair(jsonStr: string): string {
       if (ch === '}') openBraces--;
       if (ch === '[') openBrackets++;
       if (ch === ']') openBrackets--;
+      if (ch === ':') lastColonIdx = i;
+      if (!/\s/.test(ch)) lastValidChar = ch;
     }
   }
 
-  // Fix unbalanced quotes
+  // 3. Handle truncated content
   if (inString) {
     repaired += '"';
+    // If we just closed a string that was a key (no colon after it), add colon and value
+    const lastQuoteIdx = repaired.lastIndexOf('"');
+    if (lastColonIdx < repaired.lastIndexOf('"', lastQuoteIdx - 1)) {
+      repaired += ':""';
+    }
   }
 
-  // Close unclosed brackets
+  if (lastValidChar === ':') {
+    repaired += '""';
+  }
+
+  if (lastValidChar === ',') {
+    repaired = repaired.replace(/,\s*$/, '');
+  }
+
+  // Close unclosed structures
   while (openBrackets > 0) {
     repaired += ']';
     openBrackets--;
   }
 
-  // Close unclosed braces
   while (openBraces > 0) {
     repaired += '}';
     openBraces--;
