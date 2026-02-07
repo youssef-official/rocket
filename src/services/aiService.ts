@@ -31,53 +31,62 @@ function sanitizeJsonString(jsonStr: string): string {
   cleaned = cleaned.replace(/```json\s*/gi, '');
   cleaned = cleaned.replace(/```\s*/gi, '');
   
-  // Find the FIRST '{'
-  const startIdx = cleaned.indexOf('{');
-  if (startIdx === -1) {
-    return "{}"; // Return empty object if no JSON found
+  // Find all potential JSON objects and pick the one that looks most like our response
+  // We look for the object that contains "files" or "actions_taken"
+  const startIndices: number[] = [];
+  let pos = cleaned.indexOf('{');
+  while (pos !== -1) {
+    startIndices.push(pos);
+    pos = cleaned.indexOf('{', pos + 1);
   }
 
-  let depth = 0;
-  let inString = false;
-  let escaping = false;
-  let endIdx = -1;
+  if (startIndices.length === 0) return "{}";
 
-  for (let i = startIdx; i < cleaned.length; i++) {
-    const ch = cleaned[i];
+  let bestJson = "";
+  let maxScore = -1;
 
-    if (escaping) {
-      escaping = false;
-      continue;
-    }
+  for (const startIdx of startIndices) {
+    let depth = 0;
+    let inString = false;
+    let escaping = false;
+    let endIdx = -1;
 
-    if (ch === '\\' && inString) {
-      escaping = true;
-      continue;
-    }
-
-    if (ch === '"') {
-      inString = !inString;
-      continue;
-    }
-
-    if (inString) continue;
-
-    if (ch === '{') depth++;
-    if (ch === '}') {
-      depth--;
-      if (depth === 0) {
-        endIdx = i;
-        break;
+    for (let i = startIdx; i < cleaned.length; i++) {
+      const ch = cleaned[i];
+      if (escaping) { escaping = false; continue; }
+      if (ch === '\\' && inString) { escaping = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{') depth++;
+      if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          endIdx = i;
+          break;
+        }
       }
     }
+
+    const candidate = endIdx === -1 
+      ? cleaned.slice(startIdx) 
+      : cleaned.slice(startIdx, endIdx + 1);
+    
+    // Score the candidate based on presence of expected keys
+    let score = 0;
+    if (candidate.includes('"files"') || candidate.includes('files:')) score += 10;
+    if (candidate.includes('"actions_taken"') || candidate.includes('actions_taken:')) score += 5;
+    if (candidate.includes('"content"') || candidate.includes('content:')) score += 2;
+    
+    if (score > maxScore) {
+      maxScore = score;
+      bestJson = candidate;
+    }
+    
+    // If we found a perfect match that is balanced, we can stop
+    if (score >= 10 && endIdx !== -1) break;
   }
 
-  // If no balanced object found, take everything from first '{'
-  if (endIdx === -1) {
-    cleaned = cleaned.slice(startIdx);
-  } else {
-    cleaned = cleaned.slice(startIdx, endIdx + 1);
-  }
+  cleaned = bestJson || cleaned.slice(startIndices[0]);
 
   // Fix common JSON issues
   // Remove trailing commas before closing braces/brackets
