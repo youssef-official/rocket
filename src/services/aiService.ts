@@ -31,15 +31,52 @@ function sanitizeJsonString(jsonStr: string): string {
   cleaned = cleaned.replace(/```json\s*/gi, '');
   cleaned = cleaned.replace(/```\s*/gi, '');
   
-  // Find the actual JSON object
+  // Find the FIRST balanced JSON object (do not rely on lastIndexOf('}') because file contents contain braces)
   const startIdx = cleaned.indexOf('{');
-  const endIdx = cleaned.lastIndexOf('}');
-  
-  if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) {
+  if (startIdx === -1) {
     throw new Error('No valid JSON object found');
   }
-  
-  cleaned = cleaned.substring(startIdx, endIdx + 1);
+
+  let depth = 0;
+  let inString = false;
+  let escaping = false;
+  let endIdx = -1;
+
+  for (let i = startIdx; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+
+    if (escaping) {
+      escaping = false;
+      continue;
+    }
+
+    if (ch === '\\' && inString) {
+      escaping = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) continue;
+
+    if (ch === '{') depth++;
+    if (ch === '}') {
+      depth--;
+      if (depth === 0) {
+        endIdx = i;
+        break;
+      }
+    }
+  }
+
+  if (endIdx === -1) {
+    throw new Error('JSON appears truncated');
+  }
+
+  cleaned = cleaned.slice(startIdx, endIdx + 1);
 
   // Fix common JSON issues
   // Remove trailing commas
@@ -131,32 +168,46 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
     }
 
     // Step 2: Try direct parsing
+    const fixKnownUnquotedKeys = (s: string) =>
+      s
+        // Most common failure: {files: {...}} instead of {"files": {...}}
+        .replace(/([{,]\s*)files\s*:/g, '$1"files":')
+        .replace(/([{,]\s*)actions_taken\s*:/g, '$1"actions_taken":')
+        .replace(/([{,]\s*)actionsTaken\s*:/g, '$1"actions_taken":');
+
     let parsed: any;
     try {
       parsed = JSON.parse(jsonStr);
     } catch (firstError) {
       console.warn('[parseAIResponse] First parse failed, attempting repair...');
-      
-      // Step 3: Try with repairs
+
+      const keyFixed = fixKnownUnquotedKeys(jsonStr);
+
+      // Step 2.5: Try parsing after fixing common unquoted keys
       try {
-        const repaired = attemptJsonRepair(jsonStr);
-        parsed = JSON.parse(repaired);
-      } catch (secondError) {
-        console.error('[parseAIResponse] JSON repair failed:', secondError);
-        
-        // Step 4: Final fallback - try to extract any valid file content
+        parsed = JSON.parse(keyFixed);
+      } catch {
+        // Step 3: Try with repairs
         try {
-          const filesMatch = jsonStr.match(/"files"\s*:\s*\{([^]*)\}/);
-          if (filesMatch) {
-            const partialJson = `{"files":{${filesMatch[1]}}}`;
-            const cleanPartial = attemptJsonRepair(partialJson);
-            parsed = JSON.parse(cleanPartial);
-          } else {
-            throw new Error('Could not extract files object');
+          const repaired = attemptJsonRepair(keyFixed);
+          parsed = JSON.parse(repaired);
+        } catch (secondError) {
+          console.error('[parseAIResponse] JSON repair failed:', secondError);
+
+          // Step 4: Final fallback - try to extract any valid file content
+          try {
+            const filesMatch = keyFixed.match(/"files"\s*:\s*\{([^]*)\}/);
+            if (filesMatch) {
+              const partialJson = `{"files":{${filesMatch[1]}}}`;
+              const cleanPartial = attemptJsonRepair(partialJson);
+              parsed = JSON.parse(cleanPartial);
+            } else {
+              throw new Error('Could not extract files object');
+            }
+          } catch (thirdError) {
+            console.error('[parseAIResponse] All parsing attempts failed');
+            return { files: {}, fileList: [] };
           }
-        } catch (thirdError) {
-          console.error('[parseAIResponse] All parsing attempts failed');
-          return { files: {}, fileList: [] };
         }
       }
     }
@@ -210,6 +261,86 @@ export function generateDefaultViteProject(): any[] {
   return [];
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🌊 STREAMING (SSE) - DO NOT DROP PARTIAL LINES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function readSSEStream(
+  response: Response,
+  onDelta?: (deltaText: string) => void
+): Promise<string> {
+  if (!response.body) throw new Error('No response body');
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+
+  let textBuffer = '';
+  let fullResponse = '';
+  let streamDone = false;
+
+  while (!streamDone) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    textBuffer += decoder.decode(value, { stream: true });
+
+    let newlineIndex: number;
+    while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
+      let line = textBuffer.slice(0, newlineIndex);
+      textBuffer = textBuffer.slice(newlineIndex + 1);
+
+      if (line.endsWith('\r')) line = line.slice(0, -1);
+      if (line.startsWith(':') || line.trim() === '') continue; // keepalive/comments
+      if (!line.startsWith('data: ')) continue;
+
+      const jsonStr = line.slice(6).trim();
+      if (jsonStr === '[DONE]') {
+        streamDone = true;
+        break;
+      }
+
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) {
+          fullResponse += content;
+          onDelta?.(content);
+        }
+      } catch {
+        // JSON can be split across chunks; put it back and wait for more data
+        textBuffer = line + '\n' + textBuffer;
+        break;
+      }
+    }
+  }
+
+  // Final flush (in case buffer ended without trailing newline)
+  if (textBuffer.trim()) {
+    for (let raw of textBuffer.split('\n')) {
+      if (!raw) continue;
+      if (raw.endsWith('\r')) raw = raw.slice(0, -1);
+      if (raw.startsWith(':') || raw.trim() === '') continue;
+      if (!raw.startsWith('data: ')) continue;
+
+      const jsonStr = raw.slice(6).trim();
+      if (jsonStr === '[DONE]') continue;
+
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) {
+          fullResponse += content;
+          onDelta?.(content);
+        }
+      } catch {
+        // ignore partial leftovers
+      }
+    }
+  }
+
+  return fullResponse;
+}
+
 // Generate short project name (2 words)
 export async function generateProjectName(prompt: string): Promise<string> {
   try {
@@ -220,36 +351,18 @@ export async function generateProjectName(prompt: string): Promise<string> {
       throw new Error(`AI request failed: ${response.status}`);
     }
 
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-    let fullResponse = '';
-
-    if (reader) {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-            try {
-              const parsed = JSON.parse(line.slice(6));
-              const content = parsed.choices?.[0]?.delta?.content || '';
-              fullResponse += content;
-            } catch (e) { }
-          }
-        }
-      }
-    }
+    const fullResponse = await readSSEStream(response);
 
     const content = fullResponse || 'New Project';
     const cleaned = content.trim().replace(/[^a-zA-Z\s]/g, '').trim();
     const words = cleaned.split(/\s+/).filter((w: string) => w.length > 0);
     if (words.length >= 2) {
-      return words.slice(0, 2).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      return words
+        .slice(0, 2)
+        .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
     }
     return cleaned || 'New Project';
-
   } catch (error) {
     console.error('Project name generation error:', error);
     return 'New Project';
@@ -271,27 +384,7 @@ export async function generateSuggestions(projectDescription: string): Promise<S
 
     if (!response.ok) return defaultSuggestions;
 
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-    let fullResponse = '';
-
-    if (reader) {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-            try {
-              const parsed = JSON.parse(line.slice(6));
-              const content = parsed.choices?.[0]?.delta?.content || '';
-              fullResponse += content;
-            } catch (e) { }
-          }
-        }
-      }
-    }
+    const fullResponse = await readSSEStream(response);
 
     try {
       const jsonMatch = fullResponse.match(/\[[\s\S]*\]/);
@@ -322,34 +415,13 @@ export async function generateChatResponse(
       ...conversationHistory.slice(-10).map(m => ({ role: m.role, content: m.content })),
       { role: 'user', content: prompt }
     ];
-    const response = await callingDirectAI('chat', msgs);
 
+    const response = await callingDirectAI('chat', msgs);
     if (!response.ok) throw new Error(`Status ${response.status}`);
 
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-    let fullResponse = '';
-
-    if (!reader) throw new Error('No body');
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
-      for (const line of lines) {
-        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-          try {
-            const parsed = JSON.parse(line.slice(6));
-            const content = parsed.choices?.[0]?.delta?.content || '';
-            fullResponse += content;
-          } catch (e) { }
-        }
-      }
-    }
+    const fullResponse = await readSSEStream(response);
 
     return fullResponse || "I'm here to help! What would you like to know about your project?";
-
   } catch (error) {
     console.error('Chat response error:', error);
     return "I'm having trouble connecting right now. Please try again in a moment.";
@@ -367,30 +439,9 @@ export async function generateExplanation(
 
     if (!response.ok) throw new Error(`Status ${response.status}`);
 
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-    let fullResponse = '';
-
-    if (!reader) throw new Error('No body');
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
-      for (const line of lines) {
-        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-          try {
-            const parsed = JSON.parse(line.slice(6));
-            const content = parsed.choices?.[0]?.delta?.content || '';
-            fullResponse += content;
-          } catch (e) { }
-        }
-      }
-    }
+    const fullResponse = await readSSEStream(response);
 
     return fullResponse || "I'll create something amazing for you!";
-
   } catch (error) {
     console.error('Explanation generation error:', error);
     return "I'll create something amazing for you!";
@@ -426,29 +477,7 @@ export async function streamAICodeGeneration(
       throw new Error(`AI request failed: ${response.status}`);
     }
 
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-    let fullResponse = '';
-
-    if (reader) {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-            try {
-              const parsed = JSON.parse(line.slice(6));
-              const content = parsed.choices?.[0]?.delta?.content || '';
-              fullResponse += content;
-              options.onChunk(content);
-            } catch (e) { }
-          }
-        }
-      }
-    }
-
+    const fullResponse = await readSSEStream(response, options.onChunk);
     options.onComplete(fullResponse);
   } catch (error) {
     console.error('Code generation error:', error);

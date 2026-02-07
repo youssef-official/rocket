@@ -213,12 +213,12 @@ const ProjectEditorRoute = () => {
 
           if (isCancelled.current) return;
 
-          // Add explanation message for initial generation
+          // Add explanation message for initial generation (keep it SHORT)
           const assistantId = crypto.randomUUID();
           const planContent = planLines.length > 0
-            ? `### **What I'm Building:**\n${planLines.map((line, i) => `${i + 1}. ${line}`).join('\n')}\n\n`
+            ? `### **What I'm Building (Short):**\n${planLines.slice(0, 4).map((line, i) => `${i + 1}. ${line}`).join('\n')}\n\n`
             : '';
-          const explanationMessage = planContent + explanation + '\n\n**Now I\'ll start building...**';
+          const explanationMessage = `${planContent}**${t('chat.generating')}**`;
           await addMessage('assistant', explanationMessage, undefined, undefined, undefined, assistantId);
           lastAssistantMessageId.current = assistantId;
 
@@ -527,12 +527,12 @@ const ProjectEditorRoute = () => {
 
       if (isCancelled.current) return;
 
-      // Add the explanation message with the plan included in the content
+      // Add the explanation message (keep it SHORT)
       const assistantId = crypto.randomUUID();
       const planContent = planLines.length > 0
-        ? `### **What I'm Building:**\n${planLines.map((line, i) => `${i + 1}. ${line}`).join('\n')}\n\n`
+        ? `### **What I'm Building (Short):**\n${planLines.slice(0, 4).map((line, i) => `${i + 1}. ${line}`).join('\n')}\n\n`
         : '';
-      const explanationMessage = planContent + explanation + '\n\n**Now I\'ll start building...**';
+      const explanationMessage = `${planContent}**${t('chat.generating')}**`;
       await addMessage('assistant', explanationMessage, undefined, undefined, undefined, assistantId);
       lastAssistantMessageId.current = assistantId;
 
