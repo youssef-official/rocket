@@ -23,37 +23,38 @@ export interface FileActivity {
 
 /**
  * Cleans and sanitizes JSON string from AI response
- * Handles common issues like escaped characters, trailing commas, etc.
  */
 function sanitizeJsonString(jsonStr: string): string {
   let cleaned = jsonStr;
 
-  // Remove markdown code blocks if present
+  // Remove markdown code blocks
   cleaned = cleaned.replace(/```json\s*/gi, '');
   cleaned = cleaned.replace(/```\s*/gi, '');
   
-  // Remove any text before first { or after last }
+  // Find the actual JSON object
   const startIdx = cleaned.indexOf('{');
   const endIdx = cleaned.lastIndexOf('}');
   
-  if (startIdx === -1 || endIdx === -1) {
+  if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) {
     throw new Error('No valid JSON object found');
   }
   
   cleaned = cleaned.substring(startIdx, endIdx + 1);
 
   // Fix common JSON issues
-  // Remove trailing commas before } or ]
+  // Remove trailing commas
   cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
   
-  // Fix improperly escaped characters
-  // Replace unescaped control characters
+  // Fix unescaped control characters
   cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, (char) => {
     if (char === '\n') return '\\n';
     if (char === '\r') return '\\r';
     if (char === '\t') return '\\t';
     return '';
   });
+  
+  // Fix common escape issues
+  cleaned = cleaned.replace(/\\(?![nrt"\\bfu])/g, '\\\\');
 
   return cleaned;
 }
@@ -70,18 +71,18 @@ function attemptJsonRepair(jsonStr: string): string {
   const openBrackets = (repaired.match(/\[/g) || []).length;
   const closeBrackets = (repaired.match(/\]/g) || []).length;
 
-  // Check if we have unbalanced quotes (potential truncation mid-string)
+  // Fix unbalanced quotes
   const quotes = (repaired.match(/(?<!\\)"/g) || []).length;
   if (quotes % 2 !== 0) {
     repaired += '"';
   }
 
-  // Close any unclosed brackets
+  // Close unclosed brackets
   for (let i = 0; i < openBrackets - closeBrackets; i++) {
     repaired += ']';
   }
 
-  // Close any unclosed braces
+  // Close unclosed braces
   for (let i = 0; i < openBraces - closeBraces; i++) {
     repaired += '}';
   }
@@ -95,22 +96,12 @@ function attemptJsonRepair(jsonStr: string): string {
 function detectTruncation(response: string): boolean {
   const text = response.trim();
   
-  // Check for unbalanced braces
   const openBraces = (text.match(/\{/g) || []).length;
   const closeBraces = (text.match(/\}/g) || []).length;
   
-  if (openBraces !== closeBraces) {
-    return true;
-  }
+  if (openBraces !== closeBraces) return true;
 
-  // Check for common truncation indicators
-  const truncationPatterns = [
-    /\.\.\.$/,
-    /\u2026$/,  // ellipsis character
-    /\[truncated\]/i,
-    /\[continued\]/i,
-  ];
-
+  const truncationPatterns = [/\.\.\.$/,/\u2026$/,/\[truncated\]/i,/\[continued\]/i];
   return truncationPatterns.some(p => p.test(text));
 }
 
