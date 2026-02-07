@@ -76,48 +76,58 @@ const getFileIcon = (filename: string) => {
   }
 };
 
-// AGGRESSIVE cleaning - remove ALL JSON/code and summary from AI messages
+// AGGRESSIVE cleaning - remove ALL JSON/code from AI messages
 const cleanAIMessage = (content: string): string => {
   if (!content) return "";
 
-  // If it's a raw JSON response, hide it (it will be handled by file updates)
   const trimmedS = content.trim();
-  if (trimmedS.startsWith('{') && (trimmedS.includes('"files"') || trimmedS.includes('"src/'))) {
+  
+  // Hide raw JSON responses completely - they're handled by file updates
+  if (trimmedS.startsWith('{') && (
+    trimmedS.includes('"files"') || 
+    trimmedS.includes('"src/') ||
+    trimmedS.includes('"index.html"') ||
+    trimmedS.includes('"actions_taken"')
+  )) {
+    return "";
+  }
+  
+  // Hide array responses (suggestions, etc)
+  if (trimmedS.startsWith('[') && trimmedS.endsWith(']')) {
     return "";
   }
 
   let cleaned = content;
 
-  // Remove multiple building triggers
-  cleaned = cleaned.replace(/(\*?\*?Now I['’]ll start building\.{2,3}\*?\*?\s*){2,}/gi, 'Now I\'ll start building...\n\n');
+  // Remove JSON objects embedded in text
+  cleaned = cleaned.replace(/\{\s*"files"\s*:\s*\{[\s\S]*?\}\s*\}/g, '');
+  cleaned = cleaned.replace(/\{\s*"actions_taken"\s*:\s*\[[\s\S]*?\]\s*\}/g, '');
+  
+  // Remove code blocks that contain JSON
+  cleaned = cleaned.replace(/```(?:json)?\s*\{[\s\S]*?\}\s*```/gi, '');
+  cleaned = cleaned.replace(/```(?:tsx?|jsx?|html|css)?\s*[\s\S]*?```/gi, '');
 
-  // Remove code blocks that are part of JSON responses but not actual message text
-  cleaned = cleaned.replace(/```(json)?\s*\{\s*"files"[\s\S]*?```/gi, '');
-
-  // Remove trailing JSON garbage if any
+  // Remove trailing JSON garbage
   cleaned = cleaned.replace(/\{\s*"files"\s*:\s*\{[\s\S]*$/g, '');
+  cleaned = cleaned.replace(/\[\s*\{[\s\S]*$/g, '');
 
-  // Remove technical summary sections if they appear in the text
-  cleaned = cleaned.replace(/\*?\*?Summary:?\*?\*?[\s\S]*?(?=\*\*What I['’]m Building|\*\*Now I['’]ll|$)/gi, '');
+  // Remove summary sections
+  cleaned = cleaned.replace(/\*?\*?Summary:?\*?\*?[\s\S]*?(?=\*\*|$)/gi, '');
 
   // Filter out technical lines
   cleaned = cleaned.split('\n').filter(line => {
     const t = line.trim();
-    if (t.startsWith('"src/') || t.startsWith('"package.json"') ||
-      t.startsWith('"tailwind.config') || t.startsWith('"vite.config') ||
-      t.startsWith('"index.html"') || t.startsWith('"tsconfig')) {
-      return false;
-    }
-    if (t.startsWith('{') && t.includes('"files"')) return false;
-    if (t === '{' || t === '}' || t === '",') return false;
+    // Skip JSON-like content
+    if (t.startsWith('"') && (t.includes('src/') || t.includes('index.html'))) return false;
+    if (t.startsWith('{') || t === '}' || t === '],') return false;
+    if (t.startsWith('[') && t.includes('"')) return false;
     if (t.toLowerCase().startsWith('summary:')) return false;
+    // Skip file path references
+    if (/^["']?(src\/|index\.html|package\.json|tailwind|vite)/.test(t)) return false;
     return true;
   }).join('\n');
 
-  // Clean up the trigger headers but KEEP the explanation text
-  cleaned = cleaned.replace(/###? \*\*What I['’]m Building:\*\*?/gi, '');
-  cleaned = cleaned.replace(/\*\*Now I['’]ll start building\.\.\.\*\*/gi, '');
-
+  // Clean excessive whitespace
   return cleaned.replace(/\n{3,}/g, '\n\n').trim();
 };
 

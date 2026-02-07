@@ -88,19 +88,17 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
 
   // Ref to track if we've initialized the current set of files
   const initializedHash = useRef<string | null>(null);
+  const lastSyncedHash = useRef<string | null>(null);
 
+  // Generate a robust hash of all files for change detection
   const filesHash = React.useMemo(() => {
-    // IMPORTANT: previous implementation only hashed first 200 chars,
-    // which caused preview not to update when edits happened later in files.
-    const SAMPLE = 800;
     let hash = 0;
-
     const entries = Object.entries(files).sort(([a], [b]) => a.localeCompare(b));
+    
     for (const [path, file] of entries) {
       const content = file?.content || '';
-      const head = content.slice(0, SAMPLE);
-      const tail = content.length > SAMPLE ? content.slice(-SAMPLE) : '';
-      const sample = `${path}:${content.length}:${head}:${tail}`;
+      // Hash full content for accurate change detection
+      const sample = `${path}:${content.length}:${content}`;
       for (let i = 0; i < sample.length; i++) {
         const char = sample.charCodeAt(i);
         hash = ((hash << 5) - hash) + char;
@@ -284,18 +282,20 @@ export default defineConfig({
     }
   }, [sandboxId, files, projectType]);
 
-  // Sync Files Logic
+  // Sync Files Logic - with better change detection
   useEffect(() => {
     const syncFiles = async () => {
       if (!apiUrl || !sandboxFiles) return;
-      if (initializedHash.current === filesHash && isSandboxReady) return;
+      
+      // Skip if hash unchanged
+      if (lastSyncedHash.current === filesHash) return;
 
       try {
         const isFirstInit = !isSandboxReady;
         setSandboxStatus(isFirstInit ? "Installing dependencies & Starting..." : "Updating files...");
 
         const endpoint = isFirstInit ? '/init' : '/update';
-        console.log(`Sending ${Object.keys(sandboxFiles).length} files to ${endpoint}`);
+        console.log(`[Preview] Syncing ${Object.keys(sandboxFiles).length} files to ${endpoint}, hash: ${filesHash}`);
 
         const response = await fetch(`${apiUrl}${endpoint}`, {
           method: 'POST',
@@ -306,16 +306,19 @@ export default defineConfig({
         if (!response.ok) throw new Error("Failed to sync files");
 
         initializedHash.current = filesHash;
+        lastSyncedHash.current = filesHash;
 
         if (isFirstInit) {
-          // Wait slightly for Vite to be ready?
-          // The server returns immediately after triggering background task.
           setTimeout(() => {
             setIsSandboxReady(true);
             setSandboxStatus("Ready");
-          }, 6000); // Give 6 seconds for npm install
+            // Force refresh iframe
+            setKey(k => k + 1);
+          }, 6000);
         } else {
           setSandboxStatus("Ready");
+          // Refresh iframe on updates
+          setKey(k => k + 1);
         }
 
       } catch (error) {
@@ -324,8 +327,8 @@ export default defineConfig({
       }
     };
 
-    // Debounce slightly
-    const timer = setTimeout(syncFiles, 1000);
+    // Debounce slightly for batch updates
+    const timer = setTimeout(syncFiles, 500);
     return () => clearTimeout(timer);
   }, [apiUrl, sandboxFiles, filesHash, isSandboxReady]);
 
