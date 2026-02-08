@@ -52,7 +52,7 @@ interface GenerationPhase {
 const ProjectEditorRoute = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const { projects, loading: projectsLoading, updateProject, getProject } = useProjects();
 
@@ -215,10 +215,11 @@ const ProjectEditorRoute = () => {
 
           // Add explanation message for initial generation (keep it SHORT)
           const assistantId = crypto.randomUUID();
-          const planContent = planLines.length > 0
-            ? `### **What I'm Building (Short):**\n${planLines.slice(0, 4).map((line, i) => `${i + 1}. ${line}`).join('\n')}\n\n`
-            : '';
-          const explanationMessage = `${planContent}**${t('chat.generating')}**`;
+           const planIntro = language === 'ar' ? '### **هعملك:**' : '### **What I will build:**';
+           const planContent = planLines.length > 0
+             ? `${planIntro}\n${planLines.slice(0, 4).map((line) => `- ${line}`).join('\n')}\n\n`
+             : '';
+           const explanationMessage = `${planContent}**${t('chat.generating')}**`;
           await addMessage('assistant', explanationMessage, undefined, undefined, undefined, assistantId);
           lastAssistantMessageId.current = assistantId;
 
@@ -247,24 +248,30 @@ const ProjectEditorRoute = () => {
                 fullResponse += chunk;
                 setStreamingContent(fullResponse);
 
-                // Live file detection - look for file paths in the streaming JSON
-                const filePathMatches = fullResponse.match(/"([^"]+\.(tsx?|jsx?|css|json|html|md))"\s*:/g);
-                if (filePathMatches) {
-                  filePathMatches.forEach(match => {
-                    const fileName = match.replace(/["':]/g, '').trim();
-                    if (fileName && !detectedFiles.has(fileName)) {
-                      detectedFiles.add(fileName);
-                      // Add file to activities as it's being written
-                      setFileActivities(prev => {
-                        const exists = prev.find(f => f.name === fileName);
-                        if (exists) return prev;
-                        return [
-                          ...prev.map(f => ({ ...f, status: 'done' as const })),
-                          { name: fileName, status: 'editing' as const, action: 'created' as const }
-                        ];
-                      });
-                    }
+                // Live file detection (JSON + <FILE> blocks)
+                const markFile = (fileNameRaw: string) => {
+                  const fileName = (fileNameRaw || '').trim();
+                  if (!fileName || detectedFiles.has(fileName)) return;
+                  detectedFiles.add(fileName);
+
+                  setFileActivities(prev => {
+                    const exists = prev.find(f => f.name === fileName);
+                    if (exists) return prev;
+                    return [
+                      ...prev.map(f => ({ ...f, status: 'done' as const })),
+                      { name: fileName, status: 'editing' as const, action: 'created' as const }
+                    ];
                   });
+                };
+
+                const jsonPathMatches = fullResponse.match(/"([^"]+\.(tsx?|jsx?|css|json|html|md))"\s*:/g);
+                if (jsonPathMatches) {
+                  jsonPathMatches.forEach(m => markFile(m.replace(/["':]/g, '')));
+                }
+
+                const fileBlockMatches = Array.from(fullResponse.matchAll(/<FILE\s+path=("|')([^"']+)\1>/g));
+                if (fileBlockMatches.length > 0) {
+                  fileBlockMatches.forEach(m => markFile(m[2]));
                 }
               },
               onComplete: async (response) => {
@@ -577,26 +584,28 @@ const ProjectEditorRoute = () => {
             fullResponse += chunk;
             setStreamingContent(fullResponse);
 
-            // Live file detection - look for file paths in the streaming JSON
-            const filePathMatches = fullResponse.match(/"([^"]+\.(tsx?|jsx?|css|json|html|md))"\s*:/g);
-            if (filePathMatches) {
-              filePathMatches.forEach(match => {
-                const fileName = match.replace(/["':]/g, '').trim();
-                if (fileName && !detectedFiles.has(fileName)) {
-                  detectedFiles.add(fileName);
-                  // Add file to activities as it's being written
-                  const isEdit = localProject.files[fileName] !== undefined;
-                  setFileActivities(prev => {
-                    const exists = prev.find(f => f.name === fileName);
-                    if (exists) return prev;
-                    return [
-                      ...prev.map(f => ({ ...f, status: 'done' as const })),
-                      { name: fileName, status: 'editing' as const, action: isEdit ? 'edited' : 'created' }
-                    ];
-                  });
-                }
+            // Live file detection (JSON + <FILE> blocks)
+            const markFile = (fileNameRaw: string) => {
+              const fileName = (fileNameRaw || '').trim();
+              if (!fileName || detectedFiles.has(fileName)) return;
+              detectedFiles.add(fileName);
+
+              const isEdit = localProject.files[fileName] !== undefined;
+              setFileActivities(prev => {
+                const exists = prev.find(f => f.name === fileName);
+                if (exists) return prev;
+                return [
+                  ...prev.map(f => ({ ...f, status: 'done' as const })),
+                  { name: fileName, status: 'editing' as const, action: isEdit ? 'edited' : 'created' }
+                ];
               });
-            }
+            };
+
+            const jsonPathMatches = fullResponse.match(/"([^"]+\.(tsx?|jsx?|css|json|html|md))"\s*:/g);
+            if (jsonPathMatches) jsonPathMatches.forEach(m => markFile(m.replace(/["':]/g, '')));
+
+            const fileBlockMatches = Array.from(fullResponse.matchAll(/<FILE\s+path=("|')([^"']+)\1>/g));
+            if (fileBlockMatches.length > 0) fileBlockMatches.forEach(m => markFile(m[2]));
           },
           onComplete: async (response) => {
             if (isCancelled.current) return;

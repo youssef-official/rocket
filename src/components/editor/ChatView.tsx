@@ -102,6 +102,9 @@ const cleanAIMessage = (content: string): string => {
   // Remove JSON objects embedded in text
   cleaned = cleaned.replace(/\{\s*"files"\s*:\s*\{[\s\S]*?\}\s*\}/g, '');
   cleaned = cleaned.replace(/\{\s*"actions_taken"\s*:\s*\[[\s\S]*?\]\s*\}/g, '');
+
+  // Remove file-block output (preferred code mode format)
+  cleaned = cleaned.replace(/<FILE\s+path=("|')[^"']+\1>[\s\S]*?<\/FILE>/gi, '');
   
   // Remove code blocks that contain JSON
   cleaned = cleaned.replace(/```(?:json)?\s*\{[\s\S]*?\}\s*```/gi, '');

@@ -101,37 +101,31 @@ const showToast = (message: string, type = 'success') => {
 )}
 
 ═══════════════════════════════════════════════════════════════════════════════
-📤 OUTPUT FORMAT - CRITICAL
+📤 OUTPUT FORMAT - CRITICAL (MODE: code)
 ═══════════════════════════════════════════════════════════════════════════════
-YOUR RESPONSE MUST BE ONLY VALID JSON. NO MARKDOWN. NO EXPLANATIONS. NO CODE BLOCKS.
+Return ONLY file blocks (plain text). NO JSON. NO MARKDOWN. NO EXPLANATIONS.
 
-REQUIRED FORMAT:
-{
-  "files": {
-    "index.html": "<!DOCTYPE html>...",
-    "src/App.tsx": "import React from 'react';...",
-    "src/main.tsx": "import React from 'react';...",
-    "src/index.css": "@tailwind base;..."
-  },
-  "actions_taken": [
-    {"name": "index.html", "action": "created", "status": "done"},
-    {"name": "src/App.tsx", "action": "created", "status": "done"}
-  ]
-}
+REQUIRED FORMAT (repeat for every file):
+<FILE path="index.html">
+<!DOCTYPE html>
+...
+</FILE>
 
-ESCAPE ALL SPECIAL CHARACTERS:
-- Newlines: \\n
-- Quotes: \\"
-- Backslashes: \\\\
+RULES:
+- Your response MUST start with "<FILE path=\"...\">".
+- Do NOT output any text outside <FILE>...</FILE> blocks.
+- Include at minimum: index.html, src/App.tsx, src/main.tsx, src/index.css.
+- File content must be raw (normal newlines, quotes, backslashes). Do NOT escape anything.
 
-DO NOT include \`\`\` or any markdown formatting.
-OUTPUT ONLY THE JSON OBJECT.`;
+- Do not include markdown code fences.
+OUTPUT ONLY <FILE> blocks.`;
 
 const STATUS_PROMPT = `Generate ONE ultra-short status (Max 4 words). No emojis. No punctuation.`;
 
-const EXPLANATION_PROMPT = `You are Vivora X. Explain your implementation plan clearly and professionally.
-Be concise, mention key features. Only reference: react, lucide-react, framer-motion, clsx, tailwind-merge.
-Do NOT mention react-router-dom or other unavailable packages.`;
+const EXPLANATION_PROMPT = `Reply in the user's language.
+Explain what you will build in EXACTLY 4 short numbered lines (1-4).
+Focus on user-facing pages/features only (what the user will see/use).
+Avoid technical implementation details (no "state management", no package lists, no headings).`;
 
 const PROJECT_NAME_PROMPT = `Generate a creative 2-word project name. Title Case. No quotes or punctuation.
 Example: "Nova Dashboard", "Stellar Store", "Pixel Studio"`;
@@ -193,12 +187,11 @@ serve(async (req) => {
           content: `${finalMessages[lastUserMsgIndex].content}
 
 ⚠️ CRITICAL REQUIREMENTS:
-1. OUTPUT ONLY JSON - No markdown, no code blocks, no explanations
+1. OUTPUT ONLY <FILE> blocks (no JSON, no markdown, no explanations)
 2. PACKAGES: Only react, lucide-react, framer-motion, clsx, tailwind-merge
 3. RESPONSIVE: Every element MUST have mobile-first responsive classes
 4. BRANDING: index.html MUST include: <script src="https://www.vivorax.online/branding.js" defer></script>
-5. ESCAPE STRINGS: Properly escape \\n \\" \\\\ in JSON
-6. GENERATE ALL FILES COMPLETELY - Do not truncate`,
+5. GENERATE ALL FILES COMPLETELY - Do not truncate`,
         };
       }
     }
