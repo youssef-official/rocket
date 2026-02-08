@@ -157,6 +157,31 @@ function manualExtractFiles(text: string): { files: Record<string, any>, fileLis
 }
 
 /**
+ * Parses <FILE path="...">...</FILE> blocks (preferred for code mode).
+ */
+function parseFileBlocks(text: string): { files: Record<string, any>, fileList: string[] } | null {
+  const files: Record<string, any> = {};
+  const fileList: string[] = [];
+
+  const re = /<FILE\s+path=("|')([^"']+)\1>\s*([\s\S]*?)\s*<\/FILE>/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = re.exec(text)) !== null) {
+    const path = match[2]?.trim();
+    if (!path || /^\d+$/.test(path)) continue;
+
+    // Preserve content as-is (raw newlines etc.)
+    const content = match[3] ?? '';
+
+    if (!fileList.includes(path)) fileList.push(path);
+    files[path] = { path, content, type: 'file' };
+  }
+
+  if (fileList.length === 0) return null;
+  return { files, fileList };
+}
+
+/**
  * Attempts to fix truncated JSON by closing open structures
  */
 function attemptJsonRepair(jsonStr: string): string {
@@ -253,6 +278,13 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
       if (parts.length > 1) {
         response = parts.slice(1).join('|');
       }
+    }
+
+    // Preferred: parse <FILE> blocks (doesn't require JSON escaping)
+    const fileBlocks = parseFileBlocks(response);
+    if (fileBlocks && fileBlocks.fileList.length > 0) {
+      console.log('[parseAIResponse] Parsed <FILE> blocks:', fileBlocks.fileList);
+      return { ...fileBlocks, actionsTaken: [] };
     }
 
     // Check for truncation
