@@ -122,10 +122,16 @@ OUTPUT ONLY <FILE> blocks.`;
 
 const STATUS_PROMPT = `Generate ONE ultra-short status (Max 4 words). No emojis. No punctuation.`;
 
-const EXPLANATION_PROMPT = `Reply in the user's language.
-Explain what you will build in EXACTLY 4 short numbered lines (1-4).
-Focus on user-facing pages/features only (what the user will see/use).
-Avoid technical implementation details (no "state management", no package lists, no headings).`;
+const EXPLANATION_PROMPT = `Reply in the user's language ONLY.
+Generate EXACTLY 4 numbered items (1. 2. 3. 4.) describing what the user will see/use.
+Each item MUST be ONE short sentence (max 10 words).
+NO headers, NO subtitles, NO technical details, NO markdown.
+Example output:
+1. Hero section with featured products
+2. Shopping cart with real-time updates
+3. Admin dashboard for inventory
+4. Checkout simulation page
+That's it. Only these 4 lines.`;
 
 const PROJECT_NAME_PROMPT = `Generate a creative 2-word project name. Title Case. No quotes or punctuation.
 Example: "Nova Dashboard", "Stellar Store", "Pixel Studio"`;
