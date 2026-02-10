@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Zap, Star, Crown, Rocket } from 'lucide-react';
 import { useUserPlan, PLAN_CONFIG, type PlanType } from '@/hooks/useUserPlan';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { PayPalButton } from '@/components/shared/PayPalButton';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -138,17 +139,27 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
                     </ul>
 
                     <button
-                      disabled={isCurrentPlan}
+                      disabled={isCurrentPlan || key === 'spark'}
                       className={`w-full py-2.5 rounded-lg font-medium transition-colors ${
                         isCurrentPlan
                           ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                          : popular || isHighlighted
-                            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                            : 'bg-secondary text-foreground hover:bg-accent'
+                          : key === 'spark'
+                            ? 'bg-secondary text-foreground'
+                            : popular || isHighlighted
+                              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                              : 'bg-secondary text-foreground hover:bg-accent'
                       }`}
                     >
-                      {isCurrentPlan ? t('upgrade.currentPlan') : t('upgrade.selectPlan')}
+                      {isCurrentPlan ? t('upgrade.currentPlan') : key === 'spark' ? 'Free' : t('upgrade.selectPlan')}
                     </button>
+
+                    {key !== 'spark' && !isCurrentPlan && (
+                      <PayPalButton
+                        plan={key}
+                        onSuccess={() => { onClose(); window.location.reload(); }}
+                        className="mt-2"
+                      />
+                    )}
                   </div>
                 );
               })}

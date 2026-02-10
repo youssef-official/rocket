@@ -85,17 +85,6 @@ If the user asks for an admin panel / dashboard / لوحة تحكم:
 6. Admin route: currentPage === 'admin' && <AdminDashboard />
 
 ═══════════════════════════════════════════════════════════════════════════════
-💳 PAYPAL PAYMENT (When requested or for e-commerce)
-═══════════════════════════════════════════════════════════════════════════════
-For e-commerce or payment features, integrate PayPal:
-1. Add PayPal JS SDK in index.html:
-   <script src="https://www.paypal.com/sdk/js?client-id=PAYPAL_CLIENT_ID&currency=USD"></script>
-2. Create a PayPal checkout button component using window.paypal.Buttons
-3. Handle createOrder and onApprove callbacks
-4. Show order confirmation after successful payment
-5. Use sandbox mode for testing
-
-═══════════════════════════════════════════════════════════════════════════════
 🗂️ COMPLETE PROJECT STRUCTURE (MANDATORY - Generate ALL files)
 ═══════════════════════════════════════════════════════════════════════════════
 You MUST generate a COMPLETE project with SEPARATE files for each component:

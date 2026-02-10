@@ -2,3 +2,9 @@ project_id = "afjvxjvmtzzybujtwtxj"
 
 [functions.generate-code]
 verify_jwt = false
+
+[functions.paypal-create-order]
+verify_jwt = false
+
+[functions.paypal-capture-order]
+verify_jwt = false
