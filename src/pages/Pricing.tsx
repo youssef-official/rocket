@@ -4,6 +4,7 @@ import { Check, X, Zap, Star, Crown, Rocket, ArrowLeft } from 'lucide-react';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { PLAN_CONFIG, type PlanType } from '@/hooks/useUserPlan';
+import { PayPalButton } from '@/components/shared/PayPalButton';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 const plans: { key: PlanType; icon: React.ReactNode; color: string; popular?: boolean }[] = [
@@ -151,6 +152,14 @@ export const Pricing: React.FC = () => {
                        key === 'scale' ? t('pricing.contactSales') : 
                        t('pricing.startTrial')}
                     </button>
+
+                    {key !== 'spark' && (
+                      <PayPalButton
+                        plan={key}
+                        onSuccess={() => window.location.reload()}
+                        className="mt-2 !rounded-xl"
+                      />
+                    )}
                   </div>
                 </motion.div>
               );
