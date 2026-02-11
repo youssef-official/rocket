@@ -114,16 +114,16 @@ const cleanAIMessage = (content: string): string => {
   cleaned = cleaned.replace(/\{\s*"files"\s*:\s*\{[\s\S]*$/g, '');
   cleaned = cleaned.replace(/\[\s*\{[\s\S]*$/g, '');
 
-  // Remove summary sections
-  cleaned = cleaned.replace(/\*?\*?Summary:?\*?\*?[\s\S]*?(?=\*\*|$)/gi, '');
+  // Remove summary sections but KEEP the completion markers if they are part of it
+  cleaned = cleaned.replace(/\*?\*?Summary:?\*?\*?[\s\S]*?(?=[✅✅]|\*\*|جاهز|Completed|$)/gi, '');
 
   // Filter out technical lines
   cleaned = cleaned.split('\n').filter(line => {
     const t = line.trim();
     // Skip JSON-like content
     if (t.startsWith('"') && (t.includes('src/') || t.includes('index.html'))) return false;
-    if (t.startsWith('{') || t === '}' || t === '],') return false;
-    if (t.startsWith('[') && t.includes('"')) return false;
+    if ((t.startsWith('{') && t.endsWith('}')) || t === '}' || t === '],') return false;
+    if (t.startsWith('[') && t.includes('"') && t.endsWith(']')) return false;
     if (t.toLowerCase().startsWith('summary:')) return false;
     // Skip file path references
     if (/^["']?(src\/|index\.html|package\.json|tailwind|vite)/.test(t)) return false;
@@ -589,10 +589,17 @@ export const ChatView: React.FC<ChatViewProps> = ({
         // A completion message is one that:
         // 1. Has recorded actions
         // 2. Has a completion checkmark
-        // 3. OR contains the specific "Now I'll start building" trigger (which means it WAS a build attempt)
+        // 3. OR contains the specific "Now I'll start building" trigger
+        // 4. OR is an assistant message followed by a newer version being available
         const hasActions = msg.actionsTaken && msg.actionsTaken.length > 0;
-        const hasCheckmark = msg.content.includes('✅') || msg.content.includes('Completed!');
-        const hasBuildTrigger = msg.content.includes("Now I'll start building") || msg.content.includes("Now I'll start building");
+        const hasCheckmark = msg.content.includes('✅') ||
+                          msg.content.includes('Completed!') ||
+                          msg.content.includes('جاهز') ||
+                          msg.content.includes('تم الانتهاء') ||
+                          msg.content.includes('تم الحفظ');
+        const hasBuildTrigger = msg.content.includes("Now I'll start building") ||
+                              msg.content.includes("سأبدأ الآن") ||
+                              msg.content.includes("جاري العمل");
 
         const isCompletion = hasActions || hasCheckmark || hasBuildTrigger;
 

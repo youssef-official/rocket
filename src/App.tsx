@@ -61,7 +61,13 @@ const ProjectEditorRoute = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [fileActivities, setFileActivities] = useState<FileActivity[]>([]);
+  const fileActivitiesRef = useRef<FileActivity[]>([]);
   const [generationPhase, setGenerationPhase] = useState<GenerationPhase | null>(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    fileActivitiesRef.current = fileActivities;
+  }, [fileActivities]);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [currentVersion, setCurrentVersion] = useState<number | null>(null);
   const [hasStartedGeneration, setHasStartedGeneration] = useState(false);
@@ -156,7 +162,14 @@ const ProjectEditorRoute = () => {
         await addMessage('user', prompt, savedImageUrl || undefined);
         setIsGenerating(true);
         setStreamingContent('');
-        setFileActivities([]);
+
+        // Initial activities for feedback
+        const initialActivities: FileActivity[] = [];
+        if (savedImageUrl) {
+          initialActivities.push({ name: 'Attached Image', status: 'done', action: 'analyzed_image' });
+        }
+
+        setFileActivities(initialActivities);
         setStatusMessage(t('chat.analyzing'));
         setGenerationPhase({ phase: 'planning', message: t('chat.analyzing') });
 
@@ -223,10 +236,10 @@ const ProjectEditorRoute = () => {
           // Add explanation message for initial generation (keep it SHORT)
           const assistantId = crypto.randomUUID();
            const planIntro = language === 'ar' ? '### **هعملك:**' : '### **What I will build:**';
-           const planContent = planLines.length > 0
+           const planContentString = planLines.length > 0
              ? `${planIntro}\n${planLines.slice(0, 4).map((line) => `- ${line}`).join('\n')}\n\n`
              : '';
-           const explanationMessage = `${planContent}**${t('chat.generating')}**`;
+           const explanationMessage = `${planContentString}**${t('chat.generating')}**`;
           await addMessage('assistant', explanationMessage, undefined, undefined, undefined, assistantId);
           lastAssistantMessageId.current = assistantId;
 
@@ -298,7 +311,9 @@ const ProjectEditorRoute = () => {
                     status: 'done' as const,
                     action: 'created' as const
                   }));
-                setFileActivities(activities);
+
+                const allActivities = [...fileActivitiesRef.current.filter(a => a.action === 'analyzed_image' || a.action === 'read'), ...activities];
+                setFileActivities(allActivities);
 
                 // Distribute files across plan steps
                 const filesPerStep = Math.ceil(fileList.length / Math.max(planLines.length, 1));
@@ -334,10 +349,10 @@ const ProjectEditorRoute = () => {
 
                   await updateMessage(assistantId, {
                     content: finalContent,
-                    actionsTaken: activities
+                    actionsTaken: allActivities
                   });
                 } else {
-                  await addMessage('assistant', summary, undefined, activities);
+                  await addMessage('assistant', summary, undefined, allActivities);
                 }
 
                 setIsGenerating(false);
@@ -500,7 +515,15 @@ const ProjectEditorRoute = () => {
     setIsChatMode(false);
     setIsGenerating(true);
     setStreamingContent('');
-    setFileActivities([]);
+
+    // Initial activities for better feedback
+    const initialActivities: FileActivity[] = [];
+    if (imageUrls.length > 0) {
+      initialActivities.push({ name: 'Attached Image', status: 'done', action: 'analyzed_image' });
+    }
+    initialActivities.push({ name: 'Existing Code', status: 'done', action: 'read' });
+
+    setFileActivities(initialActivities);
     setStatusMessage(t('chat.analyzing'));
     setGenerationPhase({ phase: 'planning', message: t('chat.analyzing') });
 
@@ -584,8 +607,8 @@ const ProjectEditorRoute = () => {
       let fullResponse = '';
       const detectedFiles = new Set<string>();
 
-      // Pass existing file list so AI knows what files exist and can do targeted edits
-      const existingFilesList = Object.keys(localProject.files);
+      // Pass existing files so AI can see the code and do targeted edits
+      const existingFiles = localProject.files;
 
       await streamAICodeGeneration(
         conversationHistory,
@@ -632,7 +655,12 @@ const ProjectEditorRoute = () => {
                 status: 'done' as const,
                 action: (localProject.files[name] ? 'edited' : 'created') as 'edited' | 'created'
               }));
-            setFileActivities(activities);
+
+            const allActivities = [
+              ...fileActivitiesRef.current.filter(a => a.action === 'analyzed_image' || a.action === 'read'),
+              ...activities
+            ];
+            setFileActivities(allActivities);
 
             // Distribute files across plan steps
             const filesPerStep = Math.ceil(fileList.length / Math.max(planLines.length, 1));
@@ -666,10 +694,10 @@ const ProjectEditorRoute = () => {
 
               await updateMessage(assistantId, {
                 content: finalContent,
-                actionsTaken: activities
+                    actionsTaken: allActivities
               });
             } else {
-              await addMessage('assistant', summary, undefined, activities);
+                  await addMessage('assistant', summary, undefined, allActivities);
             }
 
             setIsGenerating(false);
@@ -756,7 +784,7 @@ const ProjectEditorRoute = () => {
             setStatusMessage(status);
           },
         },
-        existingFilesList.join(', ')
+        existingFiles
       );
     } catch (error) {
       if (isCancelled.current) return;

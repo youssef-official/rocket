@@ -137,7 +137,11 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       if (hasFiles && hasMessages) {
         // Generate AI version name
         const createVersionWithAIName = async () => {
-          const versionNumber = versions.length + 1;
+          // Get the actual next version number from the DB or state
+          const nextVersionNumber = versions.length > 0
+            ? Math.max(...versions.map(v => v.versionNumber)) + 1
+            : 1;
+
           const projectDescription = project.description || project.name || '';
           const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
 
@@ -145,7 +149,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           const versionName = await generateVersionName(
             projectDescription,
             lastUserMessage,
-            versionNumber
+            nextVersionNumber
           );
 
           // Save version with actions_taken

@@ -598,17 +598,36 @@ export async function streamAICodeGeneration(
     onStatusUpdate?: (status: string) => void;
     signal?: AbortSignal;
   },
-  existingFiles?: string
+  existingFiles?: Record<string, any>
 ) {
   try {
     let finalMessages = [...messages];
-    if (existingFiles && finalMessages.length > 0) {
+
+    if (finalMessages.length > 0) {
       const lastMsg = finalMessages[finalMessages.length - 1];
       if (lastMsg.role === 'user') {
+        const hasExistingFiles = existingFiles && Object.keys(existingFiles).length > 0;
+
+        // Construct a concise representation of existing files
+        const filesContext = hasExistingFiles
+          ? Object.entries(existingFiles!)
+              .map(([path, file]) => `--- FILE: ${path} ---\n${file.content || ''}`)
+              .join('\n\n')
+          : "No existing files yet.";
+
         lastMsg.content = `${lastMsg.content}
 
-EXISTING PROJECT FILES: [${existingFiles}]
-⚠️ IMPORTANT: This is an EXISTING project. Only modify files that need changes based on the user's request. Do NOT regenerate unchanged files. Focus on TARGETED, SPECIFIC edits only.`;
+${hasExistingFiles ? 'EXISTING PROJECT CODE:' : 'PROJECT CONTEXT:'}
+${filesContext}
+
+⚠️ MANDATORY INSTRUCTIONS:
+1. ${hasExistingFiles ? 'This is an EXISTING project. Only modify files that ABSOLUTELY need changes.' : 'Create a new, complete, and functional project.'}
+2. If you use a component or library (like Framer Motion, Lucide icons, or shadcn UI), you MUST include the proper import statement at the top of the file.
+3. ${hasExistingFiles ? 'DO NOT regenerate unchanged files. Focus on TARGETED, SPECIFIC edits.' : 'Generate all necessary files to make the site fully functional.'}
+4. If an image was provided, analyze it carefully (colors, layout, components, mood) and apply its design to the code.
+5. You MUST return all changes using the <FILE path="filename">content</FILE> format.
+6. Ensure the site is COMPLETE and BEAUTIFUL. No placeholders like "rest of code here".
+7. Include all buttons, links, and interactive elements. Make sure they are styled and positioned correctly.`;
       }
     }
 
