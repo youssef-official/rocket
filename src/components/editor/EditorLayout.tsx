@@ -20,6 +20,7 @@ import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
+import { CreditWarningBanner } from '@/components/shared/CreditWarningBanner';
 
 interface FileActivity {
   name: string;
@@ -354,6 +355,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
   return (
     <div className="h-screen flex flex-col bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
+      <CreditWarningBanner />
       {/* Header - Bolt Style */}
       <header className={`h-14 flex items-center justify-between px-4 bg-card ${isRTL ? 'flex-row-reverse' : ''}`}>
         {/* Left Section */}

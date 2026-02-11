@@ -80,7 +80,10 @@ serve(async (req) => {
     const order = await orderRes.json();
     console.log(`[PayPal] Order created: ${order.id} for plan: ${plan}`);
 
-    return new Response(JSON.stringify({ id: order.id }), {
+    // Extract the approval URL for user redirect
+    const approveLink = order.links?.find((l: any) => l.rel === 'approve')?.href || '';
+
+    return new Response(JSON.stringify({ id: order.id, approveUrl: approveLink }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

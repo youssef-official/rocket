@@ -1044,6 +1044,7 @@ import { OAuthConsent } from "@/pages/OAuthConsent";
 import FAQ from "@/pages/FAQ";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
+import { Admin } from "@/pages/Admin";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -1065,6 +1066,7 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/admin" element={<Admin />} />
               <Route path="/oauth/consent" element={<OAuthConsent />} />
               <Route path="/" element={<AppContent />} />
             </Routes>

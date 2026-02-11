@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Check, X, Zap, Star, Crown, Rocket, ArrowLeft } from 'lucide-react';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { PLAN_CONFIG, type PlanType } from '@/hooks/useUserPlan';
 import { PayPalButton } from '@/components/shared/PayPalButton';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
@@ -31,6 +32,7 @@ const getFeaturesList = (planKey: PlanType) => {
 
 export const Pricing: React.FC = () => {
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
 
   return (
     <div 
@@ -141,24 +143,25 @@ export const Pricing: React.FC = () => {
                       ))}
                     </ul>
 
-                    <button
-                      className={`w-full py-3 rounded-xl font-medium transition-colors ${
-                        popular
-                          ? 'bg-purple-500 hover:bg-purple-600 text-white'
-                          : 'bg-white/10 hover:bg-white/20 text-white'
-                      }`}
-                    >
-                      {key === 'spark' ? t('pricing.getStarted') : 
-                       key === 'scale' ? t('pricing.contactSales') : 
-                       t('pricing.startTrial')}
-                    </button>
-
-                    {key !== 'spark' && (
+                    {key !== 'spark' && user ? (
                       <PayPalButton
                         plan={key}
                         onSuccess={() => window.location.reload()}
-                        className="mt-2 !rounded-xl"
+                        className="!rounded-xl"
                       />
+                    ) : key !== 'spark' ? (
+                      <a
+                        href="/login"
+                        className="w-full py-3 rounded-xl font-medium transition-colors bg-white/10 hover:bg-white/20 text-white block text-center"
+                      >
+                        {t('auth.goToLogin')}
+                      </a>
+                    ) : (
+                      <button
+                        className="w-full py-3 rounded-xl font-medium transition-colors bg-white/10 hover:bg-white/20 text-white"
+                      >
+                        {t('pricing.getStarted')}
+                      </button>
                     )}
                   </div>
                 </motion.div>

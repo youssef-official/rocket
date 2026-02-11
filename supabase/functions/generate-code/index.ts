@@ -168,18 +168,21 @@ RULES:
 - Smooth framer-motion animations everywhere.
 - OUTPUT ONLY <FILE> blocks.`;
 
-const EXPLANATION_PROMPT = `Reply in the user's language.
-Generate 6-8 numbered items describing the project in detail.
-Each item should be 1-2 sentences explaining a feature or page.
-Include design choices and what makes it special.
+const EXPLANATION_PROMPT = `IMPORTANT: Reply in the SAME language the user wrote their message in. If Arabic, reply in Arabic. If English, reply in English. NEVER reply in Italian.
+
+Generate a project description wrapped in <Summary> tags with 6-8 numbered items.
+
+Each item: 1-2 sentences explaining a feature, page, or design element.
+Include design choices, animations, colors, and user experience details.
 
 Format:
+<Summary>
 1. [Feature name]: [Description of what it does and how it looks]
 2. [Feature name]: [Description]
 ...
+</Summary>
 
-Be descriptive and exciting about the premium design elements.
-Mention animations, colors, and user experience details.`;
+Be descriptive and exciting. Match the user's language exactly.`;
 
 const PROJECT_NAME_PROMPT = `Generate a creative 2-word project name. Title Case. No quotes or punctuation.
 Example: "Nova Dashboard", "Stellar Store", "Pixel Studio"`;
