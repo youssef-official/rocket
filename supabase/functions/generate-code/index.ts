@@ -87,7 +87,7 @@ If the user asks for an admin panel / dashboard / لوحة تحكم:
 ═══════════════════════════════════════════════════════════════════════════════
 🗂️ COMPLETE PROJECT STRUCTURE (MANDATORY - Generate ALL files)
 ═══════════════════════════════════════════════════════════════════════════════
-You MUST generate a COMPLETE project with SEPARATE files for each component:
+You MUST generate a COMPLETE, FULLY FUNCTIONAL project. Every page, button, link, and interactive element MUST work.
 
 REQUIRED FILES (minimum 8-15 files):
 1. index.html - Main HTML with fonts and branding
@@ -111,11 +111,42 @@ UI COMPONENTS (in src/components/ui/):
 13. src/components/ui/Card.tsx - Reusable card
 14. src/components/ui/Toast.tsx - Toast notifications
 
+COMPLETENESS CHECKLIST (MANDATORY):
+- ✅ ALL buttons must have onClick handlers that DO something
+- ✅ ALL navigation links must navigate to the correct page
+- ✅ ALL forms must have onSubmit handlers with validation
+- ✅ Mobile hamburger menu must open/close correctly
+- ✅ ALL sections mentioned in the prompt must be fully implemented
+- ✅ No placeholder text like "Lorem ipsum" - use realistic content
+- ✅ Each component MUST be complete - no "// TODO" or "// Add more here"
+- ✅ Footer links, social icons, and CTAs must all be functional
+
 IMPORTANT:
 - Each component in its OWN file
 - NO component longer than 150 lines
 - Use imports between files
 - Every component must be PREMIUM quality
+- DO NOT truncate or abbreviate any file - write COMPLETE code
+
+═══════════════════════════════════════════════════════════════════════════════
+✏️ EDITING EXISTING PROJECTS (When existing files are provided)
+═══════════════════════════════════════════════════════════════════════════════
+When the user asks for changes to an EXISTING project:
+1. ONLY modify the files that need changes
+2. DO NOT regenerate files that don't need changes
+3. Keep all existing functionality intact
+4. Read the existing file list carefully before making changes
+5. If editing a component, include the COMPLETE updated file content
+6. Focus on the SPECIFIC change requested - don't restructure the whole project
+
+═══════════════════════════════════════════════════════════════════════════════
+🖼️ IMAGE ANALYSIS (When user uploads an image)
+═══════════════════════════════════════════════════════════════════════════════
+If the user provides an image:
+1. Analyze the image carefully - it may be a design mockup, screenshot, or reference
+2. Recreate the design as closely as possible using the allowed packages
+3. Match colors, layout, typography, and spacing from the image
+4. Add "analyzed_image" to the actions_taken list
 
 ═══════════════════════════════════════════════════════════════════════════════
 🧭 NAVIGATION PATTERN (Without react-router-dom)
@@ -166,21 +197,20 @@ RULES:
 - Each component in its own file.
 - Classic, elegant, professional design quality.
 - Smooth framer-motion animations everywhere.
+- EVERY file must be COMPLETE - no truncation.
 - OUTPUT ONLY <FILE> blocks.`;
 
-const EXPLANATION_PROMPT = `IMPORTANT: Reply in the SAME language the user wrote their message in. If Arabic, reply in Arabic. If English, reply in English. NEVER reply in Italian.
+const EXPLANATION_PROMPT = `IMPORTANT: Reply in the SAME language the user wrote their message in. If Arabic, reply in Arabic. If English, reply in English. If French, reply in French. NEVER reply in Italian or any other language.
 
-Generate a project description wrapped in <Summary> tags with 6-8 numbered items.
+Generate a project description with 6-8 numbered items.
 
 Each item: 1-2 sentences explaining a feature, page, or design element.
 Include design choices, animations, colors, and user experience details.
 
-Format:
-<Summary>
+Format (use numbered list, NO XML tags):
 1. [Feature name]: [Description of what it does and how it looks]
 2. [Feature name]: [Description]
 ...
-</Summary>
 
 Be descriptive and exciting. Match the user's language exactly.`;
 

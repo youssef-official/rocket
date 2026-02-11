@@ -14,6 +14,7 @@ import { useProjects } from "@/hooks/useProjects";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useVersions } from "@/hooks/useVersions";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   streamAICodeGeneration,
   parseAIResponse,
@@ -145,8 +146,14 @@ const ProjectEditorRoute = () => {
         // Get the selected model from sessionStorage
         const savedModelId = sessionStorage.getItem(`project_model_${localProject.id}`) || 'rok-fast';
 
+        // Get any uploaded image URL from sessionStorage
+        const savedImageUrl = sessionStorage.getItem(`project_image_${localProject.id}`);
+        if (savedImageUrl) {
+          sessionStorage.removeItem(`project_image_${localProject.id}`);
+        }
+
         // Add user message and AWAIT it to ensure it's saved in the database
-        await addMessage('user', prompt);
+        await addMessage('user', prompt, savedImageUrl || undefined);
         setIsGenerating(true);
         setStreamingContent('');
         setFileActivities([]);
@@ -239,8 +246,13 @@ const ProjectEditorRoute = () => {
           // Build prompt with safety rules
           const userPrompt = `${prompt}\n\n[STRICT RULE: Every component used MUST be imported. If you use <AnimatePresence>, you MUST add: import { motion, AnimatePresence } from "framer-motion"; at the top of the file. NO EXCEPTIONS.]`;
 
+          const aiMessages: any[] = [{ role: 'user', content: userPrompt }];
+          if (savedImageUrl) {
+            aiMessages[0].imageUrls = [savedImageUrl];
+          }
+
           await streamAICodeGeneration(
-            [{ role: 'user', content: userPrompt }],
+            aiMessages,
             localProject.projectType,
             {
               onChunk: (chunk) => {
@@ -675,17 +687,7 @@ const ProjectEditorRoute = () => {
               summary
             }));
 
-            // Create a new version for this completion
-            if (assistantId && activities.length > 0) {
-              const mergedFiles = { ...localProject.files, ...newFiles };
-              await createVersion(
-                mergedFiles,
-                messages, // Current messages state might be slightly stale, but acceptable for now
-                undefined, // Auto-name
-                activities,
-                undefined
-              );
-            }
+            // Version creation is handled by EditorLayout's auto-create on generation complete
 
             // Note: Preview is already the default view in EditorLayout
 
@@ -913,7 +915,7 @@ const AppContent = () => {
     });
   }, []);
 
-  const handleStartBuilding = useCallback(async (prompt: string, projectType: 'vite' | 'html', modelId?: string) => {
+  const handleStartBuilding = useCallback(async (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageFile?: File) => {
     if (!user) return;
 
     isCancelled.current = false;
@@ -938,6 +940,25 @@ const AppContent = () => {
     // Store selectedModel in sessionStorage so it can be used when generating
     if (modelId) {
       sessionStorage.setItem(`project_model_${newProject.id}`, modelId);
+    }
+
+    // Upload image and store URL in sessionStorage for initial generation
+    if (imageFile) {
+      try {
+        const fileName = `${Date.now()}-${imageFile.name}`;
+        const { data, error } = await supabase.storage
+          .from('chat-images')
+          .upload(fileName, imageFile);
+
+        if (!error) {
+          const { data: urlData } = supabase.storage
+            .from('chat-images')
+            .getPublicUrl(fileName);
+          sessionStorage.setItem(`project_image_${newProject.id}`, urlData.publicUrl);
+        }
+      } catch (e) {
+        console.error('Failed to upload image:', e);
+      }
     }
 
     // Navigate to project page
@@ -966,12 +987,12 @@ const AppContent = () => {
   }
 
   // Handle build attempt - require login if not authenticated
-  const handleBuildAttempt = async (prompt: string, projectType: 'vite' | 'html', modelId?: string) => {
+  const handleBuildAttempt = async (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageFile?: File) => {
     if (!user) {
       setShowAuth(true);
       return;
     }
-    await handleStartBuilding(prompt, projectType, modelId);
+    await handleStartBuilding(prompt, projectType, modelId, imageFile);
   };
 
   // Show auth page only if explicitly requested
