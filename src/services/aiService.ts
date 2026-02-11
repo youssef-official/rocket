@@ -605,7 +605,10 @@ export async function streamAICodeGeneration(
     if (existingFiles && finalMessages.length > 0) {
       const lastMsg = finalMessages[finalMessages.length - 1];
       if (lastMsg.role === 'user') {
-        lastMsg.content = `${lastMsg.content}\n\nExisting files in project: ${existingFiles}\nPLEASE FOCUS ON TARGETED EDITS.`;
+        lastMsg.content = `${lastMsg.content}
+
+EXISTING PROJECT FILES: [${existingFiles}]
+⚠️ IMPORTANT: This is an EXISTING project. Only modify files that need changes based on the user's request. Do NOT regenerate unchanged files. Focus on TARGETED, SPECIFIC edits only.`;
       }
     }
 

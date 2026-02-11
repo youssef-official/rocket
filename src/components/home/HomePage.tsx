@@ -24,7 +24,7 @@ interface Project {
 }
 
 interface HomePageProps {
-  onStartBuilding: (prompt: string, projectType: 'vite' | 'html', modelId?: string) => void;
+  onStartBuilding: (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageFile?: File) => void;
   onViewDashboard?: () => void;
   onOpenProject?: (id: string) => void;
   onDeleteProject?: (id: string) => void;
@@ -157,7 +157,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     e.preventDefault();
     if (prompt.trim()) {
       const projectType = selectedFramework === 'React' || selectedFramework === 'Next.js' ? 'vite' : 'html';
-      onStartBuilding(prompt, projectType);
+      onStartBuilding(prompt, projectType, undefined, uploadedImage?.file);
     }
   };
 
