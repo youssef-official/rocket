@@ -111,15 +111,19 @@ UI COMPONENTS (in src/components/ui/):
 13. src/components/ui/Card.tsx - Reusable card
 14. src/components/ui/Toast.tsx - Toast notifications
 
-COMPLETENESS CHECKLIST (MANDATORY):
-- ✅ ALL buttons must have onClick handlers that DO something
-- ✅ ALL navigation links must navigate to the correct page
-- ✅ ALL forms must have onSubmit handlers with validation
-- ✅ Mobile hamburger menu must open/close correctly
+COMPLETENESS CHECKLIST (MANDATORY - ZERO TOLERANCE FOR BROKEN ELEMENTS):
+- ✅ ALL buttons must have onClick handlers that DO something (navigate, toggle state, submit form, etc.)
+- ✅ ALL sidebar/navbar links MUST navigate to real pages using setCurrentPage()
+- ✅ ALL routes referenced in navigation MUST have corresponding page components
+- ✅ ALL forms must have onSubmit handlers with validation and feedback (toast/alert)
+- ✅ Mobile hamburger menu must open/close correctly with state management
 - ✅ ALL sections mentioned in the prompt must be fully implemented
-- ✅ No placeholder text like "Lorem ipsum" - use realistic content
+- ✅ No placeholder text like "Lorem ipsum" - use realistic, themed content
 - ✅ Each component MUST be complete - no "// TODO" or "// Add more here"
 - ✅ Footer links, social icons, and CTAs must all be functional
+- ✅ Shopping cart, search, filters - if shown in UI, they MUST work
+- ✅ EVERY clickable element must have a visible response (hover state + action)
+- ✅ If a sidebar has menu items, EACH item must navigate to a real page component
 
 IMPORTANT:
 - Each component in its OWN file

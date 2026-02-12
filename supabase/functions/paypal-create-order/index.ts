@@ -13,8 +13,10 @@ async function getAccessToken(): Promise<string> {
   const secret = Deno.env.get("PAYPAL_SECRET");
 
   if (!clientId || !secret) {
-    throw new Error("PayPal credentials not configured");
+    throw new Error("PayPal credentials not configured. Please update PAYPAL_CLIENT_ID and PAYPAL_SECRET secrets.");
   }
+
+  console.log(`[PayPal] Authenticating with client ID: ${clientId.substring(0, 8)}...`);
 
   const res = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
     method: "POST",
@@ -27,7 +29,8 @@ async function getAccessToken(): Promise<string> {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`PayPal auth failed [${res.status}]: ${text}`);
+    console.error(`[PayPal] Auth failed [${res.status}]: ${text}`);
+    throw new Error(`PayPal authentication failed. Please verify your PAYPAL_CLIENT_ID and PAYPAL_SECRET are correct sandbox credentials.`);
   }
 
   const data = await res.json();

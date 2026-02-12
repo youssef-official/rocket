@@ -125,6 +125,17 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
   }, [project?.id, fetchVersions]);
 
+  // Refetch versions when tab becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && project?.id) {
+        fetchVersions();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [project?.id, fetchVersions]);
+
   // Auto-create version when generation completes - WITH actions_taken
   useEffect(() => {
     const wasGenerating = prevIsGenerating.current;

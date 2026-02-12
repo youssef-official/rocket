@@ -2,14 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { useUserPlan } from '@/hooks/useUserPlan';
 
+const BANNER_DISMISSED_KEY = 'vivora_credit_banner_dismissed';
+
 export const CreditWarningBanner: React.FC = () => {
   const { userPlan, getRemainingCredits, shouldShowUpgradeBanner } = useUserPlan();
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      const stored = localStorage.getItem(BANNER_DISMISSED_KEY);
+      if (!stored) return false;
+      const { dismissedAt, plan } = JSON.parse(stored);
+      // Only keep dismissed for 24 hours and same plan
+      const hoursSince = (Date.now() - dismissedAt) / (1000 * 60 * 60);
+      return hoursSince < 24 && plan === userPlan?.plan;
+    } catch { return false; }
+  });
 
-  // Reset dismissed state when credits change significantly
-  useEffect(() => {
-    setDismissed(false);
-  }, [userPlan?.plan]);
+  const handleDismiss = () => {
+    setDismissed(true);
+    localStorage.setItem(BANNER_DISMISSED_KEY, JSON.stringify({
+      dismissedAt: Date.now(),
+      plan: userPlan?.plan,
+    }));
+  };
 
   if (dismissed || !userPlan || !shouldShowUpgradeBanner()) return null;
 
@@ -24,7 +38,7 @@ export const CreditWarningBanner: React.FC = () => {
         </span>
       </div>
       <button
-        onClick={() => setDismissed(true)}
+        onClick={handleDismiss}
         className="p-1 hover:bg-white/10 rounded transition-colors flex-shrink-0"
       >
         <X className="w-4 h-4 text-yellow-400" />
