@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Smartphone, Monitor, RotateCcw, ExternalLink } from 'lucide-react';
 import type { ProjectFile } from '@/types';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
@@ -17,62 +17,90 @@ interface PreviewViewProps {
   isLoading?: boolean;
 }
 
-// Loading placeholder with animation
+// Loading placeholder with rich animation
 const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
+  const tips = [
+    "✨ Building your premium design...",
+    "🎨 Applying elegant typography & colors...",
+    "📱 Making it responsive for all devices...",
+    "⚡ Adding smooth animations...",
+    "🧩 Connecting all interactive elements...",
+    "🚀 Almost there! Final touches..."
+  ];
+  const [tipIndex, setTipIndex] = React.useState(0);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setTipIndex(i => (i + 1) % tips.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="flex flex-col items-center justify-center h-full bg-white">
+    <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-gray-50 via-white to-blue-50">
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="text-center"
+        className="text-center max-w-md px-6"
       >
+        {/* Animated Logo */}
         <motion.div
-          animate={{
-            opacity: [0.3, 0.6, 0.3],
-            scale: [1, 1.05, 1]
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="mb-6"
+          animate={{ y: [0, -8, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="mb-8"
         >
-          <div className="flex items-center justify-center opacity-40">
+          <div className="flex items-center justify-center opacity-50">
             <VivoraLogo size="lg" showText={false} className="justify-center" />
           </div>
         </motion.div>
+
+        {/* Progress Ring */}
+        <div className="relative w-16 h-16 mx-auto mb-6">
+          <motion.div
+            className="absolute inset-0 rounded-full border-4 border-blue-100"
+          />
+          <motion.div
+            className="absolute inset-0 rounded-full border-4 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+          />
+        </div>
+
+        {/* Status */}
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="text-gray-400 text-lg font-medium"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-gray-600 text-base font-semibold mb-2"
         >
           {status || "Your preview will appear here"}
         </motion.p>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-4 flex items-center justify-center gap-2"
-        >
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 1, repeat: Infinity, delay: 0 }}
-            className="w-2 h-2 rounded-full bg-primary/40"
-          />
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
-            className="w-2 h-2 rounded-full bg-primary/40"
-          />
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
-            className="w-2 h-2 rounded-full bg-primary/40"
-          />
-        </motion.div>
+
+        {/* Rotating Tips */}
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={tipIndex}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.4 }}
+            className="text-gray-400 text-sm"
+          >
+            {tips[tipIndex]}
+          </motion.p>
+        </AnimatePresence>
+
+        {/* Animated dots */}
+        <div className="mt-6 flex items-center justify-center gap-1.5">
+          {[0, 1, 2, 3, 4].map(i => (
+            <motion.div
+              key={i}
+              animate={{ scale: [0.6, 1, 0.6], opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.15 }}
+              className="w-1.5 h-1.5 rounded-full bg-blue-400"
+            />
+          ))}
+        </div>
       </motion.div>
     </div>
   );
