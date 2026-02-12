@@ -113,8 +113,9 @@ UI COMPONENTS (in src/components/ui/):
 
 COMPLETENESS CHECKLIST (MANDATORY - ZERO TOLERANCE FOR BROKEN ELEMENTS):
 - ✅ ALL buttons must have onClick handlers that DO something (navigate, toggle state, submit form, etc.)
-- ✅ ALL sidebar/navbar links MUST navigate to real pages using setCurrentPage()
-- ✅ ALL routes referenced in navigation MUST have corresponding page components
+- ✅ ALL sidebar/navbar links MUST use setCurrentPage() to navigate to REAL page components that EXIST in the code
+- ✅ For EVERY navigation item in sidebar/navbar, there MUST be a corresponding page component AND a matching condition in the render: {currentPage === 'pageName' && <PageComponent />}
+- ✅ ALL routes referenced in navigation MUST have corresponding page components - NO DEAD LINKS
 - ✅ ALL forms must have onSubmit handlers with validation and feedback (toast/alert)
 - ✅ Mobile hamburger menu must open/close correctly with state management
 - ✅ ALL sections mentioned in the prompt must be fully implemented
@@ -123,7 +124,16 @@ COMPLETENESS CHECKLIST (MANDATORY - ZERO TOLERANCE FOR BROKEN ELEMENTS):
 - ✅ Footer links, social icons, and CTAs must all be functional
 - ✅ Shopping cart, search, filters - if shown in UI, they MUST work
 - ✅ EVERY clickable element must have a visible response (hover state + action)
-- ✅ If a sidebar has menu items, EACH item must navigate to a real page component
+- ✅ If a sidebar has menu items, EACH item MUST: 1) call setCurrentPage('itemName') onClick, 2) have a real page component, 3) be rendered in App.tsx conditionally
+
+RESPONSIVE DESIGN (MANDATORY FOR ALL ELEMENTS):
+- ✅ EVERY layout must use responsive classes: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+- ✅ Sidebar must collapse to hamburger menu on mobile (hidden md:block)
+- ✅ Text sizes must scale: text-sm sm:text-base md:text-lg lg:text-xl
+- ✅ Padding/margin must scale: p-4 md:p-6 lg:p-8
+- ✅ Images must be responsive: w-full h-auto object-cover
+- ✅ Tables must scroll horizontally on mobile: overflow-x-auto
+- ✅ Test mentally: Does this look good on 375px, 768px, and 1440px?
 
 IMPORTANT:
 - Each component in its OWN file
@@ -224,8 +234,10 @@ Example: "Nova Dashboard", "Stellar Store", "Pixel Studio"`;
 const SUGGESTIONS_PROMPT = `Generate 4 feature suggestions as a JSON array.
 Only suggest features possible with: react, lucide-react, framer-motion, tailwind.
 
+CRITICAL: The suggestions MUST be in the SAME LANGUAGE as the user's last message. If the user wrote in Arabic, suggestions must be in Arabic. If English, in English. Match the user's language exactly.
+
 You MUST return ONLY this exact JSON format (no markdown, no explanation):
-[{"label":"Add Dark Mode","prompt":"Add a dark mode toggle with smooth transition"},{"label":"Improve Animations","prompt":"Add smooth page transitions using Framer Motion"},{"label":"Mobile Menu","prompt":"Add a responsive hamburger menu for mobile"},{"label":"Contact Form","prompt":"Add a contact form with validation"}]`;
+[{"label":"short label","prompt":"detailed prompt describing the feature"},{"label":"short label","prompt":"detailed prompt"},{"label":"short label","prompt":"detailed prompt"},{"label":"short label","prompt":"detailed prompt"}]`;
 
 const CHAT_PROMPT = `You are Vivora X, a friendly Senior Software Engineer.
 Be helpful, concise, and use the user's language.
