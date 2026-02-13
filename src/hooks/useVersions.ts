@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { ProjectFile, ChatMessage, FileActivity } from '@/types';
@@ -56,6 +56,24 @@ export function useVersions(projectId: string | null) {
       setLoading(false);
     }
   }, [user, projectId]);
+
+  // Auto-fetch versions on mount and when projectId changes
+  useEffect(() => {
+    if (user && projectId) {
+      fetchVersions();
+    }
+  }, [user, projectId, fetchVersions]);
+
+  // Refetch versions when tab becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && projectId && user) {
+        fetchVersions();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [projectId, user, fetchVersions]);
 
   const createVersion = useCallback(async (
     files: Record<string, ProjectFile>,
