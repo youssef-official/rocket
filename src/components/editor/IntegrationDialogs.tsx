@@ -41,12 +41,23 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
   const [isDeploying, setIsDeploying] = useState(false);
   const [deploymentUrl, setDeploymentUrl] = useState<string | null>(null);
   const [deploymentStatus, setDeploymentStatus] = useState<string | null>(null);
-  const [customName, setCustomName] = useState(projectName);
+  const [customName, setCustomName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [nameHint, setNameHint] = useState<string | null>(null);
 
+  // Validate project name format
   useEffect(() => {
-    setCustomName(projectName);
-  }, [projectName]);
+    if (!customName.trim()) {
+      setNameHint(null);
+      return;
+    }
+    const safeName = customName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').substring(0, 100);
+    if (safeName !== customName) {
+      setNameHint(`سيتم تحويل الاسم إلى: ${safeName}`);
+    } else {
+      setNameHint(null);
+    }
+  }, [customName]);
 
   const handleDeploy = async () => {
     if (!integrations?.vercel_token) {
@@ -199,7 +210,14 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
                     placeholder="my-awesome-project"
+                    className={nameHint ? 'border-amber-500/50' : ''}
                   />
+                  {nameHint && (
+                    <p className="text-xs text-amber-500">{nameHint}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    اسم فريد للمشروع على Vercel (حروف صغيرة وأرقام وشرطات فقط)
+                  </p>
                 </div>
               </div>
 
