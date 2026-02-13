@@ -697,8 +697,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           </>
                         )}
 
-                        {/* Show stored activities for completed versions */}
-                        {versionActivities.length > 0 && !isGenerating && (
+                        {/* Show stored activities for completed versions - always visible */}
+                        {versionActivities.length > 0 && (
                           renderFileActivityPanelForMessage(msg.id, versionActivities, false)
                         )}
 

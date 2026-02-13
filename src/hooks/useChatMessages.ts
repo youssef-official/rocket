@@ -48,6 +48,17 @@ export function useChatMessages(projectId: string | null) {
     fetchMessages();
   }, [fetchMessages]);
 
+  // Refetch messages when tab becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && projectId && user) {
+        fetchMessages();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [projectId, user, fetchMessages]);
+
   // Add a new message
   const addMessage = useCallback(async (
     role: 'user' | 'assistant',
