@@ -581,31 +581,35 @@ export const ChatView: React.FC<ChatViewProps> = ({
     // Sort versions by versionNumber ascending for mapping
     const sortedVersions = [...versions].sort((a, b) => a.versionNumber - b.versionNumber);
 
-    // Counter for versions found
-    let versionCounter = 0;
+    // Match versions to assistant messages by timestamp proximity
+    // Each version is assigned to the closest assistant message that came before it
+    const versionAssignments = new Map<number, ProjectVersion>();
+    
+    const assistantMessages = messages
+      .map((msg, idx) => ({ msg, idx }))
+      .filter(({ msg }) => msg.role === 'assistant');
+
+    for (const version of sortedVersions) {
+      // Find the last assistant message created before or around the version's creation time
+      let bestMatch: number | null = null;
+      for (const { msg, idx } of assistantMessages) {
+        const msgTime = msg.createdAt ? new Date(msg.createdAt).getTime() : 0;
+        const versionTime = new Date(version.createdAt).getTime();
+        // Version should be created after or within 60s of the assistant message
+        if (msgTime <= versionTime + 60000 && !versionAssignments.has(idx)) {
+          bestMatch = idx;
+        }
+      }
+      if (bestMatch !== null) {
+        versionAssignments.set(bestMatch, version);
+      }
+    }
 
     messages.forEach((msg, msgIndex) => {
       if (msg.role === 'assistant') {
-        // A completion message is one that:
-        // 1. Has recorded actions
-        // 2. Has a completion checkmark
-        // 3. OR contains the specific "Now I'll start building" trigger (which means it WAS a build attempt)
-        const hasActions = msg.actionsTaken && msg.actionsTaken.length > 0;
-        const hasCheckmark = msg.content.includes('✅') || msg.content.includes('Completed!');
-        const hasBuildTrigger = msg.content.includes("Now I'll start building") || msg.content.includes("Now I'll start building");
-
-        const isCompletion = hasActions || hasCheckmark || hasBuildTrigger;
-
-        let version: ProjectVersion | undefined;
-        // Map versions in order of completion messages
-        if (isCompletion && versionCounter < sortedVersions.length) {
-          version = sortedVersions[versionCounter];
-          versionCounter++;
-        }
-
+        const version = versionAssignments.get(msgIndex);
         const noUserMessagesAfter = !messages.slice(msgIndex + 1).some(m => m.role === 'user');
         const isLastAssistantActive = msgIndex === lastAssistantIndex && noUserMessagesAfter;
-
         result.push({ msg, version, isLastAssistant: isLastAssistantActive, msgIndex });
       } else {
         result.push({ msg, version: undefined, isLastAssistant: false, msgIndex });
