@@ -98,34 +98,50 @@ export async function deployToVercel(
       data: file.content,
     }));
 
-    // Add package.json if not exists
-    const hasPackageJson = vercelFiles.some(f => f.file === 'package.json');
-    if (!hasPackageJson) {
-      vercelFiles.push({
-        file: 'package.json',
-        data: JSON.stringify({
-          name: safeName,
-          private: true,
-          version: '0.0.0',
-          type: 'module',
-          scripts: {
-            dev: 'vite',
-            build: 'vite build',
-            preview: 'vite preview',
-          },
-          dependencies: {
-            react: '^18.2.0',
-            'react-dom': '^18.2.0',
-          },
-          devDependencies: {
-            '@types/react': '^18.2.0',
-            '@types/react-dom': '^18.2.0',
-            '@vitejs/plugin-react': '^4.0.0',
-            typescript: '^5.0.0',
-            vite: '^5.0.0',
-          },
-        }, null, 2),
-      });
+    // Add or fix package.json to include all required dependencies
+    const pkgIdx = vercelFiles.findIndex(f => f.file === 'package.json');
+    const basePkg = {
+      name: safeName,
+      private: true,
+      version: '0.0.0',
+      type: 'module',
+      scripts: {
+        dev: 'vite',
+        build: 'vite build',
+        preview: 'vite preview',
+      },
+      dependencies: {
+        react: '^18.2.0',
+        'react-dom': '^18.2.0',
+        'framer-motion': '^11.0.0',
+        'lucide-react': '^0.400.0',
+        clsx: '^2.1.0',
+        'tailwind-merge': '^2.2.0',
+      },
+      devDependencies: {
+        '@types/react': '^18.2.0',
+        '@types/react-dom': '^18.2.0',
+        '@vitejs/plugin-react': '^4.0.0',
+        typescript: '^5.0.0',
+        vite: '^5.0.0',
+        tailwindcss: '^3.4.0',
+        postcss: '^8.4.0',
+        autoprefixer: '^10.4.0',
+      },
+    };
+
+    if (pkgIdx === -1) {
+      vercelFiles.push({ file: 'package.json', data: JSON.stringify(basePkg, null, 2) });
+    } else {
+      // Merge missing deps into existing package.json
+      try {
+        const existing = JSON.parse(vercelFiles[pkgIdx].data);
+        existing.dependencies = { ...basePkg.dependencies, ...(existing.dependencies || {}) };
+        existing.devDependencies = { ...basePkg.devDependencies, ...(existing.devDependencies || {}) };
+        vercelFiles[pkgIdx].data = JSON.stringify(existing, null, 2);
+      } catch {
+        vercelFiles[pkgIdx].data = JSON.stringify(basePkg, null, 2);
+      }
     }
 
     // Add vite.config if not exists
