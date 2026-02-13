@@ -129,6 +129,21 @@ export function useVersions(projectId: string | null) {
 
       setVersions(prev => [newVersion, ...prev]);
 
+      // Play completion sound
+      try {
+        const audio = new Audio('/sounds/version-complete.mp3');
+        audio.volume = 0.5;
+        audio.play().catch(() => {});
+      } catch {}
+
+      // Send browser notification
+      if (Notification.permission === 'granted') {
+        new Notification('Vivora X', {
+          body: `✅ Version ${nextVersion} saved successfully!`,
+          icon: '/favicon.svg',
+        });
+      }
+
       toast({
         title: 'Version saved',
         description: `Version ${nextVersion} created successfully`,

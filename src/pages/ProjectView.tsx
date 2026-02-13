@@ -19,6 +19,13 @@ export const ProjectView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [project, setProject] = useState<any>(null);
 
+  // Request notification permission
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
   useEffect(() => {
     const fetchProject = async () => {
       if (!projectId) {
