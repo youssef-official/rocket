@@ -9,19 +9,21 @@ const corsHeaders = {
 const PAYPAL_API = "https://api-m.sandbox.paypal.com";
 
 async function getAccessToken(): Promise<string> {
-  const clientId = Deno.env.get("PAYPAL_CLIENT_ID");
-  const secret = Deno.env.get("PAYPAL_SECRET");
+  const clientId = (Deno.env.get("PAYPAL_CLIENT_ID") || "").trim();
+  const secret = (Deno.env.get("PAYPAL_SECRET") || "").trim();
 
   if (!clientId || !secret) {
     throw new Error("PayPal credentials not configured. Please update PAYPAL_CLIENT_ID and PAYPAL_SECRET secrets.");
   }
 
-  console.log(`[PayPal] Authenticating with client ID: ${clientId.substring(0, 8)}...`);
+  console.log(`[PayPal] Authenticating with client ID: ${clientId.substring(0, 8)}... (length: ${clientId.length}), secret length: ${secret.length}`);
+
+  const credentials = btoa(`${clientId}:${secret}`);
 
   const res = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
     method: "POST",
     headers: {
-      Authorization: `Basic ${btoa(`${clientId}:${secret}`)}`,
+      Authorization: `Basic ${credentials}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: "grant_type=client_credentials",
@@ -30,10 +32,11 @@ async function getAccessToken(): Promise<string> {
   if (!res.ok) {
     const text = await res.text();
     console.error(`[PayPal] Auth failed [${res.status}]: ${text}`);
-    throw new Error(`PayPal authentication failed. Please verify your PAYPAL_CLIENT_ID and PAYPAL_SECRET are correct sandbox credentials.`);
+    throw new Error(`PayPal authentication failed (${res.status}). Please verify your PAYPAL_CLIENT_ID and PAYPAL_SECRET are correct sandbox credentials. Client ID starts with: ${clientId.substring(0, 12)}`);
   }
 
   const data = await res.json();
+  console.log(`[PayPal] Auth successful, token obtained`);
   return data.access_token;
 }
 

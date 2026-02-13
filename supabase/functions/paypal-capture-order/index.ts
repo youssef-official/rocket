@@ -10,8 +10,8 @@ const corsHeaders = {
 const PAYPAL_API = "https://api-m.sandbox.paypal.com";
 
 async function getAccessToken(): Promise<string> {
-  const clientId = Deno.env.get("PAYPAL_CLIENT_ID");
-  const secret = Deno.env.get("PAYPAL_SECRET");
+  const clientId = (Deno.env.get("PAYPAL_CLIENT_ID") || "").trim();
+  const secret = (Deno.env.get("PAYPAL_SECRET") || "").trim();
 
   if (!clientId || !secret) {
     throw new Error("PayPal credentials not configured");
