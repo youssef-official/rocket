@@ -160,12 +160,6 @@ export default defineConfig({
           buildCommand: 'npm run build',
           outputDirectory: 'dist',
         },
-        // Adding gitSource to help Vercel identify the author and permissions
-        gitSource: {
-          type: 'github',
-          repo: safeName,
-          ref: 'main',
-        }
       }),
     });
 

@@ -17,7 +17,7 @@ interface PreviewViewProps {
   isLoading?: boolean;
 }
 
-// Loading placeholder with rich animation
+// Loading placeholder with rich animation - dark mode compatible
 const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
   const tips = [
     "✨ Building your premium design...",
@@ -28,6 +28,7 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
     "🚀 Almost there! Final touches..."
   ];
   const [tipIndex, setTipIndex] = React.useState(0);
+  const [progress, setProgress] = React.useState(0);
 
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -36,8 +37,15 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
     return () => clearInterval(interval);
   }, []);
 
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress(p => Math.min(p + Math.random() * 8, 95));
+    }, 800);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-gray-50 via-white to-blue-50">
+    <div className="flex flex-col items-center justify-center h-full bg-background">
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -55,15 +63,12 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
           </div>
         </motion.div>
 
-        {/* Progress Ring */}
-        <div className="relative w-16 h-16 mx-auto mb-6">
+        {/* Progress Bar */}
+        <div className="w-48 h-1.5 mx-auto mb-6 bg-muted rounded-full overflow-hidden">
           <motion.div
-            className="absolute inset-0 rounded-full border-4 border-blue-100"
-          />
-          <motion.div
-            className="absolute inset-0 rounded-full border-4 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+            className="h-full bg-primary rounded-full"
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
           />
         </div>
 
@@ -71,24 +76,26 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-gray-600 text-base font-semibold mb-2"
+          className="text-foreground text-base font-semibold mb-2"
         >
           {status || "Your preview will appear here"}
         </motion.p>
 
-        {/* Rotating Tips */}
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={tipIndex}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.4 }}
-            className="text-gray-400 text-sm"
-          >
-            {tips[tipIndex]}
-          </motion.p>
-        </AnimatePresence>
+        {/* Rotating Tips with slide animation */}
+        <div className="h-6 overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={tipIndex}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+              className="text-muted-foreground text-sm"
+            >
+              {tips[tipIndex]}
+            </motion.p>
+          </AnimatePresence>
+        </div>
 
         {/* Animated dots */}
         <div className="mt-6 flex items-center justify-center gap-1.5">
@@ -97,7 +104,7 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
               key={i}
               animate={{ scale: [0.6, 1, 0.6], opacity: [0.3, 1, 0.3] }}
               transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.15 }}
-              className="w-1.5 h-1.5 rounded-full bg-blue-400"
+              className="w-1.5 h-1.5 rounded-full bg-primary"
             />
           ))}
         </div>
@@ -366,9 +373,9 @@ export default defineConfig({
   // Show loading placeholder
   if (isLoading || (sandboxId && !isSandboxReady)) {
     return (
-      <div className={`flex flex-col h-full bg-white`}>
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
-          <div className="text-sm font-mono text-gray-500">{sandboxStatus}</div>
+      <div className="flex flex-col h-full bg-background">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card">
+          <div className="text-sm font-mono text-muted-foreground">{sandboxStatus}</div>
         </div>
         <div className="flex-1">
           <LoadingPlaceholder status={sandboxStatus} />
@@ -379,7 +386,7 @@ export default defineConfig({
 
   // Preview Frame
   return (
-    <div className={`flex flex-col h-full bg-white`}>
+    <div className="flex flex-col h-full bg-background">
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card">
         <div className="flex items-center gap-2">
@@ -404,12 +411,12 @@ export default defineConfig({
           <div className="text-xs text-muted-foreground mr-2 font-mono flex items-center">
             {sandboxId ? (
               <>
-                <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
                 Modal Sandbox Active
               </>
             ) : (
               <>
-                <span className="w-2 h-2 rounded-full bg-yellow-500 mr-1.5"></span>
+                <span className="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>
                 Initializing...
               </>
             )}
@@ -433,20 +440,20 @@ export default defineConfig({
       </div>
 
       {/* Preview Frame */}
-      <div className="flex-1 overflow-hidden bg-gray-100 relative">
+      <div className="flex-1 overflow-hidden bg-muted relative">
         {!previewUrl || !isSandboxReady ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <LoadingPlaceholder status={sandboxStatus} />
           </div>
         ) : (
-          <div className={`h-full w-full flex justify-center ${viewMode === 'mobile' ? 'bg-gray-200 py-4 items-center' : 'bg-white'}`}>
+          <div className={`h-full w-full flex justify-center ${viewMode === 'mobile' ? 'bg-muted py-4 items-center' : 'bg-background'}`}>
             <motion.iframe
               key={key}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               src={previewUrl}
-              className={`bg-white shadow-xl ${viewMode === 'mobile'
-                ? 'w-[375px] h-[667px] rounded-xl border-4 border-gray-800'
+              className={`bg-background shadow-xl ${viewMode === 'mobile'
+                ? 'w-[375px] h-[667px] rounded-xl border-4 border-border'
                 : 'w-full h-full border-none'
                 }`}
               title="Modal Preview"

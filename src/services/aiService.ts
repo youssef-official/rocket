@@ -608,7 +608,13 @@ export async function streamAICodeGeneration(
         lastMsg.content = `${lastMsg.content}
 
 EXISTING PROJECT FILES: [${existingFiles}]
-⚠️ IMPORTANT: This is an EXISTING project. Only modify files that need changes based on the user's request. Do NOT regenerate unchanged files. Focus on TARGETED, SPECIFIC edits only.`;
+⚠️ CRITICAL EDITING RULES:
+- This is an EXISTING project. ONLY output <FILE> blocks for files that NEED changes.
+- DO NOT regenerate index.html, main.tsx, index.css, App.tsx unless the change SPECIFICALLY requires it.
+- If the user asks to fix a bug, identify the EXACT file causing it and ONLY fix that file.
+- If the user asks to add a feature, ONLY create/modify the files needed for that feature.
+- NEVER touch files unrelated to the user's request.
+- Include "read" actions for files you analyzed, and "edited"/"created" for files you changed.`;
       }
     }
 
