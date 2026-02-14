@@ -162,7 +162,7 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
               <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
                 <Check className="w-5 h-5 text-emerald-500" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">{t('integrations.deployedVercel')}</p>
+                  <p className="text-sm font-medium text-foreground">{t('integrations.vercelDeployed')}</p>
                   <p className="text-xs text-muted-foreground">{t('integrations.live')}</p>
                 </div>
               </div>
