@@ -161,8 +161,8 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
                 <Check className="w-5 h-5 text-emerald-500" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">{t('integrations.vercelDeployed')}</p>
+               <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{t('integrations.vercelDeployed')}</p>
                   <p className="text-xs text-muted-foreground">{t('integrations.live')}</p>
                 </div>
               </div>
@@ -171,11 +171,11 @@ export const VercelDeployDialog: React.FC<VercelDeployDialogProps> = ({
                 href={deploymentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between p-4 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+                className="flex items-center justify-between p-4 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors overflow-hidden"
               >
-                <div className="flex items-center gap-3">
-                  <img src={vercelLogo} alt="Vercel" className="w-5 h-5 dark:invert" />
-                  <span className="text-sm font-medium truncate">{deploymentUrl}</span>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <img src={vercelLogo} alt="Vercel" className="w-5 h-5 dark:invert flex-shrink-0" />
+                  <span className="text-sm font-medium truncate min-w-0">{deploymentUrl}</span>
                 </div>
                 <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               </a>

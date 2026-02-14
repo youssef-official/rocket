@@ -512,9 +512,13 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-sm font-bold text-black"
+              className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-sm font-bold text-black overflow-hidden"
             >
-              {user?.email?.[0].toUpperCase()}
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt="" className="w-full h-full object-cover rounded-full" />
+              ) : (
+                user?.email?.[0].toUpperCase()
+              )}
             </button>
 
             <AnimatePresence>
@@ -675,7 +679,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               <PreviewView
                 files={project?.files || {}}
                 projectType={project?.projectType || 'vite'}
-                isLoading={isGenerating}
+                isLoading={isGenerating && !isChatMode}
               />
             ) : (
               <CodeView
@@ -711,7 +715,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <PreviewView
               files={project?.files || {}}
               projectType={project?.projectType || 'vite'}
-              isLoading={isGenerating}
+              isLoading={isGenerating && !isChatMode}
             />
           )}
           {mobilePanel === 'code' && (
