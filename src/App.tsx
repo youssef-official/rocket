@@ -977,11 +977,14 @@ const AppContent = () => {
     navigate('/');
   }, [clearMessages, navigate]);
 
-  // Loading state
+  // Loading state - with a safety check
   if (authLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-4 border-foreground border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-foreground border-t-transparent rounded-full animate-spin" />
+          <p className="text-muted-foreground animate-pulse">Initializing session...</p>
+        </div>
       </div>
     );
   }

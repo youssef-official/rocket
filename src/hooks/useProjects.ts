@@ -24,7 +24,11 @@ export function useProjects() {
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error fetching projects:', error);
+        setLoading(false);
+        return;
+      }
 
       const mapped: Project[] = (data || []).map((p) => ({
         id: p.id,
