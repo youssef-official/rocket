@@ -523,7 +523,19 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-sm font-bold text-black overflow-hidden"
             >
               {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt="" className="w-full h-full object-cover rounded-full" />
+                <img 
+                  src={user.avatarUrl} 
+                  alt="" 
+                  className="w-full h-full object-cover rounded-full" 
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      parent.innerText = user?.email?.[0].toUpperCase() || 'U';
+                    }
+                  }}
+                />
               ) : (
                 user?.email?.[0].toUpperCase()
               )}

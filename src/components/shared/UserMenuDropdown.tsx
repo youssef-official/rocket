@@ -104,7 +104,23 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
         className="w-9 h-9 rounded-full bg-accent flex items-center justify-center hover:opacity-90 transition-opacity overflow-hidden"
       >
         {user.avatarUrl ? (
-          <img src={user.avatarUrl} alt="" className="w-full h-full object-cover rounded-full" />
+          <img 
+            src={user.avatarUrl} 
+            alt="" 
+            className="w-full h-full object-cover rounded-full" 
+            onError={(e) => {
+              // If image fails to load, replace with icon
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent) {
+                const icon = document.createElement('div');
+                icon.className = 'w-5 h-5 text-white flex items-center justify-center';
+                icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+                parent.appendChild(icon);
+              }
+            }}
+          />
         ) : (
           <UserIcon className="w-5 h-5 text-white" />
         )}
