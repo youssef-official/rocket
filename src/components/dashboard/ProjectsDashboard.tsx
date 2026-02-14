@@ -3,9 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Clock, Trash2, Copy, ExternalLink, Code2, Globe, 
   Sparkles, FolderOpen, MoreVertical, Search, ChevronRight,
-  ArrowLeft
+  ArrowLeft, ArrowRight
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { VivoraLogo } from '../shared/VivoraLogo';
 
 interface Project {
   id: string;
@@ -35,6 +37,7 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'projects' | 'templates'>('projects');
+  const { t, isRTL } = useLanguage();
 
   const filteredProjects = projects.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -42,57 +45,54 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
           <button 
             onClick={onNewProject}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className={`flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back</span>
+            {isRTL ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
+            <span>{isRTL ? 'رجوع' : 'Back'}</span>
           </button>
 
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-gray-900">Vivora X</span>
+          <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <VivoraLogo size="sm" showText={true} />
           </div>
 
           <div className="w-20" />
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 flex gap-8">
+      <div className={`max-w-7xl mx-auto px-6 py-8 flex gap-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
         {/* Sidebar */}
         <div className="w-48 flex-shrink-0">
           <nav className="space-y-1">
             <button
               onClick={() => setActiveTab('projects')}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${
                 activeTab === 'projects' 
                   ? 'text-gray-900 font-medium' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-gray-900" />
-              My Projects
+              <span className={`w-1.5 h-1.5 rounded-full bg-gray-900 ${isRTL ? 'ml-0 mr-1' : ''}`} />
+              {t('projects.title')}
             </button>
             
             <div className="border-t border-dashed border-gray-300 my-2" />
             
             <button
               onClick={() => setActiveTab('templates')}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${
                 activeTab === 'templates' 
                   ? 'text-gray-900 font-medium' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <ChevronRight className="w-4 h-4" />
-              Templates
+              {isRTL ? <ArrowLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              {isRTL ? 'القوالب' : 'Templates'}
             </button>
           </nav>
         </div>
@@ -101,14 +101,15 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
         <div className="flex-1">
           {/* Search */}
           <div className="mb-6">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <div className={`relative max-w-md ${isRTL ? 'mr-0' : ''}`}>
+              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400`} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search"
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 text-gray-800 placeholder-gray-500"
+                placeholder={isRTL ? 'بحث' : 'Search'}
+                className={`w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2.5 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 text-gray-800 placeholder-gray-500`}
+                dir={isRTL ? 'rtl' : 'ltr'}
               />
             </div>
           </div>
@@ -123,9 +124,9 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
               <div className="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-6">
                 <FolderOpen className="w-10 h-10 text-gray-400" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">No projects yet</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('projects.empty')}</h2>
               <p className="text-gray-600 mb-6">
-                Create your first AI-generated project to get started
+                {isRTL ? 'أنشئ أول مشروع لك للبدء' : 'Create your first AI-generated project to get started'}
               </p>
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -134,7 +135,7 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                Create Project
+                {t('projects.newProject')}
               </motion.button>
             </motion.div>
           ) : (
@@ -157,8 +158,8 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
 
                     {/* Info */}
                     <div className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
+                      <div className={`flex items-start justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <div className={isRTL ? 'text-right' : 'text-left'}>
                           <h3 className="font-semibold text-gray-900 line-clamp-1">
                             {project.name}
                           </h3>
@@ -182,24 +183,24 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
                                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden z-50"
+                                className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-full mt-1 w-40 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden z-50`}
                               >
                                 <button
                                   onClick={() => {
                                     onForkProject(project.id);
                                     setMenuOpenId(null);
                                   }}
-                                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700"
+                                  className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 ${isRTL ? 'flex-row-reverse text-right' : ''}`}
                                 >
                                   <Copy className="w-4 h-4" />
-                                  Fork
+                                  {t('projects.fork')}
                                 </button>
                                 {project.isPublished && (
                                   <button
-                                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700"
+                                    className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 transition-colors text-sm text-gray-700 ${isRTL ? 'flex-row-reverse text-right' : ''}`}
                                   >
                                     <ExternalLink className="w-4 h-4" />
-                                    View Live
+                                    {isRTL ? 'عرض مباشر' : 'View Live'}
                                   </button>
                                 )}
                                 <button
@@ -207,10 +208,10 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
                                     onDeleteProject(project.id);
                                     setMenuOpenId(null);
                                   }}
-                                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-red-50 text-red-600 transition-colors text-sm"
+                                  className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-red-50 text-red-600 transition-colors text-sm ${isRTL ? 'flex-row-reverse text-right' : ''}`}
                                 >
                                   <Trash2 className="w-4 h-4" />
-                                  Delete
+                                  {t('projects.delete')}
                                 </button>
                               </motion.div>
                             )}
@@ -218,10 +219,12 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className={`flex items-center gap-2 text-xs text-gray-500 ${isRTL ? 'flex-row-reverse' : ''}`}>
                         <Clock className="w-3 h-3" />
                         <span>
-                          Edited {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: false })} ago
+                          {isRTL ? 'تم التعديل منذ ' : 'Edited '}
+                          {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: false })}
+                          {isRTL ? '' : ' ago'}
                         </span>
                       </div>
                     </div>
