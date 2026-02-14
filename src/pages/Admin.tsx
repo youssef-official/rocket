@@ -11,7 +11,7 @@ interface AdminData {
   projects: any[];
 }
 
-export const Admin: React.FC = () => {
+export const AdminPanel: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState<AdminData | null>(null);

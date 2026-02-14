@@ -9,6 +9,7 @@ import { AuthPage } from "@/components/auth/AuthPage";
 import { HomePage } from "@/components/home/HomePage";
 import { EditorLayout } from "@/components/editor/EditorLayout";
 import { ProjectsDashboard } from "@/components/dashboard/ProjectsDashboard";
+import { AdminPanel } from "@/pages/Admin";
 import { ThemeInitializer } from "@/components/shared/ThemeInitializer";
 import { useProjects } from "@/hooks/useProjects";
 import { useChatMessages } from "@/hooks/useChatMessages";
@@ -1065,7 +1066,7 @@ import { OAuthConsent } from "@/pages/OAuthConsent";
 import FAQ from "@/pages/FAQ";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
-import { Admin } from "@/pages/Admin";
+// AdminPanel already imported at the top
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -1087,7 +1088,7 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/settings" element={<Settings />} />
-              <Route path="/admin" element={<Admin />} />
+              <Route path="/admin" element={<AdminPanel />} />
               <Route path="/oauth/consent" element={<OAuthConsent />} />
               <Route path="/" element={<AppContent />} />
             </Routes>

@@ -159,13 +159,21 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             versionNumber
           );
 
-          // Save version with actions_taken
-          await createVersion(
-            project.files,
-            messages,
-            versionName,
-            lastFileActivitiesRef.current.length > 0 ? lastFileActivitiesRef.current : undefined
+          // Check if this version already exists (prevent duplicates)
+          const alreadyExists = versions.some(v => 
+            v.chatMessages.length === messages.length && 
+            JSON.stringify(v.files) === JSON.stringify(project.files)
           );
+
+          if (!alreadyExists) {
+            // Save version with actions_taken
+            await createVersion(
+              project.files,
+              messages,
+              versionName,
+              lastFileActivitiesRef.current.length > 0 ? lastFileActivitiesRef.current : undefined
+            );
+          }
           setCurrentVersionNumber(null);
           versionCreatedForSession.current = true;
         };

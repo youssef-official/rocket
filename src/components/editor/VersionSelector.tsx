@@ -28,9 +28,12 @@ export const VersionSelector: React.FC<VersionSelectorProps> = ({
     );
   }
 
-  const currentVersionData = currentVersion 
+  // Ensure versions are sorted by number descending for the UI
+    const sortedVersions = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
+
+    const currentVersionData = currentVersion 
     ? versions.find(v => v.versionNumber === currentVersion) 
-    : versions[0];
+    : sortedVersions[0];
 
   return (
     <div className="relative">
@@ -60,7 +63,7 @@ export const VersionSelector: React.FC<VersionSelectorProps> = ({
             </div>
             
             <div className="max-h-[300px] overflow-y-auto p-2 space-y-1">
-              {versions.map((version, index) => {
+              {sortedVersions.map((version, index) => {
                 const isSelected = currentVersion === version.versionNumber || 
                   (!currentVersion && index === 0);
                 

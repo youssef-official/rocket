@@ -589,19 +589,28 @@ export const ChatView: React.FC<ChatViewProps> = ({
       .map((msg, idx) => ({ msg, idx }))
       .filter(({ msg }) => msg.role === 'assistant');
 
+    // Map versions to assistant messages
+    // Each version should be assigned to the assistant message that triggered its creation
+    // We match by finding the assistant message whose creation time is closest to (and before) the version creation time
     for (const version of sortedVersions) {
-      // Find the last assistant message created before or around the version's creation time
-      let bestMatch: number | null = null;
+      const versionTime = new Date(version.createdAt).getTime();
+      let bestMatchIdx: number | null = null;
+      let minDiff = Infinity;
+
       for (const { msg, idx } of assistantMessages) {
         const msgTime = msg.createdAt ? new Date(msg.createdAt).getTime() : 0;
-        const versionTime = new Date(version.createdAt).getTime();
-        // Version should be created after or within 60s of the assistant message
-        if (msgTime <= versionTime + 60000 && !versionAssignments.has(idx)) {
-          bestMatch = idx;
+        const diff = versionTime - msgTime;
+        
+        // Version must be created AFTER the message (or within a very small overlap)
+        // We use a small buffer (5000ms) for clock drift or DB lag
+        if (diff >= -5000 && diff < minDiff) {
+          minDiff = diff;
+          bestMatchIdx = idx;
         }
       }
-      if (bestMatch !== null) {
-        versionAssignments.set(bestMatch, version);
+
+      if (bestMatchIdx !== null) {
+        versionAssignments.set(bestMatchIdx, version);
       }
     }
 
