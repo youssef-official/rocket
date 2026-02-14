@@ -118,12 +118,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                         {integrations?.vercel_connected ? (
                                             <div className={`flex items-center justify-between p-3 bg-white/5 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}>
                                                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white font-bold text-xs">
-                                                        {integrations.vercel_username?.[0].toUpperCase()}
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs">
+                                                        {integrations.vercel_username?.[0].toUpperCase() || 'V'}
                                                     </div>
                                                     <div className={isRTL ? 'text-right' : ''}>
                                                         <p className="text-sm font-medium text-white">{integrations.vercel_username}</p>
-                                                        <p className="text-xs text-white/40">Connected via API Token</p>
+                                                        <p className="text-xs text-white/40">{isRTL ? 'متصل عبر رمز API' : 'Connected via API Token'}</p>
                                                     </div>
                                                 </div>
                                                 <Button

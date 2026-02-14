@@ -235,6 +235,12 @@ export const translations: Translations = {
   'integrations.projectName': { en: 'Project name', ar: 'اسم المشروع', zh: '项目名称', ja: 'プロジェクト名', fr: 'Nom du projet' },
   'integrations.deploying': { en: 'Deploying...', ar: 'جاري النشر...', zh: '正在部署...', ja: 'デプロイ中...', fr: 'Déploiement...' },
   'integrations.deploy': { en: 'Deploy', ar: 'نشر', zh: '部署', ja: 'デプロイ', fr: 'Déployer' },
+  'integrations.vercelDesc': { en: 'Deploy your projects to Vercel with one click.', ar: 'انشر مشاريعك على Vercel بضغطة واحدة.', zh: '一键将您的项目部署到 Vercel。', ja: 'ワンクリックでプロジェクトをVercelにデプロイします。', fr: 'Déployez vos projets sur Vercel en un clic.' },
+  'integrations.notConnected': { en: 'Not Connected', ar: 'غير متصل', zh: '未连接', ja: '未接続', fr: 'Non connecté' },
+  'integrations.disconnect': { en: 'Disconnect', ar: 'قطع الاتصال', zh: '断开连接', ja: '切断', fr: 'Déconnecter' },
+  'integrations.vercelToken': { en: 'Vercel API Token', ar: 'رمز Vercel API', zh: 'Vercel API 令牌', ja: 'Vercel API トークン', fr: 'Jeton API Vercel' },
+  'integrations.getVercelToken': { en: 'Get your token', ar: 'احصل على الرمز الخاص بك', zh: '获取您的令牌', ja: 'トークンを取得', fr: 'Obtenir votre jeton' },
+  'integrations.connectVercel': { en: 'Connect Vercel', ar: 'ربط Vercel', zh: '连接 Vercel', ja: 'Vercelを接続', fr: 'Connecter Vercel' },
 };
 
 interface LanguageContextType {
