@@ -262,155 +262,161 @@ export const HomePage: React.FC<HomePageProps> = ({
           </h1>
           <p className="text-base md:text-xl text-white/80">
             {t('home.subtitle')}{' '}
-            <span className="text-white font-semibold border-b-2 border-pink-500 min-w-[120px] inline-block">
+            <span className="text-white underline decoration-pink-400 decoration-2 underline-offset-4">
               {displayText}
             </span>
+            <span className="typing-cursor" />
           </p>
         </motion.div>
 
-        {/* Prompt Input Area */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="w-full max-w-3xl"
         >
-          <form onSubmit={handleSubmit} className="relative group">
-            <div className={`absolute -inset-1 bg-gradient-to-r from-pink-500 to-purple-600 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 ${isDragging ? 'opacity-100 scale-105' : ''}`} />
+          <form onSubmit={handleSubmit}>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
             <div
-              className={`relative bg-white rounded-[1.8rem] shadow-2xl overflow-hidden transition-all duration-300 ${isDragging ? 'ring-4 ring-pink-500/50 scale-[1.02]' : ''}`}
+              className={`bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative transition-colors ${isDragging ? 'ring-2 ring-pink-400' : ''}`}
               onDragEnter={handleDragEnter}
-              onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
               onDrop={handleDrop}
             >
-              {/* Drag & Drop Overlay */}
-              <AnimatePresence>
-                {isDragging && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 z-50 bg-pink-500/10 backdrop-blur-sm border-4 border-dashed border-pink-500 rounded-[1.8rem] flex flex-col items-center justify-center pointer-events-none"
-                  >
-                    <div className="bg-white p-4 rounded-full shadow-xl mb-4">
-                      <ImageIcon className="w-8 h-8 text-pink-500" />
-                    </div>
-                    <p className="text-pink-600 font-bold text-xl">{t('home.dropImage')}</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {/* Drag overlay */}
+              {isDragging && (
+                <div className="absolute inset-0 z-10 bg-pink-50 border-2 border-dashed border-pink-400 rounded-[2.5rem] flex items-center justify-center pointer-events-none">
+                  <div className="flex flex-col items-center gap-2 text-pink-500">
+                    <ImageIcon className="w-8 h-8" />
+                    <span className="font-medium">{t('home.dropImage')}</span>
+                  </div>
+                </div>
+              )}
 
-              <div className="p-2 md:p-3">
-                <textarea
-                  value={prompt}
-                  onChange={handlePromptChange}
-                  placeholder={t('home.placeholder')}
-                  className={`w-full bg-transparent border-none focus:ring-0 text-gray-800 text-lg md:text-xl placeholder:text-gray-400 resize-none min-h-[100px] md:min-h-[120px] p-4 ${isRTL ? 'text-right' : 'text-left'}`}
-                />
-
-                {/* Image Preview */}
-                <AnimatePresence>
-                  {uploadedImage && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      className={`px-4 pb-4 flex ${isRTL ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className="relative group/img">
-                        <img
-                          src={uploadedImage.preview}
-                          alt="Upload preview"
-                          className="h-20 w-20 object-cover rounded-xl border-2 border-pink-500/20"
-                        />
-                        <button
-                          type="button"
-                          onClick={removeUploadedImage}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow-lg opacity-0 group-hover/img:opacity-100 transition-opacity"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <div className={`flex items-center justify-between px-2 md:px-4 py-2 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <div className={`flex items-center gap-1 md:gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileSelect}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
-                      title={t('chat.uploadImage')}
-                    >
-                      <Paperclip className="w-5 h-5" />
-                    </button>
-
-                    <div className="h-6 w-[1px] bg-gray-200 mx-1" />
-
-                    {/* Visibility Toggle */}
+              {/* Uploaded Image Preview */}
+              {uploadedImage && (
+                <div className={`px-4 pt-4 ${isRTL ? 'text-right' : ''}`}>
+                  <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <div className="relative">
+                      <img
+                        src={uploadedImage.preview}
+                        alt="Uploaded"
+                        className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                      />
                       <button
                         type="button"
-                        onClick={() => setShowVisibilityMenu(!showVisibilityMenu)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 hover:bg-gray-100 rounded-full transition-colors text-sm font-medium text-gray-600 ${isRTL ? 'flex-row-reverse' : ''}`}
+                        onClick={removeUploadedImage}
+                        className={`absolute -top-2 ${isRTL ? '-left-2' : '-right-2'} w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors`}
                       >
-                        {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                        <span>{isPublic ? t('home.public') : t('home.private')}</span>
-                        <ChevronDown className={`w-3 h-3 transition-transform ${showVisibilityMenu ? 'rotate-180' : ''}`} />
+                        <X className="w-3 h-3" />
                       </button>
-
-                      <AnimatePresence>
-                        {showVisibilityMenu && (
-                          <>
-                            <div className="fixed inset-0 z-[60]" onClick={() => setShowVisibilityMenu(false)} />
-                            <motion.div
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: 10 }}
-                              className={`absolute bottom-full mb-2 ${isRTL ? 'right-0' : 'left-0'} w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[70]`}
-                            >
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setIsPublic(true);
-                                  setShowVisibilityMenu(false);
-                                }}
-                                className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${isPublic ? 'bg-pink-50' : ''}`}
-                              >
-                                <Globe className={`w-4 h-4 ${isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
-                                <div className={isRTL ? 'text-right' : ''}>
-                                  <p className={`text-sm font-medium ${isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.public')}</p>
-                                  <p className="text-xs text-gray-500">{t('home.publicDesc')}</p>
-                                </div>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setIsPublic(false);
-                                  setShowVisibilityMenu(false);
-                                }}
-                                className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${!isPublic ? 'bg-pink-50' : ''}`}
-                              >
-                                <Lock className={`w-4 h-4 ${!isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
-                                <div className={isRTL ? 'text-right' : ''}>
-                                  <p className={`text-sm font-medium ${!isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.private')}</p>
-                                  <p className="text-xs text-gray-500">{t('home.privateDesc')}</p>
-                                </div>
-                              </button>
-                            </motion.div>
-                          </>
-                        )}
-                      </AnimatePresence>
                     </div>
+                    <span className="text-sm text-gray-500 truncate max-w-[200px]">
+                      {uploadedImage.file.name}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <textarea
+                value={prompt}
+                onChange={handlePromptChange}
+                placeholder={t('home.placeholder')}
+                className={`w-full px-8 py-6 text-gray-800 placeholder-gray-400 resize-none focus:outline-none text-lg ${isRTL ? 'text-right' : ''}`}
+                dir={isRTL ? 'rtl' : 'ltr'}
+                rows={4}
+              />
+
+              <div className={`flex items-center justify-between px-6 py-4 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <Paperclip className="w-5 h-5 text-gray-400" />
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+                  >
+                    <span className="text-pink-500">🎨</span>
+                    <span className="text-sm text-gray-600">{t('home.import')}</span>
+                  </button>
+                </div>
+
+                <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  {/* Character Count */}
+                  <span className={`text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                    {prompt.length}/{MAX_PROMPT_LENGTH}
+                  </span>
+
+                  {/* Visibility Toggle - Public/Private */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowVisibilityMenu(!showVisibilityMenu)}
+                      className={`flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-sm ${isRTL ? 'flex-row-reverse' : ''}`}
+                    >
+                      {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                      {isPublic ? t('home.public') : t('home.private')}
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+
+                    <AnimatePresence>
+                      {showVisibilityMenu && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setShowVisibilityMenu(false)}
+                          />
+                          <motion.div
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 5 }}
+                            className={`absolute bottom-full ${isRTL ? 'left-0' : 'right-0'} mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsPublic(true);
+                                setShowVisibilityMenu(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${isPublic ? 'bg-pink-50' : ''}`}
+                            >
+                              <Globe className={`w-4 h-4 ${isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
+                              <div className={isRTL ? 'text-right' : ''}>
+                                <p className={`text-sm font-medium ${isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.public')}</p>
+                                <p className="text-xs text-gray-500">{t('home.publicDesc')}</p>
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsPublic(false);
+                                setShowVisibilityMenu(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${!isPublic ? 'bg-pink-50' : ''}`}
+                            >
+                              <Lock className={`w-4 h-4 ${!isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
+                              <div className={isRTL ? 'text-right' : ''}>
+                                <p className={`text-sm font-medium ${!isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.private')}</p>
+                                <p className="text-xs text-gray-500">{t('home.privateDesc')}</p>
+                              </div>
+                            </button>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   <motion.button
@@ -463,7 +469,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       )}
 
       {/* Projects Section or Welcome Message */}
-      {projectsLoading || projects.length > 0 ? (
+      {projects.length > 0 ? (
         <ProjectsSection
           projects={projects}
           loading={projectsLoading}

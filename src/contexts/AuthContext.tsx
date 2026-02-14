@@ -49,11 +49,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Safety timeout to prevent infinite loading
-    const safetyTimeout = setTimeout(() => {
-      setLoading(false);
-    }, 5000);
-
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -70,7 +65,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
         } catch (e) {
           console.error("Auth state change error", e);
-          setLoading(false);
         }
       }
     );
@@ -78,9 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // THEN check for existing session
     const checkSession = async () => {
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        
+        const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
         const baseUser = transformUser(session?.user ?? null);
         if (baseUser) {
@@ -89,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(enriched);
         }
       } catch (error) {
-        console.error("Session check error:", error);
+        console.warn("Session check invalidated/aborted", error);
       } finally {
         setLoading(false);
       }
@@ -97,10 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     checkSession();
 
-    return () => {
-      clearTimeout(safetyTimeout);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string) => {

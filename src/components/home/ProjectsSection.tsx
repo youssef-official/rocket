@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface Project {
   id: string;
@@ -27,22 +26,6 @@ interface ProjectsSectionProps {
   onNewProject: () => void;
 }
 
-const ProjectSkeleton = () => (
-  <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden">
-    <Skeleton className="aspect-[16/10] w-full bg-white/5" />
-    <div className="p-4 space-y-3">
-      <div className="flex justify-between items-start">
-        <div className="space-y-2 flex-1">
-          <Skeleton className="h-5 w-3/4 bg-white/10" />
-          <Skeleton className="h-4 w-1/4 bg-white/5" />
-        </div>
-        <Skeleton className="h-8 w-8 rounded-lg bg-white/5" />
-      </div>
-      <Skeleton className="h-3 w-1/3 bg-white/5" />
-    </div>
-  </div>
-);
-
 export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
   projects,
   loading,
@@ -56,25 +39,9 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
 
   if (loading) {
     return (
-      <section className="relative z-10 px-6 pb-20" dir={isRTL ? 'rtl' : 'ltr'}>
-        <div className="max-w-6xl mx-auto">
-          <div className={`flex items-center justify-between mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <Skeleton className="w-10 h-10 rounded-xl bg-white/10" />
-              <div className="space-y-2">
-                <Skeleton className="h-6 w-32 bg-white/10" />
-                <Skeleton className="h-4 w-20 bg-white/5" />
-              </div>
-            </div>
-            <Skeleton className="h-10 w-32 rounded-xl bg-white/10" />
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <ProjectSkeleton key={i} />
-            ))}
-          </div>
-        </div>
-      </section>
+      <div className="py-16 flex justify-center">
+        <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+      </div>
     );
   }
 
