@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
 import { LanguageSelector } from './LanguageSelector';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface UserMenuDropdownProps {
   user: User;
@@ -19,7 +20,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
   const [showMenu, setShowMenu] = useState(false);
   const { theme, cycleTheme } = useThemePreference();
   const { t, isRTL } = useLanguage();
-  const { userPlan, getRemainingCredits, shouldShowUpgradeBanner } = useUserPlan();
+  const { userPlan, loading: planLoading, getRemainingCredits, shouldShowUpgradeBanner } = useUserPlan();
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -120,43 +121,63 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
             <div className="p-3 border-b border-white/10">
               <p className={`text-sm font-medium text-white truncate ${isRTL ? 'text-right' : ''}`}>{user.displayName || user.email}</p>
               <div className={`flex items-center justify-between mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <span className="text-xs text-white/60">{planConfig.name} Plan</span>
+                {planLoading ? (
+                  <Skeleton className="h-4 w-24 bg-white/10" />
+                ) : (
+                  <span className="text-xs text-white/60">{planConfig.name} Plan</span>
+                )}
               </div>
             </div>
 
             {/* Credits Display with Progress Bar */}
             <div className="p-3 border-b border-white/10 bg-white/5">
-              <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <Coins className="w-4 h-4 text-yellow-400" />
-                  <span className="text-sm text-white/80">{t('credits.remaining')}</span>
+              {planLoading ? (
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-4 w-20 bg-white/10" />
+                    <Skeleton className="h-4 w-8 bg-white/10" />
+                  </div>
+                  <Skeleton className="h-2 w-full bg-white/10" />
+                  <div className="flex justify-between">
+                    <Skeleton className="h-3 w-16 bg-white/5" />
+                    <Skeleton className="h-3 w-16 bg-white/5" />
+                  </div>
                 </div>
-                <span className="text-sm font-bold text-yellow-400">{remainingCredits.total.toFixed(1)}</span>
-              </div>
-              
-              {/* Progress Bar */}
-              <div className="mb-2">
-                <Progress 
-                  value={100 - usagePercent} 
-                  className="h-2 bg-white/10"
-                />
-              </div>
-              
-              {/* Breakdown */}
-              <div className="flex justify-between text-xs text-white/50">
-                <span>{t('credits.daily')}: {remainingCredits.daily.toFixed(1)}</span>
-                {planConfig.monthlyCredits > 0 && (
-                  <span>{t('credits.monthly')}: {remainingCredits.monthly.toFixed(1)}</span>
-                )}
-              </div>
-              
-              <p className="text-xs text-white/40 mt-1">
-                {t('credits.resetsDaily')} (UTC)
-              </p>
+              ) : (
+                <>
+                  <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <Coins className="w-4 h-4 text-yellow-400" />
+                      <span className="text-sm text-white/80">{t('credits.remaining')}</span>
+                    </div>
+                    <span className="text-sm font-bold text-yellow-400">{remainingCredits.total.toFixed(1)}</span>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="mb-2">
+                    <Progress 
+                      value={100 - usagePercent} 
+                      className="h-2 bg-white/10"
+                    />
+                  </div>
+                  
+                  {/* Breakdown */}
+                  <div className="flex justify-between text-xs text-white/50">
+                    <span>{t('credits.daily')}: {remainingCredits.daily.toFixed(1)}</span>
+                    {planConfig.monthlyCredits > 0 && (
+                      <span>{t('credits.monthly')}: {remainingCredits.monthly.toFixed(1)}</span>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-white/40 mt-1">
+                    {t('credits.resetsDaily')} (UTC)
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Upgrade Banner when 50% used */}
-            {showBanner && onUpgradeClick && (
+            {!planLoading && showBanner && onUpgradeClick && (
               <div className="p-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-b border-white/10">
                 <p className="text-xs text-white/80 mb-2">
                   🚀 {t('credits.runningLow')}
@@ -178,7 +199,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
 
             <div className="p-2">
               {/* Upgrade Button for Spark users */}
-              {userPlan?.plan === 'spark' && !showBanner && onUpgradeClick && (
+              {!planLoading && userPlan?.plan === 'spark' && !showBanner && onUpgradeClick && (
                 <button
                   type="button"
                   onClick={(e) => {
