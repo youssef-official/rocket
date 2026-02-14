@@ -39,7 +39,7 @@ export const translations: Translations = {
   'home.title1': { en: 'Think It.', ar: 'فكر بها.', zh: '想一想.', ja: '考えて.', fr: 'Pensez-y.' },
   'home.title2': { en: 'Type It.', ar: 'اكتبها.', zh: '输入它.', ja: '入力して.', fr: 'Tapez-le.' },
   'home.title3': { en: 'Launch It.', ar: 'أطلقها.', zh: '启动它.', ja: '起動して.', fr: 'Lancez-le.' },
-  'home.subtitle': { en: 'Build production-ready', ar: 'ابنِ منتجات جاهزة للإنتاج', zh: '构建生产就绪', ja: '本番対応の構築', fr: 'Créez des applications prêtes' },
+  'home.subtitle': { en: 'Build production-ready', ar: 'أنشئ محفظة جاهزة للإنتاج.', zh: '构建生产就绪', ja: '本番対応の構築', fr: 'Créez des applications prêtes' },
   'home.placeholder': { en: 'What can I build for you today?', ar: 'ماذا يمكنني أن أبني لك اليوم؟', zh: '今天我能为您构建什么？', ja: '今日は何を作りましょうか？', fr: 'Que puis-je construire pour vous aujourd\'hui ?' },
   'home.import': { en: 'Import', ar: 'استيراد', zh: '导入', ja: 'インポート', fr: 'Importer' },
   'home.public': { en: 'Public', ar: 'عام', zh: '公开', ja: '公開', fr: 'Public' },
@@ -47,7 +47,7 @@ export const translations: Translations = {
   'home.publicDesc': { en: 'Anyone can view & fork', ar: 'يمكن للجميع المشاهدة والنسخ', zh: '任何人都可以查看和分叉', ja: '誰でも閲覧・フォーク可能', fr: 'Tout le monde peut voir et forker' },
   'home.privateDesc': { en: 'Only you can access', ar: 'أنت فقط من يمكنه الوصول', zh: '仅您可以访问', ja: 'あなただけがアクセス可能', fr: 'Vous seul pouvez y accéder' },
   'home.newBadge': { en: 'New', ar: 'جديد', zh: '新', ja: '新着', fr: 'Nouveau' },
-  'home.mobileAnnouncement': { en: 'Vivora X: A New Vibe Coding Tool', ar: 'Vivora X: أداة Vibe Coding جديدة', zh: 'Vivora X: 全新的 Vibe Coding 工具', ja: 'Vivora X: 新しい Vibe Coding ツール', fr: 'Vivora X: Un nouvel outil de Vibe Coding' },
+  'home.mobileAnnouncement': { en: 'Vivora X: A New Vibe Coding Tool', ar: 'فيفورا إكس: أداة ترميز بأجواء جديدة', zh: 'Vivora X: 全新的 Vibe Coding 工具', ja: 'Vivora X: 新しい Vibe Coding ツール', fr: 'Vivora X: Un nouvel outil de Vibe Coding' },
   'home.dropImage': { en: 'Drop image here', ar: 'أفلت الصورة هنا', zh: '将图片拖放到此处', ja: 'ここに画像をドロップ', fr: 'Déposez l\'image ici' },
 
   // Typing words
@@ -92,7 +92,7 @@ export const translations: Translations = {
   'footer.product': { en: 'Product', ar: 'المنتج', zh: '产品', ja: '製品', fr: 'Produit' },
   'footer.company': { en: 'Company', ar: 'الشركة', zh: '公司', ja: '会社', fr: 'Entreprise' },
   'footer.legal': { en: 'Legal', ar: 'القانونية', zh: '法律', ja: '法的情報', fr: 'Légal' },
-  'footer.features': { en: 'Features', ar: 'الميزات', zh: '功能', ja: '機能', fr: 'Fonctionnalités' },
+  'footer.features': { en: 'Features', ar: 'المميزات', zh: '功能', ja: '機能', fr: 'Fonctionnalités' },
   'footer.integrations': { en: 'Integrations', ar: 'التكاملات', zh: '集成', ja: '統合', fr: 'Intégrations' },
   'footer.changelog': { en: 'Changelog', ar: 'سجل التغييرات', zh: '更新日志', ja: '変更履歴', fr: 'Journal des modifications' },
   'footer.about': { en: 'About', ar: 'حول', zh: '关于', ja: 'について', fr: 'À propos' },

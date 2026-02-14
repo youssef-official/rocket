@@ -83,17 +83,17 @@ export const FrameworkBar: React.FC<FrameworkBarProps> = ({
   const { t, isRTL } = useLanguage();
 
   return (
-    <div className={`flex flex-wrap justify-center gap-4 bg-white/10 backdrop-blur-md rounded-2xl p-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-      <div className={`flex items-center gap-4 ${isRTL ? 'pl-4 border-l flex-row-reverse' : 'pr-4 border-r'} border-white/20`}>
-        <span className="text-white/60 text-sm">{t('footer.features')}</span>
+    <div className={`flex flex-wrap justify-center gap-4 bg-black/20 backdrop-blur-xl rounded-[2rem] p-3 border border-white/10 ${isRTL ? 'flex-row-reverse' : ''}`}>
+      <div className={`flex items-center gap-4 ${isRTL ? 'pl-4 border-l flex-row-reverse' : 'pr-4 border-r'} border-white/10`}>
+        <span className="text-white/80 text-sm font-medium">{t('footer.features')}</span>
         <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
           {frameworks.map((fw) => (
             <button
               key={fw}
               onClick={() => onSelectFramework?.(fw)}
-              className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                 selectedFramework === fw
-                  ? 'bg-white/20 ring-2 ring-white/40'
+                  ? 'bg-white/20 ring-1 ring-white/30 shadow-lg shadow-white/5'
                   : 'bg-white/5 hover:bg-white/10'
               }`}
               title={fw}
@@ -105,12 +105,12 @@ export const FrameworkBar: React.FC<FrameworkBarProps> = ({
       </div>
 
       <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-        <span className="text-white/60 text-sm">{t('footer.integrations')}</span>
+        <span className="text-white/80 text-sm font-medium">{t('footer.integrations')}</span>
         <div className={`flex items-center gap-2 overflow-x-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
           {integrations.map((int) => (
             <div
               key={int}
-              className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer"
+              className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer border border-white/5"
               title={int}
             >
               <LogoIcon name={int} type="integration" size="md" />

@@ -181,7 +181,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           {/* Logo */}
           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <VivoraLogo size="md" className={isRTL ? 'ml-1' : ''} />
-            <span className="bg-white/20 text-white px-2 py-0.5 rounded-full hidden sm:inline text-xs">BETA</span>
+            <span className="bg-white/20 text-white px-2 py-0.5 rounded-full hidden sm:inline text-xs">{isRTL ? 'تجريبي' : 'BETA'}</span>
           </div>
 
           {/* Nav - hidden when logged in */}
@@ -261,11 +261,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             {t('home.title1')} <span className="text-pink-400">{t('home.title2')}</span> {t('home.title3')}
           </h1>
           <p className="text-base md:text-xl text-white/80">
-            {t('home.subtitle')}{' '}
-            <span className="text-white underline decoration-pink-400 decoration-2 underline-offset-4">
-              {displayText}
-            </span>
-            <span className="typing-cursor" />
+            {t('home.subtitle')}
           </p>
         </motion.div>
 
@@ -337,28 +333,16 @@ export const HomePage: React.FC<HomePageProps> = ({
               />
 
               <div className={`flex items-center justify-between px-6 py-4 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Paperclip className="w-5 h-5 text-gray-400" />
-                  </button>
-                  <button
-                    type="button"
-                    className={`flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
-                  >
-                    <span className="text-pink-500">🎨</span>
-                    <span className="text-sm text-gray-600">{t('home.import')}</span>
-                  </button>
-                </div>
-
                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  {/* Character Count */}
-                  <span className={`text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
-                    {prompt.length}/{MAX_PROMPT_LENGTH}
-                  </span>
+                  <motion.button
+                    type="submit"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    disabled={!prompt.trim()}
+                    className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
+                  >
+                    <ArrowRight className={`w-5 h-5 text-gray-400 ${isRTL ? 'rotate-180' : ''}`} />
+                  </motion.button>
 
                   {/* Visibility Toggle - Public/Private */}
                   <div className="relative">
@@ -419,15 +403,27 @@ export const HomePage: React.FC<HomePageProps> = ({
                     </AnimatePresence>
                   </div>
 
-                  <motion.button
-                    type="submit"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    disabled={!prompt.trim()}
-                    className="w-10 h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
+                  {/* Character Count */}
+                  <span className={`text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                    {prompt.length}/{MAX_PROMPT_LENGTH}
+                  </span>
+                </div>
+
+                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <button
+                    type="button"
+                    className={`flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
                   >
-                    <ArrowRight className={`w-5 h-5 text-gray-600 ${isRTL ? 'rotate-180' : ''}`} />
-                  </motion.button>
+                    <span className="text-sm text-gray-600">{t('home.import')}</span>
+                    <span className="text-lg">💡</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <Paperclip className="w-5 h-5 text-gray-400" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -454,69 +450,25 @@ export const HomePage: React.FC<HomePageProps> = ({
         >
           <div className="flex items-center gap-4 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-2xl">
             <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-yellow-300 animate-pulse" />
-              <span className="text-white font-medium">{t('upgrade.banner')}</span>
+              <Crown className="w-5 h-5 text-white" />
+              <span className="text-white font-medium text-sm">{t('upgrade.banner')}</span>
             </div>
             <button
               onClick={() => setShowUpgradeModal(true)}
-              className="flex items-center gap-2 px-4 py-1.5 bg-white text-purple-600 rounded-full font-bold text-sm hover:bg-white/90 transition-colors"
+              className="px-4 py-1 bg-white text-pink-600 rounded-full text-sm font-bold hover:bg-opacity-90 transition-all"
             >
-              <Crown className="w-4 h-4" />
-              Upgrade
+              {t('upgrade.selectPlan')}
             </button>
           </div>
         </motion.div>
       )}
 
-      {/* Projects Section or Welcome Message */}
-      {projects.length > 0 ? (
-        <ProjectsSection
-          projects={projects}
-          loading={projectsLoading}
-          onOpenProject={onOpenProject || (() => { })}
-          onDeleteProject={onDeleteProject || (() => { })}
-          onForkProject={onForkProject || (() => { })}
-          onNewProject={() => { }}
-        />
-      ) : user && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="relative z-10 max-w-3xl mx-auto px-4 mb-20 text-center"
-        >
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
-            <Sparkles className="w-12 h-12 text-pink-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">
-              Welcome to Vivora X!
-            </h2>
-            <p className="text-white/70 mb-6">
-              Start by describing your dream project above. Our AI will transform your ideas into a beautiful, production-ready web application in seconds.
-            </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">Landing Pages</span>
-              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">E-commerce</span>
-              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">Dashboards</span>
-              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">Portfolios</span>
-            </div>
-          </div>
-        </motion.div>
-      )}
+      {/* Modals */}
+      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
+      <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
 
       {/* Footer */}
       <Footer />
-
-      {/* Upgrade Modal */}
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-      />
-
-      {/* Settings Modal */}
-      <SettingsModal
-        isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-      />
     </div>
   );
 };

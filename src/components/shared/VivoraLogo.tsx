@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface VivoraLogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -34,6 +35,8 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(
     onClick,
     showText = true,
   }) => {
+    const { language } = useLanguage();
+    const isArabic = language === 'ar';
     /* ===============================
        Sizes
     ================================ */
@@ -100,7 +103,7 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(
               ${textSizeClasses[size]}
             `}
           >
-            Vivora
+            {isArabic ? 'فيفورا' : 'Vivora'}
 
             <motion.span
               variants={xVariants}
@@ -112,7 +115,7 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(
               }}
               className="text-pink-400 text-[1.2em] font-black"
             >
-              X
+              {isArabic ? 'إكس' : 'X'}
             </motion.span>
           </span>
         )}
