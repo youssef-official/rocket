@@ -177,11 +177,11 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* Header */}
       <header className="relative z-50 px-4 md:px-6 py-4">
-        <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row' : ''}`}>
-          {/* Logo Section - Always on the right in Arabic, left in English */}
-          <div className={`flex items-center gap-2 ${isRTL ? 'order-last flex-row-reverse' : 'order-first'}`}>
-            <VivoraLogo size="md" className={isRTL ? 'mr-1' : 'ml-1'} />
-            <span className="bg-white/20 text-white px-2 py-0.5 rounded-full hidden sm:inline text-xs">{isRTL ? 'تجريبي' : 'BETA'}</span>
+        <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+          {/* Logo */}
+          <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <VivoraLogo size="md" className={isRTL ? 'ml-1' : ''} />
+            <span className="bg-white/20 text-white px-2 py-0.5 rounded-full hidden sm:inline text-xs">BETA</span>
           </div>
 
           {/* Nav - hidden when logged in */}
@@ -200,8 +200,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             </nav>
           )}
 
-          {/* Actions Section - Always on the left in Arabic, right in English */}
-          <div className={`flex items-center gap-2 md:gap-3 ${isRTL ? 'order-first flex-row-reverse' : 'order-last'}`}>
+          {/* Right actions */}
+          <div className={`flex items-center gap-2 md:gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
             {user ? (
               <>
                 <div className={`hidden md:flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full p-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -261,7 +261,11 @@ export const HomePage: React.FC<HomePageProps> = ({
             {t('home.title1')} <span className="text-pink-400">{t('home.title2')}</span> {t('home.title3')}
           </h1>
           <p className="text-base md:text-xl text-white/80">
-            {t('home.subtitle')}
+            {t('home.subtitle')}{' '}
+            <span className="text-white font-medium">
+              {displayText}
+            </span>
+            <span className="typing-cursor" />
           </p>
         </motion.div>
 
@@ -333,152 +337,98 @@ export const HomePage: React.FC<HomePageProps> = ({
               />
 
               <div className={`flex items-center justify-between px-6 py-4 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                {/* Left Section (English: Attach & Import | Arabic: Send, Visibility, Count) */}
-                <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  {isRTL ? (
-                    <>
-                      <motion.button
-                        type="submit"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        disabled={!prompt.trim()}
-                        className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
-                      >
-                        <ArrowRight className={`w-5 h-5 text-gray-400 rotate-180`} />
-                      </motion.button>
-
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setShowVisibilityMenu(!showVisibilityMenu)}
-                          className={`flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-sm flex-row-reverse`}
-                        >
-                          {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                          {isPublic ? t('home.public') : t('home.private')}
-                          <ChevronDown className="w-3 h-3" />
-                        </button>
-                      </div>
-
-                      <span className={`text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
-                        {prompt.length}/{MAX_PROMPT_LENGTH}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <Paperclip className="w-5 h-5 text-gray-400" />
-                      </button>
-                      <button
-                        type="button"
-                        className={`flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors`}
-                      >
-                        <span className="text-pink-500">🎨</span>
-                        <span className="text-sm text-gray-600">{t('home.import')}</span>
-                      </button>
-                    </>
-                  )}
+                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <Paperclip className="w-5 h-5 text-gray-400" />
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+                  >
+                    <span className="text-pink-500">🎨</span>
+                    <span className="text-sm text-gray-600">{t('home.import')}</span>
+                  </button>
                 </div>
 
-                {/* Right Section (English: Send, Visibility, Count | Arabic: Attach & Import) */}
                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  {isRTL ? (
-                    <>
-                      <button
-                        type="button"
-                        className={`flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex-row-reverse`}
-                      >
-                        <span className="text-sm text-gray-600">{t('home.import')}</span>
-                        <span className="text-lg">💡</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <Paperclip className="w-5 h-5 text-gray-400" />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <span className={`text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
-                        {prompt.length}/{MAX_PROMPT_LENGTH}
-                      </span>
+                  {/* Character Count */}
+                  <span className={`text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                    {prompt.length}/{MAX_PROMPT_LENGTH}
+                  </span>
 
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setShowVisibilityMenu(!showVisibilityMenu)}
-                          className={`flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-sm`}
-                        >
-                          {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                          {isPublic ? t('home.public') : t('home.private')}
-                          <ChevronDown className="w-3 h-3" />
-                        </button>
-                      </div>
+                  {/* Visibility Toggle - Public/Private */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowVisibilityMenu(!showVisibilityMenu)}
+                      className={`flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-sm ${isRTL ? 'flex-row-reverse' : ''}`}
+                    >
+                      {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                      {isPublic ? t('home.public') : t('home.private')}
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
 
-                      <motion.button
-                        type="submit"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        disabled={!prompt.trim()}
-                        className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
-                      >
-                        <ArrowRight className={`w-5 h-5 text-gray-400`} />
-                      </motion.button>
-                    </>
-                  )}
+                    <AnimatePresence>
+                      {showVisibilityMenu && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setShowVisibilityMenu(false)}
+                          />
+                          <motion.div
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 5 }}
+                            className={`absolute bottom-full ${isRTL ? 'left-0' : 'right-0'} mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsPublic(true);
+                                setShowVisibilityMenu(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${isPublic ? 'bg-pink-50' : ''}`}
+                            >
+                              <Globe className={`w-4 h-4 ${isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
+                              <div className={isRTL ? 'text-right' : ''}>
+                                <p className={`text-sm font-medium ${isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.public')}</p>
+                                <p className="text-xs text-gray-500">{t('home.publicDesc')}</p>
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsPublic(false);
+                                setShowVisibilityMenu(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${!isPublic ? 'bg-pink-50' : ''}`}
+                            >
+                              <Lock className={`w-4 h-4 ${!isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
+                              <div className={isRTL ? 'text-right' : ''}>
+                                <p className={`text-sm font-medium ${!isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.private')}</p>
+                                <p className="text-xs text-gray-500">{t('home.privateDesc')}</p>
+                              </div>
+                            </button>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  <motion.button
+                    type="submit"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    disabled={!prompt.trim()}
+                    className="w-10 h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
+                  >
+                    <ArrowRight className={`w-5 h-5 text-gray-600 ${isRTL ? 'rotate-180' : ''}`} />
+                  </motion.button>
                 </div>
-
-                {/* Visibility Menu Portal */}
-                <AnimatePresence>
-                  {showVisibilityMenu && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setShowVisibilityMenu(false)}
-                      />
-                      <motion.div
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 5 }}
-                        className={`absolute bottom-full ${isRTL ? 'left-6' : 'right-6'} mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsPublic(true);
-                            setShowVisibilityMenu(false);
-                          }}
-                          className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${isPublic ? 'bg-pink-50' : ''}`}
-                        >
-                          <Globe className={`w-4 h-4 ${isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
-                          <div className={isRTL ? 'text-right' : ''}>
-                            <p className={`text-sm font-medium ${isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.public')}</p>
-                            <p className="text-xs text-gray-500">{t('home.publicDesc')}</p>
-                          </div>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsPublic(false);
-                            setShowVisibilityMenu(false);
-                          }}
-                          className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${!isPublic ? 'bg-pink-50' : ''}`}
-                        >
-                          <Lock className={`w-4 h-4 ${!isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
-                          <div className={isRTL ? 'text-right' : ''}>
-                            <p className={`text-sm font-medium ${!isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.private')}</p>
-                            <p className="text-xs text-gray-500">{t('home.privateDesc')}</p>
-                          </div>
-                        </button>
-                      </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
               </div>
             </div>
           </form>
@@ -504,25 +454,69 @@ export const HomePage: React.FC<HomePageProps> = ({
         >
           <div className="flex items-center gap-4 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-2xl">
             <div className="flex items-center gap-2">
-              <Crown className="w-5 h-5 text-white" />
-              <span className="text-white font-medium text-sm">{t('upgrade.banner')}</span>
+              <Zap className="w-5 h-5 text-yellow-300 animate-pulse" />
+              <span className="text-white font-medium">{t('upgrade.banner')}</span>
             </div>
             <button
               onClick={() => setShowUpgradeModal(true)}
-              className="px-4 py-1 bg-white text-pink-600 rounded-full text-sm font-bold hover:bg-opacity-90 transition-all"
+              className="flex items-center gap-2 px-4 py-1.5 bg-white text-purple-600 rounded-full font-bold text-sm hover:bg-white/90 transition-colors"
             >
-              {t('upgrade.selectPlan')}
+              <Crown className="w-4 h-4" />
+              Upgrade
             </button>
           </div>
         </motion.div>
       )}
 
-      {/* Modals */}
-      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
-      <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
+      {/* Projects Section or Welcome Message */}
+      {projects.length > 0 ? (
+        <ProjectsSection
+          projects={projects}
+          loading={projectsLoading}
+          onOpenProject={onOpenProject || (() => { })}
+          onDeleteProject={onDeleteProject || (() => { })}
+          onForkProject={onForkProject || (() => { })}
+          onNewProject={() => { }}
+        />
+      ) : user && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="relative z-10 max-w-3xl mx-auto px-4 mb-20 text-center"
+        >
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
+            <Sparkles className="w-12 h-12 text-pink-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">
+              Welcome to Vivora X!
+            </h2>
+            <p className="text-white/70 mb-6">
+              Start by describing your dream project above. Our AI will transform your ideas into a beautiful, production-ready web application in seconds.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">Landing Pages</span>
+              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">E-commerce</span>
+              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">Dashboards</span>
+              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">Portfolios</span>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Footer */}
       <Footer />
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
     </div>
   );
 };
