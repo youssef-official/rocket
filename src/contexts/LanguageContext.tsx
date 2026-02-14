@@ -47,7 +47,7 @@ export const translations: Translations = {
   'home.publicDesc': { en: 'Anyone can view & fork', ar: 'يمكن للجميع المشاهدة والنسخ', zh: '任何人都可以查看和分叉', ja: '誰でも閲覧・フォーク可能', fr: 'Tout le monde peut voir et forker' },
   'home.privateDesc': { en: 'Only you can access', ar: 'أنت فقط من يمكنه الوصول', zh: '仅您可以访问', ja: 'あなただけがアクセス可能', fr: 'Vous seul pouvez y accéder' },
   'home.newBadge': { en: 'New', ar: 'جديد', zh: '新', ja: '新着', fr: 'Nouveau' },
-  'home.mobileAnnouncement': { en: 'Vivora X — A New Vibe Coding Tool is Here 🚀', ar: 'Vivora X — أداة Vibe Coding جديدة وصلت 🚀', zh: 'Vivora X — 全新 Vibe Coding 工具来了 🚀', ja: 'Vivora X — 新しい Vibe Coding ツール登場 🚀', fr: 'Vivora X — Un nouvel outil Vibe Coding est là 🚀' },
+  'home.mobileAnnouncement': { en: 'Vivora X Mobile for iPhone is here', ar: 'تطبيق Vivora X للآيفون متاح الآن', zh: 'Vivora X iPhone 版已上线', ja: 'Vivora X iPhone版が登場', fr: 'Vivora X Mobile pour iPhone est disponible' },
   'home.dropImage': { en: 'Drop image here', ar: 'أفلت الصورة هنا', zh: '将图片拖放到此处', ja: 'ここに画像をドロップ', fr: 'Déposez l\'image ici' },
 
   // Typing words

@@ -29,39 +29,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
-  // Fetch profile data (avatar, display name) from profiles table
-  const fetchProfile = async (userId: string, baseUser: User): Promise<User> => {
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('display_name, avatar_url')
-        .eq('user_id', userId)
-        .single();
-      if (data) {
-        return {
-          ...baseUser,
-          displayName: data.display_name || baseUser.displayName,
-          avatarUrl: data.avatar_url || baseUser.avatarUrl,
-        };
-      }
-    } catch {}
-    return baseUser;
-  };
-
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         try {
           setSession(session);
-          const baseUser = transformUser(session?.user ?? null);
-          if (baseUser) {
-            setUser(baseUser);
-            const enriched = await fetchProfile(baseUser.id, baseUser);
-            setUser(enriched);
-          } else {
-            setUser(null);
-          }
+          setUser(transformUser(session?.user ?? null));
           setLoading(false);
         } catch (e) {
           console.error("Auth state change error", e);
@@ -74,12 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
-        const baseUser = transformUser(session?.user ?? null);
-        if (baseUser) {
-          setUser(baseUser);
-          const enriched = await fetchProfile(baseUser.id, baseUser);
-          setUser(enriched);
-        }
+        setUser(transformUser(session?.user ?? null));
       } catch (error) {
         console.warn("Session check invalidated/aborted", error);
       } finally {

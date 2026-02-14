@@ -208,7 +208,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <button className="p-2 hover:bg-white/10 rounded-full transition-colors">
                     <MessageSquare className="w-5 h-5 text-white/80" />
                   </button>
-                  <button onClick={() => window.location.href = '/faq'} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                  <button className="p-2 hover:bg-white/10 rounded-full transition-colors">
                     <HelpCircle className="w-5 h-5 text-white/80" />
                   </button>
                   <button className="p-2 hover:bg-white/10 rounded-full transition-colors">
