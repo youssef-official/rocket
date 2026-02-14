@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    X, Settings as SettingsIcon, User,
-    Check, Loader2, Eye, EyeOff, ExternalLink, Camera
+    X, Settings as SettingsIcon,
+    Check, Loader2, Eye, EyeOff, ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIntegrations } from '@/hooks/useIntegrations';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 import vercelLogo from '@/assets/logos/vercel.svg';
 
 interface SettingsModalProps {
@@ -30,69 +28,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         disconnectVercel
     } = useIntegrations();
 
-    const [activeTab, setActiveTab] = useState<'profile' | 'integrations'>('profile');
     const [vercelToken, setVercelToken] = useState('');
     const [showVercelToken, setShowVercelToken] = useState(false);
     const [savingVercel, setSavingVercel] = useState(false);
-
-    // Profile editing
-    const [displayName, setDisplayName] = useState('');
-    const [avatarUrl, setAvatarUrl] = useState('');
-    const [savingProfile, setSavingProfile] = useState(false);
-
-    // Load profile data
-    useEffect(() => {
-        const loadProfile = async () => {
-            if (!user) return;
-
-            const { data } = await supabase
-                .from('profiles')
-                .select('display_name, avatar_url')
-                .eq('user_id', user.id)
-                .maybeSingle();
-
-            if (data) {
-                setDisplayName(data.display_name || '');
-                setAvatarUrl(data.avatar_url || '');
-            }
-        };
-
-        if (isOpen) {
-            loadProfile();
-        }
-    }, [user, isOpen]);
-
-    const handleSaveProfile = async () => {
-        if (!user) return;
-
-        setSavingProfile(true);
-        try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({
-                    display_name: displayName.trim() || null,
-                    avatar_url: avatarUrl.trim() || null,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('user_id', user.id);
-
-            if (error) throw error;
-
-            toast({
-                title: t('common.success'),
-                description: t('settings.profileUpdated'),
-            });
-        } catch (error) {
-            console.error('Error updating profile:', error);
-            toast({
-                title: t('common.error'),
-                description: 'Failed to update profile',
-                variant: 'destructive',
-            });
-        } finally {
-            setSavingProfile(false);
-        }
-    };
 
     const handleSaveVercel = async () => {
         if (!vercelToken.trim()) return;
@@ -146,121 +84,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                             </button>
                         </div>
 
-                        {/* Tab Navigation */}
-                        <div className={`flex gap-1 p-4 border-b border-white/10 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <button
-                                onClick={() => setActiveTab('profile')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${isRTL ? 'flex-row-reverse' : ''} ${activeTab === 'profile'
-                                        ? 'bg-white/10 text-white'
-                                        : 'text-white/60 hover:text-white hover:bg-white/5'
-                                    }`}
-                            >
-                                <User className="w-4 h-4" />
-                                {t('settings.profile')}
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('integrations')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${isRTL ? 'flex-row-reverse' : ''} ${activeTab === 'integrations'
-                                        ? 'bg-white/10 text-white'
-                                        : 'text-white/60 hover:text-white hover:bg-white/5'
-                                    }`}
-                            >
-                                <SettingsIcon className="w-4 h-4" />
-                                {t('footer.integrations')}
-                            </button>
-                        </div>
-
                         {/* Content */}
-                        <div className="p-6 overflow-y-auto max-h-[calc(85vh-180px)]">
+                        <div className="p-6 overflow-y-auto max-h-[calc(85vh-120px)]">
                             {loading ? (
                                 <div className="flex items-center justify-center py-12">
                                     <Loader2 className="w-8 h-8 animate-spin text-white/40" />
                                 </div>
-                            ) : activeTab === 'profile' ? (
-                                <div className="space-y-6">
-                                    {/* Avatar Preview */}
-                                    <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                                        <div className="relative">
-                                            {avatarUrl ? (
-                                                <img
-                                                    src={avatarUrl}
-                                                    alt="Avatar"
-                                                    className="w-20 h-20 rounded-full object-cover border-2 border-white/20"
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).style.display = 'none';
-                                                    }}
-                                                />
-                                            ) : (
-                                                <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center">
-                                                    <User className="w-8 h-8 text-white/40" />
-                                                </div>
-                                            )}
-                                            <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-                                                <Camera className="w-3 h-3 text-white" />
-                                            </div>
-                                        </div>
-                                        <div className="flex-1 space-y-2">
-                                            <Label htmlFor="avatar-url" className="text-white/80">{t('settings.avatarUrl')}</Label>
-                                            <Input
-                                                id="avatar-url"
-                                                type="url"
-                                                placeholder="https://example.com/avatar.jpg"
-                                                value={avatarUrl}
-                                                onChange={(e) => setAvatarUrl(e.target.value)}
-                                                dir="ltr"
-                                                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-purple-500"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Display Name */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="display-name" className="text-white/80">{t('settings.displayName')}</Label>
-                                        <Input
-                                            id="display-name"
-                                            type="text"
-                                            placeholder="John Doe"
-                                            value={displayName}
-                                            onChange={(e) => setDisplayName(e.target.value)}
-                                            className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-purple-500"
-                                        />
-                                    </div>
-
-                                    <Button
-                                        onClick={handleSaveProfile}
-                                        disabled={savingProfile}
-                                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0"
-                                    >
-                                        {savingProfile ? (
-                                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('common.loading')}</>
-                                        ) : (
-                                            t('settings.updateProfile')
-                                        )}
-                                    </Button>
-                                </div>
                             ) : (
-                                <div className="space-y-6">
-                                    {/* Vercel Integration */}
-                                    <div className="p-4 rounded-xl border border-white/10 bg-white/5">
+                                <div className="space-y-8">
+                                    {/* Vercel Integration Section */}
+                                    <div className="space-y-6">
                                         <div className={`flex items-center justify-between mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
                                             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                                                <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
-                                                    <img src={vercelLogo} alt="Vercel" className="w-5 h-5 invert" />
+                                                <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center p-2">
+                                                    <img src={vercelLogo} alt="Vercel" className="w-full h-full" />
                                                 </div>
                                                 <div className={isRTL ? 'text-right' : ''}>
-                                                    <h3 className="font-semibold text-white">Vercel</h3>
-                                                    <p className="text-xs text-white/60">{t('editor.deployVercel')}</p>
+                                                    <h3 className="text-lg font-semibold text-white">Vercel</h3>
+                                                    <p className="text-sm text-white/50">{t('integrations.vercelDesc')}</p>
                                                 </div>
                                             </div>
                                             {integrations?.vercel_connected ? (
-                                                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                                                    <Check className="w-3 h-3 mr-1" />
-                                                    Connected
+                                                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                                                    {t('integrations.connected')}
                                                 </Badge>
                                             ) : (
-                                                <Badge variant="outline" className="text-white/60 border-white/20">
-                                                    <X className="w-3 h-3 mr-1" />
-                                                    Not Connected
+                                                <Badge variant="outline" className="text-white/40 border-white/10">
+                                                    {t('integrations.notConnected')}
                                                 </Badge>
                                             )}
                                         </div>
@@ -268,62 +118,69 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                         {integrations?.vercel_connected ? (
                                             <div className={`flex items-center justify-between p-3 bg-white/5 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}>
                                                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                                                    <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center">
-                                                        <img src={vercelLogo} alt="Vercel" className="w-4 h-4 invert" />
+                                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white font-bold text-xs">
+                                                        {integrations.vercel_username?.[0].toUpperCase()}
                                                     </div>
                                                     <div className={isRTL ? 'text-right' : ''}>
-                                                        <p className="font-medium text-white">{integrations.vercel_username}</p>
-                                                        <p className="text-xs text-white/60">{t('integrations.connectedAccount')}</p>
+                                                        <p className="text-sm font-medium text-white">{integrations.vercel_username}</p>
+                                                        <p className="text-xs text-white/40">Connected via API Token</p>
                                                     </div>
                                                 </div>
                                                 <Button
-                                                    variant="destructive"
+                                                    variant="ghost"
                                                     size="sm"
                                                     onClick={disconnectVercel}
-                                                    className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border-0"
+                                                    className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
                                                 >
-                                                    Disconnect
+                                                    {t('integrations.disconnect')}
                                                 </Button>
                                             </div>
                                         ) : (
-                                            <div className="space-y-3">
-                                                <div className="relative">
-                                                    <Input
-                                                        type={showVercelToken ? 'text' : 'password'}
-                                                        placeholder="xxxxxxxxxxxxxxxxxxxxxxxx"
-                                                        value={vercelToken}
-                                                        onChange={(e) => setVercelToken(e.target.value)}
-                                                        className="bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-10"
-                                                        dir="ltr"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowVercelToken(!showVercelToken)}
-                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
-                                                    >
-                                                        {showVercelToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                    </button>
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <Label htmlFor="vercel-token" className="text-white/80">{t('integrations.vercelToken')}</Label>
+                                                        <a
+                                                            href="https://vercel.com/account/tokens"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
+                                                        >
+                                                            {t('integrations.getVercelToken')}
+                                                            <ExternalLink className="w-3 h-3" />
+                                                        </a>
+                                                    </div>
+                                                    <div className="relative">
+                                                        <Input
+                                                            id="vercel-token"
+                                                            type={showVercelToken ? 'text' : 'password'}
+                                                            placeholder="Enter your Vercel API token"
+                                                            value={vercelToken}
+                                                            onChange={(e) => setVercelToken(e.target.value)}
+                                                            dir="ltr"
+                                                            className="bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-10 focus:border-purple-500"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowVercelToken(!showVercelToken)}
+                                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
+                                                        >
+                                                            {showVercelToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <p className="text-xs text-white/50">
-                                                    Create a token in Vercel dashboard.{' '}
-                                                    <a
-                                                        href="https://vercel.com/account/tokens"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-purple-400 hover:underline inline-flex items-center gap-1"
-                                                    >
-                                                        Generate token <ExternalLink className="w-3 h-3" />
-                                                    </a>
-                                                </p>
                                                 <Button
                                                     onClick={handleSaveVercel}
-                                                    disabled={!vercelToken.trim() || savingVercel}
-                                                    className="w-full bg-black hover:bg-zinc-800 text-white border-0"
+                                                    disabled={savingVercel || !vercelToken.trim()}
+                                                    className="w-full bg-white text-black hover:bg-white/90"
                                                 >
                                                     {savingVercel ? (
-                                                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Connecting...</>
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                            {t('common.loading')}
+                                                        </>
                                                     ) : (
-                                                        <>Connect Vercel</>
+                                                        t('integrations.connectVercel')
                                                     )}
                                                 </Button>
                                             </div>
