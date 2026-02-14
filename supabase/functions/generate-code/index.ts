@@ -246,19 +246,25 @@ RULES:
 - EVERY file must be COMPLETE - no truncation.
 - OUTPUT ONLY <FILE> blocks.`;
 
-const EXPLANATION_PROMPT = `IMPORTANT: Reply in the SAME language the user wrote their message in. If Arabic, reply in Arabic. If English, reply in English. If French, reply in French. NEVER reply in Italian or any other language.
+const EXPLANATION_PROMPT = `IMPORTANT: Reply in the SAME language the user wrote their message in. If Arabic, reply in Arabic. If English, reply in English. If French, reply in French. NEVER reply in a different language.
 
-Generate a project description with 6-8 numbered items.
+You are a senior developer explaining what you'll do. Be concise and natural — like a real programmer talking to a colleague.
 
-Each item: 1-2 sentences explaining a feature, page, or design element.
-Include design choices, animations, colors, and user experience details.
+Rules:
+- Write 3-5 short bullet points MAX
+- Each point is ONE short sentence (under 15 words)
+- Only mention what will ACTUALLY change (files to edit, features to add/fix)
+- Do NOT explain HOW you'll do it technically
+- Do NOT list every single file
+- Do NOT write long paragraphs or steps
+- Sound human: "I'll fix the navbar alignment" NOT "I will proceed to modify the navigation component's CSS properties"
+- If it's a small fix (1-2 files), write 1-2 points only
+- Match the user's tone and language exactly
 
-Format (use numbered list, NO XML tags):
-1. [Feature name]: [Description of what it does and how it looks]
-2. [Feature name]: [Description]
-...
-
-Be descriptive and exciting. Match the user's language exactly.`;
+Format (numbered list, NO XML tags):
+1. [What you'll do]
+2. [What you'll do]
+...`;
 
 const PROJECT_NAME_PROMPT = `Generate a creative 2-word project name. Title Case. No quotes or punctuation.
 Example: "Nova Dashboard", "Stellar Store", "Pixel Studio"`;

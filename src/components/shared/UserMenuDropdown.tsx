@@ -101,9 +101,13 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
       <button
         type="button"
         onClick={() => setShowMenu(!showMenu)}
-        className="w-9 h-9 rounded-full bg-accent flex items-center justify-center hover:opacity-90 transition-opacity"
+        className="w-9 h-9 rounded-full bg-accent flex items-center justify-center hover:opacity-90 transition-opacity overflow-hidden"
       >
-        <UserIcon className="w-5 h-5 text-white" />
+        {user.avatarUrl ? (
+          <img src={user.avatarUrl} alt="" className="w-full h-full object-cover rounded-full" />
+        ) : (
+          <UserIcon className="w-5 h-5 text-white" />
+        )}
       </button>
 
       {showMenu && (
@@ -114,7 +118,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
         >
           <div className="w-72 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl">
             <div className="p-3 border-b border-white/10">
-              <p className={`text-sm font-medium text-white truncate ${isRTL ? 'text-right' : ''}`}>{user.email}</p>
+              <p className={`text-sm font-medium text-white truncate ${isRTL ? 'text-right' : ''}`}>{user.displayName || user.email}</p>
               <div className={`flex items-center justify-between mt-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <span className="text-xs text-white/60">{planConfig.name} Plan</span>
               </div>
