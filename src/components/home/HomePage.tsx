@@ -177,10 +177,10 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* Header */}
       <header className="relative z-50 px-4 md:px-6 py-4">
-        <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-          {/* Logo - Right in Arabic, Left in English */}
-          <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <VivoraLogo size="md" className={isRTL ? 'ml-1' : ''} />
+        <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row' : ''}`}>
+          {/* Logo Section - Always on the right in Arabic, left in English */}
+          <div className={`flex items-center gap-2 ${isRTL ? 'order-last flex-row-reverse' : 'order-first'}`}>
+            <VivoraLogo size="md" className={isRTL ? 'mr-1' : 'ml-1'} />
             <span className="bg-white/20 text-white px-2 py-0.5 rounded-full hidden sm:inline text-xs">{isRTL ? 'تجريبي' : 'BETA'}</span>
           </div>
 
@@ -200,8 +200,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             </nav>
           )}
 
-          {/* Right actions - Left in Arabic, Right in English */}
-          <div className={`flex items-center gap-2 md:gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          {/* Actions Section - Always on the left in Arabic, right in English */}
+          <div className={`flex items-center gap-2 md:gap-3 ${isRTL ? 'order-first flex-row-reverse' : 'order-last'}`}>
             {user ? (
               <>
                 <div className={`hidden md:flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full p-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
