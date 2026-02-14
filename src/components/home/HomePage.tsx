@@ -178,7 +178,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* Header */}
       <header className="relative z-50 px-4 md:px-6 py-4">
         <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-          {/* Logo */}
+          {/* Logo - Right in Arabic, Left in English */}
           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <VivoraLogo size="md" className={isRTL ? 'ml-1' : ''} />
             <span className="bg-white/20 text-white px-2 py-0.5 rounded-full hidden sm:inline text-xs">{isRTL ? 'تجريبي' : 'BETA'}</span>
@@ -200,7 +200,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             </nav>
           )}
 
-          {/* Right actions */}
+          {/* Right actions - Left in Arabic, Right in English */}
           <div className={`flex items-center gap-2 md:gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
             {user ? (
               <>
@@ -333,98 +333,152 @@ export const HomePage: React.FC<HomePageProps> = ({
               />
 
               <div className={`flex items-center justify-between px-6 py-4 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                {/* Left Section (English: Attach & Import | Arabic: Send, Visibility, Count) */}
                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <motion.button
-                    type="submit"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    disabled={!prompt.trim()}
-                    className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
-                  >
-                    <ArrowRight className={`w-5 h-5 text-gray-400 ${isRTL ? 'rotate-180' : ''}`} />
-                  </motion.button>
+                  {isRTL ? (
+                    <>
+                      <motion.button
+                        type="submit"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        disabled={!prompt.trim()}
+                        className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
+                      >
+                        <ArrowRight className={`w-5 h-5 text-gray-400 rotate-180`} />
+                      </motion.button>
 
-                  {/* Visibility Toggle - Public/Private */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowVisibilityMenu(!showVisibilityMenu)}
-                      className={`flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-sm ${isRTL ? 'flex-row-reverse' : ''}`}
-                    >
-                      {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                      {isPublic ? t('home.public') : t('home.private')}
-                      <ChevronDown className="w-3 h-3" />
-                    </button>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowVisibilityMenu(!showVisibilityMenu)}
+                          className={`flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-sm flex-row-reverse`}
+                        >
+                          {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                          {isPublic ? t('home.public') : t('home.private')}
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                      </div>
 
-                    <AnimatePresence>
-                      {showVisibilityMenu && (
-                        <>
-                          <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => setShowVisibilityMenu(false)}
-                          />
-                          <motion.div
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 5 }}
-                            className={`absolute bottom-full ${isRTL ? 'left-0' : 'right-0'} mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50`}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsPublic(true);
-                                setShowVisibilityMenu(false);
-                              }}
-                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${isPublic ? 'bg-pink-50' : ''}`}
-                            >
-                              <Globe className={`w-4 h-4 ${isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
-                              <div className={isRTL ? 'text-right' : ''}>
-                                <p className={`text-sm font-medium ${isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.public')}</p>
-                                <p className="text-xs text-gray-500">{t('home.publicDesc')}</p>
-                              </div>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsPublic(false);
-                                setShowVisibilityMenu(false);
-                              }}
-                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${!isPublic ? 'bg-pink-50' : ''}`}
-                            >
-                              <Lock className={`w-4 h-4 ${!isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
-                              <div className={isRTL ? 'text-right' : ''}>
-                                <p className={`text-sm font-medium ${!isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.private')}</p>
-                                <p className="text-xs text-gray-500">{t('home.privateDesc')}</p>
-                              </div>
-                            </button>
-                          </motion.div>
-                        </>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                  {/* Character Count */}
-                  <span className={`text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
-                    {prompt.length}/{MAX_PROMPT_LENGTH}
-                  </span>
+                      <span className={`text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                        {prompt.length}/{MAX_PROMPT_LENGTH}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <Paperclip className="w-5 h-5 text-gray-400" />
+                      </button>
+                      <button
+                        type="button"
+                        className={`flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors`}
+                      >
+                        <span className="text-pink-500">🎨</span>
+                        <span className="text-sm text-gray-600">{t('home.import')}</span>
+                      </button>
+                    </>
+                  )}
                 </div>
 
-                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <button
-                    type="button"
-                    className={`flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
-                  >
-                    <span className="text-sm text-gray-600">{t('home.import')}</span>
-                    <span className="text-lg">💡</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Paperclip className="w-5 h-5 text-gray-400" />
-                  </button>
+                {/* Right Section (English: Send, Visibility, Count | Arabic: Attach & Import) */}
+                <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  {isRTL ? (
+                    <>
+                      <button
+                        type="button"
+                        className={`flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex-row-reverse`}
+                      >
+                        <span className="text-sm text-gray-600">{t('home.import')}</span>
+                        <span className="text-lg">💡</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <Paperclip className="w-5 h-5 text-gray-400" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span className={`text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                        {prompt.length}/{MAX_PROMPT_LENGTH}
+                      </span>
+
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setShowVisibilityMenu(!showVisibilityMenu)}
+                          className={`flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-sm`}
+                        >
+                          {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                          {isPublic ? t('home.public') : t('home.private')}
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <motion.button
+                        type="submit"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        disabled={!prompt.trim()}
+                        className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
+                      >
+                        <ArrowRight className={`w-5 h-5 text-gray-400`} />
+                      </motion.button>
+                    </>
+                  )}
                 </div>
+
+                {/* Visibility Menu Portal */}
+                <AnimatePresence>
+                  {showVisibilityMenu && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setShowVisibilityMenu(false)}
+                      />
+                      <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 5 }}
+                        className={`absolute bottom-full ${isRTL ? 'left-6' : 'right-6'} mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsPublic(true);
+                            setShowVisibilityMenu(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${isPublic ? 'bg-pink-50' : ''}`}
+                        >
+                          <Globe className={`w-4 h-4 ${isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
+                          <div className={isRTL ? 'text-right' : ''}>
+                            <p className={`text-sm font-medium ${isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.public')}</p>
+                            <p className="text-xs text-gray-500">{t('home.publicDesc')}</p>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsPublic(false);
+                            setShowVisibilityMenu(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${!isPublic ? 'bg-pink-50' : ''}`}
+                        >
+                          <Lock className={`w-4 h-4 ${!isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
+                          <div className={isRTL ? 'text-right' : ''}>
+                            <p className={`text-sm font-medium ${!isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.private')}</p>
+                            <p className="text-xs text-gray-500">{t('home.privateDesc')}</p>
+                          </div>
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </form>

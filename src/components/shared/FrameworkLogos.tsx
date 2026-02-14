@@ -84,6 +84,7 @@ export const FrameworkBar: React.FC<FrameworkBarProps> = ({
 
   return (
     <div className={`flex flex-wrap justify-center gap-4 bg-black/20 backdrop-blur-xl rounded-[2rem] p-3 border border-white/10 ${isRTL ? 'flex-row-reverse' : ''}`}>
+      {/* Features Section - Right in Arabic, Left in English */}
       <div className={`flex items-center gap-4 ${isRTL ? 'pl-4 border-l flex-row-reverse' : 'pr-4 border-r'} border-white/10`}>
         <span className="text-white/80 text-sm font-medium">{t('footer.features')}</span>
         <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -104,6 +105,7 @@ export const FrameworkBar: React.FC<FrameworkBarProps> = ({
         </div>
       </div>
 
+      {/* Integrations Section - Left in Arabic, Right in English */}
       <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <span className="text-white/80 text-sm font-medium">{t('footer.integrations')}</span>
         <div className={`flex items-center gap-2 overflow-x-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
