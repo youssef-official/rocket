@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, X, ExternalLink, Inbox as InboxIcon } from 'lucide-react';
+import { Bell, X, ExternalLink, Inbox as InboxIcon, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserPlan } from '@/hooks/useUserPlan';
@@ -12,7 +12,7 @@ interface Notification {
   body: string | null;
   image_url: string | null;
   link_url: string | null;
-  target_plan: string;
+  target_plan: string | null;
   created_at: string;
 }
 
@@ -23,23 +23,39 @@ export const NotificationInbox: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
-    const { data } = await supabase
-      .from('inbox_notifications')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(20);
-    if (data) setNotifications(data as Notification[]);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('inbox_notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (error) throw error;
+      if (data) setNotifications(data as Notification[]);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const fetchReadIds = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('user_notification_reads')
-      .select('notification_id')
-      .eq('user_id', user.id);
-    if (data) setReadIds(new Set(data.map((r: any) => r.notification_id)));
+    try {
+      const { data, error } = await supabase
+        .from('user_notification_reads')
+        .select('notification_id')
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      if (data) setReadIds(new Set(data.map((r: any) => r.notification_id)));
+    } catch (err) {
+      console.error("Error fetching read status:", err);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -49,12 +65,16 @@ export const NotificationInbox: React.FC = () => {
 
   const markAsRead = async (notifId: string) => {
     if (!user || readIds.has(notifId)) return;
-    await supabase.from('user_notification_reads').insert({ user_id: user.id, notification_id: notifId });
-    setReadIds(prev => new Set([...prev, notifId]));
+    try {
+      await supabase.from('user_notification_reads').insert({ user_id: user.id, notification_id: notifId });
+      setReadIds(prev => new Set([...prev, notifId]));
+    } catch (err) {
+      console.error("Error marking as read:", err);
+    }
   };
 
   const filteredNotifs = notifications.filter(n => {
-    if (n.target_plan === 'all') return true;
+    if (!n.target_plan || n.target_plan === 'all') return true;
     return userPlan?.plan === n.target_plan;
   });
 
@@ -77,7 +97,6 @@ export const NotificationInbox: React.FC = () => {
       <AnimatePresence>
         {open && (
           <>
-            {/* Backdrop with blur */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -86,7 +105,6 @@ export const NotificationInbox: React.FC = () => {
               onClick={() => setOpen(false)} 
             />
             
-            {/* Sidebar Panel */}
             <motion.div
               initial={{ x: isRTL ? -400 : 400, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -95,7 +113,6 @@ export const NotificationInbox: React.FC = () => {
               className={`fixed ${isRTL ? 'left-0' : 'right-0'} top-0 h-full w-full sm:w-[400px] bg-[#0d0d15]/95 backdrop-blur-2xl border-l border-white/10 z-[10001] shadow-2xl flex flex-col`}
               dir={isRTL ? 'rtl' : 'ltr'}
             >
-              {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-white/10 bg-white/5">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-pink-500/20 rounded-lg">
@@ -118,9 +135,12 @@ export const NotificationInbox: React.FC = () => {
                 </button>
               </div>
 
-              {/* Content */}
               <div className="flex-1 overflow-y-auto custom-scrollbar">
-                {filteredNotifs.length === 0 ? (
+                {loading && notifications.length === 0 ? (
+                  <div className="h-full flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 text-pink-500 animate-spin" />
+                  </div>
+                ) : filteredNotifs.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center p-8 text-center">
                     <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4">
                       <Bell className="w-10 h-10 text-white/20" />
@@ -175,7 +195,6 @@ export const NotificationInbox: React.FC = () => {
                 )}
               </div>
               
-              {/* Footer */}
               <div className="p-4 border-t border-white/10 bg-white/[0.02] text-center">
                 <p className="text-[10px] text-white/20 uppercase tracking-widest font-medium">
                   Vivora X Notifications
