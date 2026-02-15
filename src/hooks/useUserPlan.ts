@@ -34,6 +34,10 @@ export function useUserPlan() {
     }
 
     try {
+      // Auto-reset daily credits if needed before fetching
+      try { await supabase.rpc('check_and_reset_user_credits', { p_user_id: user.id }); } catch {}
+
+
       const { data, error } = await supabase
         .from('user_plans')
         .select('*')

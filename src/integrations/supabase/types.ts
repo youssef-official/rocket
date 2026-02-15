@@ -102,6 +102,39 @@ export type Database = {
           },
         ]
       }
+      inbox_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string | null
+          link_url: string | null
+          target_plan: string | null
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          link_url?: string | null
+          target_plan?: string | null
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          link_url?: string | null
+          target_plan?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -233,6 +266,42 @@ export type Database = {
         }
         Relationships: []
       }
+      templates: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+          prompt: string
+          sort_order: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+          prompt: string
+          sort_order?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+          prompt?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       user_integrations: {
         Row: {
           created_at: string
@@ -262,6 +331,35 @@ export type Database = {
           vercel_username?: string | null
         }
         Relationships: []
+      }
+      user_notification_reads: {
+        Row: {
+          id: string
+          notification_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notification_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notification_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notification_reads_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_plans: {
         Row: {

@@ -83,7 +83,7 @@ export const FrameworkBar: React.FC<FrameworkBarProps> = ({
   const { t, isRTL } = useLanguage();
 
   return (
-    <div className={`flex flex-wrap justify-center gap-4 bg-black/20 backdrop-blur-xl rounded-[2rem] p-3 border border-white/10 ${isRTL ? 'flex-row-reverse' : ''}`}>
+    <div className={`hidden md:flex flex-wrap justify-center gap-4 bg-black/20 backdrop-blur-xl rounded-[2rem] p-3 border border-white/10 ${isRTL ? 'flex-row-reverse' : ''}`}>
       {/* Features Section - Right in Arabic, Left in English */}
       <div className={`flex items-center gap-4 ${isRTL ? 'pl-4 border-l flex-row-reverse' : 'pr-4 border-r'} border-white/10`}>
         <span className="text-white/80 text-sm font-medium">{t('footer.features')}</span>

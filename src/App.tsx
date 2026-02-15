@@ -1076,6 +1076,7 @@ import { OAuthConsent } from "@/pages/OAuthConsent";
 import FAQ from "@/pages/FAQ";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
+import { NewVibeTool } from "@/pages/NewVibeTool";
 // AdminPanel already imported at the top
 
 const App = () => (
@@ -1099,6 +1100,7 @@ const App = () => (
               <Route path="/terms" element={<Terms />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/new-vibe-tool" element={<NewVibeTool />} />
               <Route path="/oauth/consent" element={<OAuthConsent />} />
               <Route path="/" element={<AppContent />} />
             </Routes>
