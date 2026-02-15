@@ -190,8 +190,8 @@ export const NotificationInbox: React.FC = () => {
                         return (
                           <div
                             key={n.id}
-                            className={`p-5 hover:bg-white/[0.03] transition-all cursor-pointer relative group ${!readIds.has(n.id) ? 'bg-pink-500/[0.02]' : ''}`}
-                            onClick={() => { markAsRead(n.id); if (displayLink) window.open(displayLink, '_blank'); }}
+	                            className={`p-5 hover:bg-white/[0.03] transition-all cursor-pointer relative group ${!readIds.has(n.id) ? 'bg-pink-500/[0.02]' : ''}`}
+	                            onClick={() => { markAsRead(n.id); if (n.link_url) window.open(n.link_url, '_blank'); }}
                           >
                             {!readIds.has(n.id) && (
                               <div className={`absolute top-0 ${isRTL ? 'right-0' : 'left-0'} bottom-0 w-1 bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]`} />
