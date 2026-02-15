@@ -300,6 +300,33 @@ function getPromptForMode(mode: string): string {
   }
 }
 
+function appendTextToMessageContent(
+  content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>,
+  textToAppend: string,
+) {
+  if (typeof content === "string") {
+    return `${content}${textToAppend}`;
+  }
+
+  if (Array.isArray(content)) {
+    const updated = [...content];
+    const firstTextIndex = updated.findIndex((item) => item?.type === "text");
+
+    if (firstTextIndex >= 0) {
+      const firstTextBlock = updated[firstTextIndex];
+      updated[firstTextIndex] = {
+        ...firstTextBlock,
+        text: `${firstTextBlock.text ?? ""}${textToAppend}`,
+      };
+      return updated;
+    }
+
+    return [{ type: "text", text: textToAppend.trimStart() }, ...updated];
+  }
+
+  return content;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -323,7 +350,9 @@ serve(async (req) => {
         finalMessages = [...messages];
         finalMessages[lastUserMsgIndex] = {
           ...finalMessages[lastUserMsgIndex],
-          content: `${finalMessages[lastUserMsgIndex].content}
+          content: appendTextToMessageContent(finalMessages[lastUserMsgIndex].content,
+
+`
 
 ⚠️ CRITICAL REQUIREMENTS:
 1. OUTPUT ONLY <FILE> blocks (no JSON, no markdown, no explanations)
@@ -337,7 +366,13 @@ serve(async (req) => {
 5. RESPONSIVE: Every element MUST have mobile-first responsive classes
 6. BRANDING: index.html MUST include: <script src="https://www.vivorax.online/branding.js" defer></script>
 7. GENERATE ALL FILES COMPLETELY - Do not truncate
-8. Each component in its OWN separate file`,
+8. Each component in its OWN separate file
+
+📸 IMAGE ANALYSIS (when images are attached):
+- Analyze each attached image carefully before coding
+- Extract layout, hierarchy, colors, spacing, typography, and components
+- Recreate/fix the design based on what is visible in the image
+- If user asks to solve issues in the screenshot, identify the likely root cause and fix it in code`),
         };
       }
     }

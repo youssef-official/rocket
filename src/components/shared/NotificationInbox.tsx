@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, X, ExternalLink, Inbox as InboxIcon, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,7 +30,6 @@ export const NotificationInbox: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching notifications from Supabase...');
       const { data, error: fetchError } = await supabase
         .from('inbox_notifications')
         .select('*')
@@ -40,14 +40,13 @@ export const NotificationInbox: React.FC = () => {
         throw fetchError;
       }
       
-      if (data) {
-        console.log(`Successfully fetched ${data.length} notifications:`, data);
-        setNotifications(data as Notification[]);
-        setHasFetched(true);
-      }
-    } catch (err: any) {
+      setNotifications((data ?? []) as Notification[]);
+      setHasFetched(true);
+    } catch (err: unknown) {
       console.error('Error fetching notifications:', err);
-      setError(err.message || 'Failed to load notifications');
+      const message = err instanceof Error ? err.message : 'Failed to load notifications';
+      setError(message);
+      setHasFetched(true);
     } finally {
       setLoading(false);
     }
@@ -62,7 +61,7 @@ export const NotificationInbox: React.FC = () => {
         .eq('user_id', user.id);
       
       if (readError) throw readError;
-      if (data) setReadIds(new Set(data.map((r: any) => r.notification_id)));
+      if (data) setReadIds(new Set(data.map((r) => r.notification_id)));
     } catch (err) {
       console.error('Error fetching read status:', err);
     }
@@ -108,134 +107,138 @@ export const NotificationInbox: React.FC = () => {
         )}
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <div className="fixed inset-0 z-[99999] flex justify-end">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
-              onClick={() => setOpen(false)} 
-            />
-            
-            <motion.div
-              initial={{ x: isRTL ? -400 : 400 }}
-              animate={{ x: 0 }}
-              exit={{ x: isRTL ? -400 : 400 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={`relative h-full w-full sm:w-[400px] bg-[#0d0d15] border-${isRTL ? 'r' : 'l'} border-white/10 shadow-2xl flex flex-col`}
-              dir={isRTL ? 'rtl' : 'ltr'}
-            >
-              <div className="flex items-center justify-between p-6 border-b border-white/10 bg-white/5">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-pink-500/20 rounded-lg">
-                    <InboxIcon className="w-5 h-5 text-pink-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">
-                      {isRTL ? 'صندوق الوارد' : 'Inbox'}
-                    </h3>
-                    <p className="text-xs text-white/40">
-                      {unreadCount} {isRTL ? 'إشعارات غير مقروءة' : 'unread notifications'}
-                    </p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setOpen(false)} 
-                  className="p-2 hover:bg-white/10 rounded-full transition-all hover:rotate-90 text-white/60 hover:text-white"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
-                {isInitialLoading ? (
-                  <div className="h-full flex items-center justify-center p-12">
-                    <Loader2 className="w-8 h-8 text-pink-500 animate-spin" />
-                  </div>
-                ) : error ? (
-                  <div className="h-full flex flex-col items-center justify-center p-8 text-center">
-                    <AlertCircle className="w-12 h-12 text-red-500/50 mb-4" />
-                    <h4 className="text-white font-medium mb-2">{isRTL ? 'فشل تحميل الإشعارات' : 'Failed to load notifications'}</h4>
-                    <p className="text-white/40 text-sm mb-4">{error}</p>
-                    <button 
-                      onClick={fetchNotifications}
-                      className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm"
-                    >
-                      {isRTL ? 'إعادة المحاولة' : 'Try Again'}
-                    </button>
-                  </div>
-                ) : notifications.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center p-8 text-center">
-                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4">
-                      <Bell className="w-10 h-10 text-white/20" />
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {open && (
+            <div className="fixed inset-0 z-[99999] flex justify-end">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+                onClick={() => setOpen(false)} 
+              />
+              
+              <motion.div
+                initial={{ x: isRTL ? -400 : 400 }}
+                animate={{ x: 0 }}
+                exit={{ x: isRTL ? -400 : 400 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className={`relative h-full w-full sm:w-[400px] bg-[#0d0d15] border-${isRTL ? 'r' : 'l'} border-white/10 shadow-2xl flex flex-col`}
+                dir={isRTL ? 'rtl' : 'ltr'}
+              >
+                <div className="flex items-center justify-between p-6 border-b border-white/10 bg-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-pink-500/20 rounded-lg">
+                      <InboxIcon className="w-5 h-5 text-pink-500" />
                     </div>
-                    <h4 className="text-white font-medium mb-1">{isRTL ? 'لا توجد إشعارات' : 'No notifications yet'}</h4>
-                    <p className="text-white/40 text-sm">{isRTL ? 'سنخطرك عندما يكون هناك شيء جديد' : 'We\'ll notify you when there\'s something new'}</p>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">
+                        {isRTL ? 'صندوق الوارد' : 'Inbox'}
+                      </h3>
+                      <p className="text-xs text-white/40">
+                        {unreadCount} {isRTL ? 'إشعارات غير مقروءة' : 'unread notifications'}
+                      </p>
+                    </div>
                   </div>
-                ) : (
-                  <div className="flex flex-col divide-y divide-white/5">
-                    {notifications.map(n => {
-                      const isImage = (url: string | null) => url?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url?.includes('top4top.io');
-                      let displayImage = n.image_url;
-                      let displayLink = n.link_url;
+                  <button 
+                    onClick={() => setOpen(false)} 
+                    className="p-2 hover:bg-white/10 rounded-full transition-all hover:rotate-90 text-white/60 hover:text-white"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
 
-                      return (
-                        <div
-                          key={n.id}
-                          className={`p-5 hover:bg-white/[0.03] transition-all cursor-pointer relative group ${!readIds.has(n.id) ? 'bg-pink-500/[0.02]' : ''}`}
-                          onClick={() => { markAsRead(n.id); if (displayLink) window.open(displayLink, '_blank'); }}
-                        >
-                          {!readIds.has(n.id) && (
-                            <div className={`absolute top-0 ${isRTL ? 'right-0' : 'left-0'} bottom-0 w-1 bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]`} />
-                          )}
-                          
-                          {displayImage && isImage(displayImage) && (
-                            <div className="relative mb-4 overflow-hidden rounded-xl aspect-video bg-white/5">
-                              <img src={displayImage} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                            </div>
-                          )}
-                          
-                          <div className="flex items-start gap-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <h4 className={`text-sm font-bold truncate ${!readIds.has(n.id) ? 'text-white' : 'text-white/70'}`}>
-                                  {n.title}
-                                </h4>
-                                <span className="text-[10px] text-white/30 whitespace-nowrap ml-2">
-                                  {new Date(n.created_at).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
-                                </span>
+                <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+                  {isInitialLoading ? (
+                    <div className="h-full flex items-center justify-center p-12">
+                      <Loader2 className="w-8 h-8 text-pink-500 animate-spin" />
+                    </div>
+                  ) : error ? (
+                    <div className="h-full flex flex-col items-center justify-center p-8 text-center">
+                      <AlertCircle className="w-12 h-12 text-red-500/50 mb-4" />
+                      <h4 className="text-white font-medium mb-2">{isRTL ? 'فشل تحميل الإشعارات' : 'Failed to load notifications'}</h4>
+                      <p className="text-white/40 text-sm mb-4">{error}</p>
+                      <button 
+                        onClick={fetchNotifications}
+                        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm"
+                      >
+                        {isRTL ? 'إعادة المحاولة' : 'Try Again'}
+                      </button>
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center p-8 text-center">
+                      <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                        <Bell className="w-10 h-10 text-white/20" />
+                      </div>
+                      <h4 className="text-white font-medium mb-1">{isRTL ? 'لا توجد إشعارات' : 'No notifications yet'}</h4>
+                      <p className="text-white/40 text-sm">{isRTL ? 'سنخطرك عندما يكون هناك شيء جديد' : 'We\'ll notify you when there\'s something new'}</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col divide-y divide-white/5">
+                      {notifications.map(n => {
+                        const isImage = (url: string | null) => url?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url?.includes('top4top.io');
+                        const displayImage = n.image_url;
+                        const displayLink = n.link_url;
+
+                        return (
+                          <div
+                            key={n.id}
+                            className={`p-5 hover:bg-white/[0.03] transition-all cursor-pointer relative group ${!readIds.has(n.id) ? 'bg-pink-500/[0.02]' : ''}`}
+                            onClick={() => { markAsRead(n.id); if (displayLink) window.open(displayLink, '_blank'); }}
+                          >
+                            {!readIds.has(n.id) && (
+                              <div className={`absolute top-0 ${isRTL ? 'right-0' : 'left-0'} bottom-0 w-1 bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]`} />
+                            )}
+                            
+                            {displayImage && isImage(displayImage) && (
+                              <div className="relative mb-4 overflow-hidden rounded-xl aspect-video bg-white/5">
+                                <img src={displayImage} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                               </div>
-                              {n.body && (
-                                <p className="text-xs text-white/50 line-clamp-3 leading-relaxed mb-3">
-                                  {n.body}
-                                </p>
-                              )}
-                              {displayLink && (
-                                <div className="flex items-center gap-1.5 text-[11px] font-medium text-pink-500/80 group-hover:text-pink-500 transition-colors">
-                                  <span>{isRTL ? 'عرض التفاصيل' : 'View Details'}</span>
-                                  <ExternalLink className="w-3 h-3" />
+                            )}
+                            
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-1">
+                                  <h4 className={`text-sm font-bold truncate ${!readIds.has(n.id) ? 'text-white' : 'text-white/70'}`}>
+                                    {n.title}
+                                  </h4>
+                                  <span className="text-[10px] text-white/30 whitespace-nowrap ml-2">
+                                    {new Date(n.created_at).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
+                                  </span>
                                 </div>
-                              )}
+                                {n.body && (
+                                  <p className="text-xs text-white/50 line-clamp-3 leading-relaxed mb-3">
+                                    {n.body}
+                                  </p>
+                                )}
+                                {displayLink && (
+                                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-pink-500/80 group-hover:text-pink-500 transition-colors">
+                                    <span>{isRTL ? 'عرض التفاصيل' : 'View Details'}</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              
-              <div className="p-4 border-t border-white/10 bg-white/[0.02] text-center">
-                <p className="text-[10px] text-white/20 uppercase tracking-widest font-medium">
-                  Vivora X Notifications
-                </p>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="p-4 border-t border-white/10 bg-white/[0.02] text-center">
+                  <p className="text-[10px] text-white/20 uppercase tracking-widest font-medium">
+                    Vivora X Notifications
+                  </p>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
+
       
       <style dangerouslySetInnerHTML={{ __html: `
         .custom-scrollbar::-webkit-scrollbar {
