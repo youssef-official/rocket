@@ -29,7 +29,6 @@ export const NotificationInbox: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching notifications from Supabase...');
       const { data, error: fetchError } = await supabase
         .from('inbox_notifications')
         .select('*')
@@ -40,14 +39,13 @@ export const NotificationInbox: React.FC = () => {
         throw fetchError;
       }
       
-      if (data) {
-        console.log(`Successfully fetched ${data.length} notifications:`, data);
-        setNotifications(data as Notification[]);
-        setHasFetched(true);
-      }
-    } catch (err: any) {
+      setNotifications((data ?? []) as Notification[]);
+      setHasFetched(true);
+    } catch (err: unknown) {
       console.error('Error fetching notifications:', err);
-      setError(err.message || 'Failed to load notifications');
+      const message = err instanceof Error ? err.message : 'Failed to load notifications';
+      setError(message);
+      setHasFetched(true);
     } finally {
       setLoading(false);
     }
@@ -62,7 +60,7 @@ export const NotificationInbox: React.FC = () => {
         .eq('user_id', user.id);
       
       if (readError) throw readError;
-      if (data) setReadIds(new Set(data.map((r: any) => r.notification_id)));
+      if (data) setReadIds(new Set(data.map((r) => r.notification_id)));
     } catch (err) {
       console.error('Error fetching read status:', err);
     }
@@ -178,8 +176,8 @@ export const NotificationInbox: React.FC = () => {
                   <div className="flex flex-col divide-y divide-white/5">
                     {notifications.map(n => {
                       const isImage = (url: string | null) => url?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url?.includes('top4top.io');
-                      let displayImage = n.image_url;
-                      let displayLink = n.link_url;
+                      const displayImage = n.image_url;
+                      const displayLink = n.link_url;
 
                       return (
                         <div
