@@ -42,11 +42,21 @@ export const AdminPanel: React.FC = () => {
 
     const fetchData = async () => {
       try {
+        // Refresh session to ensure valid token
+        const { data: sessionData } = await supabase.auth.refreshSession();
+        if (!sessionData?.session) {
+          navigate('/login');
+          return;
+        }
         const { data: result, error: fnError } = await supabase.functions.invoke('admin-data');
         if (fnError) throw new Error(fnError.message);
         if (result?.error) throw new Error(result.error);
         setData(result);
       } catch (e: any) {
+        if (e.message?.includes('401') || e.message?.includes('Unauthorized')) {
+          navigate('/login');
+          return;
+        }
         setError(e.message || 'Failed to load admin data');
       } finally {
         setLoading(false);
