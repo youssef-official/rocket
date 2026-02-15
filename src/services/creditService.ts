@@ -34,6 +34,35 @@ async function checkAndResetDailyCredits(userId: string): Promise<void> {
     console.warn('[Credits] Daily reset check failed:', e);
   }
 }
+/**
+ * Check if user has at least 1 credit available (daily or monthly)
+ */
+export async function checkCreditsAvailable(userId: string): Promise<boolean> {
+  try {
+    await checkAndResetDailyCredits(userId);
+
+    const { data: userPlan, error } = await supabase
+      .from('user_plans')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !userPlan) return true; // Allow if no plan found (will be created)
+
+    const dailyCredits = toNumber(userPlan.daily_credits);
+    const usedToday = toNumber(userPlan.credits_used_today);
+    const totalUsed = toNumber(userPlan.total_credits_used);
+    const plan = (userPlan.plan as PlanType) || 'spark';
+    const monthlyMax = PLAN_CONFIG[plan]?.monthlyCredits ?? 0;
+
+    const dailyRemaining = Math.max(0, dailyCredits - usedToday);
+    const monthlyRemaining = Math.max(0, monthlyMax - totalUsed);
+
+    return (dailyRemaining + monthlyRemaining) >= 1;
+  } catch {
+    return true; // Allow on error
+  }
+}
 
 // Deduct exactly 1 credit per successful generation
 export async function deductCredits(

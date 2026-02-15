@@ -204,6 +204,9 @@ export const translations: Translations = {
   'credits.remaining': { en: 'Credits remaining', ar: 'النقاط المتبقية', zh: '剩余积分', ja: '残りクレジット', fr: 'Crédits restants' },
   'credits.daily': { en: 'Daily credits', ar: 'النقاط اليومية', zh: '每日积分', ja: '毎日のクレジット', fr: 'Crédits quotidiens' },
   'credits.monthly': { en: 'Monthly credits', ar: 'النقاط الشهرية', zh: '每月积分', ja: '月間クレジット', fr: 'Crédits mensuels' },
+  'credits.resetsDaily': { en: 'Resets daily', ar: 'يتجدد يومياً', zh: '每日重置', ja: '毎日リセット', fr: 'Réinitialisation quotidienne' },
+  'credits.runningLow': { en: 'Running low on credits? Upgrade now!', ar: 'نقاطك على وشك النفاد؟ قم بالترقية الآن!', zh: '积分即将用完？立即升级！', ja: 'クレジットが不足しています？今すぐアップグレード！', fr: 'Crédits presque épuisés ? Passez à la version supérieure !' },
+  'credits.noCredits': { en: 'No credits remaining. Please upgrade your plan.', ar: 'لا توجد نقاط متبقية. يرجى ترقية خطتك.', zh: '没有剩余积分。请升级您的计划。', ja: 'クレジットが残っていません。プランをアップグレードしてください。', fr: 'Aucun crédit restant. Veuillez améliorer votre plan.' },
 
   // Common
   'common.copied': { en: 'Copied!', ar: 'تم النسخ!', zh: '已复制!', ja: 'コピーしました!', fr: 'Copié !' },

@@ -497,7 +497,17 @@ const ProjectEditorRoute = () => {
       return;
     }
 
-    // Build mode - generate code
+    // Build mode - check credits BEFORE generating
+    if (user) {
+      const { checkCreditsAvailable } = await import('@/services/creditService');
+      const hasCredits = await checkCreditsAvailable(user.id);
+      if (!hasCredits) {
+        const { toast } = await import('sonner');
+        toast.error(t('credits.noCredits'));
+        return;
+      }
+    }
+
     setIsChatMode(false);
     setIsGenerating(true);
     setStreamingContent('');
