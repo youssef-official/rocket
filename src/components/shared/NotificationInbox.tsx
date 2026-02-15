@@ -34,8 +34,15 @@ export const NotificationInbox: React.FC = () => {
         .order('created_at', { ascending: false })
         .limit(20);
       
-      if (error) throw error;
-      if (data) setNotifications(data as Notification[]);
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+      
+      console.log("Fetched notifications raw data:", data);
+      if (data) {
+        setNotifications(data as Notification[]);
+      }
     } catch (err) {
       console.error("Error fetching notifications:", err);
     } finally {
@@ -73,12 +80,8 @@ export const NotificationInbox: React.FC = () => {
     }
   };
 
-  const filteredNotifs = notifications.filter(n => {
-    // Show if target_plan is null, undefined, 'all', or empty string
-    if (!n.target_plan || n.target_plan === 'all' || n.target_plan === '') return true;
-    // Otherwise check if it matches the user's current plan
-    return userPlan?.plan?.toLowerCase() === n.target_plan.toLowerCase();
-  });
+  // Temporarily show ALL notifications to debug why they are hidden
+  const filteredNotifs = notifications; 
 
   const unreadCount = filteredNotifs.filter(n => !readIds.has(n.id)).length;
 
