@@ -75,12 +75,9 @@ export const NotificationInbox: React.FC = () => {
     }
   };
 
-  // No filtering: show all notifications to everyone
-  const filteredNotifs = notifications;
-
   const unreadCount = useMemo(() => 
-    filteredNotifs.filter(n => !readIds.has(n.id)).length,
-  [filteredNotifs, readIds]);
+    notifications.filter(n => !readIds.has(n.id)).length,
+  [notifications, readIds]);
 
   const isInitialLoading = loading && !hasFetched;
 
@@ -100,12 +97,12 @@ export const NotificationInbox: React.FC = () => {
 
       <AnimatePresence>
         {open && (
-          <>
+          <div className="fixed inset-0 z-[99999]">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-sm" 
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
               onClick={() => setOpen(false)} 
             />
             
@@ -114,7 +111,7 @@ export const NotificationInbox: React.FC = () => {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: isRTL ? -400 : 400, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={`fixed ${isRTL ? 'left-0' : 'right-0'} top-0 h-full w-full sm:w-[400px] bg-[#0d0d15]/95 backdrop-blur-2xl border-l border-white/10 z-[10001] shadow-2xl flex flex-col`}
+              className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-0 h-full w-full sm:w-[400px] bg-[#0d0d15] border-l border-white/10 shadow-2xl flex flex-col`}
               dir={isRTL ? 'rtl' : 'ltr'}
             >
               <div className="flex items-center justify-between p-6 border-b border-white/10 bg-white/5">
@@ -123,7 +120,7 @@ export const NotificationInbox: React.FC = () => {
                     <InboxIcon className="w-5 h-5 text-pink-500" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
+                    <h3 className="text-xl font-bold text-white">
                       {isRTL ? 'صندوق الوارد' : 'Inbox'}
                     </h3>
                     <p className="text-xs text-white/40">
@@ -139,12 +136,12 @@ export const NotificationInbox: React.FC = () => {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
                 {isInitialLoading ? (
-                  <div className="h-full flex items-center justify-center">
+                  <div className="h-full flex items-center justify-center p-12">
                     <Loader2 className="w-8 h-8 text-pink-500 animate-spin" />
                   </div>
-                ) : filteredNotifs.length === 0 ? (
+                ) : notifications.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center p-8 text-center">
                     <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4">
                       <Bell className="w-10 h-10 text-white/20" />
@@ -153,8 +150,8 @@ export const NotificationInbox: React.FC = () => {
                     <p className="text-white/40 text-sm">{isRTL ? 'سنخطرك عندما يكون هناك شيء جديد' : 'We\'ll notify you when there\'s something new'}</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-white/5">
-                    {filteredNotifs.map(n => {
+                  <div className="flex flex-col divide-y divide-white/5">
+                    {notifications.map(n => {
                       const isImage = (url: string | null) => url?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url?.includes('top4top.io');
                       let displayImage = n.image_url;
                       let displayLink = n.link_url;
@@ -185,7 +182,7 @@ export const NotificationInbox: React.FC = () => {
                                 <h4 className={`text-sm font-bold truncate ${!readIds.has(n.id) ? 'text-white' : 'text-white/70'}`}>
                                   {n.title}
                                 </h4>
-                                <span className="text-[10px] text-white/30 whitespace-nowrap">
+                                <span className="text-[10px] text-white/30 whitespace-nowrap ml-2">
                                   {new Date(n.created_at).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
                                 </span>
                               </div>
@@ -215,7 +212,7 @@ export const NotificationInbox: React.FC = () => {
                 </p>
               </div>
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
       
