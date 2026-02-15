@@ -212,15 +212,20 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div className={`flex items-center gap-2 md:gap-3 ${isRTL ? 'order-1' : 'order-3'}`}>
             {user ? (
               <>
-                <div className={`flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full p-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <div className="hidden md:flex items-center gap-2">
-                    <a href="/docs" className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                      <Book className="w-5 h-5 text-white/80" />
-                    </a>
-                    <a href="/faq" className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                      <HelpCircle className="w-5 h-5 text-white/80" />
-                    </a>
-                  </div>
+                <div className={`hidden md:flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full p-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <a href="/docs" className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <Book className="w-5 h-5 text-white/80" />
+                  </a>
+                  <a href="/faq" className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <HelpCircle className="w-5 h-5 text-white/80" />
+                  </a>
+                </div>
+
+                <div className="bg-white/10 backdrop-blur-md rounded-full p-1">
+                  <NotificationInbox />
+                </div>
+
+                <div className="md:hidden">
                   <NotificationInbox />
                 </div>
 
@@ -264,233 +269,243 @@ export const HomePage: React.FC<HomePageProps> = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="text-center mb-8 md:mb-12"
+          className="text-center mb-6"
         >
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 md:mb-6 tracking-tight">
-            {t('home.heroTitle')} <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500">
-              {displayText}
-              <span className="animate-pulse">|</span>
-            </span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-4">
+            {t('home.title1')} <span className="text-pink-400">{t('home.title2')}</span> {t('home.title3')}
           </h1>
-          <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto px-4">
-            {t('home.heroSubtitle')}
+          <p className="text-base md:text-xl text-white/80">
+            {t('home.subtitle')}{' '}
+            <span className="text-white font-medium">
+              {displayText}
+            </span>
+            <span className="typing-cursor" />
           </p>
         </motion.div>
 
-        {/* Prompt Input Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="w-full max-w-3xl"
         >
-          <div 
-            className={`relative bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl transition-all duration-300 ${isDragging ? 'scale-[1.02] border-pink-500/50 bg-white/15' : ''}`}
-            onDragEnter={handleDragEnter}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <form onSubmit={handleSubmit} className="p-2 md:p-3">
-              <div className="relative">
-                <textarea
-                  value={prompt}
-                  onChange={handlePromptChange}
-                  placeholder={t('home.promptPlaceholder')}
-                  className="w-full bg-transparent text-white placeholder-white/40 border-none focus:ring-0 text-lg md:text-xl p-4 md:p-6 min-h-[120px] md:min-h-[160px] resize-none custom-scrollbar"
-                />
-                
-                {/* Uploaded Image Preview */}
-                <AnimatePresence>
-                  {uploadedImage && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      className="absolute bottom-20 left-6 flex items-center gap-2 p-2 bg-black/40 backdrop-blur-md rounded-xl border border-white/10"
-                    >
-                      <div className="relative w-12 h-12 rounded-lg overflow-hidden">
-                        <img src={uploadedImage.preview} alt="Preview" className="w-full h-full object-cover" />
-                      </div>
+          <form onSubmit={handleSubmit}>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            <div
+              className={`bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative transition-colors ${isDragging ? 'ring-2 ring-pink-400' : ''}`}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
+              {/* Drag overlay */}
+              {isDragging && (
+                <div className="absolute inset-0 z-10 bg-pink-50 border-2 border-dashed border-pink-400 rounded-[2.5rem] flex items-center justify-center pointer-events-none">
+                  <div className="flex flex-col items-center gap-2 text-pink-500">
+                    <ImageIcon className="w-8 h-8" />
+                    <span className="font-medium">{t('home.dropImage')}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Uploaded Image Preview */}
+              {uploadedImage && (
+                <div className={`px-4 pt-4 ${isRTL ? 'text-right' : ''}`}>
+                  <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div className="relative">
+                      <img
+                        src={uploadedImage.preview}
+                        alt="Uploaded"
+                        className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                      />
                       <button
                         type="button"
                         onClick={removeUploadedImage}
-                        className="p-1 hover:bg-white/10 rounded-full text-white/60 hover:text-white transition-colors"
+                        className={`absolute -top-2 ${isRTL ? '-left-2' : '-right-2'} w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors`}
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3 h-3" />
                       </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                    </div>
+                    <span className="text-sm text-gray-500 truncate max-w-[200px]">
+                      {uploadedImage.file.name}
+                    </span>
+                  </div>
+                </div>
+              )}
 
-              <div className={`flex flex-col md:flex-row items-center justify-between gap-4 p-2 md:p-4 border-t border-white/10 ${isRTL ? 'md:flex-row-reverse' : ''}`}>
-                <div className={`flex items-center gap-2 w-full md:w-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <textarea
+                value={prompt}
+                onChange={handlePromptChange}
+                placeholder={t('home.placeholder')}
+                className={`w-full px-4 md:px-8 py-4 md:py-6 text-gray-800 placeholder-gray-400 resize-none focus:outline-none text-base md:text-lg ${isRTL ? 'text-right' : ''}`}
+                dir={isRTL ? 'rtl' : 'ltr'}
+                rows={3}
+              />
+
+              <div className={`flex items-center justify-between px-3 md:px-6 py-3 md:py-4 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className={`flex items-center gap-1 md:gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="p-2.5 md:p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-white/70 hover:text-white transition-all group relative"
+                    className="p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    <Paperclip className="w-5 h-5" />
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileSelect}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      {t('home.attachImage')}
-                    </span>
+                    <Paperclip className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
                   </button>
+                  <button
+                    type="button"
+                    className={`hidden md:flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+                  >
+                    <span className="text-pink-500">🎨</span>
+                    <span className="text-sm text-gray-600">{t('home.import')}</span>
+                  </button>
+                </div>
 
+                <div className={`flex items-center gap-1.5 md:gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  {/* Character Count */}
+                  <span className={`text-[10px] md:text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                    {prompt.length}/{MAX_PROMPT_LENGTH}
+                  </span>
+
+                  {/* Visibility Toggle - Public/Private */}
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setShowVisibilityMenu(!showVisibilityMenu)}
-                      className={`flex items-center gap-2 px-3 md:px-4 py-2.5 md:py-3 bg-white/5 hover:bg-white/10 rounded-2xl text-white/70 hover:text-white transition-all ${isRTL ? 'flex-row-reverse' : ''}`}
+                      className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-xs md:text-sm ${isRTL ? 'flex-row-reverse' : ''}`}
                     >
-                      {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                      <span className="text-sm font-medium">{isPublic ? t('home.public') : t('home.private')}</span>
-                      <ChevronDown className={`w-4 h-4 transition-transform ${showVisibilityMenu ? 'rotate-180' : ''}`} />
+                      {isPublic ? <Globe className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Lock className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+                      <span className="hidden sm:inline">{isPublic ? t('home.public') : t('home.private')}</span>
+                      <ChevronDown className="w-3 h-3" />
                     </button>
 
                     <AnimatePresence>
                       {showVisibilityMenu && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 10 }}
-                          className="absolute bottom-full mb-2 left-0 w-48 bg-[#1a1a24] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => { setIsPublic(true); setShowVisibilityMenu(false); }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-white/70 hover:text-white transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                        <>
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setShowVisibilityMenu(false)}
+                          />
+                          <motion.div
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 5 }}
+                            className={`absolute bottom-full ${isRTL ? 'left-0' : 'right-0'} mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50`}
                           >
-                            <Globe className="w-4 h-4" />
-                            <div className="flex-1">
-                              <div className="text-sm font-medium">{t('home.public')}</div>
-                              <div className="text-[10px] text-white/40">{t('home.publicDesc')}</div>
-                            </div>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (canUsePrivateProjects) {
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsPublic(true);
+                                setShowVisibilityMenu(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${isPublic ? 'bg-pink-50' : ''}`}
+                            >
+                              <Globe className={`w-4 h-4 ${isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
+                              <div className={isRTL ? 'text-right' : ''}>
+                                <p className={`text-sm font-medium ${isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.public')}</p>
+                                <p className="text-xs text-gray-500">{t('home.publicDesc')}</p>
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
                                 setIsPublic(false);
                                 setShowVisibilityMenu(false);
-                              } else {
-                                setShowUpgradeModal(true);
-                                setShowVisibilityMenu(false);
-                              }
-                            }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 text-white/70 hover:text-white transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                          >
-                            <Lock className="w-4 h-4" />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">{t('home.private')}</span>
-                                {!canUsePrivateProjects && <Crown className="w-3 h-3 text-pink-500" />}
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${!isPublic ? 'bg-pink-50' : ''}`}
+                            >
+                              <Lock className={`w-4 h-4 ${!isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
+                              <div className={isRTL ? 'text-right' : ''}>
+                                <p className={`text-sm font-medium ${!isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.private')}</p>
+                                <p className="text-xs text-gray-500">{t('home.privateDesc')}</p>
                               </div>
-                              <div className="text-[10px] text-white/40">{t('home.privateDesc')}</div>
-                            </div>
-                          </button>
-                        </motion.div>
+                            </button>
+                          </motion.div>
+                        </>
                       )}
                     </AnimatePresence>
                   </div>
+
+                  <motion.button
+                    type="submit"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    disabled={!prompt.trim() || isSubmitting}
+                    className="w-8 h-8 md:w-10 md:h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 flex-shrink-0"
+                  >
+                    <Send className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+                  </motion.button>
                 </div>
-
-                <button
-                  type="submit"
-                  disabled={!prompt.trim() || isSubmitting}
-                  className={`w-full md:w-auto flex items-center justify-center gap-2 px-8 py-3 md:py-4 bg-gradient-to-r from-pink-500 to-violet-600 text-white rounded-2xl font-bold hover:shadow-[0_0_20px_rgba(236,72,153,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed group ${isRTL ? 'flex-row-reverse' : ''}`}
-                >
-                  {isSubmitting ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <span>{t('home.generateButton')}</span>
-                      <Sparkles className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    </>
-                  )}
-                </button>
               </div>
-            </form>
-          </div>
+            </div>
+          </form>
+        </motion.div>
 
-          {/* Framework Selection */}
-          <div className={`mt-6 flex flex-wrap items-center justify-center gap-3 md:gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            {['React', 'Next.js', 'HTML/Tailwind'].map((fw) => (
-              <button
-                key={fw}
-                onClick={() => setSelectedFramework(fw)}
-                className={`px-4 md:px-6 py-2 rounded-full text-sm font-medium transition-all border ${
-                  selectedFramework === fw
-                    ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
-                    : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                {fw}
-              </button>
-            ))}
-          </div>
+        {/* Frameworks & Integrations with real logos */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-8 w-full max-w-3xl"
+        >
+          <FrameworkBar selectedFramework={selectedFramework} onSelectFramework={setSelectedFramework} />
         </motion.div>
       </main>
 
+      {/* Upgrade Banner removed */}
+
       {/* Projects Section */}
-      {user && (
-        <div className="relative z-10 bg-black/40 backdrop-blur-3xl border-t border-white/10">
-          <ProjectsSection
-            projects={projects}
-            loading={projectsLoading}
-            onOpenProject={onOpenProject}
-            onDeleteProject={onDeleteProject}
-            onForkProject={onForkProject}
-            onViewDashboard={onViewDashboard}
-          />
-        </div>
+      {user && projects.length > 0 && (
+        <ProjectsSection
+          projects={projects}
+          loading={projectsLoading}
+          onOpenProject={onOpenProject || (() => { })}
+          onDeleteProject={onDeleteProject || (() => { })}
+          onForkProject={onForkProject || (() => { })}
+          onNewProject={() => { }}
+        />
       )}
 
-      {/* Templates Section */}
-      <div className="relative z-10">
-        <TemplatesSection onSelectTemplate={(t) => setPrompt(t)} />
-      </div>
+      {/* Templates Section - visible to all users */}
+      <TemplatesSection onSelectTemplate={(prompt) => setPrompt(prompt)} />
 
-      {/* Framework Bar */}
-      <FrameworkBar />
+      {/* Welcome message for new logged-in users with no projects */}
+      {user && projects.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="relative z-10 max-w-3xl mx-auto px-4 mb-20 text-center"
+        >
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
+            <Sparkles className="w-12 h-12 text-pink-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Welcome to Vivora X!</h2>
+            <p className="text-white/70 mb-6">Start by describing your dream project above.</p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Footer */}
       <Footer />
 
-      {/* Modals */}
+      {/* Upgrade Modal */}
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
       />
+
+      {/* Settings Modal */}
       <SettingsModal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
       />
-
-      {/* Custom Scrollbar Styles */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.2);
-        }
-      `}} />
     </div>
   );
 };
