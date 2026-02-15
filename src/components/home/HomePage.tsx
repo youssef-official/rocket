@@ -225,6 +225,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <NotificationInbox />
                 </div>
 
+                <div className="md:hidden">
+                  <NotificationInbox />
+                </div>
+
                 <UserMenuDropdown
                   user={user}
                   signOut={signOut}
