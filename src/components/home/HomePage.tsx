@@ -212,20 +212,13 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div className={`flex items-center gap-2 md:gap-3 ${isRTL ? 'order-1' : 'order-3'}`}>
             {user ? (
               <>
-                <div className={`hidden md:flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full p-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <a href="/docs" className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                <div className={`flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full p-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <a href="/docs" className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors">
                     <Book className="w-5 h-5 text-white/80" />
                   </a>
-                  <a href="/faq" className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                  <a href="/faq" className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors">
                     <HelpCircle className="w-5 h-5 text-white/80" />
                   </a>
-                </div>
-
-                <div className="bg-white/10 backdrop-blur-md rounded-full p-1">
-                  <NotificationInbox />
-                </div>
-
-                <div className="md:hidden">
                   <NotificationInbox />
                 </div>
 
