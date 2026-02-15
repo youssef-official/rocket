@@ -361,16 +361,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   // Get display name for project
   const displayProjectName = project?.generatedName || project?.name || 'Untitled Project';
 
-  // Show Visual Edit Mode if active
-  if (showVisualEdit) {
-    return (
-      <VisualEditMode
-        projectFiles={project?.files || {}}
-        onSave={handleVisualEditSave}
-        onClose={() => setShowVisualEdit(false)}
-      />
-    );
-  }
+  // Visual Edit mode is now integrated into the main layout below
 
   return (
     <div className="h-screen flex flex-col bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -665,33 +656,43 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
         {/* Desktop Layout */}
         <div className="hidden md:flex flex-1 overflow-hidden">
-          {/* Chat Panel */}
-          <div
-            className="flex-shrink-0 border-r border-border"
-            style={{ width: chatWidth }}
-          >
-            <ChatView
-              messages={displayMessages}
-              onSendMessage={onSendMessage}
-              isGenerating={isGenerating}
-              fileActivities={fileActivities}
-              generationPhase={generationPhase}
-              onStop={onStop}
-              statusMessage={statusMessage}
-              currentVersion={currentVersionNumber ?? currentVersion}
-              onImageUpload={handleImageUpload}
-              suggestions={suggestions}
-              versions={versions}
-              onSelectVersion={handleSelectVersion}
-              onRollback={handleRollback}
+          {/* Chat Panel or Visual Edit Sidebar */}
+          {showVisualEdit ? (
+            <VisualEditMode
+              projectFiles={project?.files || {}}
+              onSave={handleVisualEditSave}
+              onClose={() => setShowVisualEdit(false)}
             />
-          </div>
+          ) : (
+            <>
+              <div
+                className="flex-shrink-0 border-r border-border"
+                style={{ width: chatWidth }}
+              >
+                <ChatView
+                  messages={displayMessages}
+                  onSendMessage={onSendMessage}
+                  isGenerating={isGenerating}
+                  fileActivities={fileActivities}
+                  generationPhase={generationPhase}
+                  onStop={onStop}
+                  statusMessage={statusMessage}
+                  currentVersion={currentVersionNumber ?? currentVersion}
+                  onImageUpload={handleImageUpload}
+                  suggestions={suggestions}
+                  versions={versions}
+                  onSelectVersion={handleSelectVersion}
+                  onRollback={handleRollback}
+                />
+              </div>
 
-          {/* Resize Handle */}
-          <div
-            className="w-1 bg-transparent hover:bg-primary/50 cursor-col-resize transition-colors"
-            onMouseDown={handleResizeStart}
-          />
+              {/* Resize Handle */}
+              <div
+                className="w-1 bg-transparent hover:bg-primary/50 cursor-col-resize transition-colors"
+                onMouseDown={handleResizeStart}
+              />
+            </>
+          )}
 
           {/* Main Panel - Code/Preview */}
           <div className="flex-1 overflow-hidden">
