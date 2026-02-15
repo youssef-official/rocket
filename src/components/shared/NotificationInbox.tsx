@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, X, ExternalLink, Inbox as InboxIcon, Loader2 } from 'lucide-react';
+import { Bell, X, ExternalLink, Inbox as InboxIcon, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -22,24 +22,32 @@ export const NotificationInbox: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const { data, error } = await supabase
+      console.log('Fetching notifications from Supabase...');
+      const { data, error: fetchError } = await supabase
         .from('inbox_notifications')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50); // Increased limit to ensure we see everything
+        .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (fetchError) {
+        console.error('Supabase fetch error:', fetchError);
+        throw fetchError;
+      }
+      
       if (data) {
+        console.log(`Successfully fetched ${data.length} notifications:`, data);
         setNotifications(data as Notification[]);
         setHasFetched(true);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching notifications:', err);
+      setError(err.message || 'Failed to load notifications');
     } finally {
       setLoading(false);
     }
@@ -48,18 +56,19 @@ export const NotificationInbox: React.FC = () => {
   const fetchReadIds = useCallback(async () => {
     if (!user) return;
     try {
-      const { data, error } = await supabase
+      const { data, error: readError } = await supabase
         .from('user_notification_reads')
         .select('notification_id')
         .eq('user_id', user.id);
       
-      if (error) throw error;
+      if (readError) throw readError;
       if (data) setReadIds(new Set(data.map((r: any) => r.notification_id)));
     } catch (err) {
       console.error('Error fetching read status:', err);
     }
   }, [user]);
 
+  // Initial fetch on mount
   useEffect(() => {
     fetchNotifications();
     if (user) fetchReadIds();
@@ -68,10 +77,14 @@ export const NotificationInbox: React.FC = () => {
   const markAsRead = async (notifId: string) => {
     if (!user || readIds.has(notifId)) return;
     try {
-      await supabase.from('user_notification_reads').insert({ user_id: user.id, notification_id: notifId });
+      const { error: insertError } = await supabase
+        .from('user_notification_reads')
+        .insert({ user_id: user.id, notification_id: notifId });
+      
+      if (insertError) throw insertError;
       setReadIds(prev => new Set([...prev, notifId]));
     } catch (err) {
-      // Error handled silently
+      console.error('Error marking as read:', err);
     }
   };
 
@@ -141,6 +154,18 @@ export const NotificationInbox: React.FC = () => {
                   <div className="h-full flex items-center justify-center p-12">
                     <Loader2 className="w-8 h-8 text-pink-500 animate-spin" />
                   </div>
+                ) : error ? (
+                  <div className="h-full flex flex-col items-center justify-center p-8 text-center">
+                    <AlertCircle className="w-12 h-12 text-red-500/50 mb-4" />
+                    <h4 className="text-white font-medium mb-2">{isRTL ? 'فشل تحميل الإشعارات' : 'Failed to load notifications'}</h4>
+                    <p className="text-white/40 text-sm mb-4">{error}</p>
+                    <button 
+                      onClick={fetchNotifications}
+                      className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm"
+                    >
+                      {isRTL ? 'إعادة المحاولة' : 'Try Again'}
+                    </button>
+                  </div>
                 ) : notifications.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center p-8 text-center">
                     <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4">
@@ -155,8 +180,7 @@ export const NotificationInbox: React.FC = () => {
                       const isImage = (url: string | null) => url?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url?.includes('top4top.io');
                       let displayImage = n.image_url;
                       let displayLink = n.link_url;
-                      
-                      // Simplified logic: show whatever is available without strict filtering
+
                       return (
                         <div
                           key={n.id}
