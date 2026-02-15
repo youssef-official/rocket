@@ -59,7 +59,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
               <FolderOpen className="w-5 h-5 text-white" />
             </div>
             <div className={isRTL ? 'text-right' : 'text-left'}>
-              <h2 className="text-2xl font-bold text-white">{t('projects.title')}</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-white whitespace-nowrap">{t('projects.title')}</h2>
               <p className="text-white/60 text-sm">
                 {t('projects.count', { count: projects.length, s: projects.length !== 1 ? 's' : '' })}
               </p>

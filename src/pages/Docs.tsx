@@ -5,7 +5,8 @@ import {
   Share2, Settings, MessageSquare, ArrowLeft,
   ChevronRight, Search, Globe, Lock, GitBranch,
   Sparkles, Layers, Rocket, Image as ImageIcon,
-  RefreshCw, Languages
+  RefreshCw, Languages, CreditCard, Shield, Eye,
+  PenTool, Bell, Users, Wand2
 } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { Footer } from '@/components/shared/Footer';
@@ -20,12 +21,12 @@ export const Docs: React.FC = () => {
   const sections = [
     {
       id: 'getting-started',
-      title: t('docs.gettingStarted'),
+      title: 'Getting Started',
       icon: Zap,
       content: [
         {
           title: 'Welcome to Vivora X',
-          description: 'Vivora X is an AI-powered web application builder that transforms your ideas into production-ready code. Simply describe what you want to build, and watch as Vivora X generates complete React applications with TypeScript and Tailwind CSS.',
+          description: 'Vivora X is an AI-powered web application builder that transforms your ideas into production-ready React applications with TypeScript and Tailwind CSS. Simply describe what you want, and Vivora X generates a complete multi-page project in seconds.',
         },
         {
           title: 'Quick Start Guide',
@@ -33,41 +34,42 @@ export const Docs: React.FC = () => {
           steps: [
             'Sign up for a free Vivora X account',
             'Navigate to the homepage input field',
-            'Describe your project (e.g., "e-commerce site with product catalog and shopping cart")',
-            'Press Enter or click the arrow button to start generation',
-            'Watch as Vivora X creates your complete application with multiple pages and components!',
+            'Describe your project (e.g., "Modern e-commerce store with product catalog, cart, and checkout")',
+            'Press Enter or click the send button to start generation',
+            'Watch as Vivora X creates your complete application with multiple pages, components, and styling!',
           ],
         },
         {
           title: 'Understanding the Editor',
           description: 'The Vivora X editor is split into three main areas for maximum productivity:',
           steps: [
-            'Chat Panel - Communicate with AI to modify your project',
-            'Preview Panel - See live updates to your application',
-            'Code Panel - View and edit generated files directly',
+            'Chat Panel — Communicate with AI to modify, iterate, and improve your project',
+            'Preview Panel — See live updates rendered in real-time as AI generates code',
+            'Code Panel — View, browse, and manually edit generated source files',
           ],
         },
       ],
     },
     {
       id: 'ai-generation',
-      title: t('docs.aiGeneration'),
+      title: 'AI Code Generation',
       icon: Sparkles,
       content: [
         {
           title: 'How AI Generation Works',
-          description: 'Vivora X uses advanced AI models to understand your natural language descriptions and convert them into production-ready code. The AI is trained to generate clean, maintainable React components with TypeScript type safety and modern Tailwind CSS styling.',
+          description: 'Vivora X uses advanced AI models (Gemini 3 Flash) to understand your natural language descriptions and convert them into production-ready code. The AI generates clean, maintainable React components with TypeScript type safety, Tailwind CSS styling, and a premium "Classic" design aesthetic with Playfair Display and Plus Jakarta Sans fonts.',
         },
         {
           title: 'What Vivora X Can Generate',
           description: 'Vivora X can create complete applications including:',
           steps: [
-            'Multi-page websites with navigation and routing',
-            'E-commerce stores with product catalogs and carts',
-            'Dashboards with data visualization and charts',
-            'Landing pages with animations and call-to-actions',
-            'Admin panels with forms and data tables',
-            'Portfolio sites with galleries and contact forms',
+            'Multi-page websites with navigation and React Router',
+            'E-commerce stores with product catalogs, shopping carts, and checkout',
+            'Dashboards with data visualization, charts, and analytics',
+            'Landing pages with animations (Framer Motion) and call-to-actions',
+            'Admin panels with CRUD forms, data tables, and password protection',
+            'Portfolio sites with galleries, animations, and contact forms',
+            'Blog and content sites with rich typography and layouts',
           ],
         },
         {
@@ -78,82 +80,153 @@ export const Docs: React.FC = () => {
             'Include functionality: "Add a contact form that validates email and shows success message"',
             'Describe the style: "Modern, minimalist design with subtle hover animations and gradient backgrounds"',
             'Mention components: "Use cards for product display with image, title, price, and add-to-cart button"',
+            'Reference design: You can upload an image/screenshot and say "Build something like this"',
           ],
         },
       ],
     },
     {
-      id: 'vercel',
-      title: t('docs.vercel'),
-      icon: Upload,
+      id: 'image-analysis',
+      title: 'Image Analysis',
+      icon: ImageIcon,
       content: [
         {
-          title: 'Vercel Deployment',
-          description: 'Deploy your project to Vercel with one click. Get a live URL instantly that you can share with anyone.',
+          title: 'Upload Images for Design Reference',
+          description: 'Vivora X can analyze uploaded images (screenshots, mockups, designs) and recreate them as functional code. Simply attach an image to your prompt and describe what you want.',
         },
         {
-          title: 'How to Deploy',
-          description: 'Follow these steps to deploy to Vercel:',
+          title: 'How Image Analysis Works',
+          description: 'When you upload an image:',
           steps: [
-            'Go to Settings and add your Vercel API Token',
-            'Click the "Publish" button in the editor header',
-            'Enter a project name (optional)',
-            'Click "Deploy to Vercel"',
-            'Wait for deployment to complete and get your live URL',
+            'The image is uploaded to secure cloud storage',
+            'The AI model analyzes the visual design, layout, colors, and components',
+            'It generates matching React code with accurate styling and structure',
+            'You can further refine by chatting with the AI about specific changes',
           ],
         },
         {
-          title: 'Benefits',
-          description: 'Vercel deployment provides:',
+          title: 'Tips for Best Results',
+          description: 'For optimal image analysis:',
           steps: [
-            'Instant global CDN distribution',
-            'Automatic HTTPS/SSL certificates',
-            'Continuous deployment on code changes',
-            'Preview deployments for testing',
-            'Analytics and performance monitoring',
+            'Use clear, high-resolution screenshots',
+            'Crop to the specific section you want recreated',
+            'Add a text prompt describing any modifications you want',
+            'Upload one image at a time for best accuracy',
           ],
         },
       ],
     },
     {
-      id: 'multilingual',
-      title: t('docs.multilingual'),
-      icon: Languages,
+      id: 'visual-edit',
+      title: 'Visual Editing',
+      icon: PenTool,
       content: [
         {
-          title: 'Multi-language Support',
-          description: 'Rocket supports multiple languages including English, Arabic (RTL), Chinese, Japanese, and French. The interface automatically adapts to your selected language.',
+          title: 'Visual Edit Mode',
+          description: 'Visual Edit mode lets you click on elements directly in the preview and modify them visually — changing text, colors, fonts, alignment, and more without writing code.',
         },
         {
-          title: 'How to Change Language',
-          description: 'Follow these steps to change the interface language:',
+          title: 'How to Use Visual Edit',
+          description: 'Follow these steps:',
           steps: [
-            'Click on your profile icon in the header',
-            'Find the Language option in the dropdown menu',
-            'Select your preferred language',
-            'The interface will update immediately',
+            'Open your project in the editor',
+            'Click the "Visual Edit" button in the toolbar',
+            'A sidebar panel appears next to the live preview',
+            'Click on any element in the preview to select it',
+            'Modify properties like text content, colors, font size, alignment',
+            'Click "Save Changes" to apply — the AI updates your source code precisely',
           ],
         },
         {
-          title: 'RTL Support',
-          description: 'For Arabic language:',
+          title: 'What Can Be Edited',
+          description: 'Visual Edit supports modifying:',
           steps: [
-            'The entire interface flips to Right-to-Left',
-            'Text alignment adjusts automatically',
-            'Icons and navigation adapt to RTL layout',
-            'All components support bidirectional text',
+            'Text content (headings, paragraphs, button labels)',
+            'Colors (text color, background color)',
+            'Font properties (size, weight, family)',
+            'Alignment and spacing',
+            'Background colors and gradients',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'credits',
+      title: 'Credits & Plans',
+      icon: CreditCard,
+      content: [
+        {
+          title: 'Credit System',
+          description: 'Each successful code generation uses 1 credit. Credits are the currency that powers AI generation in Vivora X.',
+        },
+        {
+          title: 'Available Plans',
+          description: 'Choose the plan that fits your needs:',
+          steps: [
+            'Spark (Free) — 5 daily credits, perfect for testing and learning',
+            'Builder ($9/mo) — 10 daily + 100 monthly credits, for indie developers',
+            'Creator ($19/mo) — 15 daily + 300 monthly credits, for serious builders',
+            'Scale ($39/mo) — 25 daily + 1000 monthly credits, for teams and startups',
+          ],
+        },
+        {
+          title: 'Daily Credit Reset',
+          description: 'Daily credits reset automatically at UTC midnight. When you visit the site the next day, your credits are refreshed instantly — no generation needed to trigger the reset.',
+        },
+      ],
+    },
+    {
+      id: 'notifications',
+      title: 'Notifications',
+      icon: Bell,
+      content: [
+        {
+          title: 'Inbox Notifications',
+          description: 'Vivora X has a built-in notification system. Click the bell icon in the navigation bar to open the Inbox panel and see announcements, updates, and messages from the team.',
+        },
+        {
+          title: 'How It Works',
+          description: 'The notification system includes:',
+          steps: [
+            'A red badge appears on the bell icon when you have unread notifications',
+            'Click the bell to open the slide-out Inbox panel',
+            'Notifications can include images, text, and links',
+            'Click a notification to mark it as read and open any associated link',
+            'Notifications can be targeted to specific plan tiers',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'templates',
+      title: 'Templates',
+      icon: Layers,
+      content: [
+        {
+          title: 'Pre-Built Templates',
+          description: 'Vivora X offers a curated collection of templates — pre-designed project prompts that generate professional applications with one click.',
+        },
+        {
+          title: 'Using Templates',
+          description: 'To use a template:',
+          steps: [
+            'Browse the Templates section on the homepage (visible to all users)',
+            'Click on any template card',
+            'The template prompt is automatically filled into the generation input',
+            'Press Enter to generate a project based on that design',
+            'Customize further by chatting with the AI in the editor',
           ],
         },
       ],
     },
     {
       id: 'versions',
-      title: t('docs.versions'),
+      title: 'Version History',
       icon: GitBranch,
       content: [
         {
           title: 'Automatic Versioning',
-          description: 'Rocket automatically saves a new version every time the AI generates or modifies code. This gives you a complete history of your project\'s evolution.',
+          description: 'Vivora X automatically saves a new version every time the AI generates or modifies code. This gives you a complete history of your project\'s evolution.',
         },
         {
           title: 'Version Selector',
@@ -172,15 +245,47 @@ export const Docs: React.FC = () => {
             'Open the version selector in the chat panel',
             'Find the version you want to restore',
             'Click the "Rollback" button',
-            'Confirm the action - this will delete all newer versions',
+            'Confirm the action — this will delete all newer versions',
             'Your project will be restored to that exact state',
           ],
         },
       ],
     },
     {
+      id: 'vercel',
+      title: 'Vercel Deployment',
+      icon: Upload,
+      content: [
+        {
+          title: 'Deploy to Vercel',
+          description: 'Deploy your project to Vercel with one click. Get a live URL instantly that you can share with anyone.',
+        },
+        {
+          title: 'How to Deploy',
+          description: 'Follow these steps:',
+          steps: [
+            'Go to Settings and add your Vercel API Token',
+            'Click the "Publish" button in the editor header',
+            'Enter a project name (optional)',
+            'Click "Deploy to Vercel"',
+            'Wait for deployment to complete and get your live URL',
+          ],
+        },
+        {
+          title: 'Benefits',
+          description: 'Vercel deployment provides:',
+          steps: [
+            'Instant global CDN distribution',
+            'Automatic HTTPS/SSL certificates',
+            'Continuous deployment on code changes',
+            'Preview deployments for testing',
+          ],
+        },
+      ],
+    },
+    {
       id: 'export',
-      title: t('docs.exporting'),
+      title: 'Export & Download',
       icon: Download,
       content: [
         {
@@ -192,39 +297,52 @@ export const Docs: React.FC = () => {
           description: 'After downloading, run your project on your local machine:',
           steps: [
             'Extract the ZIP file to a folder',
-            'Open terminal/command prompt in that folder',
-            'Run: npm install (or yarn install)',
-            'Run: npm run dev (or yarn dev)',
+            'Open terminal in that folder',
+            'Run: npm install',
+            'Run: npm run dev',
             'Open http://localhost:5173 in your browser',
           ],
-        },
-        {
-          title: 'Project Structure',
-          description: 'Downloaded projects include all necessary files for a production React application with Vite, TypeScript, Tailwind CSS, and more.',
         },
       ],
     },
     {
-      id: 'publishing',
-      title: t('docs.publishing'),
-      icon: Share2,
+      id: 'multilingual',
+      title: 'Multi-Language',
+      icon: Languages,
       content: [
         {
-          title: 'Publishing Your Project',
-          description: 'Make your project live on the web with one click:',
-          steps: [
-            'Click the "Publish" button in the editor toolbar',
-            'Rocket will deploy your project to Vercel',
-            'Get a unique URL to share with anyone',
-            'Updates are deployed instantly when you republish',
-          ],
+          title: 'Multi-language Support',
+          description: 'Vivora X supports multiple languages including English, Arabic (RTL), Chinese, Japanese, and French. The interface automatically adapts to your selected language.',
         },
         {
-          title: 'Sharing Options',
-          description: 'Depending on your visibility settings:',
+          title: 'How to Change Language',
+          description: 'Follow these steps:',
           steps: [
-            'Public: Share the URL for anyone to view and fork',
-            'Private: Only you can access the published URL',
+            'Click on your profile icon in the header',
+            'Find the Language option in the dropdown menu',
+            'Select your preferred language',
+            'The interface will update immediately including RTL support for Arabic',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'privacy',
+      title: 'Privacy & Security',
+      icon: Shield,
+      content: [
+        {
+          title: 'Data Protection',
+          description: 'Your data is encrypted and stored securely. We never share your code or personal information with third parties.',
+        },
+        {
+          title: 'Account Security',
+          description: 'Security features include:',
+          steps: [
+            'Email-based authentication with password hashing',
+            'Session management with automatic token refresh',
+            'Row-Level Security (RLS) on all database tables',
+            'Private projects visible only to owners',
           ],
         },
       ],
@@ -252,70 +370,57 @@ export const Docs: React.FC = () => {
           backgroundAttachment: 'fixed',
         }}
       >
-        {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/70" />
 
-        {/* Header */}
         <header className="relative z-10 px-6 py-4 border-b border-white/10">
           <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
             <a href="/" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <VivoraLogo size="md" />
               <span className="text-white/60">|</span>
-              <span className="text-white font-medium">{t('docs.title')}</span>
+              <span className="text-white font-medium">Documentation</span>
             </a>
-            <a 
-              href="/"
-              className={`flex items-center gap-2 text-white/80 hover:text-white transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
-            >
+            <a href="/" className={`flex items-center gap-2 text-white/80 hover:text-white transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}>
               <ArrowLeft className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
-              {t('nav.backToHome')}
+              Back to Home
             </a>
           </div>
         </header>
 
-        {/* Main Content */}
         <div className={`relative z-10 flex max-w-7xl mx-auto min-h-[calc(100vh-200px)] ${isRTL ? 'flex-row-reverse' : ''}`}>
-          {/* Sidebar */}
           <aside className={`w-64 min-h-full border-white/10 p-4 hidden md:block ${isRTL ? 'border-l' : 'border-r'}`}>
-            {/* Search */}
             <div className="relative mb-6 sticky top-4">
               <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/40`} />
               <input
                 type="text"
-                placeholder={t('docs.search')}
+                placeholder="Search docs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={`w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-pink-400`}
-                dir={isRTL ? 'rtl' : 'ltr'}
               />
             </div>
-
-            {/* Navigation */}
             <nav className="space-y-1">
               {filteredSections.map((section) => (
                 <button
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left ${
                     activeSection === section.id
                       ? 'bg-pink-500/20 text-pink-400'
                       : 'text-white/70 hover:bg-white/5 hover:text-white'
                   }`}
                 >
-                  <section.icon className="w-4 h-4" />
+                  <section.icon className="w-4 h-4 flex-shrink-0" />
                   <span className="text-sm">{section.title}</span>
                 </button>
               ))}
             </nav>
           </aside>
 
-          {/* Mobile Nav */}
           <div className="md:hidden w-full p-4 border-b border-white/10">
             <select
               value={activeSection}
               onChange={(e) => setActiveSection(e.target.value)}
-              className={`w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-pink-400 ${isRTL ? 'text-right' : ''}`}
-              dir={isRTL ? 'rtl' : 'ltr'}
+              className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-pink-400"
             >
               {sections.map(section => (
                 <option key={section.id} value={section.id} className="bg-gray-900">
@@ -325,7 +430,6 @@ export const Docs: React.FC = () => {
             </select>
           </div>
 
-          {/* Content */}
           <main className="flex-1 p-6 md:p-10">
             {currentSection && (
               <motion.div
@@ -333,7 +437,7 @@ export const Docs: React.FC = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <div className={`flex items-center gap-3 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="flex items-center gap-3 mb-6">
                   <div className="w-12 h-12 rounded-xl bg-pink-500/20 flex items-center justify-center">
                     <currentSection.icon className="w-6 h-6 text-pink-400" />
                   </div>
@@ -343,17 +447,16 @@ export const Docs: React.FC = () => {
                 <div className="space-y-8">
                   {currentSection.content.map((item, index) => (
                     <div key={index} className="bg-white/5 rounded-xl p-6 border border-white/10">
-                      <h2 className={`text-xl font-semibold text-white mb-3 ${isRTL ? 'text-right' : ''}`}>{item.title}</h2>
-                      <p className={`text-white/70 mb-4 leading-relaxed ${isRTL ? 'text-right' : ''}`}>{item.description}</p>
-                      
+                      <h2 className="text-xl font-semibold text-white mb-3">{item.title}</h2>
+                      <p className="text-white/70 mb-4 leading-relaxed">{item.description}</p>
                       {item.steps && (
                         <ol className="space-y-3">
                           {item.steps.map((step, stepIndex) => (
-                            <li key={stepIndex} className={`flex items-start gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                            <li key={stepIndex} className="flex items-start gap-3">
                               <span className="w-6 h-6 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center text-sm flex-shrink-0 mt-0.5">
                                 {stepIndex + 1}
                               </span>
-                              <span className={`text-white/80 ${isRTL ? 'text-right' : ''}`}>{step}</span>
+                              <span className="text-white/80">{step}</span>
                             </li>
                           ))}
                         </ol>
@@ -362,30 +465,27 @@ export const Docs: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Navigation */}
-                <div className={`flex justify-between mt-10 pt-6 border-t border-white/10 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="flex justify-between mt-10 pt-6 border-t border-white/10">
                   {sections.findIndex(s => s.id === activeSection) > 0 && (
                     <button
                       onClick={() => {
-                        const currentIndex = sections.findIndex(s => s.id === activeSection);
-                        setActiveSection(sections[currentIndex - 1].id);
+                        const idx = sections.findIndex(s => s.id === activeSection);
+                        setActiveSection(sections[idx - 1].id);
                       }}
-                      className={`flex items-center gap-2 text-white/60 hover:text-white transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+                      className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
                     >
-                      <ArrowLeft className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
-                      Previous
+                      <ArrowLeft className="w-4 h-4" /> Previous
                     </button>
                   )}
                   {sections.findIndex(s => s.id === activeSection) < sections.length - 1 && (
                     <button
                       onClick={() => {
-                        const currentIndex = sections.findIndex(s => s.id === activeSection);
-                        setActiveSection(sections[currentIndex + 1].id);
+                        const idx = sections.findIndex(s => s.id === activeSection);
+                        setActiveSection(sections[idx + 1].id);
                       }}
-                      className={`flex items-center gap-2 text-white/60 hover:text-white transition-colors ${isRTL ? 'flex-row-reverse' : ''} ${isRTL ? '' : 'ml-auto'}`}
+                      className="flex items-center gap-2 text-white/60 hover:text-white transition-colors ml-auto"
                     >
-                      Next
-                      <ChevronRight className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
+                      Next <ChevronRight className="w-4 h-4" />
                     </button>
                   )}
                 </div>
@@ -394,7 +494,6 @@ export const Docs: React.FC = () => {
           </main>
         </div>
       </div>
-
       <Footer />
     </div>
   );
