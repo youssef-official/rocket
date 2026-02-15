@@ -97,7 +97,7 @@ export const NotificationInbox: React.FC = () => {
 
       <AnimatePresence>
         {open && (
-          <div className="fixed inset-0 z-[99999]">
+          <div className="fixed inset-0 z-[99999] flex justify-end">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -107,11 +107,11 @@ export const NotificationInbox: React.FC = () => {
             />
             
             <motion.div
-              initial={{ x: isRTL ? -400 : 400, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: isRTL ? -400 : 400, opacity: 0 }}
+              initial={{ x: isRTL ? -400 : 400 }}
+              animate={{ x: 0 }}
+              exit={{ x: isRTL ? -400 : 400 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-0 h-full w-full sm:w-[400px] bg-[#0d0d15] border-l border-white/10 shadow-2xl flex flex-col`}
+              className={`relative h-full w-full sm:w-[400px] bg-[#0d0d15] border-${isRTL ? 'r' : 'l'} border-white/10 shadow-2xl flex flex-col`}
               dir={isRTL ? 'rtl' : 'ltr'}
             >
               <div className="flex items-center justify-between p-6 border-b border-white/10 bg-white/5">
