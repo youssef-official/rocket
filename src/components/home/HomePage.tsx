@@ -181,7 +181,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50" />
 
       {/* Header */}
-      <header className="relative z-50 px-4 md:px-6 py-4">
+      <header className="relative z-[100] px-4 md:px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo Section - Right in AR, Left in EN */}
           <div className={`flex items-center gap-2 ${isRTL ? 'order-3' : 'order-1'}`}>

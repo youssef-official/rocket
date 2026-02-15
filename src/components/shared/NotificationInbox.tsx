@@ -77,7 +77,7 @@ export const NotificationInbox: React.FC = () => {
         {open && (
           <>
             {/* Backdrop */}
-            <div className="fixed inset-0 z-[9998] bg-black/30" onClick={() => setOpen(false)} />
+            <div className="fixed inset-0 z-[10000] bg-black/30" onClick={() => setOpen(false)} />
             
             {/* Panel */}
             <motion.div
@@ -85,7 +85,7 @@ export const NotificationInbox: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 300 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed right-0 top-0 h-full w-80 sm:w-96 bg-[#0d0d15] backdrop-blur-xl border-l border-white/10 z-[9999] overflow-y-auto shadow-2xl flex flex-col"
+              className="fixed right-0 top-0 h-full w-80 sm:w-96 bg-[#0d0d15] backdrop-blur-xl border-l border-white/10 z-[10001] overflow-y-auto shadow-2xl flex flex-col"
             >
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#0d0d15]">
