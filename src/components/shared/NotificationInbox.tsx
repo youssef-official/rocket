@@ -177,7 +177,13 @@ export const NotificationInbox: React.FC = () => {
                   ) : (
                     <div className="flex flex-col divide-y divide-white/5">
                       {notifications.map(n => {
-                        const isImage = (url: string | null) => url?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url?.includes('top4top.io');
+	                        const isImage = (url: string | null) => {
+	                          if (!url) return false;
+	                          return url.match(/\.(jpeg|jpg|gif|png|webp|svg|avif|bmp)$/i) || 
+	                                 url.includes('top4top.io') || 
+	                                 url.includes('supabase.co/storage/v1/object/public') ||
+	                                 url.startsWith('data:image/');
+	                        };
                         const displayImage = n.image_url;
                         const displayLink = n.link_url;
 
@@ -191,35 +197,47 @@ export const NotificationInbox: React.FC = () => {
                               <div className={`absolute top-0 ${isRTL ? 'right-0' : 'left-0'} bottom-0 w-1 bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]`} />
                             )}
                             
-                            {displayImage && isImage(displayImage) && (
-                              <div className="relative mb-4 overflow-hidden rounded-xl aspect-video bg-white/5">
-                                <img src={displayImage} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                              </div>
-                            )}
-                            
-                            <div className="flex items-start gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-1">
-                                  <h4 className={`text-sm font-bold truncate ${!readIds.has(n.id) ? 'text-white' : 'text-white/70'}`}>
-                                    {n.title}
-                                  </h4>
-                                  <span className="text-[10px] text-white/30 whitespace-nowrap ml-2">
-                                    {new Date(n.created_at).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
-                                  </span>
-                                </div>
-                                {n.body && (
-                                  <p className="text-xs text-white/50 line-clamp-3 leading-relaxed mb-3">
-                                    {n.body}
-                                  </p>
-                                )}
-                                {displayLink && (
-                                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-pink-500/80 group-hover:text-pink-500 transition-colors">
-                                    <span>{isRTL ? 'عرض التفاصيل' : 'View Details'}</span>
-                                    <ExternalLink className="w-3 h-3" />
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+	                            <div className="flex flex-col gap-3">
+	                              {displayImage && isImage(displayImage) && (
+	                                <div className="relative overflow-hidden rounded-xl aspect-video bg-white/5 border border-white/10">
+	                                  <img 
+	                                    src={displayImage} 
+	                                    alt="" 
+	                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+	                                    onError={(e) => {
+	                                      const target = e.target as HTMLImageElement;
+	                                      target.style.display = 'none';
+	                                      const parent = target.parentElement;
+	                                      if (parent) parent.style.display = 'none';
+	                                    }}
+	                                  />
+	                                </div>
+	                              )}
+	                              
+	                              <div className="flex-1 min-w-0">
+	                                <div className="flex items-center justify-between mb-1">
+	                                  <h4 className={`text-sm font-bold truncate ${!readIds.has(n.id) ? 'text-white' : 'text-white/70'}`}>
+	                                    {n.title}
+	                                  </h4>
+	                                  <span className="text-[10px] text-white/30 whitespace-nowrap ml-2">
+	                                    {new Date(n.created_at).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
+	                                  </span>
+	                                </div>
+	                                {n.body && (
+	                                  <p className="text-xs text-white/50 line-clamp-3 leading-relaxed mb-3">
+	                                    {n.body}
+	                                  </p>
+	                                )}
+	                                {displayLink && (
+	                                  <div className="flex items-center justify-between">
+	                                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-pink-500 group-hover:text-pink-400 transition-colors bg-pink-500/10 px-3 py-1.5 rounded-full border border-pink-500/20">
+	                                      <span>{isRTL ? 'عرض التفاصيل' : 'View Details'}</span>
+	                                      <ExternalLink className="w-3 h-3" />
+	                                    </div>
+	                                  </div>
+	                                )}
+	                              </div>
+	                            </div>
                           </div>
                         );
                       })}
