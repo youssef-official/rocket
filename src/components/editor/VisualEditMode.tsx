@@ -183,15 +183,67 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
     setIsSaving(true);
     
     try {
+      // Prepare change descriptions for the edge function
+      const changeDetails = Array.from(editedElements.values()).map(el => ({
+        filePath: el.filePath,
+        startLine: el.startLine,
+        newContent: el.content,
+        originalContent: el.originalContent,
+        newStyles: el.styles,
+        originalStyles: el.originalStyles,
+        tagName: el.tagName,
+        type: el.type,
+      }));
+
       const changes = Array.from(editedElements.values()).map(el => ({
         elementId: el.id,
         newContent: el.content,
         newStyles: el.styles,
       }));
 
-      const updatedFiles = applyVisualChanges(projectFiles, changes, parsedElements);
-      const summary = generateChangeSummary(changes, parsedElements);
+      // Call edge function to apply changes via AI
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+      let updatedFiles = projectFiles;
+
+      try {
+        const response = await fetch(`${supabaseUrl}/functions/v1/visual-edits`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${anonKey}`,
+          },
+          body: JSON.stringify({
+            changes: changeDetails,
+            files: projectFiles,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.files && Object.keys(result.files).length > 0) {
+            // Merge AI-modified files with project files
+            updatedFiles = { ...projectFiles };
+            for (const [path, file] of Object.entries(result.files)) {
+              if (updatedFiles[path]) {
+                updatedFiles[path] = { ...updatedFiles[path], content: (file as any).content };
+              }
+            }
+          } else {
+            // Fallback to local apply
+            updatedFiles = applyVisualChanges(projectFiles, changes, parsedElements);
+          }
+        } else {
+          console.warn('Edge function failed, using local apply');
+          updatedFiles = applyVisualChanges(projectFiles, changes, parsedElements);
+        }
+      } catch (fetchError) {
+        console.warn('Edge function unavailable, using local apply:', fetchError);
+        updatedFiles = applyVisualChanges(projectFiles, changes, parsedElements);
+      }
+
+      const summary = generateChangeSummary(changes, parsedElements);
       await onSave(changes, updatedFiles, summary);
       
       setEditedElements(new Map());
