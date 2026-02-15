@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, X, ExternalLink, Inbox as InboxIcon, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserPlan } from '@/hooks/useUserPlan';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Notification {
@@ -18,7 +17,6 @@ interface Notification {
 
 export const NotificationInbox: React.FC = () => {
   const { user } = useAuth();
-  const { userPlan, loading: planLoading } = useUserPlan();
   const { isRTL } = useLanguage();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -77,20 +75,14 @@ export const NotificationInbox: React.FC = () => {
     }
   };
 
-  // Filter logic: show if no plan specified or matches user plan
-  const filteredNotifs = useMemo(() => {
-    return notifications.filter(n => {
-      if (!n.target_plan || n.target_plan === 'all' || n.target_plan === '') return true;
-      if (!userPlan) return false; // Hide plan-specific notifications if plan not yet loaded
-      return userPlan.plan?.toLowerCase() === n.target_plan.toLowerCase();
-    });
-  }, [notifications, userPlan]);
+  // No filtering: show all notifications to everyone
+  const filteredNotifs = notifications;
 
   const unreadCount = useMemo(() => 
     filteredNotifs.filter(n => !readIds.has(n.id)).length,
   [filteredNotifs, readIds]);
 
-  const isInitialLoading = (loading || planLoading) && !hasFetched;
+  const isInitialLoading = loading && !hasFetched;
 
   return (
     <>

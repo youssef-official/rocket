@@ -24,7 +24,7 @@ export const AdminPanel: React.FC = () => {
   const [inboxBody, setInboxBody] = useState('');
   const [inboxImage, setInboxImage] = useState('');
   const [inboxLink, setInboxLink] = useState('');
-  const [inboxPlan, setInboxPlan] = useState('all');
+  const [inboxPlan, setInboxPlan] = useState('all'); // Keep state for DB compatibility but default to all
   const [notifications, setNotifications] = useState<any[]>([]);
   const [sendingNotif, setSendingNotif] = useState(false);
 
@@ -221,14 +221,10 @@ export const AdminPanel: React.FC = () => {
                     <label className={labelClass}>Title *</label>
                     <input value={inboxTitle} onChange={e => setInboxTitle(e.target.value)} className={inputClass} placeholder="Notification title" />
                   </div>
-                  <div>
-                    <label className={labelClass}>Target Plan</label>
-                    <select value={inboxPlan} onChange={e => setInboxPlan(e.target.value)} className={inputClass}>
+                  <div className="opacity-50 pointer-events-none">
+                    <label className={labelClass}>Target Plan (Disabled - Now sending to all)</label>
+                    <select value="all" disabled className={inputClass}>
                       <option value="all">All Plans</option>
-                      <option value="spark">Spark</option>
-                      <option value="builder">Builder</option>
-                      <option value="creator">Creator</option>
-                      <option value="scale">Scale</option>
                     </select>
                   </div>
                   <div className="md:col-span-2">
