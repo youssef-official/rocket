@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, X, ExternalLink, Inbox as InboxIcon, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,12 +18,13 @@ interface Notification {
 
 export const NotificationInbox: React.FC = () => {
   const { user } = useAuth();
-  const { userPlan } = useUserPlan();
+  const { userPlan, loading: planLoading } = useUserPlan();
   const { isRTL } = useLanguage();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
@@ -35,9 +36,12 @@ export const NotificationInbox: React.FC = () => {
         .limit(20);
       
       if (error) throw error;
-      if (data) setNotifications(data as Notification[]);
+      if (data) {
+        setNotifications(data as Notification[]);
+        setHasFetched(true);
+      }
     } catch (err) {
-      // Error handled silently for cleaner console
+      console.error('Error fetching notifications:', err);
     } finally {
       setLoading(false);
     }
@@ -54,14 +58,14 @@ export const NotificationInbox: React.FC = () => {
       if (error) throw error;
       if (data) setReadIds(new Set(data.map((r: any) => r.notification_id)));
     } catch (err) {
-      // Error handled silently
+      console.error('Error fetching read status:', err);
     }
   }, [user]);
 
   useEffect(() => {
     fetchNotifications();
-    fetchReadIds();
-  }, [fetchNotifications, fetchReadIds]);
+    if (user) fetchReadIds();
+  }, [fetchNotifications, fetchReadIds, user]);
 
   const markAsRead = async (notifId: string) => {
     if (!user || readIds.has(notifId)) return;
@@ -74,12 +78,19 @@ export const NotificationInbox: React.FC = () => {
   };
 
   // Filter logic: show if no plan specified or matches user plan
-  const filteredNotifs = notifications.filter(n => {
-    if (!n.target_plan || n.target_plan === 'all' || n.target_plan === '') return true;
-    return userPlan?.plan?.toLowerCase() === n.target_plan.toLowerCase();
-  });
+  const filteredNotifs = useMemo(() => {
+    return notifications.filter(n => {
+      if (!n.target_plan || n.target_plan === 'all' || n.target_plan === '') return true;
+      if (!userPlan) return false; // Hide plan-specific notifications if plan not yet loaded
+      return userPlan.plan?.toLowerCase() === n.target_plan.toLowerCase();
+    });
+  }, [notifications, userPlan]);
 
-  const unreadCount = filteredNotifs.filter(n => !readIds.has(n.id)).length;
+  const unreadCount = useMemo(() => 
+    filteredNotifs.filter(n => !readIds.has(n.id)).length,
+  [filteredNotifs, readIds]);
+
+  const isInitialLoading = (loading || planLoading) && !hasFetched;
 
   return (
     <>
@@ -137,7 +148,7 @@ export const NotificationInbox: React.FC = () => {
               </div>
 
               <div className="flex-1 overflow-y-auto custom-scrollbar">
-                {loading && notifications.length === 0 ? (
+                {isInitialLoading ? (
                   <div className="h-full flex items-center justify-center">
                     <Loader2 className="w-8 h-8 text-pink-500 animate-spin" />
                   </div>
@@ -152,7 +163,6 @@ export const NotificationInbox: React.FC = () => {
                 ) : (
                   <div className="divide-y divide-white/5">
                     {filteredNotifs.map(n => {
-                      // Fix for swapped fields: if image_url doesn't look like an image but link_url does, swap them
                       const isImage = (url: string | null) => url?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url?.includes('top4top.io');
                       let displayImage = n.image_url;
                       let displayLink = n.link_url;
