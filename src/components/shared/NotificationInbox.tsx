@@ -31,7 +31,7 @@ export const NotificationInbox: React.FC = () => {
         .from('inbox_notifications')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(50); // Increased limit to ensure we see everything
       
       if (error) throw error;
       if (data) {
@@ -156,10 +156,7 @@ export const NotificationInbox: React.FC = () => {
                       let displayImage = n.image_url;
                       let displayLink = n.link_url;
                       
-                      if (!isImage(displayImage) && isImage(displayLink)) {
-                        [displayImage, displayLink] = [displayLink, displayImage];
-                      }
-
+                      // Simplified logic: show whatever is available without strict filtering
                       return (
                         <div
                           key={n.id}
@@ -170,7 +167,7 @@ export const NotificationInbox: React.FC = () => {
                             <div className={`absolute top-0 ${isRTL ? 'right-0' : 'left-0'} bottom-0 w-1 bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]`} />
                           )}
                           
-                          {displayImage && (
+                          {displayImage && isImage(displayImage) && (
                             <div className="relative mb-4 overflow-hidden rounded-xl aspect-video bg-white/5">
                               <img src={displayImage} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                             </div>
@@ -187,7 +184,7 @@ export const NotificationInbox: React.FC = () => {
                                 </span>
                               </div>
                               {n.body && (
-                                <p className="text-xs text-white/50 line-clamp-2 leading-relaxed mb-3">
+                                <p className="text-xs text-white/50 line-clamp-3 leading-relaxed mb-3">
                                   {n.body}
                                 </p>
                               )}
