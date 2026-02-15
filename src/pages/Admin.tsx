@@ -37,13 +37,25 @@ export const AdminPanel: React.FC = () => {
   const [savingTpl, setSavingTpl] = useState(false);
 
   useEffect(() => {
+    // Wait for auth to initialize
     if (authLoading) return;
-    if (!user) { navigate('/login'); return; }
+    
+    // If definitely no user, redirect
+    if (!user) {
+      const checkCurrentSession = async () => {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          navigate('/login');
+        }
+      };
+      checkCurrentSession();
+      return;
+    }
 
     const fetchData = async () => {
       try {
-        // Refresh session to ensure valid token
-        const { data: sessionData } = await supabase.auth.refreshSession();
+        // Only refresh if needed, but getSession is safer here
+        const { data: sessionData } = await supabase.auth.getSession();
         if (!sessionData?.session) {
           navigate('/login');
           return;
