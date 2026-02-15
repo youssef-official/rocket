@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Send, FolderOpen, Paperclip, Lock, Globe, User, Bell, HelpCircle, MessageSquare, X, Image as ImageIcon, ChevronDown, Zap, Crown, Sparkles } from 'lucide-react';
+import { ArrowRight, Send, FolderOpen, Paperclip, Lock, Globe, User, Bell, HelpCircle, Book, X, Image as ImageIcon, ChevronDown, Zap, Crown, Sparkles } from 'lucide-react';
 import { UserMenuDropdown } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ProjectsSection } from './ProjectsSection';
+import { TemplatesSection } from './TemplatesSection';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { FrameworkBar } from '@/components/shared/FrameworkLogos';
 import { Footer } from '@/components/shared/Footer';
 import { UpgradeModal } from '@/components/shared/UpgradeModal';
 import { SettingsModal } from '@/components/shared/SettingsModal';
+import { NotificationInbox } from '@/components/shared/NotificationInbox';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
@@ -208,15 +210,13 @@ export const HomePage: React.FC<HomePageProps> = ({
             {user ? (
               <>
                 <div className={`hidden md:flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full p-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <button className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                    <MessageSquare className="w-5 h-5 text-white/80" />
-                  </button>
+                  <a href="/docs" className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <Book className="w-5 h-5 text-white/80" />
+                  </a>
                   <a href="/faq" className="p-2 hover:bg-white/10 rounded-full transition-colors">
                     <HelpCircle className="w-5 h-5 text-white/80" />
                   </a>
-                  <button className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                    <Bell className="w-5 h-5 text-white/80" />
-                  </button>
+                  <NotificationInbox />
                 </div>
 
                 <UserMenuDropdown
@@ -241,17 +241,18 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* Main Content */}
       <main className="relative z-10 flex flex-col items-center justify-center px-4 md:px-6 pt-12 md:pt-20 pb-20 md:pb-32 pointer-events-auto">
         {/* Announcement Badge */}
-        <motion.div
+        <motion.a
+          href="/new-vibe-tool"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 md:mb-8"
+          className="mb-6 md:mb-8 cursor-pointer"
         >
-          <div className={`flex items-center gap-2 px-3 md:px-4 py-2 bg-white/10 backdrop-blur-md rounded-full ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className={`flex items-center gap-2 px-3 md:px-4 py-2 bg-white/10 backdrop-blur-md rounded-full hover:bg-white/15 transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}>
             <span className="px-2 py-0.5 bg-pink-500 text-white text-xs font-medium rounded-full">{t('home.newBadge')}</span>
             <span className="text-white text-xs md:text-sm">{t('home.mobileAnnouncement')}</span>
             <ArrowRight className={`w-4 h-4 text-white ${isRTL ? 'rotate-180' : ''}`} />
           </div>
-        </motion.div>
+        </motion.a>
 
         {/* Hero Title */}
         <motion.div
@@ -448,31 +449,10 @@ export const HomePage: React.FC<HomePageProps> = ({
         </motion.div>
       </main>
 
-      {/* Upgrade Banner - Show when 50% credits used */}
-      {user && shouldShowUpgradeBanner() && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50"
-        >
-          <div className="flex items-center gap-4 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-2xl">
-            <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-yellow-300 animate-pulse" />
-              <span className="text-white font-medium">{t('upgrade.banner')}</span>
-            </div>
-            <button
-              onClick={() => setShowUpgradeModal(true)}
-              className="flex items-center gap-2 px-4 py-1.5 bg-white text-purple-600 rounded-full font-bold text-sm hover:bg-white/90 transition-colors"
-            >
-              <Crown className="w-4 h-4" />
-              Upgrade
-            </button>
-          </div>
-        </motion.div>
-      )}
+      {/* Upgrade Banner removed */}
 
-      {/* Projects Section or Welcome Message */}
-      {projects.length > 0 ? (
+      {/* Projects Section */}
+      {user && projects.length > 0 && (
         <ProjectsSection
           projects={projects}
           loading={projectsLoading}
@@ -481,7 +461,13 @@ export const HomePage: React.FC<HomePageProps> = ({
           onForkProject={onForkProject || (() => { })}
           onNewProject={() => { }}
         />
-      ) : user && (
+      )}
+
+      {/* Templates Section - visible to all users */}
+      <TemplatesSection onSelectTemplate={(prompt) => setPrompt(prompt)} />
+
+      {/* Welcome message for new logged-in users with no projects */}
+      {user && projects.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -490,18 +476,8 @@ export const HomePage: React.FC<HomePageProps> = ({
         >
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
             <Sparkles className="w-12 h-12 text-pink-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">
-              Welcome to Vivora X!
-            </h2>
-            <p className="text-white/70 mb-6">
-              Start by describing your dream project above. Our AI will transform your ideas into a beautiful, production-ready web application in seconds.
-            </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">Landing Pages</span>
-              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">E-commerce</span>
-              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">Dashboards</span>
-              <span className="px-3 py-1.5 bg-white/10 rounded-full text-sm text-white/80">Portfolios</span>
-            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Welcome to Vivora X!</h2>
+            <p className="text-white/70 mb-6">Start by describing your dream project above.</p>
           </div>
         </motion.div>
       )}
