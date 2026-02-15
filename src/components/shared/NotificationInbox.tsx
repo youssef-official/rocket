@@ -74,8 +74,10 @@ export const NotificationInbox: React.FC = () => {
   };
 
   const filteredNotifs = notifications.filter(n => {
-    if (!n.target_plan || n.target_plan === 'all') return true;
-    return userPlan?.plan === n.target_plan;
+    // Show if target_plan is null, undefined, 'all', or empty string
+    if (!n.target_plan || n.target_plan === 'all' || n.target_plan === '') return true;
+    // Otherwise check if it matches the user's current plan
+    return userPlan?.plan?.toLowerCase() === n.target_plan.toLowerCase();
   });
 
   const unreadCount = filteredNotifs.filter(n => !readIds.has(n.id)).length;
