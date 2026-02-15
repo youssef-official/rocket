@@ -34,17 +34,10 @@ export const NotificationInbox: React.FC = () => {
         .order('created_at', { ascending: false })
         .limit(20);
       
-      if (error) {
-        console.error("Supabase error:", error);
-        throw error;
-      }
-      
-      console.log("Fetched notifications raw data:", data);
-      if (data) {
-        setNotifications(data as Notification[]);
-      }
+      if (error) throw error;
+      if (data) setNotifications(data as Notification[]);
     } catch (err) {
-      console.error("Error fetching notifications:", err);
+      // Error handled silently for cleaner console
     } finally {
       setLoading(false);
     }
@@ -61,7 +54,7 @@ export const NotificationInbox: React.FC = () => {
       if (error) throw error;
       if (data) setReadIds(new Set(data.map((r: any) => r.notification_id)));
     } catch (err) {
-      console.error("Error fetching read status:", err);
+      // Error handled silently
     }
   }, [user]);
 
@@ -76,12 +69,15 @@ export const NotificationInbox: React.FC = () => {
       await supabase.from('user_notification_reads').insert({ user_id: user.id, notification_id: notifId });
       setReadIds(prev => new Set([...prev, notifId]));
     } catch (err) {
-      console.error("Error marking as read:", err);
+      // Error handled silently
     }
   };
 
-  // Temporarily show ALL notifications to debug why they are hidden
-  const filteredNotifs = notifications; 
+  // Filter logic: show if no plan specified or matches user plan
+  const filteredNotifs = notifications.filter(n => {
+    if (!n.target_plan || n.target_plan === 'all' || n.target_plan === '') return true;
+    return userPlan?.plan?.toLowerCase() === n.target_plan.toLowerCase();
+  });
 
   const unreadCount = filteredNotifs.filter(n => !readIds.has(n.id)).length;
 
@@ -155,47 +151,58 @@ export const NotificationInbox: React.FC = () => {
                   </div>
                 ) : (
                   <div className="divide-y divide-white/5">
-                    {filteredNotifs.map(n => (
-                      <div
-                        key={n.id}
-                        className={`p-5 hover:bg-white/[0.03] transition-all cursor-pointer relative group ${!readIds.has(n.id) ? 'bg-pink-500/[0.02]' : ''}`}
-                        onClick={() => { markAsRead(n.id); if (n.link_url) window.open(n.link_url, '_blank'); }}
-                      >
-                        {!readIds.has(n.id) && (
-                          <div className={`absolute top-0 ${isRTL ? 'right-0' : 'left-0'} bottom-0 w-1 bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]`} />
-                        )}
-                        
-                        {n.image_url && (
-                          <div className="relative mb-4 overflow-hidden rounded-xl aspect-video bg-white/5">
-                            <img src={n.image_url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                          </div>
-                        )}
-                        
-                        <div className="flex items-start gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <h4 className={`text-sm font-bold truncate ${!readIds.has(n.id) ? 'text-white' : 'text-white/70'}`}>
-                                {n.title}
-                              </h4>
-                              <span className="text-[10px] text-white/30 whitespace-nowrap">
-                                {new Date(n.created_at).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
-                              </span>
+                    {filteredNotifs.map(n => {
+                      // Fix for swapped fields: if image_url doesn't look like an image but link_url does, swap them
+                      const isImage = (url: string | null) => url?.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url?.includes('top4top.io');
+                      let displayImage = n.image_url;
+                      let displayLink = n.link_url;
+                      
+                      if (!isImage(displayImage) && isImage(displayLink)) {
+                        [displayImage, displayLink] = [displayLink, displayImage];
+                      }
+
+                      return (
+                        <div
+                          key={n.id}
+                          className={`p-5 hover:bg-white/[0.03] transition-all cursor-pointer relative group ${!readIds.has(n.id) ? 'bg-pink-500/[0.02]' : ''}`}
+                          onClick={() => { markAsRead(n.id); if (displayLink) window.open(displayLink, '_blank'); }}
+                        >
+                          {!readIds.has(n.id) && (
+                            <div className={`absolute top-0 ${isRTL ? 'right-0' : 'left-0'} bottom-0 w-1 bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]`} />
+                          )}
+                          
+                          {displayImage && (
+                            <div className="relative mb-4 overflow-hidden rounded-xl aspect-video bg-white/5">
+                              <img src={displayImage} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                             </div>
-                            {n.body && (
-                              <p className="text-xs text-white/50 line-clamp-2 leading-relaxed mb-3">
-                                {n.body}
-                              </p>
-                            )}
-                            {n.link_url && (
-                              <div className="flex items-center gap-1.5 text-[11px] font-medium text-pink-500/80 group-hover:text-pink-500 transition-colors">
-                                <span>{isRTL ? 'عرض التفاصيل' : 'View Details'}</span>
-                                <ExternalLink className="w-3 h-3" />
+                          )}
+                          
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1">
+                                <h4 className={`text-sm font-bold truncate ${!readIds.has(n.id) ? 'text-white' : 'text-white/70'}`}>
+                                  {n.title}
+                                </h4>
+                                <span className="text-[10px] text-white/30 whitespace-nowrap">
+                                  {new Date(n.created_at).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
+                                </span>
                               </div>
-                            )}
+                              {n.body && (
+                                <p className="text-xs text-white/50 line-clamp-2 leading-relaxed mb-3">
+                                  {n.body}
+                                </p>
+                              )}
+                              {displayLink && (
+                                <div className="flex items-center gap-1.5 text-[11px] font-medium text-pink-500/80 group-hover:text-pink-500 transition-colors">
+                                  <span>{isRTL ? 'عرض التفاصيل' : 'View Details'}</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
