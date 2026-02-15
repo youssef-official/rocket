@@ -49,14 +49,21 @@ export const AdminPanel: React.FC = () => {
           return;
         }
         const { data: result, error: fnError } = await supabase.functions.invoke('admin-data');
-        if (fnError) throw new Error(fnError.message);
-        if (result?.error) throw new Error(result.error);
-        setData(result);
-      } catch (e: any) {
-        if (e.message?.includes('401') || e.message?.includes('Unauthorized')) {
-          navigate('/login');
+        if (fnError) {
+          // Check if it's an auth error from the function
+          const errorMsg = fnError.message || '';
+          if (errorMsg.includes('Unauthorized') || errorMsg.includes('401')) {
+            setError('Unauthorized - Please log in again');
+            return;
+          }
+          throw new Error(errorMsg);
+        }
+        if (result?.error) {
+          setError(result.error);
           return;
         }
+        setData(result);
+      } catch (e: any) {
         setError(e.message || 'Failed to load admin data');
       } finally {
         setLoading(false);
@@ -115,7 +122,7 @@ export const AdminPanel: React.FC = () => {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-pink-400" />
+        <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
       </div>
     );
   }
@@ -125,9 +132,9 @@ export const AdminPanel: React.FC = () => {
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
         <div className="text-center space-y-4">
           <AlertTriangle className="w-12 h-12 text-red-400 mx-auto" />
-          <h2 className="text-xl font-bold text-white">Access Denied</h2>
+          <h2 className="text-xl font-bold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>Access Denied</h2>
           <p className="text-white/50">{error}</p>
-          <button onClick={() => navigate('/')} className="px-4 py-2 bg-pink-500 text-white rounded-lg">Go Home</button>
+          <button onClick={() => navigate('/')} className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-semibold rounded-xl hover:from-amber-400 hover:to-amber-500 transition-all">Go Home</button>
         </div>
       </div>
     );
@@ -144,20 +151,20 @@ export const AdminPanel: React.FC = () => {
     { key: 'templates' as const, label: 'Templates', icon: Layers, count: templates.length },
   ];
 
-  const inputClass = "w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-pink-500/50 text-sm";
-  const labelClass = "text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5 block";
+  const inputClass = "w-full px-4 py-2.5 bg-white/5 border border-amber-500/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-amber-400/60 text-sm";
+  const labelClass = "text-xs font-medium text-amber-300/70 uppercase tracking-wider mb-1.5 block";
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       {/* Header */}
-      <header className="border-b border-white/5 px-4 md:px-8 py-4">
+      <header className="border-b border-amber-500/10 px-4 md:px-8 py-4 bg-gradient-to-r from-amber-500/5 via-transparent to-amber-500/5">
         <div className="max-w-7xl mx-auto flex items-center gap-4">
           <button onClick={() => navigate('/')} className="p-2 hover:bg-white/5 rounded-xl transition-colors">
-            <ArrowLeft className="w-5 h-5 text-white/60" />
+            <ArrowLeft className="w-5 h-5 text-amber-400/60" />
           </button>
           <div>
-            <h1 className="text-xl md:text-2xl font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>Admin Panel</h1>
-            <p className="text-xs text-white/30">Vivora X Management Console</p>
+            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent" style={{ fontFamily: "'Playfair Display', serif" }}>Admin Panel</h1>
+            <p className="text-xs text-amber-400/30">Vivora X Management Console</p>
           </div>
         </div>
       </header>
@@ -166,10 +173,10 @@ export const AdminPanel: React.FC = () => {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
           {tabs.slice(0, 4).map(t => (
-            <div key={t.key} className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 text-center hover:bg-white/[0.05] transition-colors">
-              <t.icon className="w-5 h-5 mx-auto mb-2 text-pink-400/60" />
-              <div className="text-2xl font-bold">{t.count}</div>
-              <div className="text-xs text-white/40">{t.label}</div>
+            <div key={t.key} className="bg-gradient-to-br from-amber-500/5 to-transparent border border-amber-500/10 rounded-2xl p-4 text-center hover:border-amber-500/20 transition-colors">
+              <t.icon className="w-5 h-5 mx-auto mb-2 text-amber-400/60" />
+              <div className="text-2xl font-bold text-amber-100" style={{ fontFamily: "'Playfair Display', serif" }}>{t.count}</div>
+              <div className="text-xs text-amber-400/40">{t.label}</div>
             </div>
           ))}
         </div>
@@ -181,7 +188,7 @@ export const AdminPanel: React.FC = () => {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
-                tab === t.key ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' : 'bg-white/[0.03] text-white/50 hover:bg-white/[0.06] border border-transparent'
+                tab === t.key ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-white/[0.03] text-white/50 hover:bg-white/[0.06] border border-transparent'
               }`}
             >
               <t.icon className="w-4 h-4" />
@@ -192,12 +199,11 @@ export const AdminPanel: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden">
+        <div className="bg-white/[0.02] border border-amber-500/10 rounded-2xl overflow-hidden">
           {tab === 'inbox' && (
             <div className="p-4 md:p-6">
-              {/* Send Notification Form */}
-              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 md:p-6 mb-6">
-                <h3 className="text-lg font-bold mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>Send Notification</h3>
+              <div className="bg-gradient-to-br from-amber-500/5 to-transparent border border-amber-500/15 rounded-2xl p-4 md:p-6 mb-6">
+                <h3 className="text-lg font-bold mb-4 bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent" style={{ fontFamily: "'Playfair Display', serif" }}>Send Notification</h3>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className={labelClass}>Title *</label>
@@ -229,20 +235,19 @@ export const AdminPanel: React.FC = () => {
                 <button
                   onClick={handleSendNotification}
                   disabled={!inboxTitle.trim() || sendingNotif}
-                  className="mt-4 flex items-center gap-2 px-6 py-2.5 bg-pink-500 text-white rounded-xl font-medium text-sm hover:bg-pink-600 transition-colors disabled:opacity-50"
+                  className="mt-4 flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-semibold rounded-xl hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50"
                 >
                   <Send className="w-4 h-4" /> {sendingNotif ? 'Sending...' : 'Send Notification'}
                 </button>
               </div>
 
-              {/* Notifications List */}
               <div className="space-y-2">
                 {notifications.map(n => (
-                  <div key={n.id} className="flex items-center justify-between p-3 bg-white/[0.02] border border-white/5 rounded-xl">
+                  <div key={n.id} className="flex items-center justify-between p-3 bg-white/[0.02] border border-amber-500/10 rounded-xl">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-white truncate">{n.title}</span>
-                        <span className="text-[10px] px-2 py-0.5 bg-white/10 rounded-full text-white/40">{n.target_plan}</span>
+                        <span className="text-[10px] px-2 py-0.5 bg-amber-500/10 rounded-full text-amber-300/60">{n.target_plan}</span>
                       </div>
                       <span className="text-xs text-white/30">{new Date(n.created_at).toLocaleString()}</span>
                     </div>
@@ -257,9 +262,8 @@ export const AdminPanel: React.FC = () => {
 
           {tab === 'templates' && (
             <div className="p-4 md:p-6">
-              {/* Add Template Form */}
-              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 md:p-6 mb-6">
-                <h3 className="text-lg font-bold mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>Add Template</h3>
+              <div className="bg-gradient-to-br from-amber-500/5 to-transparent border border-amber-500/15 rounded-2xl p-4 md:p-6 mb-6">
+                <h3 className="text-lg font-bold mb-4 bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent" style={{ fontFamily: "'Playfair Display', serif" }}>Add Template</h3>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className={labelClass}>Name *</label>
@@ -281,27 +285,26 @@ export const AdminPanel: React.FC = () => {
                 <button
                   onClick={handleAddTemplate}
                   disabled={!tplName.trim() || !tplPrompt.trim() || savingTpl}
-                  className="mt-4 flex items-center gap-2 px-6 py-2.5 bg-pink-500 text-white rounded-xl font-medium text-sm hover:bg-pink-600 transition-colors disabled:opacity-50"
+                  className="mt-4 flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-semibold rounded-xl hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50"
                 >
                   <Plus className="w-4 h-4" /> {savingTpl ? 'Saving...' : 'Add Template'}
                 </button>
               </div>
 
-              {/* Templates Grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {templates.map(tpl => (
-                  <div key={tpl.id} className="bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden group">
-                    <div className="aspect-video bg-white/5 flex items-center justify-center">
+                  <div key={tpl.id} className="bg-white/[0.02] border border-amber-500/10 rounded-xl overflow-hidden group">
+                    <div className="aspect-video bg-amber-500/5 flex items-center justify-center">
                       {tpl.image_url ? (
                         <img src={tpl.image_url} alt={tpl.name} className="w-full h-full object-cover" />
                       ) : (
-                        <Layers className="w-6 h-6 text-white/20" />
+                        <Layers className="w-6 h-6 text-amber-400/20" />
                       )}
                     </div>
                     <div className="p-3 flex items-center justify-between">
                       <div className="min-w-0">
                         <h4 className="text-sm font-medium text-white truncate">{tpl.name}</h4>
-                        <p className="text-xs text-white/30">{tpl.category}</p>
+                        <p className="text-xs text-amber-400/30">{tpl.category}</p>
                       </div>
                       <button onClick={() => handleDeleteTemplate(tpl.id)} className="p-1.5 hover:bg-red-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
                         <Trash2 className="w-3.5 h-3.5 text-red-400" />
@@ -313,20 +316,20 @@ export const AdminPanel: React.FC = () => {
             </div>
           )}
 
-          {/* Existing tabs */}
+          {/* Data tables */}
           <div className="overflow-x-auto">
             {tab === 'users' && (
               <table className="w-full text-sm">
-                <thead className="bg-white/[0.03]">
+                <thead className="bg-amber-500/5">
                   <tr>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Email</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Display Name</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Created</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Email</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Display Name</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Created</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.users.map(u => (
-                    <tr key={u.id} className="border-t border-white/5 hover:bg-white/[0.02]">
+                    <tr key={u.id} className="border-t border-amber-500/5 hover:bg-amber-500/5">
                       <td className="p-3 text-white/80">{u.email || '—'}</td>
                       <td className="p-3 text-white/60">{u.display_name || '—'}</td>
                       <td className="p-3 text-white/40">{new Date(u.created_at).toLocaleDateString()}</td>
@@ -338,22 +341,22 @@ export const AdminPanel: React.FC = () => {
 
             {tab === 'plans' && (
               <table className="w-full text-sm">
-                <thead className="bg-white/[0.03]">
+                <thead className="bg-amber-500/5">
                   <tr>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">User ID</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Plan</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Daily</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Used</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Monthly</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Total Used</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Updated</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">User ID</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Plan</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Daily</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Used</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Monthly</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Total Used</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Updated</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.plans.map(p => (
-                    <tr key={p.id} className="border-t border-white/5 hover:bg-white/[0.02]">
+                    <tr key={p.id} className="border-t border-amber-500/5 hover:bg-amber-500/5">
                       <td className="p-3 font-mono text-xs text-white/40">{p.user_id?.slice(0, 8)}...</td>
-                      <td className="p-3"><span className="px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-300 text-xs font-medium uppercase">{p.plan}</span></td>
+                      <td className="p-3"><span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-xs font-medium uppercase">{p.plan}</span></td>
                       <td className="p-3 text-white/60">{p.daily_credits}</td>
                       <td className="p-3 text-white/60">{p.credits_used_today}</td>
                       <td className="p-3 text-white/60">{p.monthly_credits}</td>
@@ -367,18 +370,18 @@ export const AdminPanel: React.FC = () => {
 
             {tab === 'transactions' && (
               <table className="w-full text-sm">
-                <thead className="bg-white/[0.03]">
+                <thead className="bg-amber-500/5">
                   <tr>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Date</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">User ID</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Credits</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Type</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Description</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Date</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">User ID</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Credits</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Type</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.transactions.map(t => (
-                    <tr key={t.id} className="border-t border-white/5 hover:bg-white/[0.02]">
+                    <tr key={t.id} className="border-t border-amber-500/5 hover:bg-amber-500/5">
                       <td className="p-3 text-white/40">{new Date(t.created_at).toLocaleString()}</td>
                       <td className="p-3 font-mono text-xs text-white/40">{t.user_id?.slice(0, 8)}...</td>
                       <td className="p-3 text-white/80">{t.credits_used}</td>
@@ -392,18 +395,18 @@ export const AdminPanel: React.FC = () => {
 
             {tab === 'projects' && (
               <table className="w-full text-sm">
-                <thead className="bg-white/[0.03]">
+                <thead className="bg-amber-500/5">
                   <tr>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Name</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">User ID</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Type</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Published</th>
-                    <th className="text-left p-3 font-medium text-white/50 text-xs uppercase tracking-wider">Created</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Name</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">User ID</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Type</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Published</th>
+                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Created</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.projects.map(p => (
-                    <tr key={p.id} className="border-t border-white/5 hover:bg-white/[0.02]">
+                    <tr key={p.id} className="border-t border-amber-500/5 hover:bg-amber-500/5">
                       <td className="p-3 font-medium text-white/80">{p.name}</td>
                       <td className="p-3 font-mono text-xs text-white/40">{p.user_id?.slice(0, 8)}...</td>
                       <td className="p-3 text-white/60">{p.project_type}</td>

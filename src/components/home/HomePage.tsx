@@ -155,9 +155,12 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (prompt.trim()) {
+    if (prompt.trim() && !isSubmitting) {
+      setIsSubmitting(true);
       const projectType = selectedFramework === 'React' || selectedFramework === 'Next.js' ? 'vite' : 'html';
       onStartBuilding(prompt, projectType, undefined, uploadedImage?.file);
     }
@@ -335,32 +338,32 @@ export const HomePage: React.FC<HomePageProps> = ({
                 value={prompt}
                 onChange={handlePromptChange}
                 placeholder={t('home.placeholder')}
-                className={`w-full px-8 py-6 text-gray-800 placeholder-gray-400 resize-none focus:outline-none text-lg ${isRTL ? 'text-right' : ''}`}
+                className={`w-full px-4 md:px-8 py-4 md:py-6 text-gray-800 placeholder-gray-400 resize-none focus:outline-none text-base md:text-lg ${isRTL ? 'text-right' : ''}`}
                 dir={isRTL ? 'rtl' : 'ltr'}
-                rows={4}
+                rows={3}
               />
 
-              <div className={`flex items-center justify-between px-6 py-4 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex items-center justify-between px-3 md:px-6 py-3 md:py-4 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className={`flex items-center gap-1 md:gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    <Paperclip className="w-5 h-5 text-gray-400" />
+                    <Paperclip className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
                   </button>
                   <button
                     type="button"
-                    className={`flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+                    className={`hidden md:flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
                   >
                     <span className="text-pink-500">🎨</span>
                     <span className="text-sm text-gray-600">{t('home.import')}</span>
                   </button>
                 </div>
 
-                <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className={`flex items-center gap-1.5 md:gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   {/* Character Count */}
-                  <span className={`text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                  <span className={`text-[10px] md:text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
                     {prompt.length}/{MAX_PROMPT_LENGTH}
                   </span>
 
@@ -369,10 +372,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowVisibilityMenu(!showVisibilityMenu)}
-                      className={`flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-sm ${isRTL ? 'flex-row-reverse' : ''}`}
+                      className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-xs md:text-sm ${isRTL ? 'flex-row-reverse' : ''}`}
                     >
-                      {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                      {isPublic ? t('home.public') : t('home.private')}
+                      {isPublic ? <Globe className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Lock className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+                      <span className="hidden sm:inline">{isPublic ? t('home.public') : t('home.private')}</span>
                       <ChevronDown className="w-3 h-3" />
                     </button>
 
@@ -427,10 +430,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                     type="submit"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    disabled={!prompt.trim()}
-                    className="w-10 h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
+                    disabled={!prompt.trim() || isSubmitting}
+                    className="w-8 h-8 md:w-10 md:h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 flex-shrink-0"
                   >
-                    <ArrowRight className={`w-5 h-5 text-gray-600 ${isRTL ? 'rotate-180' : ''}`} />
+                    <Send className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
                   </motion.button>
                 </div>
               </div>
