@@ -1,9 +1,8 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
-  X, Type, Save, ChevronDown, Bold, Italic, Underline,
-  RotateCcw, Plus, Minus, Palette, Smartphone, Monitor, Tablet,
-  AlignLeft, AlignCenter, AlignRight, MousePointer, Check, Edit3
+  X, Save, ChevronDown, Bold, Italic, Underline,
+  RotateCcw, Plus, Minus, Palette,
+  AlignLeft, AlignCenter, AlignRight, MousePointer, Edit3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ProjectFile } from '@/types';
@@ -76,44 +75,10 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
   const [editedElements, setEditedElements] = useState<Map<string, SelectedElement>>(new Map());
   const [showFontDropdown, setShowFontDropdown] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [deviceView, setDeviceView] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Parse elements from project files
   const parsedElements = useMemo(() => {
     return parseProjectElements(projectFiles);
-  }, [projectFiles]);
-
-  // Generate preview HTML
-  const previewHtml = useMemo(() => {
-    // Find index.html or create a basic one
-    const indexHtml = projectFiles['index.html']?.content || projectFiles['public/index.html']?.content;
-    const appTsx = projectFiles['src/App.tsx']?.content || projectFiles['App.tsx']?.content;
-    const indexCss = projectFiles['src/index.css']?.content || projectFiles['index.css']?.content || '';
-
-    if (indexHtml) {
-      return indexHtml;
-    }
-
-    // Create a basic preview HTML
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Preview</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>${indexCss}</style>
-</head>
-<body>
-  <div id="root">
-    <div class="p-8 text-center">
-      <h1 class="text-2xl font-bold mb-4">Visual Edit Preview</h1>
-      <p class="text-gray-600">Select an element from the list to edit</p>
-    </div>
-  </div>
-</body>
-</html>`;
   }, [projectFiles]);
 
   const handleElementSelect = useCallback((elementId: string) => {
@@ -257,14 +222,6 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
     }
   }, [editedElements, projectFiles, parsedElements, onSave]);
 
-  const getDeviceWidth = () => {
-    switch (deviceView) {
-      case 'mobile': return '375px';
-      case 'tablet': return '768px';
-      default: return '100%';
-    }
-  };
-
   const getChangesCount = () => editedElements.size;
 
   // Group elements by type for sidebar
@@ -279,96 +236,94 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
   }, [parsedElements]);
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Left Panel - Element List & Editing */}
-      <div className="w-80 border-r border-border bg-card flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Palette className="w-5 h-5 text-primary" />
-              <span className="font-semibold text-foreground">Visual Edit</span>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 hover:bg-secondary rounded-lg transition-colors"
-            >
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
+    <div className="w-80 border-r border-border bg-card flex flex-col h-full">
+      {/* Header */}
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Palette className="w-5 h-5 text-primary" />
+            <span className="font-semibold text-foreground">Visual Edit</span>
           </div>
-
-          {/* Save Button */}
-          {getChangesCount() > 0 && (
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="w-full mb-2"
-              size="sm"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {isSaving ? 'Saving...' : `Save ${getChangesCount()} Change(s)`}
-            </Button>
-          )}
+          <button
+            onClick={onClose}
+            className="p-1.5 hover:bg-secondary rounded-lg transition-colors"
+          >
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
         </div>
 
-        {/* Element Selection or Editing */}
-        <div className="flex-1 overflow-y-auto">
-          {!selectedElement ? (
-            // Element List
-            <div className="p-4">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                Select an element to edit ({parsedElements.length} found)
-              </h3>
-              
-              {Object.entries(groupedElements).map(([type, elements]) => (
-                <div key={type} className="mb-4">
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
-                    {type}s ({elements.length})
-                  </h4>
-                  <div className="space-y-1">
-                    {elements.slice(0, 10).map(el => (
-                      <button
-                        key={el.id}
-                        onClick={() => handleElementSelect(el.id)}
-                        className={`w-full text-left p-2 rounded-lg text-sm transition-colors ${
-                          editedElements.has(el.id)
-                            ? 'bg-primary/10 border border-primary/30'
-                            : 'bg-secondary/50 hover:bg-secondary'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Edit3 className="w-3 h-3 text-muted-foreground" />
-                          <span className="truncate flex-1">
-                            {el.content.slice(0, 30) || `<${el.tagName}>`}
-                            {el.content.length > 30 && '...'}
-                          </span>
-                          {editedElements.has(el.id) && (
-                            <span className="w-2 h-2 rounded-full bg-primary" />
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {el.filePath}:{el.startLine}
-                        </div>
-                      </button>
-                    ))}
-                    {elements.length > 10 && (
-                      <p className="text-xs text-muted-foreground px-2">
-                        +{elements.length - 10} more...
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
+        {/* Save Button */}
+        {getChangesCount() > 0 && (
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="w-full mb-2"
+            size="sm"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {isSaving ? 'Saving...' : `Save ${getChangesCount()} Change(s)`}
+          </Button>
+        )}
+      </div>
 
-              {parsedElements.length === 0 && (
-                <div className="text-center py-8">
-                  <MousePointer className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    No editable elements found
-                  </p>
+      {/* Element Selection or Editing */}
+      <div className="flex-1 overflow-y-auto">
+        {!selectedElement ? (
+          // Element List
+          <div className="p-4">
+            <h3 className="text-sm font-medium text-muted-foreground mb-3">
+              Select an element to edit ({parsedElements.length} found)
+            </h3>
+            
+            {Object.entries(groupedElements).map(([type, elements]) => (
+              <div key={type} className="mb-4">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
+                  {type}s ({elements.length})
+                </h4>
+                <div className="space-y-1">
+                  {elements.slice(0, 10).map(el => (
+                    <button
+                      key={el.id}
+                      onClick={() => handleElementSelect(el.id)}
+                      className={`w-full text-left p-2 rounded-lg text-sm transition-colors ${
+                        editedElements.has(el.id)
+                          ? 'bg-primary/10 border border-primary/30'
+                          : 'bg-secondary/50 hover:bg-secondary'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Edit3 className="w-3 h-3 text-muted-foreground" />
+                        <span className="truncate flex-1">
+                          {el.content.slice(0, 30) || `<${el.tagName}>`}
+                          {el.content.length > 30 && '...'}
+                        </span>
+                        {editedElements.has(el.id) && (
+                          <span className="w-2 h-2 rounded-full bg-primary" />
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {el.filePath}:{el.startLine}
+                      </div>
+                    </button>
+                  ))}
+                  {elements.length > 10 && (
+                    <p className="text-xs text-muted-foreground px-2">
+                      +{elements.length - 10} more...
+                    </p>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            ))}
+
+            {parsedElements.length === 0 && (
+              <div className="text-center py-8">
+                <MousePointer className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  No editable elements found
+                </p>
+              </div>
+            )}
+          </div>
           ) : (
             // Element Editor
             <div className="p-4">
@@ -551,86 +506,12 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
                 onClick={resetElement}
                 className="w-full p-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-secondary flex items-center justify-center gap-2"
               >
-                <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-4 h-4" />
                 Reset to Original
               </button>
             </div>
           )}
         </div>
       </div>
-
-      {/* Right Panel - Preview */}
-      <div className="flex-1 flex flex-col bg-secondary/30">
-        {/* Preview Header */}
-        <div className="h-14 px-4 flex items-center justify-between border-b border-border bg-card">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground">Preview</span>
-            {getChangesCount() > 0 && (
-              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                {getChangesCount()} unsaved
-              </span>
-            )}
-          </div>
-
-          {/* Device Toggle */}
-          <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
-            <button
-              onClick={() => setDeviceView('desktop')}
-              className={`p-2 rounded-md transition-colors ${
-                deviceView === 'desktop' 
-                  ? 'bg-background text-foreground shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Monitor className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setDeviceView('tablet')}
-              className={`p-2 rounded-md transition-colors ${
-                deviceView === 'tablet' 
-                  ? 'bg-background text-foreground shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Tablet className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setDeviceView('mobile')}
-              className={`p-2 rounded-md transition-colors ${
-                deviceView === 'mobile' 
-                  ? 'bg-background text-foreground shadow-sm' 
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Smartphone className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Preview Content */}
-        <div className="flex-1 flex items-start justify-center overflow-auto p-4">
-          <div
-            className={`bg-white shadow-2xl overflow-hidden transition-all duration-300 ${
-              deviceView === 'desktop' 
-                ? 'w-full h-full rounded-lg' 
-                : 'rounded-xl border-4 border-gray-800'
-            }`}
-            style={{ 
-              width: getDeviceWidth(), 
-              height: deviceView === 'desktop' ? '100%' : '80vh',
-              maxHeight: 'calc(100vh - 120px)'
-            }}
-          >
-            <iframe
-              ref={iframeRef}
-              srcDoc={previewHtml}
-              className="w-full h-full border-none"
-              title="Visual Edit Preview"
-              sandbox="allow-scripts"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
   );
 };
