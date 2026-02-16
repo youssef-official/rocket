@@ -94,6 +94,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [showProjectMenu, setShowProjectMenu] = useState(false);
   const [chatWidth, setChatWidth] = useState(450);
   const [theme, setTheme] = useState<'dark' | 'light' | 'system'>('system');
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
 
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number | null>(null);
   const [showHomeDialog, setShowHomeDialog] = useState(false);
@@ -367,6 +368,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
   // State for mobile view
   const [mobilePanel, setMobilePanel] = useState<'chat' | 'preview' | 'code'>('preview');
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileViewport(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Get display name for project
   const displayProjectName = project?.generatedName || project?.name || 'Untitled Project';
@@ -674,66 +681,68 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </button>
         </div>
 
-        {/* Desktop Layout */}
-        <div className="hidden md:flex flex-1 overflow-hidden">
-          {/* Chat Panel or Visual Edit Sidebar */}
-            <>
-              <div
-                className="flex-shrink-0 border-r border-border"
-                style={{ width: chatWidth }}
-              >
-                <ChatView
-                  messages={displayMessages}
-                  onSendMessage={onSendMessage}
-                  isGenerating={isGenerating}
-                  fileActivities={fileActivities}
-                  generationPhase={generationPhase}
-                  onStop={onStop}
-                  statusMessage={statusMessage}
-                  currentVersion={currentVersionNumber ?? currentVersion}
-                  onImageUpload={handleImageUpload}
-                  suggestions={suggestions}
-                  versions={versions}
-                  onSelectVersion={handleSelectVersion}
-                  onRollback={handleRollback}
+        {!isMobileViewport ? (
+          <div className="flex flex-1 overflow-hidden">
+            <div
+              className="flex-shrink-0 border-r border-border"
+              style={{ width: chatWidth }}
+            >
+              <ChatView
+                messages={displayMessages}
+                onSendMessage={onSendMessage}
+                isGenerating={isGenerating}
+                fileActivities={fileActivities}
+                generationPhase={generationPhase}
+                onStop={onStop}
+                statusMessage={statusMessage}
+                currentVersion={currentVersionNumber ?? currentVersion}
+                onImageUpload={handleImageUpload}
+                suggestions={suggestions}
+                versions={versions}
+                onSelectVersion={handleSelectVersion}
+                onRollback={handleRollback}
+              />
+            </div>
+
+            {/* Resize Handle */}
+            <div
+              className="w-1 bg-transparent hover:bg-primary/50 cursor-col-resize transition-colors"
+              onMouseDown={handleResizeStart}
+            />
+
+            {/* Main Panel - keep preview mounted to preserve sandbox session */}
+            <div className="flex-1 overflow-hidden relative">
+              <div className={`h-full ${currentView === 'preview' && !showVisualEdit ? 'block' : 'hidden'}`}>
+                <PreviewView
+                  files={project?.files || {}}
+                  projectType={project?.projectType || 'vite'}
+                  isLoading={isGenerating && !isChatMode}
                 />
               </div>
 
-              {/* Resize Handle */}
-              <div
-                className="w-1 bg-transparent hover:bg-primary/50 cursor-col-resize transition-colors"
-                onMouseDown={handleResizeStart}
-              />
+              <div className={`h-full ${currentView === 'code' && !showVisualEdit ? 'block' : 'hidden'}`}>
+                <CodeView
+                  files={project?.files || {}}
+                  selectedFile={selectedFile}
+                  onSelectFile={setSelectedFile}
+                  onUpdateFile={handleUpdateFile}
+                />
+              </div>
 
-              {/* Main Panel - Code/Preview/Visual Edit */}
-              <div className="flex-1 overflow-hidden">
-                {showVisualEdit ? (
+              {showVisualEdit && (
+                <div className="absolute inset-0">
                   <GrapesJSEditor
                     projectFiles={project?.files || {}}
                     onSave={handleVisualEditSave}
                     onClose={() => setShowVisualEdit(false)}
                   />
-                ) : currentView === 'preview' ? (
-                  <PreviewView
-                    files={project?.files || {}}
-                    projectType={project?.projectType || 'vite'}
-                    isLoading={isGenerating && !isChatMode}
-                  />
-                ) : (
-                  <CodeView
-                    files={project?.files || {}}
-                    selectedFile={selectedFile}
-                    onSelectFile={setSelectedFile}
-                    onUpdateFile={handleUpdateFile}
-                  />
-                )}
-              </div>
-            </>
-        </div>
-
-        {/* Mobile Layout */}
-        <div className="md:hidden flex-1 overflow-hidden pb-14">
-          {mobilePanel === 'chat' && (
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-hidden pb-14">
+            {mobilePanel === 'chat' && (
             <ChatView
               messages={displayMessages}
               onSendMessage={onSendMessage}
@@ -749,23 +758,26 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               onSelectVersion={handleSelectVersion}
               onRollback={handleRollback}
             />
-          )}
-          {mobilePanel === 'preview' && (
-            <PreviewView
-              files={project?.files || {}}
-              projectType={project?.projectType || 'vite'}
-              isLoading={isGenerating && !isChatMode}
-            />
-          )}
-          {mobilePanel === 'code' && (
-            <CodeView
-              files={project?.files || {}}
-              selectedFile={selectedFile}
-              onSelectFile={setSelectedFile}
-              onUpdateFile={handleUpdateFile}
-            />
-          )}
-        </div>
+            )}
+
+            <div className={`h-full ${mobilePanel === 'preview' ? 'block' : 'hidden'}`}>
+              <PreviewView
+                files={project?.files || {}}
+                projectType={project?.projectType || 'vite'}
+                isLoading={isGenerating && !isChatMode}
+              />
+            </div>
+
+            <div className={`h-full ${mobilePanel === 'code' ? 'block' : 'hidden'}`}>
+              <CodeView
+                files={project?.files || {}}
+                selectedFile={selectedFile}
+                onSelectFile={setSelectedFile}
+                onUpdateFile={handleUpdateFile}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Integration Dialogs - Vercel only */}

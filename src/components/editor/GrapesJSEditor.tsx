@@ -29,88 +29,157 @@ export const GrapesJSEditor: React.FC<GrapesJSEditorProps> = ({
 
   // Build initial HTML from project files
   const buildProjectHTML = useCallback((): string => {
-    // Always start with a proper editable page structure
-    // The JSX-to-HTML extraction is too fragile, so we provide 
-    // a rich starter template that users can edit visually
-    
-    const hasFiles = Object.keys(projectFiles).length > 0;
-    
-    // Try to extract any index.html if it exists
     const indexHtml = projectFiles['index.html'];
     if (indexHtml) {
       const bodyMatch = indexHtml.content.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-      if (bodyMatch && bodyMatch[1].trim().length > 50) {
+      if (bodyMatch && bodyMatch[1].trim().length > 20) {
         return bodyMatch[1];
       }
     }
 
-    // Provide a rich default template for visual editing
+    const normalizePath = (rawPath: string, fromFile: string) => {
+      if (!rawPath.startsWith('.')) return null;
+      const fromParts = fromFile.split('/');
+      fromParts.pop();
+      const target = [...fromParts, ...rawPath.split('/')];
+      const normalized: string[] = [];
+
+      for (const part of target) {
+        if (!part || part === '.') continue;
+        if (part === '..') normalized.pop();
+        else normalized.push(part);
+      }
+
+      const base = normalized.join('/');
+      const candidates = [base, `${base}.tsx`, `${base}.jsx`, `${base}.ts`, `${base}.js`];
+      return candidates.find(candidate => projectFiles[candidate]);
+    };
+
+    const extractReturnJSX = (source: string): string | null => {
+      const returnIndex = source.indexOf('return (');
+      if (returnIndex === -1) return null;
+
+      const openIndex = source.indexOf('(', returnIndex);
+      if (openIndex === -1) return null;
+
+      let depth = 0;
+      for (let i = openIndex; i < source.length; i++) {
+        const char = source[i];
+        if (char === '(') depth += 1;
+        if (char === ')') {
+          depth -= 1;
+          if (depth === 0) {
+            return source.slice(openIndex + 1, i).trim();
+          }
+        }
+      }
+
+      return null;
+    };
+
+    const extractLocalComponentMap = (source: string, filePath: string) => {
+      const imports = new Map<string, string>();
+      const importRegex = /import\s+(?:\{[^}]+\}|([A-Z][\w]*))\s+from\s+['"]([^'"]+)['"]/g;
+      let match: RegExpExecArray | null;
+
+      while ((match = importRegex.exec(source)) !== null) {
+        const componentName = match[1];
+        const importPath = match[2];
+        if (!componentName || !importPath.startsWith('.')) continue;
+
+        const resolved = normalizePath(importPath, filePath);
+        if (resolved) {
+          imports.set(componentName, resolved);
+        }
+      }
+
+      return imports;
+    };
+
+    const jsxToHtml = (jsx: string): string => {
+      let html = jsx;
+
+      // Replace React fragment wrappers
+      html = html.replace(/<\/>/g, '');
+      html = html.replace(/<>/g, '<div>');
+      html = html.replace(/<\/>/g, '');
+      html = html.replace(/<\/>(?=\s*)/g, '');
+      html = html.replace(/<\/\s*>/g, '</div>');
+
+      // Convert JSX attrs to HTML attrs
+      html = html.replace(/className=/g, 'class=');
+      html = html.replace(/htmlFor=/g, 'for=');
+
+      // Drop event handlers and TSX specific props
+      html = html.replace(/\s(?:on[A-Z]\w*|ref|key)={(?:[^{}]|{[^{}]*})*}/g, '');
+
+      // Convert simple string interpolations: {'text'} or {"text"}
+      html = html.replace(/\{['"]([^'"]+)['"]\}/g, '$1');
+
+      // Remove remaining complex JSX expressions to keep markup valid
+      html = html.replace(/\{[^{}]*\}/g, '');
+
+      // Convert component tags to divs so canvas can still render editable placeholders
+      html = html.replace(/<([A-Z][\w]*)\b([^>]*)\/>/g, '<div data-component="$1" class="min-h-[40px] border border-dashed border-primary/40 rounded-md p-3 text-xs text-muted-foreground">$1 component</div>');
+      html = html.replace(/<([A-Z][\w]*)\b([^>]*)>/g, '<div data-component="$1"$2>');
+      html = html.replace(/<\/([A-Z][\w]*)>/g, '</div>');
+
+      return html.trim();
+    };
+
+    const visited = new Set<string>();
+    const resolveComponentJSX = (filePath: string, depth = 0): string | null => {
+      if (depth > 3 || visited.has(filePath) || !projectFiles[filePath]) return null;
+      visited.add(filePath);
+
+      const source = projectFiles[filePath].content;
+      const jsx = extractReturnJSX(source);
+      if (!jsx) return null;
+
+      let hydrated = jsx;
+      const componentImports = extractLocalComponentMap(source, filePath);
+
+      componentImports.forEach((componentFile, componentName) => {
+        const childJSX = resolveComponentJSX(componentFile, depth + 1);
+        if (!childJSX) return;
+
+        const selfClosing = new RegExp(`<${componentName}\\b[^>]*\\/>`, 'g');
+        hydrated = hydrated.replace(selfClosing, childJSX);
+      });
+
+      return hydrated;
+    };
+
+    const jsxCandidates = ['src/App.tsx', 'App.tsx', 'src/main.tsx', 'main.tsx'];
+    for (const candidate of jsxCandidates) {
+      const jsx = resolveComponentJSX(candidate);
+      if (jsx && jsx.length > 20) {
+        const html = jsxToHtml(jsx);
+        if (html.length > 20) {
+          return html;
+        }
+      }
+    }
+
     return `
-      <nav class="flex items-center justify-between px-8 py-4 bg-white shadow-sm border-b">
-        <div class="text-2xl font-bold text-gray-900">My Website</div>
-        <div class="flex items-center gap-6">
-          <a href="#" class="text-gray-600 hover:text-gray-900 font-medium">Home</a>
-          <a href="#" class="text-gray-600 hover:text-gray-900 font-medium">About</a>
-          <a href="#" class="text-gray-600 hover:text-gray-900 font-medium">Services</a>
-          <a href="#" class="text-gray-600 hover:text-gray-900 font-medium">Contact</a>
-          <button class="px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">Get Started</button>
-        </div>
-      </nav>
-      
-      <section class="relative py-24 px-4 bg-gradient-to-br from-gray-900 via-blue-900 to-gray-800 text-white">
-        <div class="max-w-4xl mx-auto text-center">
-          <h1 class="text-6xl font-bold mb-6 leading-tight">Build Something<br/>Amazing Today</h1>
-          <p class="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">Create stunning websites with our powerful visual editor. Drag, drop, and customize every element.</p>
-          <div class="flex items-center justify-center gap-4">
-            <button class="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg shadow-blue-600/30">Start Building</button>
-            <button class="px-8 py-4 bg-white/10 text-white rounded-xl font-bold text-lg hover:bg-white/20 backdrop-blur border border-white/20">Learn More</button>
+      <section class="p-10 bg-gradient-to-b from-slate-50 to-white min-h-screen">
+        <div class="max-w-3xl mx-auto rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+          <h1 class="text-3xl font-bold text-slate-900 mb-3">Visual Edit جاهز</h1>
+          <p class="text-slate-600 mb-6">لم أقدر أستخرج JSX من ملفات المشروع تلقائيًا. افتح مشروع فيه <code>App.tsx</code> أو <code>index.html</code> وسيتم عرض المحتوى الحقيقي هنا.</p>
+          <div class="p-4 rounded-lg bg-slate-100 text-sm text-slate-700">
+            الملفات المتاحة: ${Object.keys(projectFiles).slice(0, 10).join(', ') || 'No files'}
           </div>
         </div>
       </section>
-
-      <section class="py-20 px-4 bg-white">
-        <div class="max-w-6xl mx-auto text-center">
-          <h2 class="text-4xl font-bold text-gray-900 mb-4">Our Features</h2>
-          <p class="text-lg text-gray-500 mb-12 max-w-2xl mx-auto">Everything you need to build modern websites</p>
-          <div class="grid grid-cols-3 gap-8">
-            <div class="p-8 rounded-2xl bg-gray-50 border border-gray-100 text-center">
-              <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4 text-2xl">🎨</div>
-              <h3 class="text-xl font-bold text-gray-900 mb-2">Visual Design</h3>
-              <p class="text-gray-500">Drag and drop components to build your perfect layout</p>
-            </div>
-            <div class="p-8 rounded-2xl bg-gray-50 border border-gray-100 text-center">
-              <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4 text-2xl">⚡</div>
-              <h3 class="text-xl font-bold text-gray-900 mb-2">Fast & Light</h3>
-              <p class="text-gray-500">Optimized for performance with clean, semantic code</p>
-            </div>
-            <div class="p-8 rounded-2xl bg-gray-50 border border-gray-100 text-center">
-              <div class="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4 text-2xl">📱</div>
-              <h3 class="text-xl font-bold text-gray-900 mb-2">Responsive</h3>
-              <p class="text-gray-500">Looks great on every device, from mobile to desktop</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <footer class="bg-gray-900 text-gray-400 py-12 px-4">
-        <div class="max-w-6xl mx-auto grid grid-cols-3 gap-8">
-          <div>
-            <h4 class="text-white font-bold text-lg mb-4">My Website</h4>
-            <p class="text-sm">Building the future of web design.</p>
-          </div>
-          <div>
-            <h4 class="text-white font-bold mb-4">Links</h4>
-            <a href="#" class="block text-sm hover:text-white mb-2">About Us</a>
-            <a href="#" class="block text-sm hover:text-white mb-2">Services</a>
-            <a href="#" class="block text-sm hover:text-white">Contact</a>
-          </div>
-          <div>
-            <h4 class="text-white font-bold mb-4">Contact</h4>
-            <p class="text-sm">hello@example.com</p>
-          </div>
-        </div>
-      </footer>
     `;
+  }, [projectFiles]);
+
+  const buildProjectCSS = useCallback((): string => {
+    const cssFiles = ['src/index.css', 'index.css', 'src/App.css', 'App.css'];
+    return cssFiles
+      .filter((path) => projectFiles[path]?.content)
+      .map((path) => projectFiles[path].content)
+      .join('\n\n');
   }, [projectFiles]);
 
 
@@ -189,6 +258,11 @@ export const GrapesJSEditor: React.FC<GrapesJSEditorProps> = ({
     // Set initial content
     editor.setComponents(htmlContent);
 
+    const cssContent = buildProjectCSS();
+    if (cssContent.trim()) {
+      editor.setStyle(cssContent);
+    }
+
     // Custom styling for GrapesJS panels
     const editorEl = editorRef.current;
     if (editorEl) {
@@ -257,7 +331,7 @@ export const GrapesJSEditor: React.FC<GrapesJSEditorProps> = ({
       editor.destroy();
       gjsEditor.current = null;
     };
-  }, [buildProjectHTML]);
+  }, [buildProjectHTML, buildProjectCSS]);
 
   // Device mode
   useEffect(() => {
