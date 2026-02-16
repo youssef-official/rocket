@@ -184,6 +184,17 @@ If the user provides an image:
 7. In your actions, show "Reading image" then "Analyzing design/bug" steps
 
 ═══════════════════════════════════════════════════════════════════════════════
+📂 FILE ANALYSIS (When user uploads PDF/Excel/CSV/Video/Fonts)
+═══════════════════════════════════════════════════════════════════════════════
+When file metadata is provided (e.g. [FILE:pdf:document.pdf]URL):
+- PDF: Extract text content structure, use it to build portfolio/content pages
+- Excel/CSV: Convert data into interactive tables, charts, or data-driven components
+- Video (.mp4, .webm): Include as <video> element with controls in the project
+- Fonts (.ttf, .otf, .woff, .woff2): Register as @font-face in CSS and apply to typography
+- Add appropriate actions: {"name": "document.pdf", "action": "analyzed_image", "status": "done"}
+- Reference uploaded file URLs directly in the generated code
+
+═══════════════════════════════════════════════════════════════════════════════
 📊 ACTIONS TRACKING (Report what you're doing)
 ═══════════════════════════════════════════════════════════════════════════════
 When generating code, your actions should accurately reflect what you're doing.

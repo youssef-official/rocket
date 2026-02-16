@@ -180,6 +180,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
 
   // Drag and drop handlers
   const handleDragEnter = (e: React.DragEvent) => {
@@ -206,14 +207,23 @@ export const ChatView: React.FC<ChatViewProps> = ({
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files);
-    const imageFiles = files.filter(f => f.type.startsWith('image/')).slice(0, 3 - uploadedImages.length);
+    const supportedFiles = files.filter(f => 
+      f.type.startsWith('image/') || 
+      f.type === 'application/pdf' ||
+      f.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      f.type === 'application/vnd.ms-excel' ||
+      f.type === 'text/csv' ||
+      f.type.startsWith('video/') ||
+      f.type.startsWith('font/') ||
+      f.name.endsWith('.ttf') || f.name.endsWith('.otf') || f.name.endsWith('.woff') || f.name.endsWith('.woff2')
+    ).slice(0, 5 - uploadedImages.length);
 
-    const newImages = imageFiles.map(file => ({
+    const newFiles = supportedFiles.map(file => ({
       file,
-      preview: URL.createObjectURL(file)
+      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
     }));
 
-    setUploadedImages(prev => [...prev, ...newImages]);
+    setUploadedImages(prev => [...prev, ...newFiles]);
   };
 
   useEffect(() => {
@@ -259,16 +269,25 @@ export const ChatView: React.FC<ChatViewProps> = ({
     }
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const imageFiles = files.filter(f => f.type.startsWith('image/')).slice(0, 3 - uploadedImages.length);
+    const supportedFiles = files.filter(f => 
+      f.type.startsWith('image/') || 
+      f.type === 'application/pdf' ||
+      f.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      f.type === 'application/vnd.ms-excel' ||
+      f.type === 'text/csv' ||
+      f.type.startsWith('video/') ||
+      f.type.startsWith('font/') ||
+      f.name.endsWith('.ttf') || f.name.endsWith('.otf') || f.name.endsWith('.woff') || f.name.endsWith('.woff2')
+    ).slice(0, 5 - uploadedImages.length);
 
-    const newImages = imageFiles.map(file => ({
+    const newFiles = supportedFiles.map(file => ({
       file,
-      preview: URL.createObjectURL(file)
+      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
     }));
 
-    setUploadedImages(prev => [...prev, ...newImages]);
+    setUploadedImages(prev => [...prev, ...newFiles]);
     setShowPlusMenu(false);
   };
 
@@ -770,11 +789,18 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <div className="mb-3 flex flex-wrap gap-2">
             {uploadedImages.map((img, index) => (
               <div key={index} className="relative">
-                <img
-                  src={img.preview}
-                  alt={`Upload preview ${index + 1}`}
-                  className="h-16 w-16 object-cover rounded-lg border border-border"
-                />
+                {img.file.type.startsWith('image/') ? (
+                  <img
+                    src={img.preview}
+                    alt={`Upload preview ${index + 1}`}
+                    className="h-16 w-16 object-cover rounded-lg border border-border"
+                  />
+                ) : (
+                  <div className="h-16 w-auto min-w-[64px] px-3 flex flex-col items-center justify-center rounded-lg border border-border bg-secondary">
+                    <File className="w-5 h-5 text-muted-foreground mb-1" />
+                    <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">{img.file.name}</span>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => removeUploadedImage(index)}
@@ -822,6 +848,17 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     <button
                       type="button"
                       onClick={() => {
+                        docInputRef.current?.click();
+                        setShowPlusMenu(false);
+                      }}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left text-muted-foreground hover:text-foreground border-t border-border"
+                    >
+                      <File className="w-4 h-4" />
+                      <span className="text-sm">{t('chat.uploadFile') || 'Upload File (PDF, Excel, Font)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
                         // Trigger visual edit mode - handled by parent
                         setShowPlusMenu(false);
                         // Dispatch custom event for parent to handle
@@ -840,8 +877,17 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                onChange={handleImageSelect}
+                onChange={handleFileSelect}
                 className="hidden"
+                multiple
+              />
+              <input
+                ref={docInputRef}
+                type="file"
+                accept=".pdf,.xlsx,.xls,.csv,.mp4,.webm,.ttf,.otf,.woff,.woff2"
+                onChange={handleFileSelect}
+                className="hidden"
+                multiple
               />
             </div>
 

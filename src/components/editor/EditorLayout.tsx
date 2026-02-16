@@ -211,22 +211,32 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
     try {
       const fileName = `${Date.now()}-${file.name}`;
+      const bucket = file.type.startsWith('image/') ? 'chat-images' : 'chat-images';
+      
       const { data, error } = await supabase.storage
-        .from('chat-images')
+        .from(bucket)
         .upload(fileName, file);
 
       if (error) {
-        console.error('Error uploading image:', error);
+        console.error('Error uploading file:', error);
         return null;
       }
 
       const { data: urlData } = supabase.storage
-        .from('chat-images')
+        .from(bucket)
         .getPublicUrl(fileName);
 
-      return urlData.publicUrl;
+      // For non-image files, prefix with file type info so the AI knows what it is
+      const publicUrl = urlData.publicUrl;
+      if (!file.type.startsWith('image/')) {
+        // Return URL with metadata prefix for context
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        return `[FILE:${ext}:${file.name}]${publicUrl}`;
+      }
+
+      return publicUrl;
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('Error uploading file:', error);
       return null;
     }
   }, []);
