@@ -8,7 +8,7 @@ import {
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
-import { VisualEditMode } from './VisualEditMode';
+import { GrapesJSEditor } from './GrapesJSEditor';
 import { VercelDeployDialog } from './IntegrationDialogs';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -658,7 +658,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         <div className="hidden md:flex flex-1 overflow-hidden">
           {/* Chat Panel or Visual Edit Sidebar */}
           {showVisualEdit ? (
-            <VisualEditMode
+            <GrapesJSEditor
               projectFiles={project?.files || {}}
               onSave={handleVisualEditSave}
               onClose={() => setShowVisualEdit(false)}
@@ -691,26 +691,26 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 className="w-1 bg-transparent hover:bg-primary/50 cursor-col-resize transition-colors"
                 onMouseDown={handleResizeStart}
               />
+
+              {/* Main Panel - Code/Preview */}
+              <div className="flex-1 overflow-hidden">
+                {currentView === 'preview' ? (
+                  <PreviewView
+                    files={project?.files || {}}
+                    projectType={project?.projectType || 'vite'}
+                    isLoading={isGenerating && !isChatMode}
+                  />
+                ) : (
+                  <CodeView
+                    files={project?.files || {}}
+                    selectedFile={selectedFile}
+                    onSelectFile={setSelectedFile}
+                    onUpdateFile={handleUpdateFile}
+                  />
+                )}
+              </div>
             </>
           )}
-
-          {/* Main Panel - Code/Preview */}
-          <div className="flex-1 overflow-hidden">
-            {currentView === 'preview' ? (
-              <PreviewView
-                files={project?.files || {}}
-                projectType={project?.projectType || 'vite'}
-                isLoading={isGenerating && !isChatMode}
-              />
-            ) : (
-              <CodeView
-                files={project?.files || {}}
-                selectedFile={selectedFile}
-                onSelectFile={setSelectedFile}
-                onUpdateFile={handleUpdateFile}
-              />
-            )}
-          </div>
         </div>
 
         {/* Mobile Layout */}
