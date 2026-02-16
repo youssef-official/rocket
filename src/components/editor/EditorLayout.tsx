@@ -426,7 +426,17 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                       <ChevronDown className={`w-3 h-3 text-muted-foreground ${isRTL ? 'mr-auto rotate-90' : 'ml-auto -rotate-90'}`} />
                     </button>
                     <button
-                      onClick={() => setShowProjectMenu(false)}
+                      onClick={() => {
+                        setShowProjectMenu(false);
+                        const newName = prompt(isRTL ? 'أدخل اسم المشروع الجديد:' : 'Enter new project name:', displayProjectName);
+                        if (newName && newName.trim()) {
+                          onUpdateProject({ name: newName.trim(), generatedName: newName.trim() });
+                          // Update in database
+                          if (project?.id) {
+                            supabase.from('projects').update({ name: newName.trim(), generated_name: newName.trim() }).eq('id', project.id).then(() => {});
+                          }
+                        }
+                      }}
                       className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
                     >
                       <Pencil className="w-4 h-4 text-muted-foreground" />
@@ -657,13 +667,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         {/* Desktop Layout */}
         <div className="hidden md:flex flex-1 overflow-hidden">
           {/* Chat Panel or Visual Edit Sidebar */}
-          {showVisualEdit ? (
-            <GrapesJSEditor
-              projectFiles={project?.files || {}}
-              onSave={handleVisualEditSave}
-              onClose={() => setShowVisualEdit(false)}
-            />
-          ) : (
             <>
               <div
                 className="flex-shrink-0 border-r border-border"
@@ -692,9 +695,15 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 onMouseDown={handleResizeStart}
               />
 
-              {/* Main Panel - Code/Preview */}
+              {/* Main Panel - Code/Preview/Visual Edit */}
               <div className="flex-1 overflow-hidden">
-                {currentView === 'preview' ? (
+                {showVisualEdit ? (
+                  <GrapesJSEditor
+                    projectFiles={project?.files || {}}
+                    onSave={handleVisualEditSave}
+                    onClose={() => setShowVisualEdit(false)}
+                  />
+                ) : currentView === 'preview' ? (
                   <PreviewView
                     files={project?.files || {}}
                     projectType={project?.projectType || 'vite'}
@@ -710,7 +719,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 )}
               </div>
             </>
-          )}
         </div>
 
         {/* Mobile Layout */}

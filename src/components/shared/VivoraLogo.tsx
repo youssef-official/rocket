@@ -106,7 +106,7 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(
               ${isRTL ? 'flex-row-reverse' : ''}
             `}
           >
-            {isArabic ? 'فيفورا' : 'Vivora'}
+            Vivora
 
             <motion.span
               variants={xVariants}
@@ -116,9 +116,9 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(
                 stiffness: 300,
                 damping: 15,
               }}
-              className={`text-pink-400 font-black ${isArabic ? 'text-[1.05em]' : 'text-[1.2em]'}`}
+              className={`text-pink-400 font-black text-[1.2em]`}
             >
-              {isArabic ? 'إكس' : 'X'}
+              X
             </motion.span>
           </span>
         )}
