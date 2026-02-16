@@ -29,84 +29,91 @@ export const GrapesJSEditor: React.FC<GrapesJSEditorProps> = ({
 
   // Build initial HTML from project files
   const buildProjectHTML = useCallback((): string => {
-    // Find the main component files and extract JSX-like content
-    // For GrapesJS, we'll render a combined HTML view
-    let bodyContent = '';
-    let cssContent = '';
-
-    // Collect CSS
-    Object.entries(projectFiles).forEach(([path, file]) => {
-      if (path.endsWith('.css')) {
-        cssContent += `/* ${path} */\n${file.content}\n`;
-      }
-    });
-
-    // Find App component or main page
-    const appFile = projectFiles['src/App.tsx'] || projectFiles['App.tsx'] || projectFiles['src/App.jsx'];
+    // Always start with a proper editable page structure
+    // The JSX-to-HTML extraction is too fragile, so we provide 
+    // a rich starter template that users can edit visually
     
-    if (appFile) {
-      // Extract rough HTML structure from JSX (simplified)
-      bodyContent = extractHTMLFromJSX(appFile.content);
+    const hasFiles = Object.keys(projectFiles).length > 0;
+    
+    // Try to extract any index.html if it exists
+    const indexHtml = projectFiles['index.html'];
+    if (indexHtml) {
+      const bodyMatch = indexHtml.content.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+      if (bodyMatch && bodyMatch[1].trim().length > 50) {
+        return bodyMatch[1];
+      }
     }
 
-    // If no extractable content, build from all TSX files
-    if (!bodyContent) {
-      Object.entries(projectFiles).forEach(([path, file]) => {
-        if ((path.endsWith('.tsx') || path.endsWith('.jsx')) && !path.includes('main.')) {
-          const html = extractHTMLFromJSX(file.content);
-          if (html) bodyContent += html;
-        }
-      });
-    }
-
-    if (!bodyContent) {
-      bodyContent = `
-        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0a0a12; color: white;">
-          <div style="text-align: center;">
-            <h1 style="font-size: 2rem; font-weight: bold; margin-bottom: 1rem;">Visual Editor Ready</h1>
-            <p style="color: #888;">Start adding components from the blocks panel</p>
+    // Provide a rich default template for visual editing
+    return `
+      <nav class="flex items-center justify-between px-8 py-4 bg-white shadow-sm border-b">
+        <div class="text-2xl font-bold text-gray-900">My Website</div>
+        <div class="flex items-center gap-6">
+          <a href="#" class="text-gray-600 hover:text-gray-900 font-medium">Home</a>
+          <a href="#" class="text-gray-600 hover:text-gray-900 font-medium">About</a>
+          <a href="#" class="text-gray-600 hover:text-gray-900 font-medium">Services</a>
+          <a href="#" class="text-gray-600 hover:text-gray-900 font-medium">Contact</a>
+          <button class="px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">Get Started</button>
+        </div>
+      </nav>
+      
+      <section class="relative py-24 px-4 bg-gradient-to-br from-gray-900 via-blue-900 to-gray-800 text-white">
+        <div class="max-w-4xl mx-auto text-center">
+          <h1 class="text-6xl font-bold mb-6 leading-tight">Build Something<br/>Amazing Today</h1>
+          <p class="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">Create stunning websites with our powerful visual editor. Drag, drop, and customize every element.</p>
+          <div class="flex items-center justify-center gap-4">
+            <button class="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg shadow-blue-600/30">Start Building</button>
+            <button class="px-8 py-4 bg-white/10 text-white rounded-xl font-bold text-lg hover:bg-white/20 backdrop-blur border border-white/20">Learn More</button>
           </div>
         </div>
-      `;
-    }
+      </section>
 
-    return bodyContent;
+      <section class="py-20 px-4 bg-white">
+        <div class="max-w-6xl mx-auto text-center">
+          <h2 class="text-4xl font-bold text-gray-900 mb-4">Our Features</h2>
+          <p class="text-lg text-gray-500 mb-12 max-w-2xl mx-auto">Everything you need to build modern websites</p>
+          <div class="grid grid-cols-3 gap-8">
+            <div class="p-8 rounded-2xl bg-gray-50 border border-gray-100 text-center">
+              <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4 text-2xl">🎨</div>
+              <h3 class="text-xl font-bold text-gray-900 mb-2">Visual Design</h3>
+              <p class="text-gray-500">Drag and drop components to build your perfect layout</p>
+            </div>
+            <div class="p-8 rounded-2xl bg-gray-50 border border-gray-100 text-center">
+              <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4 text-2xl">⚡</div>
+              <h3 class="text-xl font-bold text-gray-900 mb-2">Fast & Light</h3>
+              <p class="text-gray-500">Optimized for performance with clean, semantic code</p>
+            </div>
+            <div class="p-8 rounded-2xl bg-gray-50 border border-gray-100 text-center">
+              <div class="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4 text-2xl">📱</div>
+              <h3 class="text-xl font-bold text-gray-900 mb-2">Responsive</h3>
+              <p class="text-gray-500">Looks great on every device, from mobile to desktop</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="bg-gray-900 text-gray-400 py-12 px-4">
+        <div class="max-w-6xl mx-auto grid grid-cols-3 gap-8">
+          <div>
+            <h4 class="text-white font-bold text-lg mb-4">My Website</h4>
+            <p class="text-sm">Building the future of web design.</p>
+          </div>
+          <div>
+            <h4 class="text-white font-bold mb-4">Links</h4>
+            <a href="#" class="block text-sm hover:text-white mb-2">About Us</a>
+            <a href="#" class="block text-sm hover:text-white mb-2">Services</a>
+            <a href="#" class="block text-sm hover:text-white">Contact</a>
+          </div>
+          <div>
+            <h4 class="text-white font-bold mb-4">Contact</h4>
+            <p class="text-sm">hello@example.com</p>
+          </div>
+        </div>
+      </footer>
+    `;
   }, [projectFiles]);
 
-  // Extract HTML-like structure from JSX (simplified parser)
-  const extractHTMLFromJSX = (jsxContent: string): string => {
-    let html = jsxContent;
-    
-    // Remove imports and function declarations
-    html = html.replace(/^import\s+.*$/gm, '');
-    html = html.replace(/^export\s+(default\s+)?function\s+\w+[^{]*\{/gm, '');
-    html = html.replace(/^(const|let|var)\s+\w+.*=.*=>/gm, '');
-    html = html.replace(/^(const|let|var)\s+\w+.*React\.FC.*/gm, '');
-    
-    // Find return statement content
-    const returnMatch = html.match(/return\s*\(\s*([\s\S]*)\s*\)\s*;?\s*\}?\s*$/);
-    if (returnMatch) {
-      html = returnMatch[1];
-    } else {
-      return '';
-    }
 
-    // Convert JSX to HTML
-    html = html.replace(/className=/g, 'class=');
-    html = html.replace(/htmlFor=/g, 'for=');
-    
-    // Remove JSX expressions that aren't simple strings
-    html = html.replace(/\{[^}]*\}/g, '');
-    
-    // Remove self-closing component tags (custom components)
-    html = html.replace(/<[A-Z]\w+[^>]*\/>/g, '');
-    html = html.replace(/<[A-Z]\w+[^>]*>[\s\S]*?<\/[A-Z]\w+>/g, '');
-    
-    // Clean up
-    html = html.replace(/\n\s*\n/g, '\n');
-    
-    return html.trim();
-  };
 
   useEffect(() => {
     if (!editorRef.current) return;
