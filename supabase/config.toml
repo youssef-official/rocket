@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.visual-edits]
 verify_jwt = false
+
+[functions.vercel-oauth]
+verify_jwt = false

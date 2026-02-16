@@ -1073,6 +1073,7 @@ import { Docs } from "@/pages/Docs";
 import Settings from "@/pages/Settings";
 import { ProjectView } from "@/pages/ProjectView";
 import { OAuthConsent } from "@/pages/OAuthConsent";
+import { VercelOAuthCallback } from "@/pages/VercelCallback";
 import FAQ from "@/pages/FAQ";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
@@ -1102,6 +1103,7 @@ const App = () => (
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/new-vibe-tool" element={<NewVibeTool />} />
               <Route path="/oauth/consent" element={<OAuthConsent />} />
+              <Route path="/oauth/vercel/callback" element={<VercelOAuthCallback />} />
               <Route path="/" element={<AppContent />} />
             </Routes>
           </BrowserRouter>

@@ -43,64 +43,111 @@ export function useIntegrations() {
     fetchIntegrations();
   }, [fetchIntegrations]);
 
-  const validateVercelToken = async (token: string): Promise<{ valid: boolean; username?: string }> => {
+  // Start Vercel OAuth flow
+  const startVercelOAuth = async () => {
+    const redirectUri = `${window.location.origin}/oauth/vercel/callback`;
+    
     try {
-      const response = await fetch('https://api.vercel.com/v2/user', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const { data, error } = await supabase.functions.invoke('vercel-oauth', {
+        body: { action: 'get-auth-url', redirectUri }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        return { valid: true, username: data.user?.username || data.user?.name };
+      if (error) throw error;
+      if (data?.url) {
+        // Store redirect URI for callback
+        sessionStorage.setItem('vercel_redirect_uri', redirectUri);
+        window.location.href = data.url;
       }
-      return { valid: false };
     } catch (error) {
-      console.error('Vercel validation error:', error);
-      return { valid: false };
+      console.error('Error starting Vercel OAuth:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start Vercel login. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
-  const saveVercelToken = async (token: string): Promise<boolean> => {
+  // Handle OAuth callback
+  const handleVercelCallback = async (code: string): Promise<boolean> => {
     if (!user) return false;
 
-    const validation = await validateVercelToken(token);
-    if (!validation.valid) {
+    const redirectUri = sessionStorage.getItem('vercel_redirect_uri') || `${window.location.origin}/oauth/vercel/callback`;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('vercel-oauth', {
+        body: { action: 'exchange-code', code, redirectUri }
+      });
+
+      if (error) throw error;
+
+      if (data?.access_token) {
+        const { error: dbError } = await supabase
+          .from('user_integrations')
+          .upsert({
+            user_id: user.id,
+            vercel_token: data.access_token,
+            vercel_username: data.username,
+            vercel_connected: true,
+          }, { onConflict: 'user_id' });
+
+        if (dbError) throw dbError;
+
+        toast({
+          title: 'Vercel Connected',
+          description: `Connected as ${data.username}`,
+        });
+
+        sessionStorage.removeItem('vercel_redirect_uri');
+        await fetchIntegrations();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error exchanging Vercel code:', error);
       toast({
-        title: 'Invalid Token',
-        description: 'The Vercel token is invalid. Please check and try again.',
+        title: 'Error',
+        description: 'Failed to connect Vercel account',
         variant: 'destructive',
       });
       return false;
     }
+  };
+
+  // Legacy: save token directly (kept for backward compat)
+  const saveVercelToken = async (token: string): Promise<boolean> => {
+    if (!user) return false;
 
     try {
+      const response = await fetch('https://api.vercel.com/v2/user', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        toast({ title: 'Invalid Token', description: 'The Vercel token is invalid.', variant: 'destructive' });
+        return false;
+      }
+
+      const userData = await response.json();
+      const username = userData.user?.username || userData.user?.name;
+
       const { error } = await supabase
         .from('user_integrations')
         .upsert({
           user_id: user.id,
           vercel_token: token,
-          vercel_username: validation.username,
+          vercel_username: username,
           vercel_connected: true,
         }, { onConflict: 'user_id' });
 
       if (error) throw error;
 
-      toast({
-        title: 'Vercel Connected',
-        description: `Connected as ${validation.username}`,
-      });
-
+      toast({ title: 'Vercel Connected', description: `Connected as ${username}` });
       await fetchIntegrations();
       return true;
     } catch (error) {
       console.error('Error saving Vercel token:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save Vercel token',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to save Vercel token', variant: 'destructive' });
       return false;
     }
   };
@@ -120,11 +167,7 @@ export function useIntegrations() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Vercel Disconnected',
-        description: 'Your Vercel account has been disconnected.',
-      });
-
+      toast({ title: 'Vercel Disconnected', description: 'Your Vercel account has been disconnected.' });
       await fetchIntegrations();
       return true;
     } catch (error) {
@@ -137,8 +180,9 @@ export function useIntegrations() {
     integrations,
     loading,
     saveVercelToken,
+    startVercelOAuth,
+    handleVercelCallback,
     disconnectVercel,
-    validateVercelToken,
     refetch: fetchIntegrations,
   };
 }
