@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, Settings as SettingsIcon,
-    Check, Loader2, Eye, EyeOff, ExternalLink
+    Loader2, ExternalLink, LogIn
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -24,20 +22,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     const {
         integrations,
         loading,
-        saveVercelToken,
+        startVercelOAuth,
         disconnectVercel
     } = useIntegrations();
 
-    const [vercelToken, setVercelToken] = useState('');
-    const [showVercelToken, setShowVercelToken] = useState(false);
-    const [savingVercel, setSavingVercel] = useState(false);
+    const [connectingVercel, setConnectingVercel] = useState(false);
 
-    const handleSaveVercel = async () => {
-        if (!vercelToken.trim()) return;
-        setSavingVercel(true);
-        const success = await saveVercelToken(vercelToken.trim());
-        if (success) setVercelToken('');
-        setSavingVercel(false);
+    const handleConnectVercel = async () => {
+        setConnectingVercel(true);
+        await startVercelOAuth();
     };
 
     return (
@@ -50,7 +43,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     className="fixed inset-0 z-[100] flex items-center justify-center p-4"
                     onClick={onClose}
                 >
-                    {/* Glassmorphism backdrop */}
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
 
                     <motion.div
@@ -61,7 +53,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-2xl border border-white/10 shadow-2xl"
                         style={{
                             background: 'linear-gradient(135deg, rgba(30, 30, 50, 0.95) 0%, rgba(20, 20, 35, 0.98) 100%)',
-                            backdropFilter: 'blur(20px)'
                         }}
                         dir={isRTL ? 'rtl' : 'ltr'}
                     >
@@ -76,10 +67,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                     <p className="text-sm text-white/60">{user?.email}</p>
                                 </div>
                             </div>
-                            <button
-                                onClick={onClose}
-                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                            >
+                            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                                 <X className="w-5 h-5 text-white/60" />
                             </button>
                         </div>
@@ -92,9 +80,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                 </div>
                             ) : (
                                 <div className="space-y-8">
-                                    {/* Vercel Integration Section */}
+                                    {/* Vercel Integration */}
                                     <div className="space-y-6">
-                                        <div className={`flex items-center justify-between mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                                        <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
                                             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                                                 <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center p-2">
                                                     <img src={vercelLogo} alt="Vercel" className="w-full h-full" />
@@ -119,11 +107,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                             <div className={`flex items-center justify-between p-3 bg-white/5 rounded-lg ${isRTL ? 'flex-row-reverse' : ''}`}>
                                                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                                                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs">
-                                                        {integrations.vercel_username?.[0].toUpperCase() || 'V'}
+                                                        {integrations.vercel_username?.[0]?.toUpperCase() || 'V'}
                                                     </div>
                                                     <div className={isRTL ? 'text-right' : ''}>
                                                         <p className="text-sm font-medium text-white">{integrations.vercel_username}</p>
-                                                        <p className="text-xs text-white/40">{isRTL ? 'متصل عبر رمز API' : 'Connected via API Token'}</p>
+                                                        <p className="text-xs text-white/40">{isRTL ? 'متصل عبر OAuth' : 'Connected via OAuth'}</p>
                                                     </div>
                                                 </div>
                                                 <Button
@@ -136,54 +124,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                                                 </Button>
                                             </div>
                                         ) : (
-                                            <div className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center justify-between">
-                                                        <Label htmlFor="vercel-token" className="text-white/80">{t('integrations.vercelToken')}</Label>
-                                                        <a
-                                                            href="https://vercel.com/account/tokens"
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1"
-                                                        >
-                                                            {t('integrations.getVercelToken')}
-                                                            <ExternalLink className="w-3 h-3" />
-                                                        </a>
-                                                    </div>
-                                                    <div className="relative">
-                                                        <Input
-                                                            id="vercel-token"
-                                                            type={showVercelToken ? 'text' : 'password'}
-                                                            placeholder="Enter your Vercel API token"
-                                                            value={vercelToken}
-                                                            onChange={(e) => setVercelToken(e.target.value)}
-                                                            dir="ltr"
-                                                            className="bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-10 focus:border-purple-500"
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setShowVercelToken(!showVercelToken)}
-                                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60"
-                                                        >
-                                                            {showVercelToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    onClick={handleSaveVercel}
-                                                    disabled={savingVercel || !vercelToken.trim()}
-                                                    className="w-full bg-white text-black hover:bg-white/90"
-                                                >
-                                                    {savingVercel ? (
-                                                        <>
-                                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                            {t('common.loading')}
-                                                        </>
-                                                    ) : (
-                                                        t('integrations.connectVercel')
-                                                    )}
-                                                </Button>
-                                            </div>
+                                            <Button
+                                                onClick={handleConnectVercel}
+                                                disabled={connectingVercel}
+                                                className="w-full bg-white text-black hover:bg-white/90 gap-2"
+                                            >
+                                                {connectingVercel ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <LogIn className="w-4 h-4" />
+                                                )}
+                                                {isRTL ? 'تسجيل الدخول بـ Vercel' : 'Sign in with Vercel'}
+                                            </Button>
                                         )}
                                     </div>
                                 </div>

@@ -51,42 +51,30 @@ export const TemplatesSection: React.FC<TemplatesSectionProps> = ({ onSelectTemp
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
           {templates.map((tpl, i) => (
             <motion.div
               key={tpl.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: i * 0.05 }}
               onClick={() => onSelectTemplate(tpl.prompt)}
-              className="group cursor-pointer bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 hover:border-pink-500/30 transition-all duration-300 shadow-xl"
+              className="group cursor-pointer bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 hover:border-pink-500/30 transition-all duration-300"
             >
-              <div className="aspect-video bg-gradient-to-br from-pink-500/10 to-purple-500/10 flex items-center justify-center overflow-hidden relative">
+              <div className="aspect-[4/3] bg-gradient-to-br from-pink-500/10 to-purple-500/10 flex items-center justify-center overflow-hidden relative">
                 {tpl.image_url ? (
                   <img 
                     src={tpl.image_url} 
                     alt={tpl.name} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                   />
                 ) : (
-                  <Sparkles className="w-12 h-12 text-white/10" />
+                  <Sparkles className="w-8 h-8 text-white/10" />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                  <span className="text-white font-medium bg-pink-500 px-4 py-2 rounded-full text-sm shadow-lg">
-                    {isRTL ? 'استخدام هذا القالب' : 'Use Template'}
-                  </span>
-                </div>
               </div>
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xl font-bold text-white group-hover:text-pink-400 transition-colors">{tpl.name}</h3>
-                  <span className="px-3 py-1 bg-white/5 rounded-full text-[10px] uppercase tracking-widest text-white/40 font-bold border border-white/5">
-                    {tpl.category}
-                  </span>
-                </div>
-                <p className="text-sm text-white/40 line-clamp-1">
-                  {tpl.prompt}
-                </p>
+              <div className="p-3">
+                <h3 className="text-sm font-semibold text-white group-hover:text-pink-400 transition-colors truncate">{tpl.name}</h3>
+                <span className="text-[10px] text-white/30 uppercase tracking-wider">{tpl.category}</span>
               </div>
             </motion.div>
           ))}
