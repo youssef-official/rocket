@@ -219,13 +219,16 @@ export const NotificationInbox: React.FC = () => {
                                   </p>
                                 )}
                                 {n.link_url && (
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); window.open(n.link_url!, '_blank'); }}
-                                    className="flex items-center gap-1.5 text-[11px] font-medium text-pink-500 hover:text-pink-400 transition-colors bg-pink-500/10 px-3 py-1.5 rounded-full border border-pink-500/20 cursor-pointer"
+                                  <a
+                                    href={n.link_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => { e.stopPropagation(); }}
+                                    className="inline-flex items-center gap-1.5 text-[11px] font-medium text-pink-500 hover:text-pink-400 transition-colors bg-pink-500/10 px-3 py-1.5 rounded-full border border-pink-500/20 cursor-pointer"
                                   >
                                     <span>{isRTL ? 'عرض التفاصيل' : 'View Details'}</span>
                                     <ExternalLink className="w-3 h-3" />
-                                  </button>
+                                  </a>
                                 )}
                               </div>
                             </div>
