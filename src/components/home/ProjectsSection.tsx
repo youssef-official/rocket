@@ -53,28 +53,28 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
     <section className="relative z-10 px-6 pb-20" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
-        <div className={`flex items-center justify-between mb-8 ${isRTL ? 'flex-row' : ''}`}>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onNewProject}
-            className={`flex items-center gap-2 px-4 py-2.5 bg-white/10 backdrop-blur-md rounded-xl text-white hover:bg-white/20 transition-colors ${isRTL ? 'flex-row' : ''}`}
-          >
-            <Plus className="w-4 h-4" />
-            {t('projects.newProject')}
-          </motion.button>
-
-          <div className={`flex items-center gap-3 ${isRTL ? 'flex-row' : ''}`}>
+        <div className={`flex items-center justify-between mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center">
+              <FolderOpen className="w-5 h-5 text-white" />
+            </div>
             <div className={isRTL ? 'text-right' : 'text-left'}>
               <h2 className="text-xl md:text-2xl font-bold text-white whitespace-nowrap">{t('projects.title')}</h2>
               <p className="text-white/60 text-sm">
                 {t('projects.count', { count: projects.length, s: projects.length !== 1 ? 's' : '' })}
               </p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center">
-              <FolderOpen className="w-5 h-5 text-white" />
-            </div>
           </div>
+          
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onNewProject}
+            className={`flex items-center gap-2 px-4 py-2.5 bg-white/10 backdrop-blur-md rounded-xl text-white hover:bg-white/20 transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+          >
+            <Plus className="w-4 h-4" />
+            {t('projects.newProject')}
+          </motion.button>
         </div>
 
         {/* Projects Grid */}

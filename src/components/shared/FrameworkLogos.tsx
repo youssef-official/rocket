@@ -83,26 +83,11 @@ export const FrameworkBar: React.FC<FrameworkBarProps> = ({
   const { t, isRTL } = useLanguage();
 
   return (
-    <div className={`hidden md:flex flex-wrap justify-center gap-4 bg-black/20 backdrop-blur-xl rounded-[2rem] p-3 border border-white/10 ${isRTL ? 'flex-row' : ''}`}>
-      {/* Integrations Section - Right in Arabic, Left in English */}
-      <div className={`flex items-center gap-4 ${isRTL ? 'pl-4 border-l flex-row' : 'pr-4 border-r'} border-white/10`}>
-        <div className={`flex items-center gap-2 overflow-x-auto ${isRTL ? 'flex-row' : ''}`}>
-          {integrations.map((int) => (
-            <div
-              key={int}
-              className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer border border-white/5"
-              title={int}
-            >
-              <LogoIcon name={int} type="integration" size="md" />
-            </div>
-          ))}
-        </div>
-        <span className="text-white/80 text-sm font-medium">{t('footer.integrations')}</span>
-      </div>
-
-      {/* Features Section - Left in Arabic, Right in English */}
-      <div className={`flex items-center gap-4 ${isRTL ? 'flex-row' : ''}`}>
-        <div className={`flex items-center gap-2 ${isRTL ? 'flex-row' : ''}`}>
+    <div className={`hidden md:flex flex-wrap justify-center gap-4 bg-black/20 backdrop-blur-xl rounded-[2rem] p-3 border border-white/10 ${isRTL ? 'flex-row-reverse' : ''}`}>
+      {/* Features Section - Right in Arabic, Left in English */}
+      <div className={`flex items-center gap-4 ${isRTL ? 'pl-4 border-l flex-row-reverse' : 'pr-4 border-r'} border-white/10`}>
+        <span className="text-white/80 text-sm font-medium">{t('footer.features')}</span>
+        <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
           {frameworks.map((fw) => (
             <button
               key={fw}
@@ -118,7 +103,22 @@ export const FrameworkBar: React.FC<FrameworkBarProps> = ({
             </button>
           ))}
         </div>
-        <span className="text-white/80 text-sm font-medium">{t('footer.features')}</span>
+      </div>
+
+      {/* Integrations Section - Left in Arabic, Right in English */}
+      <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <span className="text-white/80 text-sm font-medium">{t('footer.integrations')}</span>
+        <div className={`flex items-center gap-2 overflow-x-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
+          {integrations.map((int) => (
+            <div
+              key={int}
+              className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer border border-white/5"
+              title={int}
+            >
+              <LogoIcon name={int} type="integration" size="md" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
