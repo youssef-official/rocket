@@ -2,7 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Users, CreditCard, FolderOpen, AlertTriangle, Loader2, Mail, Layers, Plus, Trash2, Send } from 'lucide-react';
+import {
+  ArrowLeft,
+  Users,
+  CreditCard,
+  FolderOpen,
+  AlertTriangle,
+  Loader2,
+  Mail,
+  Layers,
+  Plus,
+  Trash2,
+  Send,
+  Settings,
+  BarChart3,
+  TrendingUp,
+} from 'lucide-react';
 
 interface AdminData {
   users: any[];
@@ -24,7 +39,7 @@ export const AdminPanel: React.FC = () => {
   const [inboxBody, setInboxBody] = useState('');
   const [inboxImage, setInboxImage] = useState('');
   const [inboxLink, setInboxLink] = useState('');
-  const [inboxPlan, setInboxPlan] = useState('all'); // Keep state for DB compatibility but default to all
+  const [inboxPlan, setInboxPlan] = useState('all');
   const [notifications, setNotifications] = useState<any[]>([]);
   const [sendingNotif, setSendingNotif] = useState(false);
 
@@ -37,10 +52,8 @@ export const AdminPanel: React.FC = () => {
   const [savingTpl, setSavingTpl] = useState(false);
 
   useEffect(() => {
-    // Wait for auth to initialize
     if (authLoading) return;
-    
-    // If definitely no user, redirect
+
     if (!user) {
       const checkCurrentSession = async () => {
         const { data } = await supabase.auth.getSession();
@@ -54,7 +67,6 @@ export const AdminPanel: React.FC = () => {
 
     const fetchData = async () => {
       try {
-        // Only refresh if needed, but getSession is safer here
         const { data: sessionData } = await supabase.auth.getSession();
         if (!sessionData?.session) {
           navigate('/login');
@@ -62,7 +74,6 @@ export const AdminPanel: React.FC = () => {
         }
         const { data: result, error: fnError } = await supabase.functions.invoke('admin-data');
         if (fnError) {
-          // Check if it's an auth error from the function
           const errorMsg = fnError.message || '';
           if (errorMsg.includes('Unauthorized') || errorMsg.includes('401')) {
             setError('Unauthorized - Please log in again');
@@ -101,10 +112,18 @@ export const AdminPanel: React.FC = () => {
     if (!inboxTitle.trim()) return;
     setSendingNotif(true);
     await supabase.from('inbox_notifications').insert({
-      title: inboxTitle, body: inboxBody || null, image_url: inboxImage || null,
-      link_url: inboxLink || null, target_plan: inboxPlan, created_by: user?.id
+      title: inboxTitle,
+      body: inboxBody || null,
+      image_url: inboxImage || null,
+      link_url: inboxLink || null,
+      target_plan: inboxPlan,
+      created_by: user?.id,
     });
-    setInboxTitle(''); setInboxBody(''); setInboxImage(''); setInboxLink(''); setInboxPlan('all');
+    setInboxTitle('');
+    setInboxBody('');
+    setInboxImage('');
+    setInboxLink('');
+    setInboxPlan('all');
     await fetchNotifications();
     setSendingNotif(false);
   };
@@ -118,10 +137,17 @@ export const AdminPanel: React.FC = () => {
     if (!tplName.trim() || !tplPrompt.trim()) return;
     setSavingTpl(true);
     await supabase.from('templates').insert({
-      name: tplName, image_url: tplImage || null, prompt: tplPrompt,
-      category: tplCategory, created_by: user?.id, sort_order: templates.length
+      name: tplName,
+      image_url: tplImage || null,
+      prompt: tplPrompt,
+      category: tplCategory,
+      created_by: user?.id,
+      sort_order: templates.length,
     });
-    setTplName(''); setTplImage(''); setTplPrompt(''); setTplCategory('general');
+    setTplName('');
+    setTplImage('');
+    setTplPrompt('');
+    setTplCategory('general');
     await fetchTemplates();
     setSavingTpl(false);
   };
@@ -133,20 +159,28 @@ export const AdminPanel: React.FC = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 animate-spin text-slate-700 mx-auto mb-3" />
+          <p className="text-slate-600 font-medium">Loading Admin Panel...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
-        <div className="text-center space-y-4">
-          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto" />
-          <h2 className="text-xl font-bold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>Access Denied</h2>
-          <p className="text-white/50">{error}</p>
-          <button onClick={() => navigate('/')} className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-semibold rounded-xl hover:from-amber-400 hover:to-amber-500 transition-all">Go Home</button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center border border-red-200">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
+          <p className="text-slate-600 mb-6">{error}</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-2.5 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-colors"
+          >
+            Go Home
+          </button>
         </div>
       </div>
     );
@@ -157,190 +191,308 @@ export const AdminPanel: React.FC = () => {
   const tabs = [
     { key: 'users' as const, label: 'Users', icon: Users, count: data.users.length },
     { key: 'plans' as const, label: 'Plans', icon: CreditCard, count: data.plans.length },
-    { key: 'transactions' as const, label: 'Transactions', icon: CreditCard, count: data.transactions.length },
+    { key: 'transactions' as const, label: 'Transactions', icon: TrendingUp, count: data.transactions.length },
     { key: 'projects' as const, label: 'Projects', icon: FolderOpen, count: data.projects.length },
-    { key: 'inbox' as const, label: 'Inbox', icon: Mail, count: notifications.length },
+    { key: 'inbox' as const, label: 'Notifications', icon: Mail, count: notifications.length },
     { key: 'templates' as const, label: 'Templates', icon: Layers, count: templates.length },
   ];
 
-  const inputClass = "w-full px-4 py-2.5 bg-white/5 border border-amber-500/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-amber-400/60 text-sm";
-  const labelClass = "text-xs font-medium text-amber-300/70 uppercase tracking-wider mb-1.5 block";
+  const inputClass =
+    'w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700 focus:border-transparent text-sm transition-all';
+  const labelClass = 'text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2 block';
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
-      <header className="border-b border-amber-500/10 px-4 md:px-8 py-4 bg-gradient-to-r from-amber-500/5 via-transparent to-amber-500/5">
-        <div className="max-w-7xl mx-auto flex items-center gap-4">
-          <button onClick={() => navigate('/')} className="p-2 hover:bg-white/5 rounded-xl transition-colors">
-            <ArrowLeft className="w-5 h-5 text-amber-400/60" />
-          </button>
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent" style={{ fontFamily: "'Playfair Display', serif" }}>Admin Panel</h1>
-            <p className="text-xs text-amber-400/30">Vivora X Management Console</p>
+      <header className="bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/')}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600 hover:text-slate-900"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Administration Panel</h1>
+              <p className="text-sm text-slate-500 mt-1">Vivora X Management Console</p>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-4 md:p-8">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
-          {tabs.slice(0, 4).map(t => (
-            <div key={t.key} className="bg-gradient-to-br from-amber-500/5 to-transparent border border-amber-500/10 rounded-2xl p-4 text-center hover:border-amber-500/20 transition-colors">
-              <t.icon className="w-5 h-5 mx-auto mb-2 text-amber-400/60" />
-              <div className="text-2xl font-bold text-amber-100" style={{ fontFamily: "'Playfair Display', serif" }}>{t.count}</div>
-              <div className="text-xs text-amber-400/40">{t.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-2">
-          {tabs.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
-                tab === t.key ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-white/[0.03] text-white/50 hover:bg-white/[0.06] border border-transparent'
-              }`}
-            >
-              <t.icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{t.label}</span>
-              <span className="text-xs opacity-60">({t.count})</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Content */}
-        <div className="bg-white/[0.02] border border-amber-500/10 rounded-2xl overflow-hidden">
-          {tab === 'inbox' && (
-            <div className="p-4 md:p-6">
-              <div className="bg-gradient-to-br from-amber-500/5 to-transparent border border-amber-500/15 rounded-2xl p-4 md:p-6 mb-6">
-                <h3 className="text-lg font-bold mb-4 bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent" style={{ fontFamily: "'Playfair Display', serif" }}>Send Notification</h3>
-                <div className="grid md:grid-cols-2 gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {tabs.slice(0, 4).map((t) => {
+            const Icon = t.icon;
+            return (
+              <div
+                key={t.key}
+                className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between">
                   <div>
-                    <label className={labelClass}>Title *</label>
-                    <input value={inboxTitle} onChange={e => setInboxTitle(e.target.value)} className={inputClass} placeholder="Notification title" />
+                    <p className="text-sm font-medium text-slate-600 uppercase tracking-wide">{t.label}</p>
+                    <p className="text-3xl font-bold text-slate-900 mt-2">{t.count}</p>
                   </div>
-                  <div className="opacity-50 pointer-events-none">
-                    <label className={labelClass}>Target Plan (Disabled - Now sending to all)</label>
-                    <select value="all" disabled className={inputClass}>
-                      <option value="all">All Plans</option>
-                    </select>
+                  <div className="p-3 bg-slate-100 rounded-lg">
+                    <Icon className="w-6 h-6 text-slate-700" />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
+          <div className="flex flex-wrap gap-0 border-b border-slate-200">
+            {tabs.map((t) => {
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`flex items-center gap-2 px-6 py-4 font-medium text-sm border-b-2 transition-colors ${
+                    tab === t.key
+                      ? 'text-slate-900 border-b-slate-900 bg-slate-50'
+                      : 'text-slate-600 border-b-transparent hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{t.label}</span>
+                  <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                    {t.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          {tab === 'inbox' && (
+            <div className="p-6 lg:p-8">
+              {/* Send Notification Form */}
+              <div className="bg-slate-50 rounded-lg border border-slate-200 p-6 mb-8">
+                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                  <Mail className="w-5 h-5" />
+                  Send Notification
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2">
+                    <label className={labelClass}>Title *</label>
+                    <input
+                      value={inboxTitle}
+                      onChange={(e) => setInboxTitle(e.target.value)}
+                      className={inputClass}
+                      placeholder="Enter notification title"
+                    />
                   </div>
                   <div className="md:col-span-2">
-                    <label className={labelClass}>Body</label>
-                    <textarea value={inboxBody} onChange={e => setInboxBody(e.target.value)} className={`${inputClass} h-20 resize-none`} placeholder="Notification body text..." />
+                    <label className={labelClass}>Message Body</label>
+                    <textarea
+                      value={inboxBody}
+                      onChange={(e) => setInboxBody(e.target.value)}
+                      className={`${inputClass} h-24 resize-none`}
+                      placeholder="Enter notification message..."
+                    />
                   </div>
                   <div>
                     <label className={labelClass}>Image URL</label>
-                    <input value={inboxImage} onChange={e => setInboxImage(e.target.value)} className={inputClass} placeholder="https://..." />
+                    <input
+                      value={inboxImage}
+                      onChange={(e) => setInboxImage(e.target.value)}
+                      className={inputClass}
+                      placeholder="https://example.com/image.jpg"
+                    />
                   </div>
                   <div>
                     <label className={labelClass}>Link URL</label>
-                    <input value={inboxLink} onChange={e => setInboxLink(e.target.value)} className={inputClass} placeholder="https://..." />
+                    <input
+                      value={inboxLink}
+                      onChange={(e) => setInboxLink(e.target.value)}
+                      className={inputClass}
+                      placeholder="https://example.com"
+                    />
                   </div>
                 </div>
                 <button
                   onClick={handleSendNotification}
                   disabled={!inboxTitle.trim() || sendingNotif}
-                  className="mt-4 flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-semibold rounded-xl hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50"
+                  className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send className="w-4 h-4" /> {sendingNotif ? 'Sending...' : 'Send Notification'}
+                  <Send className="w-4 h-4" />
+                  {sendingNotif ? 'Sending...' : 'Send Notification'}
                 </button>
               </div>
 
-              <div className="space-y-2">
-                {notifications.map(n => (
-                  <div key={n.id} className="flex items-center justify-between p-3 bg-white/[0.02] border border-amber-500/10 rounded-xl">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-white truncate">{n.title}</span>
-                        <span className="text-[10px] px-2 py-0.5 bg-amber-500/10 rounded-full text-amber-300/60">{n.target_plan}</span>
-                      </div>
-                      <span className="text-xs text-white/30">{new Date(n.created_at).toLocaleString()}</span>
-                    </div>
-                    <button onClick={() => handleDeleteNotification(n.id)} className="p-1.5 hover:bg-red-500/20 rounded-lg transition-colors">
-                      <Trash2 className="w-4 h-4 text-red-400" />
-                    </button>
+              {/* Notifications List */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-slate-900 text-sm uppercase tracking-wide">Recent Notifications</h4>
+                {notifications.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500">
+                    <Mail className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No notifications sent yet</p>
                   </div>
-                ))}
+                ) : (
+                  <div className="space-y-2">
+                    {notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-slate-900">{n.title}</p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {new Date(n.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteNotification(n.id)}
+                          className="ml-4 p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {tab === 'templates' && (
-            <div className="p-4 md:p-6">
-              <div className="bg-gradient-to-br from-amber-500/5 to-transparent border border-amber-500/15 rounded-2xl p-4 md:p-6 mb-6">
-                <h3 className="text-lg font-bold mb-4 bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent" style={{ fontFamily: "'Playfair Display', serif" }}>Add Template</h3>
-                <div className="grid md:grid-cols-2 gap-4">
+            <div className="p-6 lg:p-8">
+              {/* Add Template Form */}
+              <div className="bg-slate-50 rounded-lg border border-slate-200 p-6 mb-8">
+                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Add New Template
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label className={labelClass}>Name *</label>
-                    <input value={tplName} onChange={e => setTplName(e.target.value)} className={inputClass} placeholder="Template name" />
+                    <label className={labelClass}>Template Name *</label>
+                    <input
+                      value={tplName}
+                      onChange={(e) => setTplName(e.target.value)}
+                      className={inputClass}
+                      placeholder="Enter template name"
+                    />
                   </div>
                   <div>
                     <label className={labelClass}>Category</label>
-                    <input value={tplCategory} onChange={e => setTplCategory(e.target.value)} className={inputClass} placeholder="general" />
+                    <input
+                      value={tplCategory}
+                      onChange={(e) => setTplCategory(e.target.value)}
+                      className={inputClass}
+                      placeholder="e.g., General, Marketing"
+                    />
                   </div>
-                  <div>
+                  <div className="md:col-span-2">
                     <label className={labelClass}>Image URL</label>
-                    <input value={tplImage} onChange={e => setTplImage(e.target.value)} className={inputClass} placeholder="https://..." />
+                    <input
+                      value={tplImage}
+                      onChange={(e) => setTplImage(e.target.value)}
+                      className={inputClass}
+                      placeholder="https://example.com/image.jpg"
+                    />
                   </div>
                   <div className="md:col-span-2">
                     <label className={labelClass}>Prompt *</label>
-                    <textarea value={tplPrompt} onChange={e => setTplPrompt(e.target.value)} className={`${inputClass} h-24 resize-none`} placeholder="The auto-generated prompt when user clicks this template..." />
+                    <textarea
+                      value={tplPrompt}
+                      onChange={(e) => setTplPrompt(e.target.value)}
+                      className={`${inputClass} h-28 resize-none`}
+                      placeholder="Enter the prompt that will be used when users select this template..."
+                    />
                   </div>
                 </div>
                 <button
                   onClick={handleAddTemplate}
                   disabled={!tplName.trim() || !tplPrompt.trim() || savingTpl}
-                  className="mt-4 flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-semibold rounded-xl hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50"
+                  className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Plus className="w-4 h-4" /> {savingTpl ? 'Saving...' : 'Add Template'}
+                  <Plus className="w-4 h-4" />
+                  {savingTpl ? 'Saving...' : 'Add Template'}
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {templates.map(tpl => (
-                  <div key={tpl.id} className="bg-white/[0.02] border border-amber-500/10 rounded-xl overflow-hidden group">
-                    <div className="aspect-video bg-amber-500/5 flex items-center justify-center">
-                      {tpl.image_url ? (
-                        <img src={tpl.image_url} alt={tpl.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <Layers className="w-6 h-6 text-amber-400/20" />
-                      )}
-                    </div>
-                    <div className="p-3 flex items-center justify-between">
-                      <div className="min-w-0">
-                        <h4 className="text-sm font-medium text-white truncate">{tpl.name}</h4>
-                        <p className="text-xs text-amber-400/30">{tpl.category}</p>
+              {/* Templates Grid */}
+              {templates.length === 0 ? (
+                <div className="text-center py-12 text-slate-500">
+                  <Layers className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No templates created yet</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {templates.map((tpl) => (
+                    <div
+                      key={tpl.id}
+                      className="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow group"
+                    >
+                      <div className="aspect-video bg-slate-200 flex items-center justify-center overflow-hidden">
+                        {tpl.image_url ? (
+                          <img
+                            src={tpl.image_url}
+                            alt={tpl.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                        ) : (
+                          <Layers className="w-8 h-8 text-slate-400" />
+                        )}
                       </div>
-                      <button onClick={() => handleDeleteTemplate(tpl.id)} className="p-1.5 hover:bg-red-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
-                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                      </button>
+                      <div className="p-4 flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-slate-900 truncate">{tpl.name}</h4>
+                          <p className="text-xs text-slate-500 mt-1">{tpl.category}</p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteTemplate(tpl.id)}
+                          className="ml-2 p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600 opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Data tables */}
+          {/* Data Tables */}
           <div className="overflow-x-auto">
             {tab === 'users' && (
-              <table className="w-full text-sm">
-                <thead className="bg-amber-500/5">
-                  <tr>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Email</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Display Name</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Created</th>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Email
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Display Name
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Created
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.users.map(u => (
-                    <tr key={u.id} className="border-t border-amber-500/5 hover:bg-amber-500/5">
-                      <td className="p-3 text-white/80">{u.email || '—'}</td>
-                      <td className="p-3 text-white/60">{u.display_name || '—'}</td>
-                      <td className="p-3 text-white/40">{new Date(u.created_at).toLocaleDateString()}</td>
+                  {data.users.map((u, idx) => (
+                    <tr
+                      key={u.id}
+                      className={`border-b border-slate-200 ${
+                        idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'
+                      } hover:bg-slate-100 transition-colors`}
+                    >
+                      <td className="px-6 py-4 text-slate-900 font-medium">{u.email || '—'}</td>
+                      <td className="px-6 py-4 text-slate-600">{u.display_name || '—'}</td>
+                      <td className="px-6 py-4 text-slate-500 text-sm">
+                        {new Date(u.created_at).toLocaleDateString()}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -348,28 +500,53 @@ export const AdminPanel: React.FC = () => {
             )}
 
             {tab === 'plans' && (
-              <table className="w-full text-sm">
-                <thead className="bg-amber-500/5">
-                  <tr>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">User ID</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Plan</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Daily</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Used</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Monthly</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Total Used</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Updated</th>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      User
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Plan
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Daily Limit
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Used Today
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Monthly Limit
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Total Used
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Updated
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.plans.map(p => (
-                    <tr key={p.id} className="border-t border-amber-500/5 hover:bg-amber-500/5">
-                      <td className="p-3 font-mono text-xs text-white/40">{p.user_id?.slice(0, 8)}...</td>
-                      <td className="p-3"><span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 text-xs font-medium uppercase">{p.plan}</span></td>
-                      <td className="p-3 text-white/60">{p.daily_credits}</td>
-                      <td className="p-3 text-white/60">{p.credits_used_today}</td>
-                      <td className="p-3 text-white/60">{p.monthly_credits}</td>
-                      <td className="p-3 text-white/60">{p.total_credits_used}</td>
-                      <td className="p-3 text-white/40">{new Date(p.updated_at).toLocaleDateString()}</td>
+                  {data.plans.map((p, idx) => (
+                    <tr
+                      key={p.id}
+                      className={`border-b border-slate-200 ${
+                        idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'
+                      } hover:bg-slate-100 transition-colors`}
+                    >
+                      <td className="px-6 py-4 text-slate-600 text-sm font-mono">{p.user_id?.slice(0, 8)}...</td>
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 bg-slate-200 text-slate-900 text-xs font-semibold rounded-full uppercase">
+                          {p.plan}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-slate-900 font-medium">{p.daily_credits}</td>
+                      <td className="px-6 py-4 text-slate-600">{p.credits_used_today}</td>
+                      <td className="px-6 py-4 text-slate-900 font-medium">{p.monthly_credits}</td>
+                      <td className="px-6 py-4 text-slate-600">{p.total_credits_used}</td>
+                      <td className="px-6 py-4 text-slate-500 text-sm">
+                        {new Date(p.updated_at).toLocaleDateString()}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -377,24 +554,43 @@ export const AdminPanel: React.FC = () => {
             )}
 
             {tab === 'transactions' && (
-              <table className="w-full text-sm">
-                <thead className="bg-amber-500/5">
-                  <tr>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Date</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">User ID</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Credits</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Type</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Description</th>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Date
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      User
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Credits
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Type
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Description
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.transactions.map(t => (
-                    <tr key={t.id} className="border-t border-amber-500/5 hover:bg-amber-500/5">
-                      <td className="p-3 text-white/40">{new Date(t.created_at).toLocaleString()}</td>
-                      <td className="p-3 font-mono text-xs text-white/40">{t.user_id?.slice(0, 8)}...</td>
-                      <td className="p-3 text-white/80">{t.credits_used}</td>
-                      <td className="p-3 text-white/60">{t.work_type || '—'}</td>
-                      <td className="p-3 text-xs text-white/40 max-w-[200px] truncate">{t.description || '—'}</td>
+                  {data.transactions.map((t, idx) => (
+                    <tr
+                      key={t.id}
+                      className={`border-b border-slate-200 ${
+                        idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'
+                      } hover:bg-slate-100 transition-colors`}
+                    >
+                      <td className="px-6 py-4 text-slate-500 text-sm">
+                        {new Date(t.created_at).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 text-sm font-mono">{t.user_id?.slice(0, 8)}...</td>
+                      <td className="px-6 py-4 text-slate-900 font-semibold">{t.credits_used}</td>
+                      <td className="px-6 py-4 text-slate-600">{t.work_type || '—'}</td>
+                      <td className="px-6 py-4 text-slate-600 text-sm max-w-xs truncate" title={t.description}>
+                        {t.description || '—'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -402,24 +598,51 @@ export const AdminPanel: React.FC = () => {
             )}
 
             {tab === 'projects' && (
-              <table className="w-full text-sm">
-                <thead className="bg-amber-500/5">
-                  <tr>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Name</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">User ID</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Type</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Published</th>
-                    <th className="text-left p-3 font-medium text-amber-300/50 text-xs uppercase tracking-wider">Created</th>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Project Name
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      User
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Type
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Published
+                    </th>
+                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Created
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.projects.map(p => (
-                    <tr key={p.id} className="border-t border-amber-500/5 hover:bg-amber-500/5">
-                      <td className="p-3 font-medium text-white/80">{p.name}</td>
-                      <td className="p-3 font-mono text-xs text-white/40">{p.user_id?.slice(0, 8)}...</td>
-                      <td className="p-3 text-white/60">{p.project_type}</td>
-                      <td className="p-3">{p.is_published ? '✅' : '❌'}</td>
-                      <td className="p-3 text-white/40">{new Date(p.created_at).toLocaleDateString()}</td>
+                  {data.projects.map((p, idx) => (
+                    <tr
+                      key={p.id}
+                      className={`border-b border-slate-200 ${
+                        idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'
+                      } hover:bg-slate-100 transition-colors`}
+                    >
+                      <td className="px-6 py-4 text-slate-900 font-medium">{p.name}</td>
+                      <td className="px-6 py-4 text-slate-600 text-sm font-mono">{p.user_id?.slice(0, 8)}...</td>
+                      <td className="px-6 py-4 text-slate-600">{p.project_type}</td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            p.is_published
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-slate-200 text-slate-700'
+                          }`}
+                        >
+                          {p.is_published ? '✓ Published' : 'Draft'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-slate-500 text-sm">
+                        {new Date(p.created_at).toLocaleDateString()}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
