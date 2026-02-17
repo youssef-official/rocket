@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Users, CreditCard, FolderOpen, AlertTriangle,
   Mail, Layers, Plus, Trash2, Send, TrendingUp,
-  LogOut, ChevronRight, Bell, Search, Settings, Eye, Moon, Sun,
+  LogOut, ChevronRight, Bell, Search, Settings, Eye,
+  BarChart2, Download, ChevronDown, Filter, Code,
 } from 'lucide-react';
 
 interface AdminData {
@@ -15,46 +16,6 @@ interface AdminData {
   projects: any[];
 }
 
-// ── Circular Progress ─────────────────────────────────────────────────────────
-const CircularProgress: React.FC<{ value: number; color: string; size?: number; dark?: boolean }> = ({
-  value, color, size = 60, dark = false,
-}) => {
-  const r = (size - 10) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (value / 100) * circ;
-  return (
-    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={dark ? '#2a2d3a' : '#f0f2f5'} strokeWidth={6} />
-      <circle
-        cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke={color} strokeWidth={6}
-        strokeDasharray={circ} strokeDashoffset={offset}
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-};
-
-// ── Bar Chart ─────────────────────────────────────────────────────────────────
-const BarChart: React.FC<{ data: { earning: number; expense: number; month: string }[]; dark?: boolean }> = ({ data, dark }) => {
-  const max = Math.max(...data.flatMap(d => [d.earning, d.expense]));
-  const chartH = 160;
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: chartH + 20, width: '100%', paddingTop: 8 }}>
-      {data.map((d, i) => (
-        <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: chartH }}>
-            <div style={{ width: 11, background: '#f59e0b', height: `${(d.earning / max) * 100}%`, borderRadius: '4px 4px 0 0', minHeight: 6 }} />
-            <div style={{ width: 11, background: '#3b82f6', height: `${(d.expense / max) * 100}%`, borderRadius: '4px 4px 0 0', minHeight: 6 }} />
-          </div>
-          <span style={{ fontSize: 10, color: dark ? '#6b7280' : '#9ca3af', fontWeight: 500 }}>{d.month}</span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ── Main Component ────────────────────────────────────────────────────────────
 export const AdminPanel: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -62,9 +23,7 @@ export const AdminPanel: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'users' | 'plans' | 'transactions' | 'projects' | 'inbox' | 'templates'>('users');
-  const [dark, setDark] = useState(false);
 
-  // Inbox
   const [inboxTitle, setInboxTitle] = useState('');
   const [inboxBody, setInboxBody] = useState('');
   const [inboxImage, setInboxImage] = useState('');
@@ -73,7 +32,6 @@ export const AdminPanel: React.FC = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [sendingNotif, setSendingNotif] = useState(false);
 
-  // Templates
   const [tplName, setTplName] = useState('');
   const [tplImage, setTplImage] = useState('');
   const [tplPrompt, setTplPrompt] = useState('');
@@ -96,7 +54,10 @@ export const AdminPanel: React.FC = () => {
         const { data: result, error: fnError } = await supabase.functions.invoke('admin-data');
         if (fnError) {
           const msg = fnError.message || '';
-          if (msg.includes('Unauthorized') || msg.includes('401')) { setError('Unauthorized - Please log in again'); return; }
+          if (msg.includes('Unauthorized') || msg.includes('401')) {
+            setError('Unauthorized - Please log in again');
+            return;
+          }
           throw new Error(msg);
         }
         if (result?.error) { setError(result.error); return; }
@@ -156,557 +117,510 @@ export const AdminPanel: React.FC = () => {
     await fetchTemplates();
   };
 
-  // ── Theme tokens ──────────────────────────────────────────────────────────
-  const t = {
-    bg:          dark ? '#0f1117' : '#f4f7fb',
-    sidebar:     dark ? '#161b27' : '#ffffff',
-    sidebarBdr:  dark ? '#1e2535' : '#eef1f6',
-    card:        dark ? '#1a2035' : '#ffffff',
-    cardBdr:     dark ? '#1e2535' : '#eef1f6',
-    topbar:      dark ? '#161b27' : '#ffffff',
-    topbarBdr:   dark ? '#1e2535' : '#eef1f6',
-    text:        dark ? '#e2e8f0' : '#111827',
-    textSec:     dark ? '#8892a4' : '#6b7280',
-    textMuted:   dark ? '#4a5568' : '#9ca3af',
-    inputBg:     dark ? '#0f1117' : '#f9fafb',
-    inputBdr:    dark ? '#1e2535' : '#eef1f6',
-    rowHover:    dark ? '#1e2535' : '#fafbfc',
-    rowBdr:      dark ? '#1a2035' : '#f4f7fb',
-    theadBg:     dark ? '#131825' : '#f9fafb',
-    theadBdr:    dark ? '#1e2535' : '#f0f3f8',
-    navHover:    dark ? '#1e2535' : '#f4f7fb',
-    searchBg:    dark ? '#0f1117' : '#f4f7fb',
-  };
-
   const css = `
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body { font-family: 'Geist', -apple-system, sans-serif; }
 
-    .ap-root {
+    .vivora-root {
       display: flex; height: 100vh;
-      background: ${t.bg};
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #000; color: #fff;
+      font-family: 'Geist', sans-serif;
       overflow: hidden;
-      transition: background 0.3s;
     }
 
-    /* ── SIDEBAR ─────────────────────────────────────── */
-    .ap-sidebar {
-      width: 228px; min-width: 228px;
-      background: ${t.sidebar};
-      border-right: 1px solid ${t.sidebarBdr};
+    /* ═══════════════════════════════════════════════════════
+       SIDEBAR
+    ═══════════════════════════════════════════════════════ */
+    .vivora-sidebar {
+      width: 240px; background: #0a0a0a;
+      border-right: 1px solid #1a1a1a;
       display: flex; flex-direction: column;
       height: 100vh; overflow-y: auto;
-      transition: background 0.3s, border-color 0.3s;
+      flex-shrink: 0;
     }
 
-    .ap-logo {
+    .vivora-user {
+      padding: 16px 14px; border-bottom: 1px solid #1a1a1a;
       display: flex; align-items: center; gap: 10px;
-      padding: 22px 20px 18px;
-      border-bottom: 1px solid ${t.sidebarBdr};
+      cursor: pointer; transition: background 0.15s;
+    }
+    .vivora-user:hover { background: #111; }
+
+    .vivora-user-avatar {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff;
     }
 
-    .ap-logo-icon {
-      width: 34px; height: 34px;
-      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-      border-radius: 9px; display: flex; align-items: center;
-      justify-content: center; color: #fff;
-      font-weight: 800; font-size: 16px;
-      box-shadow: 0 4px 12px rgba(59,130,246,0.35);
+    .vivora-user-info { flex: 1; min-width: 0; }
+    .vivora-user-name {
+      font-size: 13px; font-weight: 600; color: #e5e5e5;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .vivora-user-email {
+      font-size: 11px; color: #666;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
-    .ap-logo-name {
-      font-size: 17px; font-weight: 800;
-      color: ${t.text};
-      letter-spacing: -0.3px;
-    }
+    .vivora-nav { flex: 1; padding: 20px 12px; }
 
-    .ap-nav { padding: 16px 12px; flex: 1; }
-
-    .ap-nav-section {
-      font-size: 9.5px; font-weight: 700;
-      letter-spacing: 1.2px; text-transform: uppercase;
-      color: ${t.textMuted};
-      padding: 10px 10px 6px;
-    }
-
-    .ap-nav-item {
+    .vivora-nav-item {
       display: flex; align-items: center; gap: 10px;
-      padding: 10px 12px; border-radius: 9px;
-      cursor: pointer; color: ${t.textSec};
-      font-size: 13.5px; font-weight: 600;
-      margin-bottom: 3px;
-      transition: all 0.15s;
-      border: 1px solid transparent;
+      padding: 8px 10px; border-radius: 6px;
+      cursor: pointer; font-size: 13px; font-weight: 500;
+      color: #888; margin-bottom: 2px;
+      transition: all 0.15s ease;
+      position: relative;
     }
 
-    .ap-nav-item:hover {
-      background: ${t.navHover};
-      color: ${t.text};
+    .vivora-nav-item:hover { background: #111; color: #e5e5e5; }
+
+    .vivora-nav-item.active {
+      background: #161616; color: #fff;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
     }
 
-    .ap-nav-item.active {
-      background: #3b82f6;
-      color: #fff;
-      border-color: transparent;
-      box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+    .vivora-nav-item.active::before {
+      content: ''; position: absolute; left: 0; top: 50%;
+      transform: translateY(-50%); width: 2px; height: 16px;
+      background: #3b82f6; border-radius: 0 2px 2px 0;
     }
 
-    .ap-nav-count {
-      margin-left: auto;
-      font-size: 10px; font-weight: 700;
-      padding: 2px 8px; border-radius: 20px;
+    .vivora-nav-count {
+      margin-left: auto; font-size: 11px;
+      font-weight: 600; color: #666;
+      background: #161616; padding: 1px 6px;
+      border-radius: 4px; font-family: 'Geist Mono', monospace;
     }
 
-    .ap-nav-item.active .ap-nav-count {
-      background: rgba(255,255,255,0.2);
-      color: #fff;
+    .vivora-nav-item.active .vivora-nav-count {
+      color: #999; background: #1f1f1f;
     }
 
-    .ap-nav-item:not(.active) .ap-nav-count {
-      background: ${dark ? '#1e2535' : '#f0f3f8'};
-      color: ${t.textSec};
+    .vivora-sidebar-footer {
+      padding: 12px; border-top: 1px solid #1a1a1a;
     }
 
-    .ap-sidebar-footer {
-      padding: 12px;
-      border-top: 1px solid ${t.sidebarBdr};
-    }
-
-    .ap-logout {
+    .vivora-logout {
       display: flex; align-items: center; gap: 10px;
-      padding: 10px 12px; border-radius: 9px;
-      cursor: pointer; color: #ef4444;
-      font-size: 13.5px; font-weight: 600;
+      padding: 8px 10px; border-radius: 6px;
+      font-size: 13px; font-weight: 500; color: #ef4444;
       background: none; border: none; width: 100%;
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      cursor: pointer; font-family: 'Geist', sans-serif;
       transition: background 0.15s;
     }
-    .ap-logout:hover { background: ${dark ? 'rgba(239,68,68,0.1)' : '#fef2f2'}; }
+    .vivora-logout:hover { background: rgba(239,68,68,0.1); }
 
-    /* ── MAIN ────────────────────────────────────────── */
-    .ap-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    /* ═══════════════════════════════════════════════════════
+       MAIN AREA
+    ═══════════════════════════════════════════════════════ */
+    .vivora-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-    /* ── TOPBAR ──────────────────────────────────────── */
-    .ap-topbar {
-      background: ${t.topbar};
-      border-bottom: 1px solid ${t.topbarBdr};
-      padding: 0 26px; height: 64px;
+    /* TOPBAR */
+    .vivora-topbar {
+      background: #0a0a0a; border-bottom: 1px solid #1a1a1a;
+      padding: 0 24px; height: 60px;
       display: flex; align-items: center; justify-content: space-between;
       flex-shrink: 0;
-      transition: background 0.3s, border-color 0.3s;
     }
 
-    .ap-page-title {
-      font-size: 20px; font-weight: 800;
-      color: ${t.text};
+    .vivora-page-title {
+      font-size: 18px; font-weight: 700; color: #fff;
       letter-spacing: -0.3px;
     }
 
-    .ap-topbar-right { display: flex; align-items: center; gap: 8px; }
+    .vivora-topbar-actions {
+      display: flex; align-items: center; gap: 6px;
+    }
 
-    .ap-search {
+    .vivora-topbar-search {
       display: flex; align-items: center; gap: 8px;
-      background: ${t.searchBg};
-      border: 1px solid ${t.inputBdr};
-      border-radius: 9px; padding: 8px 13px; width: 200px;
+      background: #111; border: 1px solid #1f1f1f;
+      border-radius: 6px; padding: 6px 10px; width: 220px;
       transition: border-color 0.2s;
     }
-    .ap-search:focus-within { border-color: #3b82f6; }
+    .vivora-topbar-search:focus-within { border-color: #333; }
 
-    .ap-search input {
+    .vivora-topbar-search input {
       background: none; border: none; outline: none;
-      font-size: 13px; color: ${t.text}; width: 100%;
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #e5e5e5; font-size: 13px; width: 100%;
+      font-family: 'Geist', sans-serif;
     }
-    .ap-search input::placeholder { color: ${t.textMuted}; }
+    .vivora-topbar-search input::placeholder { color: #555; }
 
-    .ap-icon-btn {
-      width: 38px; height: 38px;
-      background: ${t.searchBg};
-      border: 1px solid ${t.inputBdr};
-      border-radius: 9px; display: flex;
-      align-items: center; justify-content: center;
-      cursor: pointer; color: ${t.textSec};
-      transition: all 0.15s;
-    }
-    .ap-icon-btn:hover {
-      background: ${t.navHover};
-      color: ${t.text};
-    }
-
-    .ap-theme-btn {
-      background: ${dark ? 'rgba(251,191,36,0.12)' : 'rgba(59,130,246,0.08)'};
-      border-color: ${dark ? 'rgba(251,191,36,0.25)' : 'rgba(59,130,246,0.2)'};
-      color: ${dark ? '#fbbf24' : '#3b82f6'};
-    }
-    .ap-theme-btn:hover {
-      background: ${dark ? 'rgba(251,191,36,0.2)' : 'rgba(59,130,246,0.15)'};
-    }
-
-    .ap-avatar {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-      border-radius: 50%; display: flex; align-items: center;
-      justify-content: center; color: #fff;
-      font-weight: 700; font-size: 13px; cursor: pointer;
-      box-shadow: 0 2px 8px rgba(99,102,241,0.3);
-    }
-
-    /* ── CONTENT ─────────────────────────────────────── */
-    .ap-content { flex: 1; overflow-y: auto; padding: 24px 26px; }
-
-    /* ── STATS ───────────────────────────────────────── */
-    .ap-stats {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 16px; margin-bottom: 18px;
-    }
-
-    .ap-stat {
-      background: ${t.card};
-      border: 1px solid ${t.cardBdr};
-      border-radius: 14px; padding: 20px 22px;
-      display: flex; align-items: center; justify-content: space-between;
-      box-shadow: ${dark ? 'none' : '0 1px 4px rgba(0,0,0,0.04)'};
-      transition: background 0.3s, border-color 0.3s;
-    }
-
-    .ap-stat-label {
-      font-size: 12px; color: ${t.textMuted};
-      font-weight: 600; margin-bottom: 5px;
-    }
-    .ap-stat-num {
-      font-size: 30px; font-weight: 800;
-      color: ${t.text}; letter-spacing: -1px; margin-bottom: 3px;
-    }
-    .ap-stat-sub { font-size: 11px; color: ${t.textMuted}; }
-
-    .ap-stat-ring {
-      position: relative; display: flex;
-      align-items: center; justify-content: center;
-    }
-    .ap-ring-pct {
-      position: absolute; font-size: 11px;
-      font-weight: 700; color: ${t.textSec};
-    }
-
-    /* ── CHART ───────────────────────────────────────── */
-    .ap-chart {
-      background: ${t.card};
-      border: 1px solid ${t.cardBdr};
-      border-radius: 14px; padding: 20px 22px;
-      margin-bottom: 20px;
-      box-shadow: ${dark ? 'none' : '0 1px 4px rgba(0,0,0,0.04)'};
-      transition: background 0.3s, border-color 0.3s;
-    }
-    .ap-chart-hdr {
-      display: flex; align-items: center;
-      justify-content: space-between; margin-bottom: 14px;
-    }
-    .ap-chart-title { font-size: 14px; font-weight: 700; color: ${t.text}; }
-    .ap-legend { display: flex; align-items: center; gap: 14px; }
-    .ap-legend-item {
-      display: flex; align-items: center; gap: 5px;
-      font-size: 12px; font-weight: 600; color: ${t.textSec};
-    }
-    .ap-legend-dot { width: 10px; height: 10px; border-radius: 3px; }
-
-    /* ── TABLE CARD ──────────────────────────────────── */
-    .ap-table-card {
-      background: ${t.card};
-      border: 1px solid ${t.cardBdr};
-      border-radius: 14px; overflow: hidden;
-      box-shadow: ${dark ? 'none' : '0 1px 4px rgba(0,0,0,0.04)'};
-      transition: background 0.3s, border-color 0.3s;
-    }
-
-    .ap-table-hdr {
-      display: flex; align-items: center;
-      justify-content: space-between;
-      padding: 16px 20px;
-      border-bottom: 1px solid ${t.theadBdr};
-    }
-    .ap-table-title { font-size: 14px; font-weight: 700; color: ${t.text}; }
-    .ap-see-all {
-      font-size: 12px; font-weight: 600; color: #3b82f6;
-      background: none; border: none; cursor: pointer;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-
-    .ap-table { width: 100%; border-collapse: collapse; }
-    .ap-table thead tr {
-      background: ${t.theadBg};
-      border-bottom: 1px solid ${t.theadBdr};
-    }
-    .ap-table th {
-      padding: 11px 18px; text-align: left;
-      font-size: 10.5px; font-weight: 700;
-      color: ${t.textMuted}; letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    .ap-table td {
-      padding: 12px 18px; font-size: 13px;
-      border-bottom: 1px solid ${t.rowBdr};
-      color: ${t.textSec};
-    }
-    .ap-table tbody tr:last-child td { border-bottom: none; }
-    .ap-table tbody tr:hover { background: ${t.rowHover}; }
-
-    .c-strong { font-weight: 600; color: ${t.text} !important; }
-    .c-muted { color: ${t.textMuted} !important; font-size: 12px; }
-    .c-mono { font-size: 11.5px; color: ${t.textMuted} !important; font-family: monospace; }
-
-    .ap-plan-pill {
-      display: inline-flex; align-items: center;
-      padding: 2px 9px; border-radius: 6px;
-      font-size: 10.5px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.4px;
-      background: ${dark ? 'rgba(59,130,246,0.15)' : '#eff6ff'};
-      color: #3b82f6;
-    }
-
-    .ap-status-pill {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 2px 9px; border-radius: 6px;
-      font-size: 10.5px; font-weight: 700;
-    }
-    .ap-pub {
-      background: ${dark ? 'rgba(22,163,74,0.15)' : '#f0fdf4'};
-      color: #16a34a;
-    }
-    .ap-draft {
-      background: ${dark ? 'rgba(255,255,255,0.05)' : '#f9fafb'};
-      color: ${t.textMuted};
-    }
-
-    /* ── FORMS ───────────────────────────────────────── */
-    .ap-form-layout {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 18px; margin-bottom: 18px;
-    }
-
-    .ap-form-card {
-      background: ${t.card};
-      border: 1px solid ${t.cardBdr};
-      border-radius: 14px; padding: 22px;
-      box-shadow: ${dark ? 'none' : '0 1px 4px rgba(0,0,0,0.04)'};
-      transition: background 0.3s, border-color 0.3s;
-    }
-
-    .ap-form-hdr {
-      display: flex; align-items: center;
-      gap: 10px; margin-bottom: 18px;
-    }
-
-    .ap-form-icon {
-      width: 32px; height: 32px; border-radius: 8px;
+    .vivora-icon-btn {
+      width: 32px; height: 32px; background: #111;
+      border: 1px solid #1f1f1f; border-radius: 6px;
       display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: #888;
+      transition: all 0.15s ease;
     }
-    .ap-fi-blue {
-      background: ${dark ? 'rgba(59,130,246,0.15)' : '#eff6ff'};
-      color: #3b82f6;
-    }
-    .ap-fi-purple {
-      background: ${dark ? 'rgba(124,58,237,0.15)' : '#f5f3ff'};
-      color: #7c3aed;
-    }
-    .ap-form-title { font-size: 14px; font-weight: 700; color: ${t.text}; }
+    .vivora-icon-btn:hover { background: #161616; color: #e5e5e5; border-color: #2a2a2a; }
 
-    .ap-field { margin-bottom: 13px; }
-    .ap-field-label {
-      display: block; font-size: 10.5px; font-weight: 700;
-      color: ${t.textSec}; text-transform: uppercase;
-      letter-spacing: 0.5px; margin-bottom: 5px;
+    /* CONTENT */
+    .vivora-content {
+      flex: 1; overflow-y: auto; padding: 24px;
+      background: #000;
     }
-    .ap-field-input {
-      width: 100%; padding: 9px 13px;
-      background: ${t.inputBg};
-      border: 1.5px solid ${t.inputBdr};
-      border-radius: 8px; font-size: 13px;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      color: ${t.text}; outline: none; transition: all 0.15s;
-    }
-    .ap-field-input:focus {
-      background: ${dark ? '#1a2035' : '#fff'};
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
-    }
-    .ap-field-input::placeholder { color: ${t.textMuted}; }
-    .ap-textarea { resize: none; min-height: 88px; }
 
-    .ap-btn {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 9px 18px; border: none; border-radius: 8px;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 13px; font-weight: 700; cursor: pointer;
-      transition: all 0.15s; margin-top: 4px;
+    /* FILTER BAR */
+    .vivora-filter-bar {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 20px; padding-bottom: 16px;
+      border-bottom: 1px solid #1a1a1a;
     }
-    .ap-btn-blue { background: #3b82f6; color: #fff; }
-    .ap-btn-blue:hover:not(:disabled) {
-      background: #2563eb;
-      box-shadow: 0 4px 14px rgba(59,130,246,0.35);
-    }
-    .ap-btn-purple { background: #7c3aed; color: #fff; }
-    .ap-btn-purple:hover:not(:disabled) {
-      background: #6d28d9;
-      box-shadow: 0 4px 14px rgba(124,58,237,0.35);
-    }
-    .ap-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* ── NOTIF ───────────────────────────────────────── */
-    .ap-notif-card {
-      background: ${t.card};
-      border: 1px solid ${t.cardBdr};
-      border-radius: 14px; overflow: hidden;
-      box-shadow: ${dark ? 'none' : '0 1px 4px rgba(0,0,0,0.04)'};
+    .vivora-tab-btn {
+      padding: 6px 12px; border-radius: 6px;
+      font-size: 13px; font-weight: 500;
+      background: none; border: 1px solid transparent;
+      color: #888; cursor: pointer;
+      font-family: 'Geist', sans-serif;
+      transition: all 0.15s ease;
     }
-    .ap-notif-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 13px 18px;
-      border-bottom: 1px solid ${t.rowBdr};
-      transition: background 0.12s;
-    }
-    .ap-notif-item:last-child { border-bottom: none; }
-    .ap-notif-item:hover { background: ${t.rowHover}; }
-    .ap-notif-title { font-size: 13px; font-weight: 600; color: ${t.text}; }
-    .ap-notif-date { font-size: 11px; color: ${t.textMuted}; margin-top: 2px; }
 
-    .ap-del-btn {
-      width: 28px; height: 28px; background: none;
-      border: 1.5px solid ${dark ? 'rgba(239,68,68,0.2)' : '#fee2e2'};
-      border-radius: 7px; display: flex;
+    .vivora-tab-btn:hover { background: #111; color: #e5e5e5; }
+
+    .vivora-tab-btn.active {
+      background: #161616; color: #fff;
+      border-color: #2a2a2a;
+    }
+
+    .vivora-dropdown-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 6px;
+      font-size: 13px; font-weight: 500;
+      background: #111; border: 1px solid #1f1f1f;
+      color: #888; cursor: pointer;
+      font-family: 'Geist', sans-serif;
+      transition: all 0.15s ease;
+    }
+    .vivora-dropdown-btn:hover { background: #161616; color: #e5e5e5; border-color: #2a2a2a; }
+
+    /* EMPTY STATE */
+    .vivora-empty {
+      display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      cursor: pointer; color: ${dark ? 'rgba(239,68,68,0.5)' : '#fca5a5'};
-      transition: all 0.15s;
+      padding: 80px 20px; text-align: center;
     }
-    .ap-del-btn:hover {
-      background: ${dark ? 'rgba(239,68,68,0.1)' : '#fef2f2'};
+
+    .vivora-empty-icon {
+      width: 48px; height: 48px; border-radius: 10px;
+      background: #111; display: flex;
+      align-items: center; justify-content: center;
+      margin-bottom: 16px; color: #444;
+    }
+
+    .vivora-empty-title {
+      font-size: 16px; font-weight: 600; color: #e5e5e5;
+      margin-bottom: 6px;
+    }
+
+    .vivora-empty-text {
+      font-size: 13px; color: #666; max-width: 360px;
+      line-height: 1.5; margin-bottom: 20px;
+    }
+
+    .vivora-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 6px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; border: none;
+      font-family: 'Geist', sans-serif;
+      transition: all 0.15s ease;
+    }
+
+    .vivora-btn-primary {
+      background: #fff; color: #000;
+    }
+    .vivora-btn-primary:hover:not(:disabled) {
+      background: #e5e5e5;
+    }
+
+    .vivora-btn-secondary {
+      background: #161616; color: #e5e5e5;
+      border: 1px solid #2a2a2a;
+    }
+    .vivora-btn-secondary:hover:not(:disabled) {
+      background: #1f1f1f; border-color: #333;
+    }
+
+    .vivora-btn:disabled {
+      opacity: 0.5; cursor: not-allowed;
+    }
+
+    /* TABLE */
+    .vivora-table-card {
+      background: #0a0a0a; border: 1px solid #1a1a1a;
+      border-radius: 8px; overflow: hidden;
+    }
+
+    .vivora-table {
+      width: 100%; border-collapse: collapse;
+    }
+
+    .vivora-table thead tr {
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .vivora-table th {
+      padding: 12px 16px; text-align: left;
+      font-size: 11px; font-weight: 600;
+      color: #666; letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-family: 'Geist Mono', monospace;
+    }
+
+    .vivora-table td {
+      padding: 14px 16px; font-size: 13px;
+      border-bottom: 1px solid #111; color: #e5e5e5;
+    }
+
+    .vivora-table tbody tr:last-child td { border-bottom: none; }
+
+    .vivora-table tbody tr {
+      transition: background 0.12s ease;
+    }
+    .vivora-table tbody tr:hover {
+      background: #0d0d0d;
+    }
+
+    .td-strong { font-weight: 600; color: #fff; }
+    .td-muted { color: #666; font-size: 12px; }
+    .td-mono { font-family: 'Geist Mono', monospace; font-size: 11.5px; color: #888; }
+
+    .vivora-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; font-weight: 600;
+      font-family: 'Geist Mono', monospace;
+      text-transform: uppercase; letter-spacing: 0.3px;
+    }
+
+    .badge-blue { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .badge-green { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+    .badge-gray { background: #161616; color: #666; border: 1px solid #1f1f1f; }
+
+    /* FORMS */
+    .vivora-form-layout {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 20px; margin-bottom: 24px;
+    }
+
+    .vivora-form-card {
+      background: #0a0a0a; border: 1px solid #1a1a1a;
+      border-radius: 8px; padding: 24px;
+    }
+
+    .vivora-form-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .vivora-form-icon {
+      width: 32px; height: 32px; border-radius: 6px;
+      background: #161616; display: flex;
+      align-items: center; justify-content: center;
+      color: #888;
+    }
+
+    .vivora-form-title {
+      font-size: 15px; font-weight: 600; color: #fff;
+    }
+
+    .vivora-field { margin-bottom: 14px; }
+
+    .vivora-field-label {
+      display: block; font-size: 11px; font-weight: 600;
+      color: #888; text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 6px;
+      font-family: 'Geist Mono', monospace;
+    }
+
+    .vivora-field-input {
+      width: 100%; padding: 8px 12px;
+      background: #111; border: 1px solid #1f1f1f;
+      border-radius: 6px; font-size: 13px;
+      color: #e5e5e5; outline: none;
+      font-family: 'Geist', sans-serif;
+      transition: all 0.15s ease;
+    }
+
+    .vivora-field-input:focus {
+      background: #161616; border-color: #333;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.05);
+    }
+
+    .vivora-field-input::placeholder { color: #555; }
+
+    .vivora-textarea {
+      resize: none; min-height: 90px;
+      font-family: 'Geist', sans-serif;
+    }
+
+    /* NOTIF LIST */
+    .vivora-notif-list { display: flex; flex-direction: column; gap: 1px; }
+
+    .vivora-notif-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; background: #0a0a0a;
+      border: 1px solid #1a1a1a; border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+    .vivora-notif-item:hover { background: #0d0d0d; border-color: #222; }
+
+    .vivora-notif-title {
+      font-size: 13px; font-weight: 600; color: #e5e5e5;
+    }
+    .vivora-notif-date {
+      font-size: 11px; color: #666; margin-top: 2px;
+      font-family: 'Geist Mono', monospace;
+    }
+
+    .vivora-del-btn {
+      width: 28px; height: 28px; background: none;
+      border: 1px solid rgba(239,68,68,0.2); border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: rgba(239,68,68,0.5);
+      transition: all 0.15s ease;
+    }
+    .vivora-del-btn:hover {
+      background: rgba(239,68,68,0.1);
       border-color: #ef4444; color: #ef4444;
     }
 
-    /* ── TEMPLATES GRID ──────────────────────────────── */
-    .ap-tpl-grid {
+    /* TEMPLATES GRID */
+    .vivora-tpl-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
     }
-    .ap-tpl-card {
-      background: ${t.card};
-      border: 1px solid ${t.cardBdr};
-      border-radius: 12px; overflow: hidden;
-      transition: all 0.2s; cursor: default;
+
+    .vivora-tpl-card {
+      background: #0a0a0a; border: 1px solid #1a1a1a;
+      border-radius: 8px; overflow: hidden;
+      transition: all 0.2s ease; cursor: default;
     }
-    .ap-tpl-card:hover {
-      border-color: ${dark ? '#3b82f6' : '#bfdbfe'};
-      box-shadow: 0 4px 16px rgba(59,130,246,${dark ? '0.2' : '0.1'});
+    .vivora-tpl-card:hover {
+      border-color: #2a2a2a;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
       transform: translateY(-2px);
     }
-    .ap-tpl-card:hover .ap-tpl-del { opacity: 1; }
+    .vivora-tpl-card:hover .vivora-tpl-del { opacity: 1; }
 
-    .ap-tpl-thumb {
-      aspect-ratio: 16/9;
-      background: ${dark ? 'linear-gradient(135deg, #1a2035, #1e2535)' : 'linear-gradient(135deg, #eff6ff, #f5f3ff)'};
-      display: flex; align-items: center; justify-content: center; overflow: hidden;
-    }
-    .ap-tpl-thumb img { width: 100%; height: 100%; object-fit: cover; }
-
-    .ap-tpl-body {
-      padding: 11px 13px;
-      display: flex; align-items: flex-start; justify-content: space-between;
-    }
-    .ap-tpl-name { font-size: 12.5px; font-weight: 700; color: ${t.text}; }
-    .ap-tpl-cat { font-size: 10.5px; color: ${t.textMuted}; margin-top: 2px; }
-    .ap-tpl-del { opacity: 0; transition: opacity 0.15s; }
-
-    /* ── EMPTY ───────────────────────────────────────── */
-    .ap-empty {
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; padding: 44px;
-    }
-    .ap-empty-icon {
-      width: 44px; height: 44px; border-radius: 11px;
-      background: ${dark ? '#1e2535' : '#f4f7fb'};
+    .vivora-tpl-thumb {
+      aspect-ratio: 16/9; background: #111;
       display: flex; align-items: center; justify-content: center;
-      margin-bottom: 10px;
+      overflow: hidden;
     }
-    .ap-empty-text { font-size: 12.5px; color: ${t.textMuted}; font-weight: 500; }
+    .vivora-tpl-thumb img { width: 100%; height: 100%; object-fit: cover; }
 
-    /* ── LOADING / ERROR ─────────────────────────────── */
-    .ap-full {
-      display: flex; align-items: center; justify-content: center;
-      min-height: 100vh;
-      background: ${t.bg};
-      font-family: 'Plus Jakarta Sans', sans-serif;
+    .vivora-tpl-body {
+      padding: 12px 14px; display: flex;
+      align-items: flex-start; justify-content: space-between;
     }
-    .ap-spin {
-      width: 38px; height: 38px;
-      border: 3px solid ${dark ? '#1e2535' : '#e5e7eb'};
-      border-top-color: #3b82f6; border-radius: 50%;
-      animation: aps 0.75s linear infinite; margin: 0 auto 12px;
-    }
-    @keyframes aps { to { transform: rotate(360deg); } }
-    .ap-loading-text { font-size: 13px; color: ${t.textSec}; font-weight: 500; text-align: center; }
 
-    .ap-err-card {
-      background: ${t.card};
-      border-radius: 16px; padding: 40px; text-align: center;
-      max-width: 360px; width: 90%;
-      border: 1px solid ${dark ? 'rgba(239,68,68,0.2)' : '#fee2e2'};
-      box-shadow: 0 4px 20px rgba(0,0,0,${dark ? '0.3' : '0.06'});
+    .vivora-tpl-name {
+      font-size: 13px; font-weight: 600; color: #e5e5e5;
     }
-    .ap-err-icon {
-      width: 48px; height: 48px; border-radius: 13px;
-      background: ${dark ? 'rgba(239,68,68,0.1)' : '#fef2f2'};
+    .vivora-tpl-cat {
+      font-size: 11px; color: #666; margin-top: 2px;
+    }
+    .vivora-tpl-del { opacity: 0; transition: opacity 0.15s; }
+
+    /* LOADING / ERROR */
+    .vivora-full {
       display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: #000;
+      font-family: 'Geist', sans-serif;
+    }
+
+    .vivora-spin {
+      width: 36px; height: 36px;
+      border: 2px solid #1f1f1f;
+      border-top-color: #fff; border-radius: 50%;
+      animation: vspin 0.7s linear infinite;
+      margin: 0 auto 14px;
+    }
+    @keyframes vspin { to { transform: rotate(360deg); } }
+
+    .vivora-loading-text {
+      font-size: 13px; color: #888; text-align: center;
+    }
+
+    .vivora-err-card {
+      background: #0a0a0a; border: 1px solid #1f1f1f;
+      border-radius: 10px; padding: 40px; text-align: center;
+      max-width: 400px; width: 90%;
+    }
+
+    .vivora-err-icon {
+      width: 48px; height: 48px; border-radius: 10px;
+      background: rgba(239,68,68,0.1); display: flex;
+      align-items: center; justify-content: center;
       margin: 0 auto 16px; color: #ef4444;
     }
-    .ap-err-title { font-size: 19px; font-weight: 800; color: ${t.text}; margin-bottom: 7px; }
-    .ap-err-msg { font-size: 12.5px; color: ${t.textSec}; margin-bottom: 22px; }
-    .ap-go-home {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 9px 20px; background: #3b82f6; color: #fff;
-      border: none; border-radius: 8px;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-weight: 700; font-size: 13px; cursor: pointer;
-    }
-    .ap-go-home:hover { background: #2563eb; }
 
-    /* ── SCROLLBAR ───────────────────────────────────── */
-    .ap-content::-webkit-scrollbar { width: 6px; }
-    .ap-content::-webkit-scrollbar-track { background: transparent; }
-    .ap-content::-webkit-scrollbar-thumb {
-      background: ${dark ? '#2a3045' : '#dde1ea'};
-      border-radius: 3px;
+    .vivora-err-title {
+      font-size: 18px; font-weight: 700; color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .vivora-err-msg {
+      font-size: 13px; color: #888; margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    /* SCROLLBAR */
+    .vivora-content::-webkit-scrollbar { width: 8px; }
+    .vivora-content::-webkit-scrollbar-track { background: #000; }
+    .vivora-content::-webkit-scrollbar-thumb {
+      background: #1a1a1a; border-radius: 4px;
+    }
+    .vivora-content::-webkit-scrollbar-thumb:hover { background: #222; }
+
+    .vivora-sidebar::-webkit-scrollbar { width: 6px; }
+    .vivora-sidebar::-webkit-scrollbar-track { background: #0a0a0a; }
+    .vivora-sidebar::-webkit-scrollbar-thumb {
+      background: #1a1a1a; border-radius: 3px;
     }
   `;
 
-  // ── Loading ───────────────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LOADING
+  // ═══════════════════════════════════════════════════════════════════════════
   if (authLoading || loading) {
     return (
       <>
         <style>{css}</style>
-        <div className="ap-full">
+        <div className="vivora-full">
           <div>
-            <div className="ap-spin" />
-            <p className="ap-loading-text">Loading Admin Panel...</p>
+            <div className="vivora-spin" />
+            <p className="vivora-loading-text">Loading...</p>
           </div>
         </div>
       </>
     );
   }
 
-  // ── Error ─────────────────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ERROR
+  // ═══════════════════════════════════════════════════════════════════════════
   if (error) {
     return (
       <>
         <style>{css}</style>
-        <div className="ap-full">
-          <div className="ap-err-card">
-            <div className="ap-err-icon"><AlertTriangle size={22} /></div>
-            <h2 className="ap-err-title">Access Denied</h2>
-            <p className="ap-err-msg">{error}</p>
-            <button className="ap-go-home" onClick={() => navigate('/')}>
-              <ChevronRight size={13} /> Go Home
+        <div className="vivora-full">
+          <div className="vivora-err-card">
+            <div className="vivora-err-icon"><AlertTriangle size={22} /></div>
+            <h2 className="vivora-err-title">Access Denied</h2>
+            <p className="vivora-err-msg">{error}</p>
+            <button className="vivora-btn vivora-btn-primary" onClick={() => navigate('/')}>
+              <ChevronRight size={14} /> Go Home
             </button>
           </div>
         </div>
@@ -716,14 +630,16 @@ export const AdminPanel: React.FC = () => {
 
   if (!data) return null;
 
-  // ── Config ────────────────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CONFIG
+  // ═══════════════════════════════════════════════════════════════════════════
   const navItems = [
-    { key: 'users'        as const, label: 'Users',        icon: Users,       count: data.users.length },
-    { key: 'plans'        as const, label: 'Plans',        icon: CreditCard,  count: data.plans.length },
-    { key: 'transactions' as const, label: 'Transactions', icon: TrendingUp,  count: data.transactions.length },
-    { key: 'projects'     as const, label: 'Projects',     icon: FolderOpen,  count: data.projects.length },
-    { key: 'inbox'        as const, label: 'Inbox',        icon: Mail,        count: notifications.length },
-    { key: 'templates'    as const, label: 'Templates',    icon: Layers,      count: templates.length },
+    { key: 'users'        as const, label: 'Users',        icon: Users,      count: data.users.length },
+    { key: 'plans'        as const, label: 'Plans',        icon: CreditCard, count: data.plans.length },
+    { key: 'transactions' as const, label: 'Transactions', icon: TrendingUp, count: data.transactions.length },
+    { key: 'projects'     as const, label: 'Projects',     icon: FolderOpen, count: data.projects.length },
+    { key: 'inbox'        as const, label: 'Inbox',        icon: Mail,       count: notifications.length },
+    { key: 'templates'    as const, label: 'Templates',    icon: Layers,     count: templates.length },
   ];
 
   const pageTitles: Record<string, string> = {
@@ -731,237 +647,266 @@ export const AdminPanel: React.FC = () => {
     projects: 'Projects', inbox: 'Inbox', templates: 'Templates',
   };
 
-  const chartData = [
-    { month: 'Jan', earning: 120, expense: 80  }, { month: 'Feb', earning: 180, expense: 100 },
-    { month: 'Mar', earning: 160, expense: 140 }, { month: 'Apr', earning: 200, expense: 90  },
-    { month: 'May', earning: 140, expense: 120 }, { month: 'Jun', earning: 280, expense: 160 },
-    { month: 'Jul', earning: 220, expense: 100 }, { month: 'Aug', earning: 160, expense: 130 },
-    { month: 'Sep', earning: 190, expense: 110 }, { month: 'Oct', earning: 170, expense: 95  },
-    { month: 'Nov', earning: 240, expense: 140 }, { month: 'Dec', earning: 280, expense: 120 },
-  ];
-
-  const isDataTab = ['users', 'plans', 'transactions', 'projects'].includes(tab);
-
   return (
     <>
       <style>{css}</style>
-      <div className="ap-root">
+      <div className="vivora-root">
 
-        {/* ── SIDEBAR ─────────────────────────────────────────────────── */}
-        <aside className="ap-sidebar">
-          <div className="ap-logo">
-            <div className="ap-logo-icon">V</div>
-            <span className="ap-logo-name">Vivora</span>
+        {/* ═══════════════════════════════════════════════════════════════════
+            SIDEBAR
+        ═══════════════════════════════════════════════════════════════════ */}
+        <aside className="vivora-sidebar">
+          <div className="vivora-user">
+            <div className="vivora-user-avatar">V</div>
+            <div className="vivora-user-info">
+              <div className="vivora-user-name">Vivora Admin</div>
+              <div className="vivora-user-email">{user?.email || 'admin@vivora.ai'}</div>
+            </div>
+            <ChevronDown size={14} color="#666" />
           </div>
 
-          <nav className="ap-nav">
-            <p className="ap-nav-section">Main Menu</p>
+          <nav className="vivora-nav">
             {navItems.map(item => {
               const Icon = item.icon;
               const active = tab === item.key;
               return (
                 <div
                   key={item.key}
-                  className={`ap-nav-item ${active ? 'active' : ''}`}
+                  className={`vivora-nav-item ${active ? 'active' : ''}`}
                   onClick={() => setTab(item.key)}
                 >
-                  <Icon size={15} />
+                  <Icon size={16} />
                   <span>{item.label}</span>
-                  <span className="ap-nav-count">{item.count}</span>
+                  <span className="vivora-nav-count">{item.count}</span>
                 </div>
               );
             })}
           </nav>
 
-          <div className="ap-sidebar-footer">
-            <button className="ap-logout" onClick={() => navigate('/')}>
-              <LogOut size={15} /> Logout
+          <div className="vivora-sidebar-footer">
+            <button className="vivora-logout" onClick={() => navigate('/')}>
+              <LogOut size={16} /> Logout
             </button>
           </div>
         </aside>
 
-        {/* ── MAIN ────────────────────────────────────────────────────── */}
-        <div className="ap-main">
+        {/* ═══════════════════════════════════════════════════════════════════
+            MAIN AREA
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div className="vivora-main">
 
-          {/* Topbar */}
-          <header className="ap-topbar">
-            <h1 className="ap-page-title">{pageTitles[tab]}</h1>
-            <div className="ap-topbar-right">
-              <div className="ap-search">
-                <Search size={13} color={t.textMuted} />
+          {/* TOPBAR */}
+          <header className="vivora-topbar">
+            <h1 className="vivora-page-title">{pageTitles[tab]}</h1>
+            <div className="vivora-topbar-actions">
+              <div className="vivora-topbar-search">
+                <Search size={14} color="#666" />
                 <input placeholder="Search..." />
               </div>
-              <button className="ap-icon-btn"><Bell size={14} /></button>
-              <button className="ap-icon-btn"><Settings size={14} /></button>
-              <button
-                className="ap-icon-btn ap-theme-btn"
-                onClick={() => setDark(d => !d)}
-                title={dark ? 'Light mode' : 'Dark mode'}
-              >
-                {dark ? <Sun size={15} /> : <Moon size={15} />}
-              </button>
-              <div className="ap-avatar">A</div>
+              <button className="vivora-icon-btn"><Code size={16} /></button>
+              <button className="vivora-icon-btn"><Bell size={16} /></button>
+              <button className="vivora-icon-btn"><Settings size={16} /></button>
             </div>
           </header>
 
-          {/* Content */}
-          <div className="ap-content">
+          {/* CONTENT */}
+          <div className="vivora-content">
 
-            {/* ── Stats + Chart (data tabs only) ── */}
-            {isDataTab && (
+            {/* ══════════════════════════════════════════════════════════════
+                INBOX
+            ══════════════════════════════════════════════════════════════ */}
+            {tab === 'inbox' && (
               <>
-                <div className="ap-stats">
-                  {[
-                    { label: 'Customers',    num: data.users.length,        sub: 'Total registered',  pct: 75, color: '#3b82f6' },
-                    { label: 'Active Plans', num: data.plans.length,        sub: 'Subscriptions',     pct: 65, color: '#f59e0b' },
-                    { label: 'Transactions', num: data.transactions.length, sub: 'All time',          pct: 35, color: '#ef4444' },
-                  ].map((s, i) => (
-                    <div key={i} className="ap-stat">
-                      <div>
-                        <p className="ap-stat-label">{s.label}</p>
-                        <p className="ap-stat-num">{s.num}</p>
-                        <p className="ap-stat-sub">{s.sub}</p>
-                      </div>
-                      <div className="ap-stat-ring">
-                        <CircularProgress value={s.pct} color={s.color} size={62} dark={dark} />
-                        <span className="ap-ring-pct">{s.pct}%</span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="vivora-filter-bar">
+                  <button className="vivora-tab-btn active">Sending</button>
+                  <button className="vivora-tab-btn">Receiving</button>
+                  <div style={{ flex: 1 }} />
+                  <button className="vivora-dropdown-btn">
+                    Last 15 days <ChevronDown size={14} />
+                  </button>
+                  <button className="vivora-dropdown-btn">
+                    All Statuses <ChevronDown size={14} />
+                  </button>
+                  <button className="vivora-icon-btn"><Download size={16} /></button>
                 </div>
 
-                <div className="ap-chart">
-                  <div className="ap-chart-hdr">
-                    <span className="ap-chart-title">Revenue Report</span>
-                    <div className="ap-legend">
-                      <div className="ap-legend-item">
-                        <div className="ap-legend-dot" style={{ background: '#f59e0b' }} />
-                        Earning
-                      </div>
-                      <div className="ap-legend-item">
-                        <div className="ap-legend-dot" style={{ background: '#3b82f6' }} />
-                        Expenses
-                      </div>
-                    </div>
+                {notifications.length === 0 ? (
+                  <div className="vivora-empty">
+                    <div className="vivora-empty-icon"><Mail size={22} /></div>
+                    <h3 className="vivora-empty-title">No sent emails yet</h3>
+                    <p className="vivora-empty-text">
+                      Start sending notifications to see insights and previews for every message.
+                    </p>
+                    <button className="vivora-btn vivora-btn-primary">
+                      Send Notification
+                    </button>
                   </div>
-                  <BarChart data={chartData} dark={dark} />
+                ) : (
+                  <div className="vivora-notif-list">
+                    {notifications.map(n => (
+                      <div key={n.id} className="vivora-notif-item">
+                        <div>
+                          <p className="vivora-notif-title">{n.title}</p>
+                          <p className="vivora-notif-date">{new Date(n.created_at).toLocaleString()}</p>
+                        </div>
+                        <button className="vivora-del-btn" onClick={() => handleDeleteNotification(n.id)}>
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ marginTop: 32 }}>
+                  <div className="vivora-form-card">
+                    <div className="vivora-form-header">
+                      <div className="vivora-form-icon"><Send size={16} /></div>
+                      <span className="vivora-form-title">Send Notification</span>
+                    </div>
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">Title *</label>
+                      <input
+                        value={inboxTitle}
+                        onChange={e => setInboxTitle(e.target.value)}
+                        className="vivora-field-input"
+                        placeholder="Notification title..."
+                      />
+                    </div>
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">Message Body</label>
+                      <textarea
+                        value={inboxBody}
+                        onChange={e => setInboxBody(e.target.value)}
+                        className="vivora-field-input vivora-textarea"
+                        placeholder="Write your message..."
+                      />
+                    </div>
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">Image URL</label>
+                      <input
+                        value={inboxImage}
+                        onChange={e => setInboxImage(e.target.value)}
+                        className="vivora-field-input"
+                        placeholder="https://..."
+                      />
+                    </div>
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">Link URL</label>
+                      <input
+                        value={inboxLink}
+                        onChange={e => setInboxLink(e.target.value)}
+                        className="vivora-field-input"
+                        placeholder="https://..."
+                      />
+                    </div>
+                    <button
+                      className="vivora-btn vivora-btn-primary"
+                      onClick={handleSendNotification}
+                      disabled={!inboxTitle.trim() || sendingNotif}
+                      style={{ marginTop: 8 }}
+                    >
+                      <Send size={14} />
+                      {sendingNotif ? 'Sending...' : 'Send Notification'}
+                    </button>
+                  </div>
                 </div>
               </>
             )}
 
-            {/* ── INBOX ── */}
-            {tab === 'inbox' && (
-              <div className="ap-form-layout">
-                <div className="ap-form-card">
-                  <div className="ap-form-hdr">
-                    <div className="ap-form-icon ap-fi-blue"><Send size={14} /></div>
-                    <span className="ap-form-title">Send Notification</span>
-                  </div>
-                  <div className="ap-field">
-                    <label className="ap-field-label">Title *</label>
-                    <input value={inboxTitle} onChange={e => setInboxTitle(e.target.value)} className="ap-field-input" placeholder="Notification title..." />
-                  </div>
-                  <div className="ap-field">
-                    <label className="ap-field-label">Message Body</label>
-                    <textarea value={inboxBody} onChange={e => setInboxBody(e.target.value)} className="ap-field-input ap-textarea" placeholder="Write your message..." />
-                  </div>
-                  <div className="ap-field">
-                    <label className="ap-field-label">Image URL</label>
-                    <input value={inboxImage} onChange={e => setInboxImage(e.target.value)} className="ap-field-input" placeholder="https://..." />
-                  </div>
-                  <div className="ap-field">
-                    <label className="ap-field-label">Link URL</label>
-                    <input value={inboxLink} onChange={e => setInboxLink(e.target.value)} className="ap-field-input" placeholder="https://..." />
-                  </div>
-                  <button className="ap-btn ap-btn-blue" onClick={handleSendNotification} disabled={!inboxTitle.trim() || sendingNotif}>
-                    <Send size={12} />
-                    {sendingNotif ? 'Sending...' : 'Send Notification'}
-                  </button>
-                </div>
-
-                <div className="ap-notif-card">
-                  <div className="ap-table-hdr">
-                    <span className="ap-table-title">Sent Notifications</span>
-                    <span style={{ fontSize: 12, color: t.textMuted }}>{notifications.length} total</span>
-                  </div>
-                  {notifications.length === 0 ? (
-                    <div className="ap-empty">
-                      <div className="ap-empty-icon"><Mail size={18} color={t.textMuted} /></div>
-                      <p className="ap-empty-text">No notifications yet</p>
-                    </div>
-                  ) : notifications.map(n => (
-                    <div key={n.id} className="ap-notif-item">
-                      <div>
-                        <p className="ap-notif-title">{n.title}</p>
-                        <p className="ap-notif-date">{new Date(n.created_at).toLocaleString()}</p>
-                      </div>
-                      <button className="ap-del-btn" onClick={() => handleDeleteNotification(n.id)}>
-                        <Trash2 size={11} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── TEMPLATES ── */}
+            {/* ══════════════════════════════════════════════════════════════
+                TEMPLATES
+            ══════════════════════════════════════════════════════════════ */}
             {tab === 'templates' && (
               <>
-                <div className="ap-form-layout" style={{ marginBottom: 18 }}>
-                  <div className="ap-form-card">
-                    <div className="ap-form-hdr">
-                      <div className="ap-form-icon ap-fi-purple"><Plus size={14} /></div>
-                      <span className="ap-form-title">Add New Template</span>
+                <div className="vivora-form-layout" style={{ marginBottom: 24 }}>
+                  <div className="vivora-form-card">
+                    <div className="vivora-form-header">
+                      <div className="vivora-form-icon"><Plus size={16} /></div>
+                      <span className="vivora-form-title">Add Template</span>
                     </div>
-                    <div className="ap-field">
-                      <label className="ap-field-label">Template Name *</label>
-                      <input value={tplName} onChange={e => setTplName(e.target.value)} className="ap-field-input" placeholder="Template name..." />
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">Template Name *</label>
+                      <input
+                        value={tplName}
+                        onChange={e => setTplName(e.target.value)}
+                        className="vivora-field-input"
+                        placeholder="Template name..."
+                      />
                     </div>
-                    <div className="ap-field">
-                      <label className="ap-field-label">Category</label>
-                      <input value={tplCategory} onChange={e => setTplCategory(e.target.value)} className="ap-field-input" placeholder="General, Marketing..." />
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">Category</label>
+                      <input
+                        value={tplCategory}
+                        onChange={e => setTplCategory(e.target.value)}
+                        className="vivora-field-input"
+                        placeholder="General, Marketing..."
+                      />
                     </div>
-                    <div className="ap-field">
-                      <label className="ap-field-label">Image URL</label>
-                      <input value={tplImage} onChange={e => setTplImage(e.target.value)} className="ap-field-input" placeholder="https://..." />
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">Image URL</label>
+                      <input
+                        value={tplImage}
+                        onChange={e => setTplImage(e.target.value)}
+                        className="vivora-field-input"
+                        placeholder="https://..."
+                      />
                     </div>
-                    <div className="ap-field">
-                      <label className="ap-field-label">Prompt *</label>
-                      <textarea value={tplPrompt} onChange={e => setTplPrompt(e.target.value)} className="ap-field-input ap-textarea" placeholder="Enter the AI prompt..." />
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">Prompt *</label>
+                      <textarea
+                        value={tplPrompt}
+                        onChange={e => setTplPrompt(e.target.value)}
+                        className="vivora-field-input vivora-textarea"
+                        placeholder="Enter the AI prompt..."
+                      />
                     </div>
-                    <button className="ap-btn ap-btn-purple" onClick={handleAddTemplate} disabled={!tplName.trim() || !tplPrompt.trim() || savingTpl}>
-                      <Plus size={12} />
+                    <button
+                      className="vivora-btn vivora-btn-primary"
+                      onClick={handleAddTemplate}
+                      disabled={!tplName.trim() || !tplPrompt.trim() || savingTpl}
+                      style={{ marginTop: 8 }}
+                    >
+                      <Plus size={14} />
                       {savingTpl ? 'Saving...' : 'Add Template'}
                     </button>
                   </div>
-                  <div className="ap-form-card" style={{ alignSelf: 'start' }}>
-                    <p style={{ fontSize: 13, color: t.textSec, lineHeight: 1.7 }}>
-                      Templates help users quickly start with predefined prompts. Add a name, optional category and image, and the AI prompt that triggers when this template is selected.
+                  <div className="vivora-form-card">
+                    <p style={{ fontSize: 13, color: '#888', lineHeight: 1.7 }}>
+                      Templates help users quickly start with predefined prompts. Add a name,
+                      optional category and image, and the AI prompt that will be used.
                     </p>
                   </div>
                 </div>
 
                 {templates.length === 0 ? (
-                  <div className="ap-table-card">
-                    <div className="ap-empty">
-                      <div className="ap-empty-icon"><Layers size={18} color={t.textMuted} /></div>
-                      <p className="ap-empty-text">No templates yet</p>
-                    </div>
+                  <div className="vivora-empty">
+                    <div className="vivora-empty-icon"><Layers size={22} /></div>
+                    <h3 className="vivora-empty-title">No templates yet</h3>
+                    <p className="vivora-empty-text">
+                      Create your first template to help users get started quickly.
+                    </p>
                   </div>
                 ) : (
-                  <div className="ap-tpl-grid">
+                  <div className="vivora-tpl-grid">
                     {templates.map(tpl => (
-                      <div key={tpl.id} className="ap-tpl-card">
-                        <div className="ap-tpl-thumb">
-                          {tpl.image_url ? <img src={tpl.image_url} alt={tpl.name} /> : <Layers size={20} color={dark ? '#3b4a6b' : '#c4b5fd'} />}
+                      <div key={tpl.id} className="vivora-tpl-card">
+                        <div className="vivora-tpl-thumb">
+                          {tpl.image_url ? (
+                            <img src={tpl.image_url} alt={tpl.name} />
+                          ) : (
+                            <Layers size={20} color="#444" />
+                          )}
                         </div>
-                        <div className="ap-tpl-body">
+                        <div className="vivora-tpl-body">
                           <div>
-                            <p className="ap-tpl-name">{tpl.name}</p>
-                            <p className="ap-tpl-cat">{tpl.category}</p>
+                            <p className="vivora-tpl-name">{tpl.name}</p>
+                            <p className="vivora-tpl-cat">{tpl.category}</p>
                           </div>
-                          <button className="ap-del-btn ap-tpl-del" onClick={() => handleDeleteTemplate(tpl.id)}>
-                            <Trash2 size={11} />
+                          <button
+                            className="vivora-del-btn vivora-tpl-del"
+                            onClick={() => handleDeleteTemplate(tpl.id)}
+                          >
+                            <Trash2 size={12} />
                           </button>
                         </div>
                       </div>
@@ -971,116 +916,130 @@ export const AdminPanel: React.FC = () => {
               </>
             )}
 
-            {/* ── DATA TABLES ── */}
-            {isDataTab && (
-              <div className="ap-table-card">
-                {tab === 'users' && (
-                  <>
-                    <div className="ap-table-hdr">
-                      <span className="ap-table-title">All Users</span>
-                      <button className="ap-see-all">See All</button>
-                    </div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="ap-table">
-                        <thead><tr><th>Email</th><th>Display Name</th><th>Created</th></tr></thead>
+            {/* ══════════════════════════════════════════════════════════════
+                DATA TABLES
+            ══════════════════════════════════════════════════════════════ */}
+            {['users', 'plans', 'transactions', 'projects'].includes(tab) && (
+              <>
+                <div className="vivora-filter-bar">
+                  <button className="vivora-dropdown-btn">
+                    <Filter size={14} /> All {pageTitles[tab]}
+                  </button>
+                  <div style={{ flex: 1 }} />
+                  <button className="vivora-icon-btn"><Download size={16} /></button>
+                </div>
+
+                <div className="vivora-table-card">
+                  <table className="vivora-table">
+                    {tab === 'users' && (
+                      <>
+                        <thead>
+                          <tr>
+                            <th>Email</th>
+                            <th>Display Name</th>
+                            <th>Created</th>
+                          </tr>
+                        </thead>
                         <tbody>
                           {data.users.map(u => (
                             <tr key={u.id}>
-                              <td className="c-strong">{u.email || '—'}</td>
+                              <td className="td-strong">{u.email || '—'}</td>
                               <td>{u.display_name || '—'}</td>
-                              <td className="c-muted">{new Date(u.created_at).toLocaleDateString()}</td>
+                              <td className="td-muted">{new Date(u.created_at).toLocaleDateString()}</td>
                             </tr>
                           ))}
                         </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
+                      </>
+                    )}
 
-                {tab === 'plans' && (
-                  <>
-                    <div className="ap-table-hdr">
-                      <span className="ap-table-title">Subscription Plans</span>
-                      <button className="ap-see-all">See All</button>
-                    </div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="ap-table">
-                        <thead><tr><th>User</th><th>Plan</th><th>Daily Limit</th><th>Used Today</th><th>Monthly</th><th>Total Used</th><th>Updated</th></tr></thead>
+                    {tab === 'plans' && (
+                      <>
+                        <thead>
+                          <tr>
+                            <th>User</th>
+                            <th>Plan</th>
+                            <th>Daily Limit</th>
+                            <th>Used Today</th>
+                            <th>Monthly</th>
+                            <th>Total Used</th>
+                            <th>Updated</th>
+                          </tr>
+                        </thead>
                         <tbody>
                           {data.plans.map(p => (
                             <tr key={p.id}>
-                              <td className="c-mono">{p.user_id?.slice(0, 8)}…</td>
-                              <td><span className="ap-plan-pill">{p.plan}</span></td>
-                              <td className="c-strong">{p.daily_credits}</td>
+                              <td className="td-mono">{p.user_id?.slice(0, 8)}…</td>
+                              <td><span className="vivora-badge badge-blue">{p.plan}</span></td>
+                              <td className="td-strong">{p.daily_credits}</td>
                               <td>{p.credits_used_today}</td>
-                              <td className="c-strong">{p.monthly_credits}</td>
+                              <td className="td-strong">{p.monthly_credits}</td>
                               <td>{p.total_credits_used}</td>
-                              <td className="c-muted">{new Date(p.updated_at).toLocaleDateString()}</td>
+                              <td className="td-muted">{new Date(p.updated_at).toLocaleDateString()}</td>
                             </tr>
                           ))}
                         </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
+                      </>
+                    )}
 
-                {tab === 'transactions' && (
-                  <>
-                    <div className="ap-table-hdr">
-                      <span className="ap-table-title">Transactions</span>
-                      <button className="ap-see-all">See All</button>
-                    </div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="ap-table">
-                        <thead><tr><th>Date</th><th>User</th><th>Credits</th><th>Type</th><th>Description</th></tr></thead>
+                    {tab === 'transactions' && (
+                      <>
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>User</th>
+                            <th>Credits</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                          </tr>
+                        </thead>
                         <tbody>
                           {data.transactions.map(t => (
                             <tr key={t.id}>
-                              <td className="c-muted">{new Date(t.created_at).toLocaleString()}</td>
-                              <td className="c-mono">{t.user_id?.slice(0, 8)}…</td>
-                              <td className="c-strong">{t.credits_used}</td>
+                              <td className="td-muted">{new Date(t.created_at).toLocaleString()}</td>
+                              <td className="td-mono">{t.user_id?.slice(0, 8)}…</td>
+                              <td className="td-strong">{t.credits_used}</td>
                               <td>{t.work_type || '—'}</td>
-                              <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.description}>
+                              <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {t.description || '—'}
                               </td>
                             </tr>
                           ))}
                         </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
+                      </>
+                    )}
 
-                {tab === 'projects' && (
-                  <>
-                    <div className="ap-table-hdr">
-                      <span className="ap-table-title">Projects</span>
-                      <button className="ap-see-all">See All</button>
-                    </div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="ap-table">
-                        <thead><tr><th>Project Name</th><th>User</th><th>Type</th><th>Status</th><th>Created</th></tr></thead>
+                    {tab === 'projects' && (
+                      <>
+                        <thead>
+                          <tr>
+                            <th>Project Name</th>
+                            <th>User</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                          </tr>
+                        </thead>
                         <tbody>
                           {data.projects.map(p => (
                             <tr key={p.id}>
-                              <td className="c-strong">{p.name}</td>
-                              <td className="c-mono">{p.user_id?.slice(0, 8)}…</td>
+                              <td className="td-strong">{p.name}</td>
+                              <td className="td-mono">{p.user_id?.slice(0, 8)}…</td>
                               <td>{p.project_type}</td>
                               <td>
-                                <span className={`ap-status-pill ${p.is_published ? 'ap-pub' : 'ap-draft'}`}>
+                                <span className={`vivora-badge ${p.is_published ? 'badge-green' : 'badge-gray'}`}>
                                   <Eye size={9} />
                                   {p.is_published ? 'Published' : 'Draft'}
                                 </span>
                               </td>
-                              <td className="c-muted">{new Date(p.created_at).toLocaleDateString()}</td>
+                              <td className="td-muted">{new Date(p.created_at).toLocaleDateString()}</td>
                             </tr>
                           ))}
                         </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
-              </div>
+                      </>
+                    )}
+                  </table>
+                </div>
+              </>
             )}
 
           </div>
