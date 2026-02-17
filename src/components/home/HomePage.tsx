@@ -264,7 +264,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           transition={{ delay: 0.1 }}
           className="text-center mb-6"
         >
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-4">
+          <h1 className="text-4xl md:text-7xl font-bold text-white mb-4 tracking-tight">
             {t('home.title1')} <span className="text-pink-400">{t('home.title2')}</span> {t('home.title3')}
           </h1>
           <p className="text-base md:text-xl text-white/80">
@@ -399,90 +399,97 @@ export const HomePage: React.FC<HomePageProps> = ({
                     </>
                   )}
 
-                    <AnimatePresence>
-                      {showVisibilityMenu && (
-                        <>
-                          <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => setShowVisibilityMenu(false)}
-                          />
-                          <motion.div
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 5 }}
-                            className={`absolute bottom-full ${isRTL ? 'left-0' : 'right-0'} mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50`}
+                  <AnimatePresence>
+                    {showVisibilityMenu && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setShowVisibilityMenu(false)}
+                        />
+                        <motion.div
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 5 }}
+                          className={`absolute bottom-full ${isRTL ? 'left-0' : 'right-0'} mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsPublic(true);
+                              setShowVisibilityMenu(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${isPublic ? 'bg-pink-50' : ''}`}
                           >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsPublic(true);
-                                setShowVisibilityMenu(false);
-                              }}
-                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${isPublic ? 'bg-pink-50' : ''}`}
-                            >
-                              <Globe className={`w-4 h-4 ${isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
-                              <div className={isRTL ? 'text-right' : ''}>
-                                <p className={`text-sm font-medium ${isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.public')}</p>
-                                <p className="text-xs text-gray-500">{t('home.publicDesc')}</p>
-                              </div>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
+                            <Globe className={`w-4 h-4 ${isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
+                            <div className={isRTL ? 'text-right' : ''}>
+                              <p className={`text-sm font-medium ${isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.public')}</p>
+                              <p className="text-xs text-gray-500">{t('home.publicDesc')}</p>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (canUsePrivateProjects) {
                                 setIsPublic(false);
                                 setShowVisibilityMenu(false);
-                              }}
-                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${!isPublic ? 'bg-pink-50' : ''}`}
-                            >
-                              <Lock className={`w-4 h-4 ${!isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
-                              <div className={isRTL ? 'text-right' : ''}>
+                              } else {
+                                setShowUpgradeModal(true);
+                                setShowVisibilityMenu(false);
+                              }
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${!isPublic ? 'bg-pink-50' : ''}`}
+                          >
+                            <Lock className={`w-4 h-4 ${!isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
+                            <div className={isRTL ? 'text-right' : ''}>
+                              <div className="flex items-center justify-between">
                                 <p className={`text-sm font-medium ${!isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.private')}</p>
-                                <p className="text-xs text-gray-500">{t('home.privateDesc')}</p>
+                                {!canUsePrivateProjects && <Crown className="w-3 h-3 text-amber-500" />}
                               </div>
-                            </button>
-                          </motion.div>
-                        </>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                  <div className={`flex items-center gap-1 md:gap-2 ${isRTL ? 'flex-row' : 'flex-row-reverse'}`}>
-                    {isRTL ? (
-                      <>
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 px-3 py-1.5 bg-amber-100/50 hover:bg-amber-100 rounded-lg transition-colors"
-                        >
-                          <span className="text-sm text-amber-700 font-medium">{t('home.import')}</span>
-                          <span className="text-amber-500">🧠</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                          <Paperclip className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                          <Paperclip className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
-                        </button>
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-row-reverse"
-                        >
-                          <span className="text-sm text-gray-600">{t('home.import')}</span>
-                          <span className="text-pink-500">🎨</span>
-                        </button>
+                              <p className="text-xs text-gray-500">{t('home.privateDesc')}</p>
+                            </div>
+                          </button>
+                        </motion.div>
                       </>
                     )}
-                  </div>
+                  </AnimatePresence>
+                </div>
+
+                <div className={`flex items-center gap-1 md:gap-2 ${isRTL ? 'flex-row' : 'flex-row-reverse'}`}>
+                  {isRTL ? (
+                    <>
+                      <button
+                        type="button"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-amber-100/50 hover:bg-amber-100 rounded-lg transition-colors"
+                      >
+                        <span className="text-sm text-amber-700 font-medium">{t('home.import')}</span>
+                        <span className="text-amber-500">🧠</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <Paperclip className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <Paperclip className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+                      </button>
+                      <button
+                        type="button"
+                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-row-reverse"
+                      >
+                        <span className="text-sm text-gray-600">{t('home.import')}</span>
+                        <span className="text-pink-500">🎨</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -507,42 +514,28 @@ export const HomePage: React.FC<HomePageProps> = ({
         <ProjectsSection
           projects={projects}
           loading={projectsLoading}
-          onOpenProject={onOpenProject || (() => { })}
-          onDeleteProject={onDeleteProject || (() => { })}
-          onForkProject={onForkProject || (() => { })}
-          onNewProject={() => { }}
+          onOpenProject={onOpenProject!}
+          onDeleteProject={onDeleteProject!}
+          onForkProject={onForkProject!}
+          onNewProject={() => {}}
         />
       )}
 
-      {/* Templates Section - visible to all users */}
-      <TemplatesSection onSelectTemplate={(prompt) => setPrompt(prompt)} />
-
-      {/* Welcome message for new logged-in users with no projects */}
-      {user && projects.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="relative z-10 max-w-3xl mx-auto px-4 mb-20 text-center"
-        >
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
-            <Sparkles className="w-12 h-12 text-pink-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">Welcome to Vivora X!</h2>
-            <p className="text-white/70 mb-6">Start by describing your dream project above.</p>
-          </div>
-        </motion.div>
-      )}
+      {/* Templates Section */}
+      <TemplatesSection onSelectTemplate={(template) => {
+        setPrompt(template.prompt);
+        setSelectedFramework(template.framework);
+      }} />
 
       {/* Footer */}
       <Footer />
 
-      {/* Upgrade Modal */}
+      {/* Modals */}
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
       />
 
-      {/* Settings Modal */}
       <SettingsModal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
