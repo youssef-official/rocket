@@ -21,19 +21,25 @@ serve(async (req) => {
     }
 
     if (action === "get-auth-url") {
-      // Return the OAuth authorization URL
-      const authUrl = `https://vercel.com/integrations/oauthv2/authorize?client_id=${VERCEL_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+      // Return the OAuth authorization URL (per Vercel docs: https://vercel.com/oauth/authorize)
+      const queryParams = new URLSearchParams({
+        client_id: VERCEL_CLIENT_ID,
+        redirect_uri: redirectUri,
+        response_type: "code",
+        scope: "openid email profile offline_access",
+      });
+      const authUrl = `https://vercel.com/oauth/authorize?${queryParams.toString()}`;
       return new Response(JSON.stringify({ url: authUrl }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (action === "exchange-code") {
-      // Exchange authorization code for access token
-      const tokenResponse = await fetch("https://api.vercel.com/v2/oauth/access_token", {
+      // Exchange authorization code for access token (per Vercel docs: /login/oauth/token)
+      const tokenResponse = await fetch("https://api.vercel.com/login/oauth/token", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
+          grant_type: "authorization_code",
           client_id: VERCEL_CLIENT_ID,
           client_secret: VERCEL_CLIENT_SECRET,
           code,
@@ -44,7 +50,7 @@ serve(async (req) => {
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text();
         console.error("Vercel token exchange error:", errorText);
-        return new Response(JSON.stringify({ error: "Failed to exchange code" }), {
+        return new Response(JSON.stringify({ error: "Failed to exchange code", details: errorText }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -53,15 +59,15 @@ serve(async (req) => {
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
 
-      // Get user info
-      const userResponse = await fetch("https://api.vercel.com/v2/user", {
+      // Get user info using the userinfo endpoint
+      const userResponse = await fetch("https://api.vercel.com/login/oauth/userinfo", {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 
       let username = "";
       if (userResponse.ok) {
         const userData = await userResponse.json();
-        username = userData.user?.username || userData.user?.name || "";
+        username = userData.preferred_username || userData.name || userData.email || "";
       }
 
       return new Response(JSON.stringify({ 
