@@ -310,7 +310,11 @@ const ProjectEditorRoute = () => {
                     status: 'done' as const,
                     action: 'created' as const
                   }));
-                setFileActivities(activities);
+                // Preserve initial "Analyzing" activities at the top
+                setFileActivities(prev => {
+                  const analyzingActivities = prev.filter(a => a.action === 'analyzed_image');
+                  return [...analyzingActivities, ...activities];
+                });
 
                 // Distribute files across plan steps
                 const filesPerStep = Math.ceil(fileList.length / Math.max(planLines.length, 1));
@@ -678,7 +682,11 @@ const ProjectEditorRoute = () => {
                 status: 'done' as const,
                 action: (localProject.files[name] ? 'edited' : 'created') as 'edited' | 'created'
               }));
-            setFileActivities(activities);
+            // Preserve initial "Analyzing" activities at the top
+            setFileActivities(prev => {
+              const analyzingActivities = prev.filter(a => a.action === 'analyzed_image');
+              return [...analyzingActivities, ...activities];
+            });
 
             // Distribute files across plan steps
             const filesPerStep = Math.ceil(fileList.length / Math.max(planLines.length, 1));

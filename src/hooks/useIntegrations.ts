@@ -46,6 +46,8 @@ export function useIntegrations() {
   // Start Vercel OAuth flow
   const startVercelOAuth = async () => {
     const redirectUri = `${window.location.origin}/oauth/vercel/callback`;
+    // Save current location so we can redirect back after OAuth
+    sessionStorage.setItem('vercel_return_to', window.location.pathname);
     
     try {
       const { data, error } = await supabase.functions.invoke('vercel-oauth', {
