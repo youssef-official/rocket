@@ -7,6 +7,8 @@ import {
   Mail, Layers, Plus, Trash2, Send, TrendingUp,
   LogOut, ChevronRight, Bell, Search, Settings, Eye,
   BarChart2, Download, ChevronDown, Filter, Code,
+  LayoutGrid, MessageCircle, Calendar, DollarSign,
+  ArrowLeftRight, GraduationCap, ShoppingCart, Star, Coins,
 } from 'lucide-react';
 
 interface AdminData {
@@ -22,7 +24,7 @@ export const AdminPanel: React.FC = () => {
   const [data, setData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<'users' | 'plans' | 'transactions' | 'projects' | 'inbox' | 'templates'>('users');
+  const [tab, setTab] = useState<'dashboard' | 'users' | 'plans' | 'transactions' | 'projects' | 'inbox' | 'templates'>('dashboard');
 
   const [inboxTitle, setInboxTitle] = useState('');
   const [inboxBody, setInboxBody] = useState('');
@@ -119,187 +121,237 @@ export const AdminPanel: React.FC = () => {
 
   const css = `
     @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
-    
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
     body { font-family: 'Geist', -apple-system, sans-serif; }
 
     .vivora-root {
       display: flex; height: 100vh;
-      background: #000; color: #fff;
+      background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 50%, #e0f2f1 100%);
+      color: #004d40;
       font-family: 'Geist', sans-serif;
       overflow: hidden;
     }
 
-    /* ═══════════════════════════════════════════════════════
-       SIDEBAR
-    ═══════════════════════════════════════════════════════ */
+    /* SIDEBAR - light teal */
     .vivora-sidebar {
-      width: 240px; background: #0a0a0a;
-      border-right: 1px solid #1a1a1a;
+      width: 260px; background: #e0f2f1;
+      border-right: 1px solid rgba(0,131,143,0.15);
       display: flex; flex-direction: column;
       height: 100vh; overflow-y: auto;
       flex-shrink: 0;
     }
 
-    .vivora-user {
-      padding: 16px 14px; border-bottom: 1px solid #1a1a1a;
-      display: flex; align-items: center; gap: 10px;
-      cursor: pointer; transition: background 0.15s;
-    }
-    .vivora-user:hover { background: #111; }
-
-    .vivora-user-avatar {
-      width: 28px; height: 28px; border-radius: 6px;
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700; color: #fff;
+    .vivora-sidebar-logo {
+      padding: 24px 20px 20px;
+      font-size: 20px; font-weight: 700;
+      color: #00695c; letter-spacing: -0.5px;
     }
 
-    .vivora-user-info { flex: 1; min-width: 0; }
-    .vivora-user-name {
-      font-size: 13px; font-weight: 600; color: #e5e5e5;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .vivora-user-email {
-      font-size: 11px; color: #666;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    .vivora-nav { flex: 1; padding: 20px 12px; }
+    .vivora-nav { flex: 1; padding: 12px 14px; }
 
     .vivora-nav-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 10px; border-radius: 6px;
-      cursor: pointer; font-size: 13px; font-weight: 500;
-      color: #888; margin-bottom: 2px;
-      transition: all 0.15s ease;
-      position: relative;
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-radius: 12px;
+      cursor: pointer; font-size: 14px; font-weight: 500;
+      color: #00695c; margin-bottom: 4px;
+      transition: all 0.2s ease;
     }
 
-    .vivora-nav-item:hover { background: #111; color: #e5e5e5; }
+    .vivora-nav-item:hover { background: rgba(0,131,143,0.12); color: #004d40; }
 
     .vivora-nav-item.active {
-      background: #161616; color: #fff;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+      background: #00838f; color: #fff;
+      box-shadow: 0 2px 8px rgba(0,131,143,0.35);
     }
 
-    .vivora-nav-item.active::before {
-      content: ''; position: absolute; left: 0; top: 50%;
-      transform: translateY(-50%); width: 2px; height: 16px;
-      background: #3b82f6; border-radius: 0 2px 2px 0;
+    .vivora-nav-item.active .vivora-nav-count {
+      color: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.2);
     }
 
     .vivora-nav-count {
       margin-left: auto; font-size: 11px;
-      font-weight: 600; color: #666;
-      background: #161616; padding: 1px 6px;
-      border-radius: 4px; font-family: 'Geist Mono', monospace;
+      font-weight: 600; color: #00695c;
+      background: rgba(0,131,143,0.12); padding: 2px 8px;
+      border-radius: 6px; font-family: 'Geist Mono', monospace;
     }
 
-    .vivora-nav-item.active .vivora-nav-count {
-      color: #999; background: #1f1f1f;
-    }
-
-    .vivora-sidebar-footer {
-      padding: 12px; border-top: 1px solid #1a1a1a;
-    }
+    .vivora-sidebar-footer { padding: 16px 14px; border-top: 1px solid rgba(0,131,143,0.12); }
 
     .vivora-logout {
       display: flex; align-items: center; gap: 10px;
-      padding: 8px 10px; border-radius: 6px;
-      font-size: 13px; font-weight: 500; color: #ef4444;
+      padding: 10px 14px; border-radius: 12px;
+      font-size: 13px; font-weight: 500; color: #c62828;
       background: none; border: none; width: 100%;
       cursor: pointer; font-family: 'Geist', sans-serif;
-      transition: background 0.15s;
+      transition: background 0.2s;
     }
-    .vivora-logout:hover { background: rgba(239,68,68,0.1); }
+    .vivora-logout:hover { background: rgba(198,40,40,0.08); }
 
-    /* ═══════════════════════════════════════════════════════
-       MAIN AREA
-    ═══════════════════════════════════════════════════════ */
+    /* MAIN */
     .vivora-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .vivora-main-inner {
+      flex: 1; overflow-y: auto; padding: 28px 32px;
+      background: rgba(255,255,255,0.75);
+      backdrop-filter: blur(12px);
+      border-radius: 24px 0 0 0;
+      margin: 0 16px 16px 0;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
 
     /* TOPBAR */
     .vivora-topbar {
-      background: #0a0a0a; border-bottom: 1px solid #1a1a1a;
-      padding: 0 24px; height: 60px;
-      display: flex; align-items: center; justify-content: space-between;
-      flex-shrink: 0;
+      padding: 20px 32px 16px;
+      display: flex; align-items: flex-start; justify-content: space-between;
+      flex-shrink: 0; gap: 16px;
     }
 
+    .vivora-topbar-left {}
+    .vivora-welcome {
+      font-size: 14px; color: #00695c;
+      margin-bottom: 4px;
+    }
     .vivora-page-title {
-      font-size: 18px; font-weight: 700; color: #fff;
-      letter-spacing: -0.3px;
+      font-size: 26px; font-weight: 700; color: #1a1a1a;
+      letter-spacing: -0.5px;
     }
 
     .vivora-topbar-actions {
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: center; gap: 10px;
     }
 
     .vivora-topbar-search {
       display: flex; align-items: center; gap: 8px;
-      background: #111; border: 1px solid #1f1f1f;
-      border-radius: 6px; padding: 6px 10px; width: 220px;
-      transition: border-color 0.2s;
+      background: rgba(255,255,255,0.9); border: 1px solid rgba(0,105,92,0.2);
+      border-radius: 12px; padding: 10px 14px; width: 240px;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .vivora-topbar-search:focus-within { border-color: #333; }
+    .vivora-topbar-search:focus-within {
+      border-color: #00838f;
+      box-shadow: 0 0 0 3px rgba(0,131,143,0.15);
+    }
 
     .vivora-topbar-search input {
       background: none; border: none; outline: none;
-      color: #e5e5e5; font-size: 13px; width: 100%;
+      color: #1a1a1a; font-size: 13px; width: 100%;
       font-family: 'Geist', sans-serif;
     }
-    .vivora-topbar-search input::placeholder { color: #555; }
+    .vivora-topbar-search input::placeholder { color: #78909c; }
 
     .vivora-icon-btn {
-      width: 32px; height: 32px; background: #111;
-      border: 1px solid #1f1f1f; border-radius: 6px;
+      width: 40px; height: 40px; background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(0,105,92,0.2); border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; color: #888;
-      transition: all 0.15s ease;
+      cursor: pointer; color: #00695c;
+      transition: all 0.2s ease;
     }
-    .vivora-icon-btn:hover { background: #161616; color: #e5e5e5; border-color: #2a2a2a; }
+    .vivora-icon-btn:hover { background: #fff; border-color: #00838f; color: #00838f; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+    .vivora-profile-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 12px 6px 6px;
+      border-radius: 12px; background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(0,105,92,0.2);
+    }
+    .vivora-user-avatar {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #00838f, #00695c);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: #fff;
+    }
+    .vivora-user-info { text-align: left; }
+    .vivora-user-name { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+    .vivora-user-email { font-size: 11px; color: #78909c; }
 
     /* CONTENT */
-    .vivora-content {
-      flex: 1; overflow-y: auto; padding: 24px;
-      background: #000;
+    .vivora-content { padding: 0; }
+
+    /* DASHBOARD CARDS */
+    .vivora-dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .vivora-dash-card {
+      background: #fff; border-radius: 16px;
+      padding: 22px; border: 1px solid rgba(0,105,92,0.08);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+      transition: box-shadow 0.2s;
     }
+    .vivora-dash-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+
+    .vivora-dash-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .vivora-dash-card-title { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+    .vivora-dash-card-link { font-size: 12px; color: #00838f; font-weight: 500; cursor: pointer; }
+    .vivora-dash-card-link:hover { text-decoration: underline; }
+
+    .vivora-stat-cards {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-bottom: 20px;
+    }
+    .vivora-stat-card {
+      background: #fff; border-radius: 16px;
+      padding: 20px; border: 1px solid rgba(0,105,92,0.08);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .vivora-stat-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .vivora-stat-icon.purple { background: rgba(156,39,176,0.12); color: #7b1fa2; }
+    .vivora-stat-icon.pink { background: rgba(233,30,99,0.12); color: #c2185b; }
+    .vivora-stat-icon.orange { background: rgba(255,152,0,0.12); color: #e65100; }
+    .vivora-stat-icon.teal { background: rgba(0,131,143,0.12); color: #00838f; }
+    .vivora-stat-label { font-size: 11px; font-weight: 600; color: #78909c; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .vivora-stat-value { font-size: 22px; font-weight: 700; color: #1a1a1a; }
+
+    .vivora-reminder-card {
+      background: linear-gradient(135deg, #00695c 0%, #00838f 100%);
+      border-radius: 16px; padding: 24px;
+      color: #fff; display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 8px 24px rgba(0,131,143,0.3);
+    }
+    .vivora-reminder-label { font-size: 12px; opacity: 0.9; margin-bottom: 6px; }
+    .vivora-reminder-title { font-size: 18px; font-weight: 700; margin-bottom: 14px; }
+    .vivora-reminder-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 12px;
+      background: #fff; color: #00695c; font-size: 13px; font-weight: 600;
+      border: none; cursor: pointer; font-family: 'Geist', sans-serif;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .vivora-reminder-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
     /* FILTER BAR */
     .vivora-filter-bar {
       display: flex; align-items: center; gap: 8px;
       margin-bottom: 20px; padding-bottom: 16px;
-      border-bottom: 1px solid #1a1a1a;
+      border-bottom: 1px solid rgba(0,105,92,0.12);
     }
 
     .vivora-tab-btn {
-      padding: 6px 12px; border-radius: 6px;
+      padding: 8px 14px; border-radius: 10px;
       font-size: 13px; font-weight: 500;
       background: none; border: 1px solid transparent;
-      color: #888; cursor: pointer;
+      color: #00695c; cursor: pointer;
       font-family: 'Geist', sans-serif;
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
     }
-
-    .vivora-tab-btn:hover { background: #111; color: #e5e5e5; }
-
-    .vivora-tab-btn.active {
-      background: #161616; color: #fff;
-      border-color: #2a2a2a;
-    }
+    .vivora-tab-btn:hover { background: rgba(0,131,143,0.08); color: #004d40; }
+    .vivora-tab-btn.active { background: rgba(0,131,143,0.15); color: #00695c; }
 
     .vivora-dropdown-btn {
       display: flex; align-items: center; gap: 6px;
-      padding: 6px 12px; border-radius: 6px;
+      padding: 8px 14px; border-radius: 10px;
       font-size: 13px; font-weight: 500;
-      background: #111; border: 1px solid #1f1f1f;
-      color: #888; cursor: pointer;
+      background: rgba(255,255,255,0.9); border: 1px solid rgba(0,105,92,0.2);
+      color: #00695c; cursor: pointer;
       font-family: 'Geist', sans-serif;
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
     }
-    .vivora-dropdown-btn:hover { background: #161616; color: #e5e5e5; border-color: #2a2a2a; }
+    .vivora-dropdown-btn:hover { background: #fff; border-color: #00838f; }
 
     /* EMPTY STATE */
     .vivora-empty {
@@ -307,191 +359,125 @@ export const AdminPanel: React.FC = () => {
       align-items: center; justify-content: center;
       padding: 80px 20px; text-align: center;
     }
-
     .vivora-empty-icon {
-      width: 48px; height: 48px; border-radius: 10px;
-      background: #111; display: flex;
+      width: 48px; height: 48px; border-radius: 12px;
+      background: rgba(0,131,143,0.1); display: flex;
       align-items: center; justify-content: center;
-      margin-bottom: 16px; color: #444;
+      margin-bottom: 16px; color: #00838f;
     }
-
-    .vivora-empty-title {
-      font-size: 16px; font-weight: 600; color: #e5e5e5;
-      margin-bottom: 6px;
-    }
-
-    .vivora-empty-text {
-      font-size: 13px; color: #666; max-width: 360px;
-      line-height: 1.5; margin-bottom: 20px;
-    }
+    .vivora-empty-title { font-size: 16px; font-weight: 600; color: #1a1a1a; margin-bottom: 6px; }
+    .vivora-empty-text { font-size: 13px; color: #607d8b; max-width: 360px; line-height: 1.5; margin-bottom: 20px; }
 
     .vivora-btn {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 16px; border-radius: 6px;
+      padding: 10px 18px; border-radius: 12px;
       font-size: 13px; font-weight: 600;
       cursor: pointer; border: none;
       font-family: 'Geist', sans-serif;
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
     }
-
-    .vivora-btn-primary {
-      background: #fff; color: #000;
-    }
-    .vivora-btn-primary:hover:not(:disabled) {
-      background: #e5e5e5;
-    }
-
-    .vivora-btn-secondary {
-      background: #161616; color: #e5e5e5;
-      border: 1px solid #2a2a2a;
-    }
-    .vivora-btn-secondary:hover:not(:disabled) {
-      background: #1f1f1f; border-color: #333;
-    }
-
-    .vivora-btn:disabled {
-      opacity: 0.5; cursor: not-allowed;
-    }
+    .vivora-btn-primary { background: #00838f; color: #fff; }
+    .vivora-btn-primary:hover:not(:disabled) { background: #00695c; box-shadow: 0 4px 12px rgba(0,131,143,0.35); }
+    .vivora-btn-secondary { background: #fff; color: #00695c; border: 1px solid rgba(0,131,143,0.3); }
+    .vivora-btn-secondary:hover:not(:disabled) { background: rgba(0,131,143,0.08); }
+    .vivora-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* TABLE */
     .vivora-table-card {
-      background: #0a0a0a; border: 1px solid #1a1a1a;
-      border-radius: 8px; overflow: hidden;
+      background: #fff; border: 1px solid rgba(0,105,92,0.08);
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
     }
-
-    .vivora-table {
-      width: 100%; border-collapse: collapse;
-    }
-
-    .vivora-table thead tr {
-      border-bottom: 1px solid #1a1a1a;
-    }
-
+    .vivora-table { width: 100%; border-collapse: collapse; }
+    .vivora-table thead tr { border-bottom: 1px solid rgba(0,105,92,0.12); background: rgba(0,131,143,0.04); }
     .vivora-table th {
-      padding: 12px 16px; text-align: left;
+      padding: 14px 18px; text-align: left;
       font-size: 11px; font-weight: 600;
-      color: #666; letter-spacing: 0.5px;
+      color: #00695c; letter-spacing: 0.5px;
       text-transform: uppercase;
-      font-family: 'Geist Mono', monospace;
     }
-
     .vivora-table td {
-      padding: 14px 16px; font-size: 13px;
-      border-bottom: 1px solid #111; color: #e5e5e5;
+      padding: 14px 18px; font-size: 13px;
+      border-bottom: 1px solid rgba(0,105,92,0.06);
+      color: #37474f;
     }
-
     .vivora-table tbody tr:last-child td { border-bottom: none; }
+    .vivora-table tbody tr { transition: background 0.12s ease; }
+    .vivora-table tbody tr:hover { background: rgba(0,131,143,0.04); }
 
-    .vivora-table tbody tr {
-      transition: background 0.12s ease;
-    }
-    .vivora-table tbody tr:hover {
-      background: #0d0d0d;
-    }
-
-    .td-strong { font-weight: 600; color: #fff; }
-    .td-muted { color: #666; font-size: 12px; }
-    .td-mono { font-family: 'Geist Mono', monospace; font-size: 11.5px; color: #888; }
+    .td-strong { font-weight: 600; color: #1a1a1a; }
+    .td-muted { color: #78909c; font-size: 12px; }
+    .td-mono { font-family: 'Geist Mono', monospace; font-size: 11.5px; color: #00695c; }
 
     .vivora-badge {
       display: inline-flex; align-items: center; gap: 4px;
-      padding: 2px 8px; border-radius: 4px;
+      padding: 3px 10px; border-radius: 8px;
       font-size: 11px; font-weight: 600;
-      font-family: 'Geist Mono', monospace;
       text-transform: uppercase; letter-spacing: 0.3px;
     }
-
-    .badge-blue { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
-    .badge-green { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
-    .badge-gray { background: #161616; color: #666; border: 1px solid #1f1f1f; }
+    .badge-blue { background: rgba(0,131,143,0.12); color: #00695c; }
+    .badge-green { background: rgba(0,150,136,0.15); color: #00695c; }
+    .badge-gray { background: rgba(96,125,139,0.12); color: #546e7a; }
 
     /* FORMS */
-    .vivora-form-layout {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 20px; margin-bottom: 24px;
-    }
-
+    .vivora-form-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
     .vivora-form-card {
-      background: #0a0a0a; border: 1px solid #1a1a1a;
-      border-radius: 8px; padding: 24px;
+      background: #fff; border: 1px solid rgba(0,105,92,0.08);
+      border-radius: 16px; padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
     }
-
-    .vivora-form-header {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 20px;
-    }
-
+    .vivora-form-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
     .vivora-form-icon {
-      width: 32px; height: 32px; border-radius: 6px;
-      background: #161616; display: flex;
+      width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(0,131,143,0.1); display: flex;
       align-items: center; justify-content: center;
-      color: #888;
+      color: #00838f;
     }
-
-    .vivora-form-title {
-      font-size: 15px; font-weight: 600; color: #fff;
-    }
+    .vivora-form-title { font-size: 15px; font-weight: 600; color: #1a1a1a; }
 
     .vivora-field { margin-bottom: 14px; }
-
     .vivora-field-label {
       display: block; font-size: 11px; font-weight: 600;
-      color: #888; text-transform: uppercase;
+      color: #00695c; text-transform: uppercase;
       letter-spacing: 0.5px; margin-bottom: 6px;
-      font-family: 'Geist Mono', monospace;
     }
-
     .vivora-field-input {
-      width: 100%; padding: 8px 12px;
-      background: #111; border: 1px solid #1f1f1f;
-      border-radius: 6px; font-size: 13px;
-      color: #e5e5e5; outline: none;
+      width: 100%; padding: 10px 14px;
+      background: rgba(255,255,255,0.9); border: 1px solid rgba(0,105,92,0.2);
+      border-radius: 10px; font-size: 13px;
+      color: #1a1a1a; outline: none;
       font-family: 'Geist', sans-serif;
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
     }
-
     .vivora-field-input:focus {
-      background: #161616; border-color: #333;
-      box-shadow: 0 0 0 3px rgba(255,255,255,0.05);
+      border-color: #00838f;
+      box-shadow: 0 0 0 3px rgba(0,131,143,0.15);
     }
-
-    .vivora-field-input::placeholder { color: #555; }
-
-    .vivora-textarea {
-      resize: none; min-height: 90px;
-      font-family: 'Geist', sans-serif;
-    }
+    .vivora-field-input::placeholder { color: #90a4ae; }
+    .vivora-textarea { resize: none; min-height: 90px; font-family: 'Geist', sans-serif; }
 
     /* NOTIF LIST */
-    .vivora-notif-list { display: flex; flex-direction: column; gap: 1px; }
-
+    .vivora-notif-list { display: flex; flex-direction: column; gap: 10px; }
     .vivora-notif-item {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 16px; background: #0a0a0a;
-      border: 1px solid #1a1a1a; border-radius: 6px;
-      transition: all 0.15s ease;
+      padding: 16px 18px; background: #fff;
+      border: 1px solid rgba(0,105,92,0.08);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      transition: all 0.2s ease;
     }
-    .vivora-notif-item:hover { background: #0d0d0d; border-color: #222; }
-
-    .vivora-notif-title {
-      font-size: 13px; font-weight: 600; color: #e5e5e5;
-    }
-    .vivora-notif-date {
-      font-size: 11px; color: #666; margin-top: 2px;
-      font-family: 'Geist Mono', monospace;
-    }
+    .vivora-notif-item:hover { border-color: rgba(0,131,143,0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+    .vivora-notif-title { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+    .vivora-notif-date { font-size: 11px; color: #78909c; margin-top: 2px; }
 
     .vivora-del-btn {
-      width: 28px; height: 28px; background: none;
-      border: 1px solid rgba(239,68,68,0.2); border-radius: 5px;
+      width: 32px; height: 32px; background: rgba(198,40,40,0.08);
+      border: 1px solid rgba(198,40,40,0.2); border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; color: rgba(239,68,68,0.5);
+      cursor: pointer; color: #c62828;
       transition: all 0.15s ease;
     }
-    .vivora-del-btn:hover {
-      background: rgba(239,68,68,0.1);
-      border-color: #ef4444; color: #ef4444;
-    }
+    .vivora-del-btn:hover { background: rgba(198,40,40,0.15); border-color: #c62828; }
 
     /* TEMPLATES GRID */
     .vivora-tpl-grid {
@@ -499,95 +485,67 @@ export const AdminPanel: React.FC = () => {
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 16px;
     }
-
     .vivora-tpl-card {
-      background: #0a0a0a; border: 1px solid #1a1a1a;
-      border-radius: 8px; overflow: hidden;
+      background: #fff; border: 1px solid rgba(0,105,92,0.08);
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
       transition: all 0.2s ease; cursor: default;
     }
     .vivora-tpl-card:hover {
-      border-color: #2a2a2a;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      border-color: rgba(0,131,143,0.2);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
       transform: translateY(-2px);
     }
     .vivora-tpl-card:hover .vivora-tpl-del { opacity: 1; }
-
     .vivora-tpl-thumb {
-      aspect-ratio: 16/9; background: #111;
+      aspect-ratio: 16/9; background: rgba(0,131,143,0.06);
       display: flex; align-items: center; justify-content: center;
       overflow: hidden;
     }
     .vivora-tpl-thumb img { width: 100%; height: 100%; object-fit: cover; }
-
-    .vivora-tpl-body {
-      padding: 12px 14px; display: flex;
-      align-items: flex-start; justify-content: space-between;
-    }
-
-    .vivora-tpl-name {
-      font-size: 13px; font-weight: 600; color: #e5e5e5;
-    }
-    .vivora-tpl-cat {
-      font-size: 11px; color: #666; margin-top: 2px;
-    }
+    .vivora-tpl-body { padding: 14px 16px; display: flex; align-items: flex-start; justify-content: space-between; }
+    .vivora-tpl-name { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+    .vivora-tpl-cat { font-size: 11px; color: #78909c; margin-top: 2px; }
     .vivora-tpl-del { opacity: 0; transition: opacity 0.15s; }
 
     /* LOADING / ERROR */
     .vivora-full {
       display: flex; align-items: center; justify-content: center;
-      min-height: 100vh; background: #000;
+      min-height: 100vh; background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
       font-family: 'Geist', sans-serif;
     }
-
     .vivora-spin {
       width: 36px; height: 36px;
-      border: 2px solid #1f1f1f;
-      border-top-color: #fff; border-radius: 50%;
+      border: 2px solid rgba(0,131,143,0.2);
+      border-top-color: #00838f; border-radius: 50%;
       animation: vspin 0.7s linear infinite;
       margin: 0 auto 14px;
     }
     @keyframes vspin { to { transform: rotate(360deg); } }
-
-    .vivora-loading-text {
-      font-size: 13px; color: #888; text-align: center;
-    }
+    .vivora-loading-text { font-size: 13px; color: #00695c; text-align: center; }
 
     .vivora-err-card {
-      background: #0a0a0a; border: 1px solid #1f1f1f;
-      border-radius: 10px; padding: 40px; text-align: center;
+      background: #fff; border: 1px solid rgba(0,105,92,0.15);
+      border-radius: 16px; padding: 40px; text-align: center;
       max-width: 400px; width: 90%;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
     }
-
     .vivora-err-icon {
-      width: 48px; height: 48px; border-radius: 10px;
-      background: rgba(239,68,68,0.1); display: flex;
+      width: 48px; height: 48px; border-radius: 12px;
+      background: rgba(198,40,40,0.1); display: flex;
       align-items: center; justify-content: center;
-      margin: 0 auto 16px; color: #ef4444;
+      margin: 0 auto 16px; color: #c62828;
     }
-
-    .vivora-err-title {
-      font-size: 18px; font-weight: 700; color: #fff;
-      margin-bottom: 8px;
-    }
-
-    .vivora-err-msg {
-      font-size: 13px; color: #888; margin-bottom: 24px;
-      line-height: 1.6;
-    }
+    .vivora-err-title { font-size: 18px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; }
+    .vivora-err-msg { font-size: 13px; color: #607d8b; margin-bottom: 24px; line-height: 1.6; }
 
     /* SCROLLBAR */
-    .vivora-content::-webkit-scrollbar { width: 8px; }
-    .vivora-content::-webkit-scrollbar-track { background: #000; }
-    .vivora-content::-webkit-scrollbar-thumb {
-      background: #1a1a1a; border-radius: 4px;
-    }
-    .vivora-content::-webkit-scrollbar-thumb:hover { background: #222; }
-
+    .vivora-main-inner::-webkit-scrollbar { width: 8px; }
+    .vivora-main-inner::-webkit-scrollbar-track { background: rgba(0,105,92,0.06); border-radius: 4px; }
+    .vivora-main-inner::-webkit-scrollbar-thumb { background: rgba(0,131,143,0.3); border-radius: 4px; }
     .vivora-sidebar::-webkit-scrollbar { width: 6px; }
-    .vivora-sidebar::-webkit-scrollbar-track { background: #0a0a0a; }
-    .vivora-sidebar::-webkit-scrollbar-thumb {
-      background: #1a1a1a; border-radius: 3px;
-    }
+    .vivora-sidebar::-webkit-scrollbar-track { background: #e0f2f1; }
+    .vivora-sidebar::-webkit-scrollbar-thumb { background: rgba(0,131,143,0.3); border-radius: 3px; }
   `;
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -634,18 +592,21 @@ export const AdminPanel: React.FC = () => {
   // CONFIG
   // ═══════════════════════════════════════════════════════════════════════════
   const navItems = [
-    { key: 'users'        as const, label: 'Users',        icon: Users,      count: data.users.length },
-    { key: 'plans'        as const, label: 'Plans',        icon: CreditCard, count: data.plans.length },
-    { key: 'transactions' as const, label: 'Transactions', icon: TrendingUp, count: data.transactions.length },
-    { key: 'projects'     as const, label: 'Projects',     icon: FolderOpen, count: data.projects.length },
-    { key: 'inbox'        as const, label: 'Inbox',        icon: Mail,       count: notifications.length },
+    { key: 'dashboard'    as const, label: 'Dashboard',    icon: LayoutGrid,  count: 0 },
+    { key: 'users'        as const, label: 'Users',        icon: Users,       count: data.users.length },
+    { key: 'inbox'        as const, label: 'Inbox',        icon: MessageCircle, count: notifications.length },
+    { key: 'transactions' as const, label: 'Statistics',   icon: BarChart2,   count: data.transactions.length },
+    { key: 'projects'     as const, label: 'Projects',     icon: FolderOpen,  count: data.projects.length },
+    { key: 'plans'        as const, label: 'Plans',       icon: CreditCard,  count: data.plans.length },
     { key: 'templates'    as const, label: 'Templates',    icon: Layers,     count: templates.length },
   ];
 
   const pageTitles: Record<string, string> = {
-    users: 'Users', plans: 'Plans', transactions: 'Transactions',
+    dashboard: 'Dashboard', users: 'Users', plans: 'Plans', transactions: 'Statistics',
     projects: 'Projects', inbox: 'Inbox', templates: 'Templates',
   };
+
+  const displayName = (user?.user_metadata?.full_name as string) || (data?.users?.find((u: any) => u.id === user?.id)?.display_name) || 'Admin';
 
   return (
     <>
@@ -656,14 +617,7 @@ export const AdminPanel: React.FC = () => {
             SIDEBAR
         ═══════════════════════════════════════════════════════════════════ */}
         <aside className="vivora-sidebar">
-          <div className="vivora-user">
-            <div className="vivora-user-avatar">V</div>
-            <div className="vivora-user-info">
-              <div className="vivora-user-name">Vivora Admin</div>
-              <div className="vivora-user-email">{user?.email || 'admin@vivora.ai'}</div>
-            </div>
-            <ChevronDown size={14} color="#666" />
-          </div>
+          <div className="vivora-sidebar-logo">Vivora</div>
 
           <nav className="vivora-nav">
             {navItems.map(item => {
@@ -675,9 +629,9 @@ export const AdminPanel: React.FC = () => {
                   className={`vivora-nav-item ${active ? 'active' : ''}`}
                   onClick={() => setTab(item.key)}
                 >
-                  <Icon size={16} />
+                  <Icon size={18} />
                   <span>{item.label}</span>
-                  <span className="vivora-nav-count">{item.count}</span>
+                  {item.count > 0 && <span className="vivora-nav-count">{item.count}</span>}
                 </div>
               );
             })}
@@ -697,20 +651,126 @@ export const AdminPanel: React.FC = () => {
 
           {/* TOPBAR */}
           <header className="vivora-topbar">
-            <h1 className="vivora-page-title">{pageTitles[tab]}</h1>
+            <div className="vivora-topbar-left">
+              <div className="vivora-welcome">Welcome back, {displayName} 👋</div>
+              <h1 className="vivora-page-title">{pageTitles[tab]}</h1>
+            </div>
             <div className="vivora-topbar-actions">
               <div className="vivora-topbar-search">
-                <Search size={14} color="#666" />
+                <Search size={16} color="#78909c" />
                 <input placeholder="Search..." />
               </div>
-              <button className="vivora-icon-btn"><Code size={16} /></button>
-              <button className="vivora-icon-btn"><Bell size={16} /></button>
-              <button className="vivora-icon-btn"><Settings size={16} /></button>
+              <button className="vivora-icon-btn"><Bell size={18} /></button>
+              <div className="vivora-profile-row">
+                <div className="vivora-user-avatar">
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+                <div className="vivora-user-info">
+                  <div className="vivora-user-name">{displayName}</div>
+                  <div className="vivora-user-email">{user?.email || 'admin@vivora.ai'}</div>
+                </div>
+              </div>
             </div>
           </header>
 
           {/* CONTENT */}
-          <div className="vivora-content">
+          <div className="vivora-main-inner">
+
+            {/* ══════════════════════════════════════════════════════════════
+                DASHBOARD
+            ══════════════════════════════════════════════════════════════ */}
+            {tab === 'dashboard' && (
+              <>
+                {/* Stat Cards */}
+                <div className="vivora-stat-cards">
+                  <div className="vivora-stat-card">
+                    <div className="vivora-stat-icon purple">
+                      <Users size={22} />
+                    </div>
+                    <div>
+                      <div className="vivora-stat-label">Total Users</div>
+                      <div className="vivora-stat-value">{data.users.length}</div>
+                    </div>
+                  </div>
+                  <div className="vivora-stat-card">
+                    <div className="vivora-stat-icon pink">
+                      <ShoppingCart size={22} />
+                    </div>
+                    <div>
+                      <div className="vivora-stat-label">Total Projects</div>
+                      <div className="vivora-stat-value">{data.projects.length}</div>
+                    </div>
+                  </div>
+                  <div className="vivora-stat-card">
+                    <div className="vivora-stat-icon orange">
+                      <Coins size={22} />
+                    </div>
+                    <div>
+                      <div className="vivora-stat-label">Total Transactions</div>
+                      <div className="vivora-stat-value">{data.transactions.length}</div>
+                    </div>
+                  </div>
+                  <div className="vivora-stat-card">
+                    <div className="vivora-stat-icon teal">
+                      <Star size={22} />
+                    </div>
+                    <div>
+                      <div className="vivora-stat-label">Active Plans</div>
+                      <div className="vivora-stat-value">{data.plans.length}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Cards Grid */}
+                <div className="vivora-dash-grid">
+                  <div className="vivora-dash-card">
+                    <div className="vivora-dash-card-header">
+                      <div className="vivora-dash-card-title">Recent Users</div>
+                      <div className="vivora-dash-card-link" onClick={() => setTab('users')}>View all</div>
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#607d8b' }}>
+                      {data.users.slice(0, 5).map((u: any) => (
+                        <div key={u.id} style={{ padding: '8px 0', borderBottom: '1px solid rgba(0,105,92,0.06)' }}>
+                          <div style={{ fontWeight: 600, color: '#1a1a1a' }}>{u.email || '—'}</div>
+                          <div style={{ fontSize: '11px', color: '#78909c', marginTop: '2px' }}>
+                            {new Date(u.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="vivora-dash-card">
+                    <div className="vivora-dash-card-header">
+                      <div className="vivora-dash-card-title">Recent Projects</div>
+                      <div className="vivora-dash-card-link" onClick={() => setTab('projects')}>View all</div>
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#607d8b' }}>
+                      {data.projects.slice(0, 5).map((p: any) => (
+                        <div key={p.id} style={{ padding: '8px 0', borderBottom: '1px solid rgba(0,105,92,0.06)' }}>
+                          <div style={{ fontWeight: 600, color: '#1a1a1a' }}>{p.name}</div>
+                          <div style={{ fontSize: '11px', color: '#78909c', marginTop: '2px' }}>
+                            {p.project_type} • {p.is_published ? 'Published' : 'Draft'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reminder Card */}
+                <div className="vivora-reminder-card">
+                  <div>
+                    <div className="vivora-reminder-label">DON'T FORGET</div>
+                    <div className="vivora-reminder-title">Review pending notifications</div>
+                    <button className="vivora-reminder-btn" onClick={() => setTab('inbox')}>
+                      Go to Inbox <ChevronRight size={14} />
+                    </button>
+                  </div>
+                  <div style={{ fontSize: '48px', opacity: 0.3 }}>📬</div>
+                </div>
+              </>
+            )}
 
             {/* ══════════════════════════════════════════════════════════════
                 INBOX
