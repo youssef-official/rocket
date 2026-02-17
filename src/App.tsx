@@ -244,6 +244,17 @@ const ProjectEditorRoute = () => {
           let fullResponse = '';
           const detectedFiles = new Set<string>();
 
+          // Add "Analyzing image" activity if image was uploaded
+          if (savedImageUrl) {
+            const isDesignRef = prompt.toLowerCase().includes('design') || prompt.toLowerCase().includes('تصميم') || prompt.toLowerCase().includes('mockup') || prompt.toLowerCase().includes('صفحة');
+            const imgFileName = savedImageUrl.split('/').pop() || 'uploaded-image';
+            setFileActivities([{
+              name: isDesignRef ? `Design Reference: ${imgFileName}` : imgFileName,
+              status: 'done',
+              action: 'analyzed_image'
+            }]);
+          }
+
           // Build prompt with safety rules
           const userPrompt = `${prompt}\n\n[STRICT RULE: Every component used MUST be imported. If you use <AnimatePresence>, you MUST add: import { motion, AnimatePresence } from "framer-motion"; at the top of the file. NO EXCEPTIONS.]`;
 
@@ -511,9 +522,33 @@ const ProjectEditorRoute = () => {
     setIsChatMode(false);
     setIsGenerating(true);
     setStreamingContent('');
-    setFileActivities([]);
     setStatusMessage(t('chat.analyzing'));
     setGenerationPhase({ phase: 'planning', message: t('chat.analyzing') });
+
+    // Add "Analyzing image/file" activities for uploaded files
+    const initialActivities: FileActivity[] = [];
+    if (imageUrl) {
+      const urls = imageUrl.split(',').filter(Boolean);
+      urls.forEach(url => {
+        const fileMetaMatch = url.match(/\[FILE:(\w+):([^\]]+)\]/);
+        if (fileMetaMatch) {
+          initialActivities.push({
+            name: `Analyzing: ${fileMetaMatch[2]}`,
+            status: 'done',
+            action: 'analyzed_image'
+          });
+        } else {
+          const imgName = url.split('/').pop() || 'uploaded-image';
+          const isDesignRef = content.toLowerCase().includes('design') || content.toLowerCase().includes('تصميم') || content.toLowerCase().includes('mockup') || content.toLowerCase().includes('مثل');
+          initialActivities.push({
+            name: isDesignRef ? `Analyzing design: ${imgName}` : `Analyzing image: ${imgName}`,
+            status: 'done',
+            action: 'analyzed_image'
+          });
+        }
+      });
+    }
+    setFileActivities(initialActivities);
 
     try {
       // Step 1: Thinking phase
