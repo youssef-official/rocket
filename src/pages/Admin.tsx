@@ -20,6 +20,12 @@ import {
   Search,
   Settings,
   Bell,
+  ChevronRight,
+  LayoutDashboard,
+  LogOut,
+  ExternalLink,
+  ShieldCheck,
+  Filter
 } from 'lucide-react';
 
 interface AdminData {
@@ -29,7 +35,7 @@ interface AdminData {
   projects: any[];
 }
 
-export const AdminPanel: React.FC = () => {
+export default function App() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
@@ -60,8 +66,8 @@ export const AdminPanel: React.FC = () => {
 
     if (!user) {
       const checkCurrentSession = async () => {
-        const { data } = await supabase.auth.getSession();
-        if (!data.session) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
           navigate('/login');
         }
       };
@@ -71,20 +77,8 @@ export const AdminPanel: React.FC = () => {
 
     const fetchData = async () => {
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData?.session) {
-          navigate('/login');
-          return;
-        }
         const { data: result, error: fnError } = await supabase.functions.invoke('admin-data');
-        if (fnError) {
-          const errorMsg = fnError.message || '';
-          if (errorMsg.includes('Unauthorized') || errorMsg.includes('401')) {
-            setError('Unauthorized - Please log in again');
-            return;
-          }
-          throw new Error(errorMsg);
-        }
+        if (fnError) throw new Error(fnError.message);
         if (result?.error) {
           setError(result.error);
           return;
@@ -123,11 +117,7 @@ export const AdminPanel: React.FC = () => {
       target_plan: inboxPlan,
       created_by: user?.id,
     });
-    setInboxTitle('');
-    setInboxBody('');
-    setInboxImage('');
-    setInboxLink('');
-    setInboxPlan('all');
+    setInboxTitle(''); setInboxBody(''); setInboxImage(''); setInboxLink(''); setInboxPlan('all');
     await fetchNotifications();
     setSendingNotif(false);
   };
@@ -148,25 +138,17 @@ export const AdminPanel: React.FC = () => {
       created_by: user?.id,
       sort_order: templates.length,
     });
-    setTplName('');
-    setTplImage('');
-    setTplPrompt('');
-    setTplCategory('general');
+    setTplName(''); setTplImage(''); setTplPrompt(''); setTplCategory('general');
     await fetchTemplates();
     setSavingTpl(false);
   };
 
-  const handleDeleteTemplate = async (id: string) => {
-    await supabase.from('templates').delete().eq('id', id);
-    await fetchTemplates();
-  };
-
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-blue-400 mx-auto mb-3" />
-          <p className="text-slate-300 font-medium">Loading Admin Panel...</p>
+      <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+          <Loader2 className="w-6 h-6 text-indigo-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
         </div>
       </div>
     );
@@ -174,533 +156,366 @@ export const AdminPanel: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-        <div className="bg-slate-800 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center border border-red-500/30">
-          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">Access Denied</h2>
-          <p className="text-slate-400 mb-6">{error}</p>
-          <button
-            onClick={() => navigate('/')}
-            className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Go Home
+      <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-6">
+        <div className="bg-[#121214] border border-red-500/20 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl">
+          <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle className="w-10 h-10 text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Access Restricted</h2>
+          <p className="text-zinc-400 mb-8">{error}</p>
+          <button onClick={() => navigate('/')} className="w-full py-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-2xl transition-all active:scale-95">
+            Return to Dashboard
           </button>
         </div>
       </div>
     );
   }
 
-  if (!data) return null;
-
-  const tabs = [
-    { key: 'users' as const, label: 'Users', icon: Users, count: data.users.length },
-    { key: 'plans' as const, label: 'Plans', icon: CreditCard, count: data.plans.length },
-    { key: 'transactions' as const, label: 'Transactions', icon: TrendingUp, count: data.transactions.length },
-    { key: 'projects' as const, label: 'Projects', icon: FolderOpen, count: data.projects.length },
-    { key: 'inbox' as const, label: 'Notifications', icon: Mail, count: notifications.length },
-    { key: 'templates' as const, label: 'Templates', icon: Layers, count: templates.length },
+  const navItems = [
+    { id: 'users', label: 'Users', icon: Users, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+    { id: 'plans', label: 'Plans', icon: CreditCard, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+    { id: 'transactions', label: 'Billing', icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+    { id: 'projects', label: 'Projects', icon: FolderOpen, color: 'text-orange-400', bg: 'bg-orange-400/10' },
+    { id: 'inbox', label: 'Inbox', icon: Mail, color: 'text-pink-400', bg: 'bg-pink-400/10' },
+    { id: 'templates', label: 'Templates', icon: Layers, color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
   ];
 
-  const inputClass =
-    'w-full px-4 py-3 bg-white/5 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all';
-  const labelClass = 'text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 block';
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700/50 shadow-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-lg">V</span>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">Vivora Admin</h1>
-                <p className="text-xs text-slate-400 mt-0.5">Management Console</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button className="p-2.5 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-400 hover:text-slate-200">
-                <Search className="w-5 h-5" />
-              </button>
-              <button className="p-2.5 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-400 hover:text-slate-200">
-                <Bell className="w-5 h-5" />
-              </button>
-              <button className="p-2.5 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-400 hover:text-slate-200">
-                <Settings className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="p-2.5 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors text-slate-300 hover:text-white border border-slate-600"
-                title="Toggle Theme"
-              >
-                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
-            </div>
+    <div className="flex min-h-screen bg-[#09090b] text-zinc-100 font-sans selection:bg-indigo-500/30">
+      
+      {/* Sidebar */}
+      <aside className="w-72 bg-[#121214] border-r border-zinc-800 flex flex-col fixed h-full z-50">
+        <div className="p-8 flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <ShieldCheck className="w-6 h-6 text-white" />
           </div>
+          <span className="text-xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
+            VIVORA <span className="text-indigo-500">PRO</span>
+          </span>
         </div>
-      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Statistics Cards */}
-        <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-3xl border border-slate-700/50 p-8 mb-8 backdrop-blur-sm">
-          <h2 className="text-white font-semibold mb-6">Dashboard Overview</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {tabs.slice(0, 4).map((t) => {
-              const Icon = t.icon;
-              const colors = [
-                'from-blue-500/20 to-blue-600/20 border-blue-500/30',
-                'from-purple-500/20 to-purple-600/20 border-purple-500/30',
-                'from-emerald-500/20 to-emerald-600/20 border-emerald-500/30',
-                'from-pink-500/20 to-pink-600/20 border-pink-500/30',
-              ];
-              const iconColors = [
-                'text-blue-400',
-                'text-purple-400',
-                'text-emerald-400',
-                'text-pink-400',
-              ];
-              const bgColors = [
-                'bg-blue-500/10',
-                'bg-purple-500/10',
-                'bg-emerald-500/10',
-                'bg-pink-500/10',
-              ];
-              const idx = tabs.indexOf(t);
-              return (
-                <div
-                  key={t.key}
-                  className={`bg-gradient-to-br ${colors[idx]} border rounded-2xl p-6 backdrop-blur-sm hover:border-opacity-100 transition-all`}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`p-3 ${bgColors[idx]} rounded-xl`}>
-                      <Icon className={`w-6 h-6 ${iconColors[idx]}`} />
+        <nav className="flex-1 px-4 space-y-2 mt-4">
+          <p className="px-4 text-[10px] font-bold text-zinc-500 uppercase tracking-[2px] mb-4">Main Menu</p>
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setTab(item.id as any)}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group ${
+                tab === item.id 
+                  ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/20' 
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100'
+              }`}
+            >
+              <item.icon className={`w-5 h-5 ${tab === item.id ? 'text-white' : item.color}`} />
+              <span className="font-semibold text-sm">{item.label}</span>
+              {tab === item.id && <ChevronRight className="w-4 h-4 ml-auto" />}
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-6 border-t border-zinc-800 bg-[#121214]">
+           <button 
+             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-800/30 border border-zinc-700/50 hover:bg-zinc-800 transition-colors mb-4"
+           >
+             {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+             <span className="text-xs font-medium">Switch Theme</span>
+           </button>
+           <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-colors">
+             <LogOut className="w-4 h-4" />
+             <span className="text-xs font-bold">Logout Session</span>
+           </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 ml-72">
+        {/* Top Header */}
+        <header className="h-24 border-b border-zinc-800 bg-[#09090b]/80 backdrop-blur-xl flex items-center justify-between px-10 sticky top-0 z-40">
+           <div className="flex items-center gap-4">
+             <h2 className="text-2xl font-bold tracking-tight">
+               {navItems.find(i => i.id === tab)?.label}
+             </h2>
+             <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-500 text-[10px] font-bold">ADMIN VIEW</span>
+           </div>
+           
+           <div className="flex items-center gap-4">
+             <div className="relative group hidden md:block">
+               <Search className="w-4 h-4 text-zinc-500 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-indigo-400 transition-colors" />
+               <input 
+                 type="text" 
+                 placeholder="Search global data..." 
+                 className="bg-zinc-900 border border-zinc-800 rounded-2xl pl-11 pr-4 py-2.5 text-sm w-64 focus:outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all"
+               />
+             </div>
+             <button className="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-zinc-700 relative transition-colors">
+               <Bell className="w-5 h-5 text-zinc-400" />
+               <span className="absolute top-3 right-3 w-2 h-2 bg-indigo-500 rounded-full border-2 border-[#09090b]"></span>
+             </button>
+             <div className="h-10 w-[1px] bg-zinc-800 mx-2"></div>
+             <div className="flex items-center gap-3">
+               <div className="text-right">
+                 <p className="text-sm font-bold truncate max-w-[120px]">{user?.email?.split('@')[0]}</p>
+                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Super Admin</p>
+               </div>
+               <div className="w-12 h-12 bg-indigo-500 rounded-2xl flex items-center justify-center text-lg font-black text-white shadow-lg shadow-indigo-500/20">
+                 {user?.email?.[0].toUpperCase()}
+               </div>
+             </div>
+           </div>
+        </header>
+
+        {/* Dynamic Viewport */}
+        <div className="p-10">
+          
+          {/* Stats Summary Grid */}
+          {data && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+              {[
+                { label: 'Total Users', value: data.users.length, icon: Users, color: 'blue' },
+                { label: 'Revenue Streams', value: data.plans.length, icon: TrendingUp, color: 'emerald' },
+                { label: 'Transactions', value: data.transactions.length, icon: CreditCard, color: 'purple' },
+                { label: 'Projects Host', value: data.projects.length, icon: FolderOpen, color: 'orange' },
+              ].map((stat, i) => (
+                <div key={i} className="bg-[#121214] border border-zinc-800 p-6 rounded-[2rem] relative overflow-hidden group hover:border-zinc-700 transition-all">
+                   <div className={`absolute top-0 right-0 w-32 h-32 bg-${stat.color}-500/5 blur-[50px] -mr-10 -mt-10 group-hover:bg-${stat.color}-500/10 transition-all`}></div>
+                   <div className="flex justify-between items-start mb-4">
+                     <div className={`p-3 rounded-2xl bg-${stat.color}-500/10`}>
+                       <stat.icon className={`w-6 h-6 text-${stat.color}-400`} />
+                     </div>
+                     <span className="text-[10px] font-bold text-zinc-500 bg-zinc-800 px-2 py-1 rounded-full uppercase">Monthly</span>
+                   </div>
+                   <h4 className="text-zinc-500 text-xs font-bold uppercase tracking-widest">{stat.label}</h4>
+                   <p className="text-3xl font-black mt-1 text-white tabular-nums">{stat.value.toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Content Area */}
+          <div className="bg-[#121214] border border-zinc-800 rounded-[2.5rem] shadow-2xl overflow-hidden min-h-[600px]">
+            
+            {/* INBOX SECTION */}
+            {tab === 'inbox' && (
+              <div className="flex h-full min-h-[600px]">
+                <div className="w-1/3 border-r border-zinc-800 p-8 bg-[#0d0d0f]">
+                  <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                    <Send className="w-5 h-5 text-indigo-500" /> Dispatcher
+                  </h3>
+                  <div className="space-y-5">
+                    <div>
+                      <label className="text-[10px] font-black text-zinc-500 uppercase ml-2 mb-2 block">Subject</label>
+                      <input value={inboxTitle} onChange={e => setInboxTitle(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-all" placeholder="Announcement Title" />
                     </div>
-                  </div>
-                  <p className="text-slate-400 text-sm uppercase tracking-wide font-medium">{t.label}</p>
-                  <p className="text-3xl font-bold text-white mt-2">{t.count}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="bg-white/5 rounded-2xl border border-slate-700/50 mb-6 overflow-hidden backdrop-blur-sm">
-          <div className="flex flex-wrap gap-0 border-b border-slate-700/50 p-2">
-            {tabs.map((t, idx) => {
-              const Icon = t.icon;
-              const isActive = tab === t.key;
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={`flex items-center gap-2 px-5 py-3 font-medium text-sm rounded-xl transition-all ${
-                    isActive
-                      ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{t.label}</span>
-                  <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ml-1 ${
-                    isActive
-                      ? 'bg-white/20 text-white'
-                      : 'bg-slate-700/50 text-slate-300'
-                  }`}>
-                    {t.count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Content Area */}
-        <div className="bg-white/95 dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
-          {tab === 'inbox' && (
-            <div className="p-8">
-              {/* Send Notification Form */}
-              <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-2xl border border-slate-200 dark:border-slate-600 p-8 mb-8">
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-lg">
-                    <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  Send Notification
-                </h3>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="md:col-span-2">
-                    <label className={labelClass}>Title *</label>
-                    <input
-                      value={inboxTitle}
-                      onChange={(e) => setInboxTitle(e.target.value)}
-                      className={inputClass}
-                      placeholder="Enter notification title"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className={labelClass}>Message Body</label>
-                    <textarea
-                      value={inboxBody}
-                      onChange={(e) => setInboxBody(e.target.value)}
-                      className={`${inputClass} h-24 resize-none`}
-                      placeholder="Enter notification message..."
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Image URL</label>
-                    <input
-                      value={inboxImage}
-                      onChange={(e) => setInboxImage(e.target.value)}
-                      className={inputClass}
-                      placeholder="https://example.com/image.jpg"
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Link URL</label>
-                    <input
-                      value={inboxLink}
-                      onChange={(e) => setInboxLink(e.target.value)}
-                      className={inputClass}
-                      placeholder="https://example.com"
-                    />
+                    <div>
+                      <label className="text-[10px] font-black text-zinc-500 uppercase ml-2 mb-2 block">Content</label>
+                      <textarea value={inboxBody} onChange={e => setInboxBody(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-all h-32 resize-none" placeholder="Message details..." />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-zinc-500 uppercase ml-2 mb-2 block">Action Link</label>
+                      <input value={inboxLink} onChange={e => setInboxLink(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-all" placeholder="https://..." />
+                    </div>
+                    <button 
+                      onClick={handleSendNotification}
+                      disabled={!inboxTitle.trim() || sendingNotif}
+                      className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
+                    >
+                      {sendingNotif ? <Loader2 className="animate-spin w-5 h-5" /> : <Send className="w-5 h-5" />}
+                      Push Notification
+                    </button>
                   </div>
                 </div>
-                <button
-                  onClick={handleSendNotification}
-                  disabled={!inboxTitle.trim() || sendingNotif}
-                  className="mt-6 flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                >
-                  <Send className="w-4 h-4" />
-                  {sendingNotif ? 'Sending...' : 'Send Notification'}
-                </button>
-              </div>
-
-              {/* Notifications List */}
-              <div className="space-y-4">
-                <h4 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wide">Recent Notifications</h4>
-                {notifications.length === 0 ? (
-                  <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-                    <Mail className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p>No notifications sent yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        className="flex items-center justify-between p-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-slate-900 dark:text-white">{n.title}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                            {new Date(n.created_at).toLocaleString()}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteNotification(n.id)}
-                          className="ml-4 p-2 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors text-red-600 dark:text-red-400"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                <div className="flex-1 p-8 overflow-y-auto max-h-[700px]">
+                  <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-6">Dispatch History</h3>
+                  <div className="space-y-4">
+                    {notifications.map(n => (
+                      <div key={n.id} className="group bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 hover:border-zinc-700 transition-all flex items-center justify-between">
+                         <div>
+                           <p className="font-bold text-lg mb-1">{n.title}</p>
+                           <p className="text-zinc-500 text-xs flex items-center gap-2 italic">
+                             {new Date(n.created_at).toLocaleString()} 
+                             {n.link_url && <span className="text-indigo-400 not-italic font-bold flex items-center gap-1 cursor-pointer"><ExternalLink className="w-3 h-3"/> {new Date(n.created_at).toLocaleDateString()}</span>}
+                           </p>
+                         </div>
+                         <button onClick={() => handleDeleteNotification(n.id)} className="p-3 rounded-xl bg-red-500/5 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20">
+                           <Trash2 className="w-5 h-5" />
+                         </button>
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {tab === 'templates' && (
-            <div className="p-8">
-              {/* Add Template Form */}
-              <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-2xl border border-slate-200 dark:border-slate-600 p-8 mb-8">
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 dark:bg-purple-500/20 rounded-lg">
-                    <Plus className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  Add New Template
-                </h3>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className={labelClass}>Template Name *</label>
-                    <input
-                      value={tplName}
-                      onChange={(e) => setTplName(e.target.value)}
-                      className={inputClass}
-                      placeholder="Enter template name"
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Category</label>
-                    <input
-                      value={tplCategory}
-                      onChange={(e) => setTplCategory(e.target.value)}
-                      className={inputClass}
-                      placeholder="e.g., General, Marketing"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className={labelClass}>Image URL</label>
-                    <input
-                      value={tplImage}
-                      onChange={(e) => setTplImage(e.target.value)}
-                      className={inputClass}
-                      placeholder="https://example.com/image.jpg"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className={labelClass}>Prompt *</label>
-                    <textarea
-                      value={tplPrompt}
-                      onChange={(e) => setTplPrompt(e.target.value)}
-                      className={`${inputClass} h-28 resize-none`}
-                      placeholder="Enter the prompt that will be used when users select this template..."
-                    />
-                  </div>
                 </div>
-                <button
-                  onClick={handleAddTemplate}
-                  disabled={!tplName.trim() || !tplPrompt.trim() || savingTpl}
-                  className="mt-6 flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                >
-                  <Plus className="w-4 h-4" />
-                  {savingTpl ? 'Saving...' : 'Add Template'}
-                </button>
               </div>
+            )}
 
-              {/* Templates Grid */}
-              {templates.length === 0 ? (
-                <div className="text-center py-16 text-slate-500 dark:text-slate-400">
-                  <Layers className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                  <p className="text-lg">No templates created yet</p>
+            {/* TEMPLATES SECTION */}
+            {tab === 'templates' && (
+              <div className="p-8">
+                <div className="flex justify-between items-end mb-10">
+                   <div>
+                     <h3 className="text-2xl font-black mb-1">Creative Assets</h3>
+                     <p className="text-zinc-500 text-sm">Manage AI Generation Templates</p>
+                   </div>
+                   <button onClick={handleAddTemplate} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-xl shadow-indigo-600/10 flex items-center gap-2">
+                     <Plus className="w-5 h-5" /> New Template
+                   </button>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {templates.map((tpl) => (
-                    <div
-                      key={tpl.id}
-                      className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden hover:shadow-lg transition-all group"
-                    >
-                      <div className="aspect-video bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center overflow-hidden">
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {/* Create New Inline Card */}
+                  <div className="bg-zinc-900/30 border-2 border-dashed border-zinc-800 rounded-[2rem] p-8 flex flex-col items-center justify-center text-center group hover:border-indigo-500/50 transition-all">
+                    <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-4 group-hover:bg-indigo-500/10 transition-all">
+                      <Layers className="w-8 h-8 text-zinc-500 group-hover:text-indigo-400" />
+                    </div>
+                    <p className="font-bold text-zinc-400 group-hover:text-zinc-100 transition-colors">Create Template</p>
+                    <p className="text-[10px] text-zinc-600 uppercase mt-2">Add to Library</p>
+                  </div>
+
+                  {templates.map(tpl => (
+                    <div key={tpl.id} className="bg-zinc-900 border border-zinc-800 rounded-[2rem] overflow-hidden group hover:border-zinc-700 transition-all relative">
+                      <div className="h-48 bg-zinc-800 overflow-hidden relative">
                         {tpl.image_url ? (
-                          <img
-                            src={tpl.image_url}
-                            alt={tpl.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                          />
+                          <img src={tpl.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={tpl.name} />
                         ) : (
-                          <Layers className="w-10 h-10 text-slate-400 dark:text-slate-500" />
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-500/20 to-violet-500/20">
+                            <Layers className="w-12 h-12 text-indigo-500/40" />
+                          </div>
                         )}
-                      </div>
-                      <div className="p-5 flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-slate-900 dark:text-white truncate">{tpl.name}</h4>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{tpl.category}</p>
+                        <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                          {tpl.category}
                         </div>
-                        <button
-                          onClick={() => handleDeleteTemplate(tpl.id)}
-                          className="ml-2 p-2 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors text-red-600 dark:text-red-400 opacity-0 group-hover:opacity-100"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      </div>
+                      <div className="p-6">
+                        <h4 className="text-lg font-bold mb-1 truncate">{tpl.name}</h4>
+                        <p className="text-zinc-500 text-xs line-clamp-2 italic mb-4">"{tpl.prompt}"</p>
+                        <div className="flex items-center justify-between border-t border-zinc-800 pt-4">
+                           <div className="flex items-center gap-2">
+                             <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+                               <Settings className="w-4 h-4 text-zinc-500" />
+                             </div>
+                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">Edit Asset</span>
+                           </div>
+                           <button className="text-red-500 hover:text-red-400 transition-colors">
+                             <Trash2 className="w-4 h-4" />
+                           </button>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Data Tables */}
-          <div className="overflow-x-auto">
-            {tab === 'users' && (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Display Name
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Created
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.users.map((u, idx) => (
-                    <tr
-                      key={u.id}
-                      className={`border-b border-slate-200 dark:border-slate-700 ${
-                        idx % 2 === 0 ? 'bg-white dark:bg-slate-900/50' : 'bg-slate-50 dark:bg-slate-800/30'
-                      } hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors`}
-                    >
-                      <td className="px-6 py-4 text-slate-900 dark:text-white font-medium">{u.email || '—'}</td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{u.display_name || '—'}</td>
-                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
-                        {new Date(u.created_at).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              </div>
             )}
 
-            {tab === 'plans' && (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Plan
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Daily Limit
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Used Today
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Monthly Limit
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Total Used
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Updated
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.plans.map((p, idx) => (
-                    <tr
-                      key={p.id}
-                      className={`border-b border-slate-200 dark:border-slate-700 ${
-                        idx % 2 === 0 ? 'bg-white dark:bg-slate-900/50' : 'bg-slate-50 dark:bg-slate-800/30'
-                      } hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors`}
-                    >
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm font-mono">{p.user_id?.slice(0, 8)}...</td>
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-lg uppercase">
-                          {p.plan}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-slate-900 dark:text-white font-semibold">{p.daily_credits}</td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{p.credits_used_today}</td>
-                      <td className="px-6 py-4 text-slate-900 dark:text-white font-semibold">{p.monthly_credits}</td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{p.total_credits_used}</td>
-                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
-                        {new Date(p.updated_at).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            {/* DATA TABLES SECTION */}
+            {['users', 'plans', 'transactions', 'projects'].includes(tab) && (
+              <div className="p-0">
+                <div className="p-8 border-b border-zinc-800 flex items-center justify-between bg-[#0d0d0f]">
+                  <div className="flex items-center gap-4">
+                     <Filter className="w-4 h-4 text-zinc-500" />
+                     <span className="text-xs font-bold text-zinc-500 uppercase tracking-[2px]">Data Filtering</span>
+                  </div>
+                  <div className="flex gap-2">
+                    {['Active', 'Pending', 'Archived'].map(f => (
+                      <button key={f} className="px-3 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-white transition-colors">{f}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-[#121214] border-b border-zinc-800">
+                        {tab === 'users' && (
+                          <>
+                            <th className="text-left p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest">User Entity</th>
+                            <th className="text-left p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Identification</th>
+                            <th className="text-left p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Registration Date</th>
+                            <th className="text-right p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Action</th>
+                          </>
+                        )}
+                        {tab === 'plans' && (
+                          <>
+                            <th className="text-left p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Subscriber ID</th>
+                            <th className="text-left p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Subscription Tier</th>
+                            <th className="text-left p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Credit Balance</th>
+                            <th className="text-left p-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Daily Consumption</th>
+                          </>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/50">
+                      {tab === 'users' && data?.users.map((u, idx) => (
+                        <tr key={u.id} className="hover:bg-zinc-800/20 transition-colors group">
+                          <td className="p-6">
+                            <div className="flex items-center gap-4">
+                               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center font-bold text-indigo-400">
+                                 {u.email?.[0].toUpperCase()}
+                               </div>
+                               <div>
+                                 <p className="font-bold text-sm text-white group-hover:text-indigo-400 transition-colors">{u.display_name || 'Anonymous User'}</p>
+                                 <p className="text-xs text-zinc-500">{u.email}</p>
+                               </div>
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            <span className="font-mono text-[10px] bg-zinc-900 px-3 py-1.5 rounded-lg text-zinc-400 border border-zinc-800">
+                              {u.id.slice(0, 16)}...
+                            </span>
+                          </td>
+                          <td className="p-6">
+                            <p className="text-sm font-medium text-zinc-300">{new Date(u.created_at).toLocaleDateString()}</p>
+                            <p className="text-[10px] text-zinc-600 uppercase font-bold">{new Date(u.created_at).toLocaleTimeString()}</p>
+                          </td>
+                          <td className="p-6 text-right">
+                             <button className="p-2.5 rounded-xl bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all">
+                               <Settings className="w-4 h-4" />
+                             </button>
+                          </td>
+                        </tr>
+                      ))}
 
-            {tab === 'transactions' && (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Credits
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Description
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.transactions.map((t, idx) => (
-                    <tr
-                      key={t.id}
-                      className={`border-b border-slate-200 dark:border-slate-700 ${
-                        idx % 2 === 0 ? 'bg-white dark:bg-slate-900/50' : 'bg-slate-50 dark:bg-slate-800/30'
-                      } hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors`}
-                    >
-                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
-                        {new Date(t.created_at).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm font-mono">{t.user_id?.slice(0, 8)}...</td>
-                      <td className="px-6 py-4 text-slate-900 dark:text-white font-bold">{t.credits_used}</td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{t.work_type || '—'}</td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm max-w-xs truncate" title={t.description}>
-                        {t.description || '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-
-            {tab === 'projects' && (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Project Name
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Published
-                    </th>
-                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
-                      Created
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.projects.map((p, idx) => (
-                    <tr
-                      key={p.id}
-                      className={`border-b border-slate-200 dark:border-slate-700 ${
-                        idx % 2 === 0 ? 'bg-white dark:bg-slate-900/50' : 'bg-slate-50 dark:bg-slate-800/30'
-                      } hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors`}
-                    >
-                      <td className="px-6 py-4 text-slate-900 dark:text-white font-semibold">{p.name}</td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm font-mono">{p.user_id?.slice(0, 8)}...</td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{p.project_type}</td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-3 py-1 rounded-lg text-xs font-bold ${
-                            p.is_published
-                              ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                              : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                          }`}
-                        >
-                          {p.is_published ? '✓ Published' : 'Draft'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
-                        {new Date(p.created_at).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      {tab === 'plans' && data?.plans.map((p, idx) => (
+                        <tr key={p.id} className="hover:bg-zinc-800/20 transition-colors">
+                          <td className="p-6">
+                             <span className="font-mono text-[10px] text-zinc-500">{p.user_id}</span>
+                          </td>
+                          <td className="p-6">
+                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
+                                p.plan === 'premium' ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-zinc-800 text-zinc-400'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${p.plan === 'premium' ? 'bg-indigo-400' : 'bg-zinc-400'}`}></span>
+                              {p.plan}
+                            </div>
+                          </td>
+                          <td className="p-6 text-sm font-bold text-white">
+                             {p.monthly_credits} <span className="text-zinc-500 font-normal text-xs ml-1">Limit</span>
+                          </td>
+                          <td className="p-6">
+                             <div className="w-48 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${(p.credits_used_today / p.daily_credits) * 100}%` }}></div>
+                             </div>
+                             <p className="text-[10px] font-bold text-zinc-500 mt-2 uppercase tracking-widest">{p.credits_used_today} / {p.daily_credits} Units Used</p>
+                          </td>
+                        </tr>
+                      ))}
+                      
+                      {/* Fallback empty message */}
+                      {((tab === 'users' && data?.users.length === 0) || (tab === 'plans' && data?.plans.length === 0)) && (
+                        <tr>
+                          <td colSpan={4} className="p-20 text-center">
+                            <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-800">
+                              <Search className="w-6 h-6 text-zinc-600" />
+                            </div>
+                            <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-[3px]">No records found in current view</p>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
-};
+}
