@@ -457,58 +457,61 @@ export const GrapesJSEditor: React.FC<GrapesJSEditorProps> = ({
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Panel Switcher */}
-        <div className="w-10 flex flex-col items-center py-2 gap-1 border-r border-border bg-card">
-          <button
-            onClick={() => setActivePanel('blocks')}
-            className={`p-2 rounded-lg transition-colors ${activePanel === 'blocks' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary'}`}
-            title="Blocks"
-          >
-            <Code2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setActivePanel('styles')}
-            className={`p-2 rounded-lg transition-colors ${activePanel === 'styles' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary'}`}
-            title="Styles"
-          >
-            <Paintbrush className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setActivePanel('layers')}
-            className={`p-2 rounded-lg transition-colors ${activePanel === 'layers' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary'}`}
-            title="Layers"
-          >
-            <Layers className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setActivePanel('settings')}
-            className={`p-2 rounded-lg transition-colors ${activePanel === 'settings' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary'}`}
-            title="Settings"
-          >
-            <Settings2 className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Right Panel Content */}
-        <div className="w-64 border-r border-border overflow-y-auto bg-card">
-          {activePanel === 'blocks' && (
-            <div id="gjs-blocks" className="gjs-blocks-container" />
-          )}
-          {activePanel === 'styles' && (
-            <div id="gjs-styles" className="gjs-styles-container" />
-          )}
-          {activePanel === 'layers' && (
-            <div id="gjs-layers" className="gjs-layers-container" />
-          )}
-          {activePanel === 'settings' && (
-            <div id="gjs-traits" className="gjs-traits-container p-3">
-              <p className="text-sm text-muted-foreground">Select an element to see its settings</p>
-            </div>
-          )}
-        </div>
-
-        {/* Canvas */}
+        {/* Canvas - Takes priority, full remaining space */}
         <div ref={editorRef} className="flex-1 overflow-hidden" id="gjs" />
+
+        {/* Right Sidebar - Panel Switcher + Content */}
+        <div className="flex border-l border-border">
+          {/* Panel Content */}
+          <div className="w-56 overflow-y-auto bg-card border-r border-border">
+            {activePanel === 'blocks' && (
+              <div id="gjs-blocks" className="gjs-blocks-container" />
+            )}
+            {activePanel === 'styles' && (
+              <div id="gjs-styles" className="gjs-styles-container" />
+            )}
+            {activePanel === 'layers' && (
+              <div id="gjs-layers" className="gjs-layers-container" />
+            )}
+            {activePanel === 'settings' && (
+              <div id="gjs-traits" className="gjs-traits-container p-3">
+                <p className="text-sm text-muted-foreground">Select an element to see its settings</p>
+              </div>
+            )}
+          </div>
+
+          {/* Icon Tabs */}
+          <div className="w-10 flex flex-col items-center py-2 gap-1 bg-card">
+            <button
+              onClick={() => setActivePanel('blocks')}
+              className={`p-2 rounded-lg transition-colors ${activePanel === 'blocks' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary'}`}
+              title="Blocks"
+            >
+              <Code2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setActivePanel('styles')}
+              className={`p-2 rounded-lg transition-colors ${activePanel === 'styles' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary'}`}
+              title="Styles"
+            >
+              <Paintbrush className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setActivePanel('layers')}
+              className={`p-2 rounded-lg transition-colors ${activePanel === 'layers' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary'}`}
+              title="Layers"
+            >
+              <Layers className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setActivePanel('settings')}
+              className={`p-2 rounded-lg transition-colors ${activePanel === 'settings' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary'}`}
+              title="Settings"
+            >
+              <Settings2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

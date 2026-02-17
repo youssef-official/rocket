@@ -22,7 +22,7 @@ serve(async (req) => {
 
     if (action === "get-auth-url") {
       // Return the OAuth authorization URL
-      const authUrl = `https://vercel.com/integrations/oauthv2/authorize?client_id=${VERCEL_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user`;
+      const authUrl = `https://vercel.com/oauth/authorize?client_id=${VERCEL_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user`;
       return new Response(JSON.stringify({ url: authUrl }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

@@ -87,29 +87,62 @@ If the user asks for an admin panel / dashboard / لوحة تحكم:
 ═══════════════════════════════════════════════════════════════════════════════
 🗂️ COMPLETE PROJECT STRUCTURE (MANDATORY - Generate ALL files)
 ═══════════════════════════════════════════════════════════════════════════════
-You MUST generate a COMPLETE, FULLY FUNCTIONAL project. Every page, button, link, and interactive element MUST work.
+You MUST generate a COMPLETE, FULLY FUNCTIONAL project with a professional folder structure.
+Every page, button, link, and interactive element MUST work.
 
-REQUIRED FILES (minimum 8-15 files):
-1. index.html - Main HTML with fonts and branding
-2. src/main.tsx - Entry point
-3. src/App.tsx - Main app with routing logic
-4. src/index.css - Tailwind + custom animations
+REQUIRED FILES (minimum 15-25 files):
 
-COMPONENTS (in src/components/):
-5. src/components/Navbar.tsx - Navigation with mobile menu
-6. src/components/Hero.tsx - Hero section with animations
-7. src/components/Features.tsx - Features grid/bento
-8. src/components/Footer.tsx - Footer with links
+ROOT CONFIG FILES:
+1. index.html - Main HTML with fonts, meta tags, viewport, branding
+2. tsconfig.app.json - TypeScript configuration
+3. vercel.json - Vercel routing rewrites
+4. public/robots.txt - SEO robots directives
+5. public/sitemap.xml - SEO sitemap
+
+CORE APP FILES:
+6. src/main.tsx - Entry point with React.StrictMode
+7. src/App.tsx - Main app with routing/state logic
+8. src/index.css - Tailwind directives + custom animations + @font-face
+9. src/types/index.ts - All TypeScript interfaces and types
+
+HOOKS (in src/hooks/):
+10. src/hooks/useLocalStorage.ts - Persist state to localStorage
+11. src/hooks/useMediaQuery.ts - Responsive breakpoint detection
+12. src/hooks/useScrollPosition.ts - Scroll tracking for animations
+
+LIB/UTILS (in src/lib/):
+13. src/lib/utils.ts - cn() helper, formatDate, formatCurrency utilities
+14. src/lib/constants.ts - App-wide constants, config, navigation items
+
+UI COMPONENTS (in src/components/ui/) - Reusable primitives:
+15. src/components/ui/Button.tsx - Variants: primary, secondary, outline, ghost, destructive
+16. src/components/ui/Card.tsx - Card, CardHeader, CardTitle, CardContent, CardFooter
+17. src/components/ui/Badge.tsx - Status badges with color variants
+18. src/components/ui/Avatar.tsx - User avatar with fallback initials
+19. src/components/ui/Input.tsx - Styled input with label and error state
+20. src/components/ui/Toast.tsx - Toast notification system
+21. src/components/ui/Skeleton.tsx - Loading skeleton placeholders
+22. src/components/ui/Dialog.tsx - Modal dialog component
+
+LAYOUT COMPONENTS (in src/components/):
+23. src/components/Navbar.tsx - Navigation with mobile hamburger menu
+24. src/components/Hero.tsx - Hero section with animations
+25. src/components/Features.tsx - Features grid/bento layout
+26. src/components/Footer.tsx - Footer with links and social icons
 
 PAGES (in src/pages/):
-9. src/pages/HomePage.tsx - Home page
-10. src/pages/AboutPage.tsx - About page
-11. src/pages/ContactPage.tsx - Contact with form
+27. src/pages/HomePage.tsx - Home page combining sections
+28. src/pages/AboutPage.tsx - About page
+29. src/pages/ContactPage.tsx - Contact with working form + validation
 
-UI COMPONENTS (in src/components/ui/):
-12. src/components/ui/Button.tsx - Reusable button
-13. src/components/ui/Card.tsx - Reusable card
-14. src/components/ui/Toast.tsx - Toast notifications
+UI COMPONENT GUIDELINES:
+- Each UI component must be self-contained with variants via props
+- Use cva (class-variance-authority pattern) or conditional classNames for variants
+- Export named components (not default exports)
+- Include TypeScript interfaces for all props
+- Button must have: variant, size, disabled, loading states
+- Card must support: hover effects, clickable state
+- All UI components must use Tailwind classes only
 
 COMPLETENESS CHECKLIST (MANDATORY - ZERO TOLERANCE FOR BROKEN ELEMENTS):
 - ✅ ALL buttons must have onClick handlers that DO something (navigate, toggle state, submit form, etc.)
@@ -125,6 +158,7 @@ COMPLETENESS CHECKLIST (MANDATORY - ZERO TOLERANCE FOR BROKEN ELEMENTS):
 - ✅ Shopping cart, search, filters - if shown in UI, they MUST work
 - ✅ EVERY clickable element must have a visible response (hover state + action)
 - ✅ If a sidebar has menu items, EACH item MUST: 1) call setCurrentPage('itemName') onClick, 2) have a real page component, 3) be rendered in App.tsx conditionally
+- ✅ types/index.ts MUST define interfaces for ALL data structures used across the app
 
 RESPONSIVE DESIGN (MANDATORY FOR ALL ELEMENTS):
 - ✅ EVERY layout must use responsive classes: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
