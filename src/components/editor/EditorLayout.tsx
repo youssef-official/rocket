@@ -717,6 +717,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   files={project?.files || {}}
                   projectType={project?.projectType || 'vite'}
                   isLoading={isGenerating && !isChatMode}
+                  onPreviewError={(errorLog) => {
+                    // Auto-send preview errors to AI for fixing
+                    onSendMessage(`[AUTO-FIX] The preview has console errors. Please fix them:\n\n${errorLog}`, false);
+                  }}
                 />
               </div>
 
@@ -766,6 +770,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 files={project?.files || {}}
                 projectType={project?.projectType || 'vite'}
                 isLoading={isGenerating && !isChatMode}
+                onPreviewError={(errorLog) => {
+                  onSendMessage(`[AUTO-FIX] The preview has console errors. Please fix them:\n\n${errorLog}`, false);
+                }}
               />
             </div>
 
@@ -789,6 +796,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         projectName={project?.name || 'untitled-project'}
         projectFiles={project?.files || {}}
         onDeployed={setDeployedUrl}
+        onSendErrorToChat={(errorLog) => {
+          // Send the deploy error to the AI chat for auto-fix
+          onSendMessage(`[AUTO-FIX] The deployment to Vercel failed. Please analyze the error log and fix any issues in the code:\n\n${errorLog}`, false);
+        }}
       />
     </div>
   );

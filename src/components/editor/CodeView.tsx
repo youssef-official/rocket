@@ -359,6 +359,19 @@ export const CodeView: React.FC<CodeViewProps> = ({
                   cursorBlinking: 'smooth',
                   readOnly: currentFileData?.isNew && !currentFileData?.complete,
                 }}
+                beforeMount={(monaco) => {
+                  // Disable all TypeScript/JavaScript diagnostics to prevent false red squiggly lines
+                  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+                    noSemanticValidation: true,
+                    noSyntaxValidation: false,
+                    noSuggestionDiagnostics: true,
+                  });
+                  monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+                    noSemanticValidation: true,
+                    noSyntaxValidation: false,
+                    noSuggestionDiagnostics: true,
+                  });
+                }}
                 loading={
                   <div className="flex items-center justify-center h-full">
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
