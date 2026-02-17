@@ -17,6 +17,9 @@ import {
   TrendingUp,
   Sun,
   Moon,
+  Search,
+  Settings,
+  Bell,
 } from 'lucide-react';
 
 interface AdminData {
@@ -160,10 +163,10 @@ export const AdminPanel: React.FC = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-3" />
-          <p className="text-muted-foreground font-medium">Loading Admin Panel...</p>
+          <Loader2 className="w-10 h-10 animate-spin text-blue-400 mx-auto mb-3" />
+          <p className="text-slate-300 font-medium">Loading Admin Panel...</p>
         </div>
       </div>
     );
@@ -171,14 +174,14 @@ export const AdminPanel: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="bg-card rounded-lg shadow-lg p-8 max-w-md w-full text-center border border-destructive/20">
-          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-foreground mb-2">Access Denied</h2>
-          <p className="text-muted-foreground mb-6">{error}</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <div className="bg-slate-800 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center border border-red-500/30">
+          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">Access Denied</h2>
+          <p className="text-slate-400 mb-6">{error}</p>
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors"
+            className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
           >
             Go Home
           </button>
@@ -199,72 +202,113 @@ export const AdminPanel: React.FC = () => {
   ];
 
   const inputClass =
-    'w-full px-4 py-2.5 bg-background border border-input rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-sm transition-all';
-  const labelClass = 'text-xs font-semibold text-foreground/70 uppercase tracking-wider mb-2 block';
+    'w-full px-4 py-3 bg-white/5 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all';
+  const labelClass = 'text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 block';
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Header */}
-      <header className="bg-card border-b border-border shadow-sm">
+      <header className="bg-gradient-to-r from-slate-900 to-slate-800 border-b border-slate-700/50 shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Administration Panel</h1>
-              <p className="text-sm text-muted-foreground mt-1">Vivora X Management Console</p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-lg">V</span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">Vivora Admin</h1>
+                <p className="text-xs text-slate-400 mt-0.5">Management Console</p>
+              </div>
             </div>
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-3 bg-secondary text-secondary-foreground rounded-full hover:bg-secondary/80 transition-all shadow-sm border border-border"
-              title="Toggle Theme"
-            >
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
+            <div className="flex items-center gap-3">
+              <button className="p-2.5 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-400 hover:text-slate-200">
+                <Search className="w-5 h-5" />
+              </button>
+              <button className="p-2.5 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-400 hover:text-slate-200">
+                <Bell className="w-5 h-5" />
+              </button>
+              <button className="p-2.5 hover:bg-slate-700/50 rounded-lg transition-colors text-slate-400 hover:text-slate-200">
+                <Settings className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="p-2.5 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors text-slate-300 hover:text-white border border-slate-600"
+                title="Toggle Theme"
+              >
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {tabs.slice(0, 4).map((t) => {
-            const Icon = t.icon;
-            return (
-              <div
-                key={t.key}
-                className="bg-card rounded-lg shadow-sm border border-border p-6 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{t.label}</p>
-                    <p className="text-3xl font-bold text-foreground mt-2">{t.count}</p>
+        <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-3xl border border-slate-700/50 p-8 mb-8 backdrop-blur-sm">
+          <h2 className="text-white font-semibold mb-6">Dashboard Overview</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {tabs.slice(0, 4).map((t) => {
+              const Icon = t.icon;
+              const colors = [
+                'from-blue-500/20 to-blue-600/20 border-blue-500/30',
+                'from-purple-500/20 to-purple-600/20 border-purple-500/30',
+                'from-emerald-500/20 to-emerald-600/20 border-emerald-500/30',
+                'from-pink-500/20 to-pink-600/20 border-pink-500/30',
+              ];
+              const iconColors = [
+                'text-blue-400',
+                'text-purple-400',
+                'text-emerald-400',
+                'text-pink-400',
+              ];
+              const bgColors = [
+                'bg-blue-500/10',
+                'bg-purple-500/10',
+                'bg-emerald-500/10',
+                'bg-pink-500/10',
+              ];
+              const idx = tabs.indexOf(t);
+              return (
+                <div
+                  key={t.key}
+                  className={`bg-gradient-to-br ${colors[idx]} border rounded-2xl p-6 backdrop-blur-sm hover:border-opacity-100 transition-all`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`p-3 ${bgColors[idx]} rounded-xl`}>
+                      <Icon className={`w-6 h-6 ${iconColors[idx]}`} />
+                    </div>
                   </div>
-                  <div className="p-3 bg-secondary rounded-lg">
-                    <Icon className="w-6 h-6 text-secondary-foreground" />
-                  </div>
+                  <p className="text-slate-400 text-sm uppercase tracking-wide font-medium">{t.label}</p>
+                  <p className="text-3xl font-bold text-white mt-2">{t.count}</p>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-card rounded-lg shadow-sm border border-border mb-6 overflow-hidden">
-          <div className="flex flex-wrap gap-0 border-b border-border">
-            {tabs.map((t) => {
+        <div className="bg-white/5 rounded-2xl border border-slate-700/50 mb-6 overflow-hidden backdrop-blur-sm">
+          <div className="flex flex-wrap gap-0 border-b border-slate-700/50 p-2">
+            {tabs.map((t, idx) => {
               const Icon = t.icon;
+              const isActive = tab === t.key;
               return (
                 <button
                   key={t.key}
                   onClick={() => setTab(t.key)}
-                  className={`flex items-center gap-2 px-6 py-4 font-medium text-sm border-b-2 transition-colors ${
-                    tab === t.key
-                      ? 'text-foreground border-b-primary bg-secondary/30'
-                      : 'text-muted-foreground border-b-transparent hover:text-foreground hover:bg-secondary/20'
+                  className={`flex items-center gap-2 px-5 py-3 font-medium text-sm rounded-xl transition-all ${
+                    isActive
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
                   <span>{t.label}</span>
-                  <span className="text-xs font-semibold bg-secondary text-secondary-foreground px-2 py-0.5 rounded ml-1">
+                  <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ml-1 ${
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-700/50 text-slate-300'
+                  }`}>
                     {t.count}
                   </span>
                 </button>
@@ -274,13 +318,15 @@ export const AdminPanel: React.FC = () => {
         </div>
 
         {/* Content Area */}
-        <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+        <div className="bg-white/95 dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
           {tab === 'inbox' && (
-            <div className="p-6 lg:p-8">
+            <div className="p-8">
               {/* Send Notification Form */}
-              <div className="bg-secondary/10 rounded-lg border border-border p-6 mb-8">
-                <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
-                  <Mail className="w-5 h-5" />
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-2xl border border-slate-200 dark:border-slate-600 p-8 mb-8">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-lg">
+                    <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
                   Send Notification
                 </h3>
                 <div className="grid md:grid-cols-2 gap-6">
@@ -324,7 +370,7 @@ export const AdminPanel: React.FC = () => {
                 <button
                   onClick={handleSendNotification}
                   disabled={!inboxTitle.trim() || sendingNotif}
-                  className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-6 flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                 >
                   <Send className="w-4 h-4" />
                   {sendingNotif ? 'Sending...' : 'Send Notification'}
@@ -332,29 +378,29 @@ export const AdminPanel: React.FC = () => {
               </div>
 
               {/* Notifications List */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-foreground text-sm uppercase tracking-wide">Recent Notifications</h4>
+              <div className="space-y-4">
+                <h4 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wide">Recent Notifications</h4>
                 {notifications.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Mail className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+                    <Mail className="w-12 h-12 mx-auto mb-3 opacity-30" />
                     <p>No notifications sent yet</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {notifications.map((n) => (
                       <div
                         key={n.id}
-                        className="flex items-center justify-between p-4 bg-secondary/5 border border-border rounded-lg hover:bg-secondary/10 transition-colors"
+                        className="flex items-center justify-between p-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground">{n.title}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="font-semibold text-slate-900 dark:text-white">{n.title}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                             {new Date(n.created_at).toLocaleString()}
                           </p>
                         </div>
                         <button
                           onClick={() => handleDeleteNotification(n.id)}
-                          className="ml-4 p-2 hover:bg-destructive/20 rounded-lg transition-colors text-destructive"
+                          className="ml-4 p-2 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors text-red-600 dark:text-red-400"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -367,11 +413,13 @@ export const AdminPanel: React.FC = () => {
           )}
 
           {tab === 'templates' && (
-            <div className="p-6 lg:p-8">
+            <div className="p-8">
               {/* Add Template Form */}
-              <div className="bg-secondary/10 rounded-lg border border-border p-6 mb-8">
-                <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-2xl border border-slate-200 dark:border-slate-600 p-8 mb-8">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-500/20 rounded-lg">
+                    <Plus className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
                   Add New Template
                 </h3>
                 <div className="grid md:grid-cols-2 gap-6">
@@ -415,7 +463,7 @@ export const AdminPanel: React.FC = () => {
                 <button
                   onClick={handleAddTemplate}
                   disabled={!tplName.trim() || !tplPrompt.trim() || savingTpl}
-                  className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-6 flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                 >
                   <Plus className="w-4 h-4" />
                   {savingTpl ? 'Saving...' : 'Add Template'}
@@ -424,18 +472,18 @@ export const AdminPanel: React.FC = () => {
 
               {/* Templates Grid */}
               {templates.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Layers className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>No templates created yet</p>
+                <div className="text-center py-16 text-slate-500 dark:text-slate-400">
+                  <Layers className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p className="text-lg">No templates created yet</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {templates.map((tpl) => (
                     <div
                       key={tpl.id}
-                      className="bg-secondary/5 border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow group"
+                      className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden hover:shadow-lg transition-all group"
                     >
-                      <div className="aspect-video bg-secondary/20 flex items-center justify-center overflow-hidden">
+                      <div className="aspect-video bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center overflow-hidden">
                         {tpl.image_url ? (
                           <img
                             src={tpl.image_url}
@@ -443,17 +491,17 @@ export const AdminPanel: React.FC = () => {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
                         ) : (
-                          <Layers className="w-8 h-8 text-muted-foreground/40" />
+                          <Layers className="w-10 h-10 text-slate-400 dark:text-slate-500" />
                         )}
                       </div>
-                      <div className="p-4 flex items-start justify-between">
+                      <div className="p-5 flex items-start justify-between">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-foreground truncate">{tpl.name}</h4>
-                          <p className="text-xs text-muted-foreground mt-1">{tpl.category}</p>
+                          <h4 className="font-bold text-slate-900 dark:text-white truncate">{tpl.name}</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{tpl.category}</p>
                         </div>
                         <button
                           onClick={() => handleDeleteTemplate(tpl.id)}
-                          className="ml-2 p-2 hover:bg-destructive/20 rounded-lg transition-colors text-destructive opacity-0 group-hover:opacity-100"
+                          className="ml-2 p-2 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors text-red-600 dark:text-red-400 opacity-0 group-hover:opacity-100"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -470,14 +518,14 @@ export const AdminPanel: React.FC = () => {
             {tab === 'users' && (
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-border bg-secondary/10">
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                  <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Email
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Display Name
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Created
                     </th>
                   </tr>
@@ -486,13 +534,13 @@ export const AdminPanel: React.FC = () => {
                   {data.users.map((u, idx) => (
                     <tr
                       key={u.id}
-                      className={`border-b border-border ${
-                        idx % 2 === 0 ? 'bg-card' : 'bg-secondary/5'
-                      } hover:bg-secondary/10 transition-colors`}
+                      className={`border-b border-slate-200 dark:border-slate-700 ${
+                        idx % 2 === 0 ? 'bg-white dark:bg-slate-900/50' : 'bg-slate-50 dark:bg-slate-800/30'
+                      } hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors`}
                     >
-                      <td className="px-6 py-4 text-foreground font-medium">{u.email || '—'}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{u.display_name || '—'}</td>
-                      <td className="px-6 py-4 text-muted-foreground text-sm">
+                      <td className="px-6 py-4 text-slate-900 dark:text-white font-medium">{u.email || '—'}</td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{u.display_name || '—'}</td>
+                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
                         {new Date(u.created_at).toLocaleDateString()}
                       </td>
                     </tr>
@@ -504,26 +552,26 @@ export const AdminPanel: React.FC = () => {
             {tab === 'plans' && (
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-border bg-secondary/10">
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                  <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       User
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Plan
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Daily Limit
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Used Today
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Monthly Limit
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Total Used
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Updated
                     </th>
                   </tr>
@@ -532,21 +580,21 @@ export const AdminPanel: React.FC = () => {
                   {data.plans.map((p, idx) => (
                     <tr
                       key={p.id}
-                      className={`border-b border-border ${
-                        idx % 2 === 0 ? 'bg-card' : 'bg-secondary/5'
-                      } hover:bg-secondary/10 transition-colors`}
+                      className={`border-b border-slate-200 dark:border-slate-700 ${
+                        idx % 2 === 0 ? 'bg-white dark:bg-slate-900/50' : 'bg-slate-50 dark:bg-slate-800/30'
+                      } hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors`}
                     >
-                      <td className="px-6 py-4 text-muted-foreground text-sm font-mono">{p.user_id?.slice(0, 8)}...</td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm font-mono">{p.user_id?.slice(0, 8)}...</td>
                       <td className="px-6 py-4">
-                        <span className="px-3 py-1 bg-secondary text-secondary-foreground text-xs font-semibold rounded-full uppercase">
+                        <span className="px-3 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-lg uppercase">
                           {p.plan}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-foreground font-medium">{p.daily_credits}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{p.credits_used_today}</td>
-                      <td className="px-6 py-4 text-foreground font-medium">{p.monthly_credits}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{p.total_credits_used}</td>
-                      <td className="px-6 py-4 text-muted-foreground text-sm">
+                      <td className="px-6 py-4 text-slate-900 dark:text-white font-semibold">{p.daily_credits}</td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{p.credits_used_today}</td>
+                      <td className="px-6 py-4 text-slate-900 dark:text-white font-semibold">{p.monthly_credits}</td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{p.total_credits_used}</td>
+                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
                         {new Date(p.updated_at).toLocaleDateString()}
                       </td>
                     </tr>
@@ -558,20 +606,20 @@ export const AdminPanel: React.FC = () => {
             {tab === 'transactions' && (
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-border bg-secondary/10">
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                  <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       User
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Credits
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Description
                     </th>
                   </tr>
@@ -580,17 +628,17 @@ export const AdminPanel: React.FC = () => {
                   {data.transactions.map((t, idx) => (
                     <tr
                       key={t.id}
-                      className={`border-b border-border ${
-                        idx % 2 === 0 ? 'bg-card' : 'bg-secondary/5'
-                      } hover:bg-secondary/10 transition-colors`}
+                      className={`border-b border-slate-200 dark:border-slate-700 ${
+                        idx % 2 === 0 ? 'bg-white dark:bg-slate-900/50' : 'bg-slate-50 dark:bg-slate-800/30'
+                      } hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors`}
                     >
-                      <td className="px-6 py-4 text-muted-foreground text-sm">
+                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
                         {new Date(t.created_at).toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 text-muted-foreground text-sm font-mono">{t.user_id?.slice(0, 8)}...</td>
-                      <td className="px-6 py-4 text-foreground font-semibold">{t.credits_used}</td>
-                      <td className="px-6 py-4 text-muted-foreground">{t.work_type || '—'}</td>
-                      <td className="px-6 py-4 text-muted-foreground text-sm max-w-xs truncate" title={t.description}>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm font-mono">{t.user_id?.slice(0, 8)}...</td>
+                      <td className="px-6 py-4 text-slate-900 dark:text-white font-bold">{t.credits_used}</td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{t.work_type || '—'}</td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm max-w-xs truncate" title={t.description}>
                         {t.description || '—'}
                       </td>
                     </tr>
@@ -602,20 +650,20 @@ export const AdminPanel: React.FC = () => {
             {tab === 'projects' && (
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-border bg-secondary/10">
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                  <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Project Name
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       User
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Published
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       Created
                     </th>
                   </tr>
@@ -624,25 +672,25 @@ export const AdminPanel: React.FC = () => {
                   {data.projects.map((p, idx) => (
                     <tr
                       key={p.id}
-                      className={`border-b border-border ${
-                        idx % 2 === 0 ? 'bg-card' : 'bg-secondary/5'
-                      } hover:bg-secondary/10 transition-colors`}
+                      className={`border-b border-slate-200 dark:border-slate-700 ${
+                        idx % 2 === 0 ? 'bg-white dark:bg-slate-900/50' : 'bg-slate-50 dark:bg-slate-800/30'
+                      } hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors`}
                     >
-                      <td className="px-6 py-4 text-foreground font-medium">{p.name}</td>
-                      <td className="px-6 py-4 text-muted-foreground text-sm font-mono">{p.user_id?.slice(0, 8)}...</td>
-                      <td className="px-6 py-4 text-muted-foreground">{p.project_type}</td>
+                      <td className="px-6 py-4 text-slate-900 dark:text-white font-semibold">{p.name}</td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm font-mono">{p.user_id?.slice(0, 8)}...</td>
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{p.project_type}</td>
                       <td className="px-6 py-4">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          className={`px-3 py-1 rounded-lg text-xs font-bold ${
                             p.is_published
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                              : 'bg-secondary text-secondary-foreground'
+                              ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                              : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                           }`}
                         >
                           {p.is_published ? '✓ Published' : 'Draft'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-muted-foreground text-sm">
+                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
                         {new Date(p.created_at).toLocaleDateString()}
                       </td>
                     </tr>
