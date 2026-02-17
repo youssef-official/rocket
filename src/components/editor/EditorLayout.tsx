@@ -8,7 +8,7 @@ import {
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
-import { GrapesJSEditor } from './GrapesJSEditor';
+import { VisualEditMode } from './VisualEditMode';
 import { VercelDeployDialog } from './IntegrationDialogs';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -730,12 +730,13 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               </div>
 
               {showVisualEdit && (
-                <div className="absolute inset-0">
-                  <GrapesJSEditor
+                <div className="absolute inset-0 z-10 flex">
+                  <VisualEditMode
                     projectFiles={project?.files || {}}
                     onSave={handleVisualEditSave}
                     onClose={() => setShowVisualEdit(false)}
                   />
+                  <div className="flex-1" />
                 </div>
               )}
             </div>

@@ -135,6 +135,27 @@ export type Database = {
         }
         Relationships: []
       }
+      oauth_pkce_store: {
+        Row: {
+          code_verifier: string
+          created_at: string
+          id: string
+          state: string
+        }
+        Insert: {
+          code_verifier: string
+          created_at?: string
+          id?: string
+          state: string
+        }
+        Update: {
+          code_verifier?: string
+          created_at?: string
+          id?: string
+          state?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
