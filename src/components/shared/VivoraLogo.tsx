@@ -103,23 +103,42 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(
               font-bold text-white
               ${textSizeClasses[size]}
               ${isArabic ? 'text-[0.9em]' : ''}
-              ${isRTL ? 'flex-row-reverse' : ''}
+              ${isRTL ? 'flex-row' : ''}
             `}
           >
-            Vivora
-
-            <motion.span
-              variants={xVariants}
-              transition={{
-                duration: 0.5,
-                type: 'spring',
-                stiffness: 300,
-                damping: 15,
-              }}
-              className={`text-pink-400 font-black text-[1.2em]`}
-            >
-              X
-            </motion.span>
+            {isArabic ? (
+              <>
+                <motion.span
+                  variants={xVariants}
+                  transition={{
+                    duration: 0.5,
+                    type: 'spring',
+                    stiffness: 300,
+                    damping: 15,
+                  }}
+                  className={`text-pink-400 font-black text-[1.2em]`}
+                >
+                  X
+                </motion.span>
+                Vivora
+              </>
+            ) : (
+              <>
+                Vivora
+                <motion.span
+                  variants={xVariants}
+                  transition={{
+                    duration: 0.5,
+                    type: 'spring',
+                    stiffness: 300,
+                    damping: 15,
+                  }}
+                  className={`text-pink-400 font-black text-[1.2em]`}
+                >
+                  X
+                </motion.span>
+              </>
+            )}
           </span>
         )}
       </motion.div>
