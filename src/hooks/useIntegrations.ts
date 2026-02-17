@@ -46,7 +46,6 @@ export function useIntegrations() {
   // Start Vercel OAuth flow
   const startVercelOAuth = async () => {
     const redirectUri = `${window.location.origin}/oauth/vercel/callback`;
-    // Save current location so we can redirect back after OAuth
     sessionStorage.setItem('vercel_return_to', window.location.pathname);
     
     try {
@@ -56,8 +55,11 @@ export function useIntegrations() {
 
       if (error) throw error;
       if (data?.url) {
-        // Store redirect URI for callback
         sessionStorage.setItem('vercel_redirect_uri', redirectUri);
+        // Store the state for PKCE flow
+        if (data.state) {
+          sessionStorage.setItem('vercel_oauth_state', data.state);
+        }
         window.location.href = data.url;
       }
     } catch (error) {
@@ -75,10 +77,11 @@ export function useIntegrations() {
     if (!user) return false;
 
     const redirectUri = sessionStorage.getItem('vercel_redirect_uri') || `${window.location.origin}/oauth/vercel/callback`;
+    const state = sessionStorage.getItem('vercel_oauth_state');
 
     try {
       const { data, error } = await supabase.functions.invoke('vercel-oauth', {
-        body: { action: 'exchange-code', code, redirectUri }
+        body: { action: 'exchange-code', code, redirectUri, state }
       });
 
       if (error) throw error;
@@ -101,6 +104,7 @@ export function useIntegrations() {
         });
 
         sessionStorage.removeItem('vercel_redirect_uri');
+        sessionStorage.removeItem('vercel_oauth_state');
         await fetchIntegrations();
         return true;
       }
