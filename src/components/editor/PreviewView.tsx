@@ -15,6 +15,7 @@ interface PreviewViewProps {
   files: Record<string, ProjectFile>;
   projectType: 'vite' | 'html';
   isLoading?: boolean;
+  onPreviewError?: (errorLog: string) => void;
 }
 
 // Loading placeholder with rich animation - dark mode compatible
@@ -113,7 +114,7 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
   );
 };
 
-export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, isLoading }) => {
+export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, isLoading, onPreviewError }) => {
   const [viewMode, setViewMode] = React.useState<'desktop' | 'mobile'>('desktop');
   const [sandboxId, setSandboxId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -367,6 +368,39 @@ export default defineConfig({
     return () => clearTimeout(timer);
   }, [apiUrl, sandboxFiles, filesHash, isSandboxReady]);
 
+  // Listen for errors from the preview iframe via postMessage
+  const [previewErrors, setPreviewErrors] = useState<string[]>([]);
+  const errorSentRef = useRef(false);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'preview-error' && event.data?.message) {
+        const errMsg = event.data.message;
+        setPreviewErrors(prev => {
+          const next = [...prev, errMsg];
+          // Auto-send first batch of errors to AI after 3 seconds of collecting
+          if (!errorSentRef.current && onPreviewError && next.length >= 1) {
+            errorSentRef.current = true;
+            setTimeout(() => {
+              if (onPreviewError) {
+                onPreviewError(`Preview console errors detected:\n${next.join('\n')}`);
+              }
+            }, 3000);
+          }
+          return next;
+        });
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onPreviewError]);
+
+  // Reset error tracking when files change
+  useEffect(() => {
+    errorSentRef.current = false;
+    setPreviewErrors([]);
+  }, [filesHash]);
 
   const refresh = () => setKey(k => k + 1);
 
