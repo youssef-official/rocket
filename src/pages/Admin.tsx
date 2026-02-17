@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useTheme } from 'next-themes';
 import {
-  ArrowLeft,
   Users,
   CreditCard,
   FolderOpen,
@@ -14,9 +14,9 @@ import {
   Plus,
   Trash2,
   Send,
-  Settings,
-  BarChart3,
   TrendingUp,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 interface AdminData {
@@ -29,6 +29,7 @@ interface AdminData {
 export const AdminPanel: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const [data, setData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -159,10 +160,10 @@ export const AdminPanel: React.FC = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-slate-700 mx-auto mb-3" />
-          <p className="text-slate-600 font-medium">Loading Admin Panel...</p>
+          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-3" />
+          <p className="text-muted-foreground font-medium">Loading Admin Panel...</p>
         </div>
       </div>
     );
@@ -170,14 +171,14 @@ export const AdminPanel: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center border border-red-200">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
-          <p className="text-slate-600 mb-6">{error}</p>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card rounded-lg shadow-lg p-8 max-w-md w-full text-center border border-destructive/20">
+          <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-foreground mb-2">Access Denied</h2>
+          <p className="text-muted-foreground mb-6">{error}</p>
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-2.5 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-colors"
+            className="px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors"
           >
             Go Home
           </button>
@@ -198,25 +199,26 @@ export const AdminPanel: React.FC = () => {
   ];
 
   const inputClass =
-    'w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700 focus:border-transparent text-sm transition-all';
-  const labelClass = 'text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2 block';
+    'w-full px-4 py-2.5 bg-background border border-input rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-sm transition-all';
+  const labelClass = 'text-xs font-semibold text-foreground/70 uppercase tracking-wider mb-2 block';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 shadow-sm">
+      <header className="bg-card border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/')}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600 hover:text-slate-900"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Administration Panel</h1>
-              <p className="text-sm text-slate-500 mt-1">Vivora X Management Console</p>
+              <h1 className="text-3xl font-bold text-foreground">Administration Panel</h1>
+              <p className="text-sm text-muted-foreground mt-1">Vivora X Management Console</p>
             </div>
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-3 bg-secondary text-secondary-foreground rounded-full hover:bg-secondary/80 transition-all shadow-sm border border-border"
+              title="Toggle Theme"
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
           </div>
         </div>
       </header>
@@ -229,15 +231,15 @@ export const AdminPanel: React.FC = () => {
             return (
               <div
                 key={t.key}
-                className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow"
+                className="bg-card rounded-lg shadow-sm border border-border p-6 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600 uppercase tracking-wide">{t.label}</p>
-                    <p className="text-3xl font-bold text-slate-900 mt-2">{t.count}</p>
+                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{t.label}</p>
+                    <p className="text-3xl font-bold text-foreground mt-2">{t.count}</p>
                   </div>
-                  <div className="p-3 bg-slate-100 rounded-lg">
-                    <Icon className="w-6 h-6 text-slate-700" />
+                  <div className="p-3 bg-secondary rounded-lg">
+                    <Icon className="w-6 h-6 text-secondary-foreground" />
                   </div>
                 </div>
               </div>
@@ -246,8 +248,8 @@ export const AdminPanel: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
-          <div className="flex flex-wrap gap-0 border-b border-slate-200">
+        <div className="bg-card rounded-lg shadow-sm border border-border mb-6 overflow-hidden">
+          <div className="flex flex-wrap gap-0 border-b border-border">
             {tabs.map((t) => {
               const Icon = t.icon;
               return (
@@ -256,13 +258,13 @@ export const AdminPanel: React.FC = () => {
                   onClick={() => setTab(t.key)}
                   className={`flex items-center gap-2 px-6 py-4 font-medium text-sm border-b-2 transition-colors ${
                     tab === t.key
-                      ? 'text-slate-900 border-b-slate-900 bg-slate-50'
-                      : 'text-slate-600 border-b-transparent hover:text-slate-900 hover:bg-slate-50'
+                      ? 'text-foreground border-b-primary bg-secondary/30'
+                      : 'text-muted-foreground border-b-transparent hover:text-foreground hover:bg-secondary/20'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
                   <span>{t.label}</span>
-                  <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                  <span className="text-xs font-semibold bg-secondary text-secondary-foreground px-2 py-0.5 rounded ml-1">
                     {t.count}
                   </span>
                 </button>
@@ -272,12 +274,12 @@ export const AdminPanel: React.FC = () => {
         </div>
 
         {/* Content Area */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
           {tab === 'inbox' && (
             <div className="p-6 lg:p-8">
               {/* Send Notification Form */}
-              <div className="bg-slate-50 rounded-lg border border-slate-200 p-6 mb-8">
-                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <div className="bg-secondary/10 rounded-lg border border-border p-6 mb-8">
+                <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
                   <Mail className="w-5 h-5" />
                   Send Notification
                 </h3>
@@ -322,7 +324,7 @@ export const AdminPanel: React.FC = () => {
                 <button
                   onClick={handleSendNotification}
                   disabled={!inboxTitle.trim() || sendingNotif}
-                  className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="w-4 h-4" />
                   {sendingNotif ? 'Sending...' : 'Send Notification'}
@@ -331,9 +333,9 @@ export const AdminPanel: React.FC = () => {
 
               {/* Notifications List */}
               <div className="space-y-3">
-                <h4 className="font-semibold text-slate-900 text-sm uppercase tracking-wide">Recent Notifications</h4>
+                <h4 className="font-semibold text-foreground text-sm uppercase tracking-wide">Recent Notifications</h4>
                 {notifications.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">
+                  <div className="text-center py-8 text-muted-foreground">
                     <Mail className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     <p>No notifications sent yet</p>
                   </div>
@@ -342,17 +344,17 @@ export const AdminPanel: React.FC = () => {
                     {notifications.map((n) => (
                       <div
                         key={n.id}
-                        className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors"
+                        className="flex items-center justify-between p-4 bg-secondary/5 border border-border rounded-lg hover:bg-secondary/10 transition-colors"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-slate-900">{n.title}</p>
-                          <p className="text-xs text-slate-500 mt-1">
+                          <p className="font-medium text-foreground">{n.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
                             {new Date(n.created_at).toLocaleString()}
                           </p>
                         </div>
                         <button
                           onClick={() => handleDeleteNotification(n.id)}
-                          className="ml-4 p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
+                          className="ml-4 p-2 hover:bg-destructive/20 rounded-lg transition-colors text-destructive"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -367,8 +369,8 @@ export const AdminPanel: React.FC = () => {
           {tab === 'templates' && (
             <div className="p-6 lg:p-8">
               {/* Add Template Form */}
-              <div className="bg-slate-50 rounded-lg border border-slate-200 p-6 mb-8">
-                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <div className="bg-secondary/10 rounded-lg border border-border p-6 mb-8">
+                <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
                   <Plus className="w-5 h-5" />
                   Add New Template
                 </h3>
@@ -413,7 +415,7 @@ export const AdminPanel: React.FC = () => {
                 <button
                   onClick={handleAddTemplate}
                   disabled={!tplName.trim() || !tplPrompt.trim() || savingTpl}
-                  className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Plus className="w-4 h-4" />
                   {savingTpl ? 'Saving...' : 'Add Template'}
@@ -422,7 +424,7 @@ export const AdminPanel: React.FC = () => {
 
               {/* Templates Grid */}
               {templates.length === 0 ? (
-                <div className="text-center py-12 text-slate-500">
+                <div className="text-center py-12 text-muted-foreground">
                   <Layers className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>No templates created yet</p>
                 </div>
@@ -431,9 +433,9 @@ export const AdminPanel: React.FC = () => {
                   {templates.map((tpl) => (
                     <div
                       key={tpl.id}
-                      className="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow group"
+                      className="bg-secondary/5 border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow group"
                     >
-                      <div className="aspect-video bg-slate-200 flex items-center justify-center overflow-hidden">
+                      <div className="aspect-video bg-secondary/20 flex items-center justify-center overflow-hidden">
                         {tpl.image_url ? (
                           <img
                             src={tpl.image_url}
@@ -441,17 +443,17 @@ export const AdminPanel: React.FC = () => {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
                         ) : (
-                          <Layers className="w-8 h-8 text-slate-400" />
+                          <Layers className="w-8 h-8 text-muted-foreground/40" />
                         )}
                       </div>
                       <div className="p-4 flex items-start justify-between">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-slate-900 truncate">{tpl.name}</h4>
-                          <p className="text-xs text-slate-500 mt-1">{tpl.category}</p>
+                          <h4 className="font-semibold text-foreground truncate">{tpl.name}</h4>
+                          <p className="text-xs text-muted-foreground mt-1">{tpl.category}</p>
                         </div>
                         <button
                           onClick={() => handleDeleteTemplate(tpl.id)}
-                          className="ml-2 p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600 opacity-0 group-hover:opacity-100"
+                          className="ml-2 p-2 hover:bg-destructive/20 rounded-lg transition-colors text-destructive opacity-0 group-hover:opacity-100"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -468,14 +470,14 @@ export const AdminPanel: React.FC = () => {
             {tab === 'users' && (
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                  <tr className="border-b border-border bg-secondary/10">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Email
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Display Name
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Created
                     </th>
                   </tr>
@@ -484,13 +486,13 @@ export const AdminPanel: React.FC = () => {
                   {data.users.map((u, idx) => (
                     <tr
                       key={u.id}
-                      className={`border-b border-slate-200 ${
-                        idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'
-                      } hover:bg-slate-100 transition-colors`}
+                      className={`border-b border-border ${
+                        idx % 2 === 0 ? 'bg-card' : 'bg-secondary/5'
+                      } hover:bg-secondary/10 transition-colors`}
                     >
-                      <td className="px-6 py-4 text-slate-900 font-medium">{u.email || '—'}</td>
-                      <td className="px-6 py-4 text-slate-600">{u.display_name || '—'}</td>
-                      <td className="px-6 py-4 text-slate-500 text-sm">
+                      <td className="px-6 py-4 text-foreground font-medium">{u.email || '—'}</td>
+                      <td className="px-6 py-4 text-muted-foreground">{u.display_name || '—'}</td>
+                      <td className="px-6 py-4 text-muted-foreground text-sm">
                         {new Date(u.created_at).toLocaleDateString()}
                       </td>
                     </tr>
@@ -502,26 +504,26 @@ export const AdminPanel: React.FC = () => {
             {tab === 'plans' && (
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                  <tr className="border-b border-border bg-secondary/10">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       User
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Plan
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Daily Limit
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Used Today
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Monthly Limit
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Total Used
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Updated
                     </th>
                   </tr>
@@ -530,21 +532,21 @@ export const AdminPanel: React.FC = () => {
                   {data.plans.map((p, idx) => (
                     <tr
                       key={p.id}
-                      className={`border-b border-slate-200 ${
-                        idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'
-                      } hover:bg-slate-100 transition-colors`}
+                      className={`border-b border-border ${
+                        idx % 2 === 0 ? 'bg-card' : 'bg-secondary/5'
+                      } hover:bg-secondary/10 transition-colors`}
                     >
-                      <td className="px-6 py-4 text-slate-600 text-sm font-mono">{p.user_id?.slice(0, 8)}...</td>
+                      <td className="px-6 py-4 text-muted-foreground text-sm font-mono">{p.user_id?.slice(0, 8)}...</td>
                       <td className="px-6 py-4">
-                        <span className="px-3 py-1 bg-slate-200 text-slate-900 text-xs font-semibold rounded-full uppercase">
+                        <span className="px-3 py-1 bg-secondary text-secondary-foreground text-xs font-semibold rounded-full uppercase">
                           {p.plan}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-slate-900 font-medium">{p.daily_credits}</td>
-                      <td className="px-6 py-4 text-slate-600">{p.credits_used_today}</td>
-                      <td className="px-6 py-4 text-slate-900 font-medium">{p.monthly_credits}</td>
-                      <td className="px-6 py-4 text-slate-600">{p.total_credits_used}</td>
-                      <td className="px-6 py-4 text-slate-500 text-sm">
+                      <td className="px-6 py-4 text-foreground font-medium">{p.daily_credits}</td>
+                      <td className="px-6 py-4 text-muted-foreground">{p.credits_used_today}</td>
+                      <td className="px-6 py-4 text-foreground font-medium">{p.monthly_credits}</td>
+                      <td className="px-6 py-4 text-muted-foreground">{p.total_credits_used}</td>
+                      <td className="px-6 py-4 text-muted-foreground text-sm">
                         {new Date(p.updated_at).toLocaleDateString()}
                       </td>
                     </tr>
@@ -556,20 +558,20 @@ export const AdminPanel: React.FC = () => {
             {tab === 'transactions' && (
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                  <tr className="border-b border-border bg-secondary/10">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Date
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       User
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Credits
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Type
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Description
                     </th>
                   </tr>
@@ -578,17 +580,17 @@ export const AdminPanel: React.FC = () => {
                   {data.transactions.map((t, idx) => (
                     <tr
                       key={t.id}
-                      className={`border-b border-slate-200 ${
-                        idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'
-                      } hover:bg-slate-100 transition-colors`}
+                      className={`border-b border-border ${
+                        idx % 2 === 0 ? 'bg-card' : 'bg-secondary/5'
+                      } hover:bg-secondary/10 transition-colors`}
                     >
-                      <td className="px-6 py-4 text-slate-500 text-sm">
+                      <td className="px-6 py-4 text-muted-foreground text-sm">
                         {new Date(t.created_at).toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 text-slate-600 text-sm font-mono">{t.user_id?.slice(0, 8)}...</td>
-                      <td className="px-6 py-4 text-slate-900 font-semibold">{t.credits_used}</td>
-                      <td className="px-6 py-4 text-slate-600">{t.work_type || '—'}</td>
-                      <td className="px-6 py-4 text-slate-600 text-sm max-w-xs truncate" title={t.description}>
+                      <td className="px-6 py-4 text-muted-foreground text-sm font-mono">{t.user_id?.slice(0, 8)}...</td>
+                      <td className="px-6 py-4 text-foreground font-semibold">{t.credits_used}</td>
+                      <td className="px-6 py-4 text-muted-foreground">{t.work_type || '—'}</td>
+                      <td className="px-6 py-4 text-muted-foreground text-sm max-w-xs truncate" title={t.description}>
                         {t.description || '—'}
                       </td>
                     </tr>
@@ -600,20 +602,20 @@ export const AdminPanel: React.FC = () => {
             {tab === 'projects' && (
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                  <tr className="border-b border-border bg-secondary/10">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Project Name
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       User
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Type
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Published
                     </th>
-                    <th className="text-left px-6 py-4 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <th className="text-left px-6 py-4 font-semibold text-foreground text-sm uppercase tracking-wide">
                       Created
                     </th>
                   </tr>
@@ -622,25 +624,25 @@ export const AdminPanel: React.FC = () => {
                   {data.projects.map((p, idx) => (
                     <tr
                       key={p.id}
-                      className={`border-b border-slate-200 ${
-                        idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'
-                      } hover:bg-slate-100 transition-colors`}
+                      className={`border-b border-border ${
+                        idx % 2 === 0 ? 'bg-card' : 'bg-secondary/5'
+                      } hover:bg-secondary/10 transition-colors`}
                     >
-                      <td className="px-6 py-4 text-slate-900 font-medium">{p.name}</td>
-                      <td className="px-6 py-4 text-slate-600 text-sm font-mono">{p.user_id?.slice(0, 8)}...</td>
-                      <td className="px-6 py-4 text-slate-600">{p.project_type}</td>
+                      <td className="px-6 py-4 text-foreground font-medium">{p.name}</td>
+                      <td className="px-6 py-4 text-muted-foreground text-sm font-mono">{p.user_id?.slice(0, 8)}...</td>
+                      <td className="px-6 py-4 text-muted-foreground">{p.project_type}</td>
                       <td className="px-6 py-4">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold ${
                             p.is_published
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-slate-200 text-slate-700'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                              : 'bg-secondary text-secondary-foreground'
                           }`}
                         >
                           {p.is_published ? '✓ Published' : 'Draft'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-slate-500 text-sm">
+                      <td className="px-6 py-4 text-muted-foreground text-sm">
                         {new Date(p.created_at).toLocaleDateString()}
                       </td>
                     </tr>
