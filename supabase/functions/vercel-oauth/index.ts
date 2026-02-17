@@ -1,38 +1,30 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Generate a cryptographically secure random string
 function generateRandomString(length: number): string {
   const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
   const randomBytes = crypto.getRandomValues(new Uint8Array(length));
   return Array.from(randomBytes, (byte) => charset[byte % charset.length]).join('');
 }
 
-// Generate SHA-256 code challenge from code verifier
 async function generateCodeChallenge(codeVerifier: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(codeVerifier);
   const digest = await crypto.subtle.digest('SHA-256', data);
-  // Base64url encode
   const base64 = btoa(String.fromCharCode(...new Uint8Array(digest)));
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// In-memory store for code verifiers (keyed by state)
-const codeVerifiers = new Map<string, { verifier: string; timestamp: number }>();
-
-// Clean up old entries (older than 10 minutes)
-function cleanupOldEntries() {
-  const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
-  for (const [key, value] of codeVerifiers.entries()) {
-    if (value.timestamp < tenMinutesAgo) {
-      codeVerifiers.delete(key);
-    }
-  }
+function getSupabaseAdmin() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
 }
 
 serve(async (req) => {
@@ -50,16 +42,18 @@ serve(async (req) => {
       });
     }
 
-    if (action === "get-auth-url") {
-      cleanupOldEntries();
+    const supabaseAdmin = getSupabaseAdmin();
 
-      // Generate PKCE parameters
+    if (action === "get-auth-url") {
       const codeVerifier = generateRandomString(64);
       const codeChallenge = await generateCodeChallenge(codeVerifier);
       const oauthState = generateRandomString(43);
 
-      // Store code verifier keyed by state
-      codeVerifiers.set(oauthState, { verifier: codeVerifier, timestamp: Date.now() });
+      // Store in database instead of in-memory
+      await supabaseAdmin.from("oauth_pkce_store").insert({
+        state: oauthState,
+        code_verifier: codeVerifier,
+      });
 
       const queryParams = new URLSearchParams({
         client_id: VERCEL_CLIENT_ID,
@@ -78,18 +72,25 @@ serve(async (req) => {
     }
 
     if (action === "exchange-code") {
-      // Retrieve the stored code verifier using state
-      const stored = state ? codeVerifiers.get(state) : null;
-      if (!stored) {
-        console.error("No code verifier found for state:", state);
+      // Retrieve from database
+      const { data: stored, error: fetchError } = await supabaseAdmin
+        .from("oauth_pkce_store")
+        .select("code_verifier")
+        .eq("state", state)
+        .single();
+
+      if (fetchError || !stored) {
+        console.error("No code verifier found for state:", state, fetchError);
         return new Response(JSON.stringify({ error: "Invalid or expired state. Please try again." }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      const codeVerifier = stored.verifier;
-      codeVerifiers.delete(state); // Single use
+      // Delete after retrieval (single use)
+      await supabaseAdmin.from("oauth_pkce_store").delete().eq("state", state);
+
+      const codeVerifier = stored.code_verifier;
 
       const tokenResponse = await fetch("https://api.vercel.com/login/oauth/token", {
         method: "POST",
@@ -115,7 +116,6 @@ serve(async (req) => {
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
 
-      // Get user info
       const userResponse = await fetch("https://api.vercel.com/login/oauth/userinfo", {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
@@ -126,10 +126,7 @@ serve(async (req) => {
         username = userData.preferred_username || userData.name || userData.email || "";
       }
 
-      return new Response(JSON.stringify({ 
-        access_token: accessToken, 
-        username 
-      }), {
+      return new Response(JSON.stringify({ access_token: accessToken, username }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
