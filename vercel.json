@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/inngest",
+      "destination": "/api/inngest.js"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

@@ -123,15 +123,21 @@ function sendJson(res, status, payload) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'authorization, x-client-info, apikey, content-type, x-inngest-signature, x-inngest-env, x-supabase-client-platform, x-supabase-client-platform-version',
+    'authorization, x-client-info, apikey, content-type, x-inngest-signature, x-inngest-env, x-supabase-client-platform, x-supabase-client-platform-version, server-timing',
   );
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+  res.setHeader('Access-Control-Expose-Headers', 'x-inngest-signature, server-timing');
   res.send(JSON.stringify(payload));
 }
 
 export default async function handler(req, res) {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return sendJson(res, 200, { ok: true });
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+    res.status(200).end();
+    return;
   }
 
   if (req.method === 'GET') {
