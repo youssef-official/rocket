@@ -27,6 +27,7 @@ import {
   deductPointsAfterGeneration,
   type Suggestion
 } from "@/services/aiService";
+import { calculateRequestCredits } from "@/services/directAiService";
 import type { ProjectData, ChatMessage, ProjectFile } from "@/types";
 import { toast } from "@/hooks/use-toast";
 
@@ -371,16 +372,19 @@ const ProjectEditorRoute = () => {
                   summary
                 }));
 
-                // DEDUCT CREDITS after generation completes
+                // DEDUCT CREDITS after generation completes (smart: cost based on complexity)
                 if (user) {
-                  const linesOfCode = Object.values(files).reduce((acc, f: any) => acc + (f.content?.split('\n').length || 0), 0);
-                  deductPointsAfterGeneration(
-                    user.id,
-                    localProject.id,
-                    `Created ${fileList.length} files`
-                  ).then(result => {
-                    console.log(`[Credits] Deducted ${result.creditsDeducted} credits`);
-                  });
+                  // Use the smart credit analyzer to determine actual cost
+                  const userMsg = [...messages].reverse().find((m: any) => m.role === 'user')?.content || '';
+                  calculateRequestCredits(typeof userMsg === 'string' ? userMsg : JSON.stringify(userMsg))
+                    .then(creditsToDeduct => {
+                      deductPointsAfterGeneration(
+                        user.id,
+                        localProject.id,
+                        `Generated ${fileList.length} files`,
+                        creditsToDeduct
+                      );
+                    });
                 }
 
                 // Generate suggestions after completion

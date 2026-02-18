@@ -1,30 +1,54 @@
 import { deductCredits } from './creditService';
 
-// Standard OpenAI/Vercel AI SDK compatible payload
-interface AIRequestPayload {
-    model: string;
-    messages: Array<{ role: string; content: string | any[] }>;
-    stream?: boolean;
-    max_tokens?: number;
-    temperature?: number;
-}
-
 // Get Supabase URL from env
 function getSupabaseUrl(): string {
     return import.meta.env.VITE_SUPABASE_URL || '';
 }
 
-// DEDUCT_POINTS: Deduct 1 credit after successful generation
+// SMART CREDIT DEDUCTION: Calculate credit cost based on complexity then deduct
 export async function deductPointsAfterGeneration(
     userId: string,
     projectId?: string,
-    workDescription?: string
+    workDescription?: string,
+    creditsToDeduct: number = 1
 ): Promise<{ creditsDeducted: number; success: boolean }> {
-    const result = await deductCredits(userId, projectId, workDescription);
+    const result = await deductCredits(userId, projectId, workDescription, creditsToDeduct);
     return {
         creditsDeducted: result.creditsDeducted,
         success: result.success
     };
+}
+
+// Calculate how many credits a request should cost (0.5 / 1 / 2 / 3)
+export async function calculateRequestCredits(userMessage: string): Promise<number> {
+    const supabaseUrl = getSupabaseUrl();
+    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+    try {
+        const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${anonKey}`
+            },
+            body: JSON.stringify({
+                mode: 'credit',
+                messages: [{ role: 'user', content: userMessage }]
+            })
+        });
+
+        if (!response.ok) return 1;
+
+        const data = await response.json();
+        const credits = typeof data?.credits === 'number' ? data.credits : 1;
+        // Clamp to valid values: 0.5, 1, 2, 3
+        if (credits <= 0.5) return 0.5;
+        if (credits <= 1) return 1;
+        if (credits <= 2) return 2;
+        return 3;
+    } catch {
+        return 1; // Default to 1 credit on error
+    }
 }
 
 // Main function to call AI via Supabase Edge Function
@@ -56,8 +80,6 @@ export async function callingDirectAI(
         }
         return msg;
     });
-
-    console.log(`[AI] Calling Edge Function for mode: ${mode}`);
 
     return fetch(`${supabaseUrl}/functions/v1/generate-code`, {
         method: 'POST',

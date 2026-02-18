@@ -71,6 +71,24 @@ IMPORT RULES:
 - Constants go in src/lib/constants.ts.
 
 ═══════════════════════════════════════════════════════════════════════════════
+🌙 DARK/LIGHT MODE (MANDATORY FOR ALL PROJECTS)
+═══════════════════════════════════════════════════════════════════════════════
+EVERY project MUST support dark and light mode:
+- Use ThemeProvider wrapping the entire app in App.tsx
+- Apply dark: prefix for dark mode styles: dark:bg-gray-900 dark:text-white
+- Tailwind config MUST have: darkMode: 'class'
+- index.css MUST have: .dark { color-scheme: dark; }
+- Add theme toggle button to Navbar (sun/moon icon)
+- Default to system preference, store in localStorage
+
+THEME TOGGLE BUTTON (in Navbar.tsx):
+- Import useTheme from contexts/ThemeContext
+- Import Sun, Moon from lucide-react
+- Render a button with onClick={toggleTheme}
+- Show Moon icon in light mode, Sun icon in dark mode
+- Add dark: Tailwind classes to ALL elements
+
+═══════════════════════════════════════════════════════════════════════════════
 🎨 CLASSIC PREMIUM DESIGN SYSTEM (MANDATORY)
 ═══════════════════════════════════════════════════════════════════════════════
 DESIGN PHILOSOPHY: Clean, classic, editorial, luxury-level polish.
@@ -155,7 +173,9 @@ CORE APP FILES:
 9. src/types/index.ts - All TypeScript interfaces and types
 
 CONTEXTS (in src/contexts/):
-10. src/contexts/ThemeContext.tsx - Dark/Light mode context (export useTheme from here ONLY)
+10. src/contexts/ThemeContext.tsx - Dark/Light mode context with localStorage + system preference
+    REQUIRED: export useTheme, export ThemeProvider (wrap App in main.tsx)
+    toggleTheme() switches between 'dark' and 'light', applies class to document.documentElement
 11. src/contexts/LanguageContext.tsx - i18n context (export useLanguage from here ONLY)
 
 HOOKS (in src/hooks/):
