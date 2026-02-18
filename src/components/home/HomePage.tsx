@@ -36,7 +36,7 @@ interface HomePageProps {
   projectsLoading?: boolean;
 }
 
-const MAX_PROMPT_LENGTH = 2000;
+const MAX_PROMPT_LENGTH = 30000;
 
 export const HomePage: React.FC<HomePageProps> = ({
   onStartBuilding,
