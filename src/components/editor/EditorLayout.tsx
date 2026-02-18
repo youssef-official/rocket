@@ -14,13 +14,13 @@ import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVersions, type ProjectVersion } from '@/hooks/useVersions';
 import { generateVersionName } from '@/services/versionNameService';
-import { useAutoRedeploy } from '@/hooks/useAutoRedeploy';
 import type { ProjectData, ChatMessage, ViewType, ProjectFile } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
+// CreditWarningBanner removed
 
 interface FileActivity {
   name: string;
@@ -111,12 +111,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   // Versions hook
   const { versions, fetchVersions, createVersion, rollbackToVersion } = useVersions(project?.id || null);
 
-  // Auto-redeploy hook — re-publishes to Vivora/Vercel via Inngest background job
-  const { triggerVivoraRedeploy, triggerVercelRedeploy } = useAutoRedeploy({
-    projectId: project?.id || '',
-    userId: user?.id,
-  });
-
   // Track file activities for version
   useEffect(() => {
     if (fileActivities.length > 0) {
@@ -153,7 +147,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       const hasMessages = messages.length > 0;
 
       if (hasFiles && hasMessages) {
-        // Generate AI version name + trigger auto-redeploy
+        // Generate AI version name
         const createVersionWithAIName = async () => {
           const versionNumber = versions.length + 1;
           const projectDescription = project.description || project.name || '';
@@ -180,10 +174,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               versionName,
               lastFileActivitiesRef.current.length > 0 ? lastFileActivitiesRef.current : undefined
             );
-
-            // 🚀 Auto-redeploy to Vivora/Vercel if project was previously deployed
-            triggerVivoraRedeploy(project.files);
-            triggerVercelRedeploy(project.files, project.name);
           }
           setCurrentVersionNumber(null);
           versionCreatedForSession.current = true;
