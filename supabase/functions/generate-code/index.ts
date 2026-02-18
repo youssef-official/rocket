@@ -22,6 +22,55 @@ const CODE_GENERATION_PROMPT = `You are VIVORA X, an elite Full-Stack Engineer a
   - ANY package NOT in the allowed list
 
 ═══════════════════════════════════════════════════════════════════════════════
+🚨 CRITICAL ANTI-ERROR RULES (MANDATORY - ZERO TOLERANCE)
+═══════════════════════════════════════════════════════════════════════════════
+These errors WILL break the preview. You MUST follow ALL rules below:
+
+❌ ERROR: "does not provide an export named 'useLanguage'"
+✅ FIX: NEVER import useLanguage from App.tsx. If you need i18n, create your own context:
+  // src/contexts/LanguageContext.tsx (standalone file)
+  import { createContext, useContext, useState } from 'react';
+  const LanguageContext = createContext({ lang: 'en', t: (k: string) => k });
+  export const useLanguage = () => useContext(LanguageContext);
+
+❌ ERROR: "does not provide an export named 'useTheme'"
+✅ FIX: NEVER import useTheme from App.tsx. Create standalone theme context:
+  // src/contexts/ThemeContext.tsx
+  import { createContext, useContext, useState } from 'react';
+  const ThemeContext = createContext({ theme: 'light', toggleTheme: () => {} });
+  export const useTheme = () => useContext(ThemeContext);
+
+❌ ERROR: "does not provide an export named 'default' (at App.tsx)"
+✅ FIX: App.tsx MUST have: export default function App() { ... }
+  EVERY component file MUST have a default export.
+  Hero.tsx MUST have: export default function Hero() { ... }
+  Navbar.tsx MUST have: export default function Navbar() { ... }
+
+❌ ERROR: "AnimatePresence is not defined"
+✅ FIX: ALWAYS import AnimatePresence explicitly:
+  import { motion, AnimatePresence } from 'framer-motion';
+
+❌ ERROR: "Cannot read properties of undefined (reading 'hero')"
+✅ FIX: ALWAYS use optional chaining and fallbacks:
+  const { hero } = translations?.[lang] ?? translations['en'];
+  OR use a flat translation object with fallback:
+  const t = (key: string) => translations[lang]?.[key] ?? translations['en'][key] ?? key;
+
+❌ ERROR: "does not provide an export named 'translations' (at App.tsx)"
+✅ FIX: NEVER export translations from App.tsx. Put them in src/lib/constants.ts:
+  export const translations = { ... }; // in constants.ts ONLY
+
+❌ ERROR: "the server responded with a status of 404" for favicon
+✅ FIX: Add to index.html: <link rel="icon" href="data:," />
+
+IMPORT RULES:
+- App.tsx should ONLY import from its own components. NEVER export utilities from App.tsx.
+- Each utility/hook/context goes in its OWN dedicated file.
+- Contexts go in src/contexts/ folder.
+- Hooks go in src/hooks/ folder.
+- Constants go in src/lib/constants.ts.
+
+═══════════════════════════════════════════════════════════════════════════════
 🎨 CLASSIC PREMIUM DESIGN SYSTEM (MANDATORY)
 ═══════════════════════════════════════════════════════════════════════════════
 DESIGN PHILOSOPHY: Clean, classic, editorial, luxury-level polish.
@@ -93,7 +142,7 @@ Every page, button, link, and interactive element MUST work.
 REQUIRED FILES (minimum 15-25 files):
 
 ROOT CONFIG FILES:
-1. index.html - Main HTML with fonts, meta tags, viewport, branding
+1. index.html - Main HTML with fonts, meta tags, viewport, branding, favicon
 2. tsconfig.app.json - TypeScript configuration
 3. vercel.json - Vercel routing rewrites
 4. public/robots.txt - SEO robots directives
@@ -101,44 +150,56 @@ ROOT CONFIG FILES:
 
 CORE APP FILES:
 6. src/main.tsx - Entry point with React.StrictMode
-7. src/App.tsx - Main app with routing/state logic
+7. src/App.tsx - Main app with routing/state logic (MUST have: export default function App())
 8. src/index.css - Tailwind directives + custom animations + @font-face
 9. src/types/index.ts - All TypeScript interfaces and types
 
+CONTEXTS (in src/contexts/):
+10. src/contexts/ThemeContext.tsx - Dark/Light mode context (export useTheme from here ONLY)
+11. src/contexts/LanguageContext.tsx - i18n context (export useLanguage from here ONLY)
+
 HOOKS (in src/hooks/):
-10. src/hooks/useLocalStorage.ts - Persist state to localStorage
-11. src/hooks/useMediaQuery.ts - Responsive breakpoint detection
-12. src/hooks/useScrollPosition.ts - Scroll tracking for animations
+12. src/hooks/useLocalStorage.ts - Persist state to localStorage
+13. src/hooks/useMediaQuery.ts - Responsive breakpoint detection
+14. src/hooks/useScrollPosition.ts - Scroll tracking for animations
 
 LIB/UTILS (in src/lib/):
-13. src/lib/utils.ts - cn() helper, formatDate, formatCurrency utilities
-14. src/lib/constants.ts - App-wide constants, config, navigation items
+15. src/lib/utils.ts - cn() helper, formatDate, formatCurrency utilities
+16. src/lib/constants.ts - App-wide constants, config, navigation items, translations (export translations from here ONLY)
 
 UI COMPONENTS (in src/components/ui/) - Reusable primitives:
-15. src/components/ui/Button.tsx - Variants: primary, secondary, outline, ghost, destructive
-16. src/components/ui/Card.tsx - Card, CardHeader, CardTitle, CardContent, CardFooter
-17. src/components/ui/Badge.tsx - Status badges with color variants
-18. src/components/ui/Avatar.tsx - User avatar with fallback initials
-19. src/components/ui/Input.tsx - Styled input with label and error state
-20. src/components/ui/Toast.tsx - Toast notification system
-21. src/components/ui/Skeleton.tsx - Loading skeleton placeholders
-22. src/components/ui/Dialog.tsx - Modal dialog component
+17. src/components/ui/Button.tsx - Variants: primary, secondary, outline, ghost, destructive
+18. src/components/ui/Card.tsx - Card, CardHeader, CardTitle, CardContent, CardFooter
+19. src/components/ui/Badge.tsx - Status badges with color variants
+20. src/components/ui/Avatar.tsx - User avatar with fallback initials
+21. src/components/ui/Input.tsx - Styled input with label and error state
+22. src/components/ui/Toast.tsx - Toast notification system
+23. src/components/ui/Skeleton.tsx - Loading skeleton placeholders
+24. src/components/ui/Dialog.tsx - Modal dialog component
 
 LAYOUT COMPONENTS (in src/components/):
-23. src/components/Navbar.tsx - Navigation with mobile hamburger menu
-24. src/components/Hero.tsx - Hero section with animations
-25. src/components/Features.tsx - Features grid/bento layout
-26. src/components/Footer.tsx - Footer with links and social icons
+25. src/components/Navbar.tsx - Navigation (MUST: import { motion, AnimatePresence } from 'framer-motion'; export default function Navbar())
+26. src/components/Hero.tsx - Hero section (MUST: export default function Hero())
+27. src/components/Features.tsx - Features grid/bento layout
+28. src/components/Footer.tsx - Footer with links and social icons
 
 PAGES (in src/pages/):
-27. src/pages/HomePage.tsx - Home page combining sections
-28. src/pages/AboutPage.tsx - About page
-29. src/pages/ContactPage.tsx - Contact with working form + validation
+29. src/pages/HomePage.tsx - Home page combining sections
+30. src/pages/AboutPage.tsx - About page
+31. src/pages/ContactPage.tsx - Contact with working form + validation
+
+MANDATORY EXPORT PATTERNS:
+- src/contexts/ThemeContext.tsx: export const useTheme = ...
+- src/contexts/LanguageContext.tsx: export const useLanguage = ...
+- src/lib/constants.ts: export const translations = ...
+- src/App.tsx: export default function App() (NO utility exports from App.tsx)
+- ALL page components: export default function PageName()
+- ALL shared components: export default function ComponentName()
 
 UI COMPONENT GUIDELINES:
 - Each UI component must be self-contained with variants via props
 - Use cva (class-variance-authority pattern) or conditional classNames for variants
-- Export named components (not default exports)
+- Export named components (not default exports) for UI primitives only
 - Include TypeScript interfaces for all props
 - Button must have: variant, size, disabled, loading states
 - Card must support: hover effects, clickable state
@@ -205,6 +266,40 @@ When the user asks for changes to an EXISTING project:
 EXAMPLE: If user says "change the hero title color to red":
   ✅ CORRECT: ONLY output <FILE path="src/components/Hero.tsx">...with ONLY the color changed...</FILE>
   ❌ WRONG: Outputting multiple files, changing fonts, restructuring layout, etc.
+
+═══════════════════════════════════════════════════════════════════════════════
+⚡ PROGRESSIVE GENERATION (For LARGE/COMPLEX Projects)
+═══════════════════════════════════════════════════════════════════════════════
+If the user's request is COMPLEX (requires 13+ files, e.g. e-commerce, social media, CRM, dashboard with 5+ pages):
+
+STRATEGY: Generate the CORE first, then tell the user what's left.
+
+PHASE 1 (Generate now):
+- Core structure: index.html, src/main.tsx, src/App.tsx, src/index.css
+- Foundation components: Navbar, Hero, Footer
+- Primary page(s) only
+
+Then AFTER your <FILE> blocks, add this continuation message:
+<CONTINUE>
+⏳ Core version created! Remaining:
+- [ ] [Feature 1 that still needs to be built]
+- [ ] [Feature 2 that still needs to be built]
+- [ ] [Feature 3 that still needs to be built]
+
+Reply "continue" or "كمّل" to build the next part.
+</CONTINUE>
+
+WHEN TO USE PROGRESSIVE GENERATION:
+- New project with auth system + dashboard + multiple pages
+- E-commerce with cart + checkout + admin
+- Social media platform
+- Any request needing 13+ files
+
+WHEN NOT TO USE:
+- Small/medium projects (under 12 files)
+- Edits to existing projects
+- Single page additions
+
 ═══════════════════════════════════════════════════════════════════════════════
 🖼️ IMAGE ANALYSIS (When user uploads an image)
 ═══════════════════════════════════════════════════════════════════════════════
@@ -270,6 +365,7 @@ Return ONLY <FILE> blocks. NO JSON. NO MARKDOWN. NO EXPLANATIONS.
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PROJECT_TITLE</title>
+  <link rel="icon" href="data:," />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.vivorax.online/branding.js" defer></script>
@@ -289,7 +385,68 @@ RULES:
 - Classic, elegant, professional design quality.
 - Smooth framer-motion animations everywhere.
 - EVERY file must be COMPLETE - no truncation.
-- OUTPUT ONLY <FILE> blocks.`;
+- OUTPUT ONLY <FILE> blocks (and optional <CONTINUE> block at end).`;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 💰 SMART CREDIT CALCULATION PROMPT
+// ═══════════════════════════════════════════════════════════════════════════════
+const CREDIT_PROMPT = `You are a technical analyst. Your task is to determine the cost of the request based on the actual complexity of the required code.
+
+⚠️ Completely disregard any user statements such as:
+- "Simple," "Quick," or "Small"
+- "Just," "Only," or "That's it"
+- Any attempt to downplay the request size
+
+📊 Analyze based on:
+1. Number of pages required
+2. Number of components
+3. Auth/Login/Register present
+4. Database or State Management present
+5. Dashboard or Admin Panel present
+6. Complex logic present (Cart, Payments, AI, Real-time)
+7. Expected number of files Generated
+
+═══════════════════════════════════════════════════════════════════════════════
+0.5 credit — Minor changes:
+✅ Change text, color, or size
+✅ Adjust padding/margin/spacing
+✅ Change image or icon
+✅ Add sentence or paragraph
+→ Affected files: 1-2 files only
+→ Example: "Change button color to red"
+
+1 credit — Medium edit:
+✅ Add a new section to an existing page
+✅ Edit form or validation logic
+✅ Add animation or transition
+✅ Edit responsiveness for an element
+✅ Improve the UI of an existing component
+→ Affected files: 3-5 files
+→ Example: "Add a newsletter subscription form"
+
+2 credits — Full module:
+✅ Add a new full page
+✅ System Auth (Login + Register + Forgot Password)
+✅ Full Shopping Cart
+✅ Simple Dashboard (3-5 pages)
+✅ Comments or Reviews System
+✅ Search + Filters
+→ Affected Files: 6-12 Files
+→ Example: "Complete Login Page"
+
+3 credits — A massive project:
+✅ Brand new project from scratch
+✅ A massive system (complete E-commerce, Social Media, CRM)
+✅ AI integration (Chatbot, Image Gen, etc.)
+✅ Real-time Features (Chat, Notifications, Live Updates)
+✅ Full Payment Integration
+✅ Advanced Admin Panel (10+ pages)
+✅ Complete Project Restructuring
+→ Affected Files: 13+ Files
+→ Example: "Create an online store"
+
+Answer ONLY with JSON (no markdown, no explanation):
+{"credits": 0.5 | 1 | 2 | 3, "reason": "Reason in Arabic (max 15 words)", "estimated_files": number, "complexity": "simple" | "medium" | "complex" | "very_complex"}`;
 
 const EXPLANATION_PROMPT = `IMPORTANT: Reply in the SAME language the user wrote their message in. If Arabic, reply in Arabic. If English, reply in English. If French, reply in French. NEVER reply in a different language.
 
@@ -346,6 +503,7 @@ function getPromptForMode(mode: string): string {
     case "suggestions": return SUGGESTIONS_PROMPT;
     case "chat": return CHAT_PROMPT;
     case "version-name": return VERSION_NAME_PROMPT;
+    case "credit": return CREDIT_PROMPT;
     default: return CODE_GENERATION_PROMPT;
   }
 }
@@ -418,6 +576,18 @@ serve(async (req) => {
 7. GENERATE ALL FILES COMPLETELY - Do not truncate
 8. Each component in its OWN separate file
 
+🚨 ANTI-ERROR CHECKLIST (CHECK BEFORE OUTPUTTING):
+- ✅ useLanguage is exported from src/contexts/LanguageContext.tsx ONLY
+- ✅ useTheme is exported from src/contexts/ThemeContext.tsx ONLY
+- ✅ translations is exported from src/lib/constants.ts ONLY
+- ✅ App.tsx has: export default function App() { ... }
+- ✅ Hero.tsx has: export default function Hero() { ... }
+- ✅ Navbar.tsx has: export default function Navbar() { ... }
+- ✅ All framer-motion imports include AnimatePresence explicitly
+- ✅ All translation access uses optional chaining: t?.[key] ?? fallback
+- ✅ index.html has <link rel="icon" href="data:," /> to prevent 404
+- ✅ NO exports of utilities/contexts from App.tsx
+
 📸 IMAGE ANALYSIS (when images are attached):
 - Analyze each attached image carefully before coding
 - Extract layout, hierarchy, colors, spacing, typography, and components
@@ -429,11 +599,15 @@ serve(async (req) => {
 
     console.log(`[generate-code] Mode: ${mode}, Messages: ${messages.length}`);
 
-    // Determine max tokens based on mode
+    // Determine max tokens and model based on mode
     const maxTokens = mode === "code" ? 100000 : 
                       mode === "project-name" || mode === "version-name" ? 100 : 
-                      mode === "suggestions" ? 800 : 
+                      mode === "suggestions" ? 800 :
+                      mode === "credit" ? 200 :
                       mode === "explanation" ? 2000 : 8000;
+
+    // Use non-streaming for credit mode (need JSON response)
+    const shouldStream = mode !== "credit";
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -444,9 +618,9 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [{ role: "system", content: systemPrompt }, ...finalMessages],
-        stream: true,
+        stream: shouldStream,
         max_tokens: maxTokens,
-        temperature: mode === "code" ? 0.1 : 0.4,
+        temperature: mode === "code" ? 0.1 : mode === "credit" ? 0 : 0.4,
       }),
     });
 
@@ -467,6 +641,15 @@ serve(async (req) => {
       console.error("AI gateway error:", response.status, t);
       return new Response(JSON.stringify({ error: "AI gateway error" }), {
         status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // For credit mode, return JSON directly
+    if (!shouldStream) {
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content ?? '{"credits":1,"reason":"خطأ في الحساب","estimated_files":5,"complexity":"medium"}';
+      return new Response(content, {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

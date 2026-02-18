@@ -606,7 +606,7 @@ export const AdminPanel: React.FC = () => {
     projects: 'Projects', inbox: 'Inbox', templates: 'Templates',
   };
 
-  const displayName = (user?.user_metadata?.full_name as string) || (data?.users?.find((u: any) => u.id === user?.id)?.display_name) || 'Admin';
+  const displayName = (data?.users?.find((u: any) => u.id === user?.id)?.display_name) || user?.email?.split('@')[0] || 'Admin';
 
   return (
     <>
