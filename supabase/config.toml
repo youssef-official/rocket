@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.vercel-oauth]
 verify_jwt = false
+
+[functions.vivora-deploy]
+verify_jwt = false
+
+[functions.vercel-deploy]
+verify_jwt = false

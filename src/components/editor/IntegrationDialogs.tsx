@@ -18,7 +18,7 @@ import {
 import { useIntegrations } from '@/hooks/useIntegrations';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
-import { deployToVercel, getDeploymentStatus } from '@/services/vercelService';
+// Vercel deployments now go through edge function to avoid CORS/403 issues
 import { toast } from '@/hooks/use-toast';
 import type { ProjectFile } from '@/types';
 import vercelLogo from '@/assets/logos/vercel.svg';
@@ -45,23 +45,27 @@ interface DeployLog {
   type: 'info' | 'success' | 'error' | 'warning';
 }
 
-// ─── Vivora Deploy Service ────────────────────────────────────────────────────
-async function deployToVivora(subdomain: string, files: Record<string, ProjectFile>): Promise<{ url: string }> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// ─── Deploy Services (server-side via edge functions) ─────────────────────────
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+async function deployToVivora(
+  subdomain: string,
+  files: Record<string, ProjectFile>,
+  userId?: string
+): Promise<{ url: string }> {
   const fileEntries: Record<string, string> = {};
   Object.entries(files).forEach(([path, file]) => {
     fileEntries[path] = file.content;
   });
 
-  const response = await fetch(`${supabaseUrl}/functions/v1/vivora-deploy`, {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/vivora-deploy`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${anonKey}`,
+      'Authorization': `Bearer ${ANON_KEY}`,
     },
-    body: JSON.stringify({ subdomain, files: fileEntries }),
+    body: JSON.stringify({ subdomain, files: fileEntries, userId }),
   });
 
   if (!response.ok) {
@@ -69,6 +73,36 @@ async function deployToVivora(subdomain: string, files: Record<string, ProjectFi
     throw new Error(err.error || `Deploy failed: ${response.status}`);
   }
 
+  return response.json();
+}
+
+async function vercelEdgeDeploy(
+  token: string,
+  projectName: string,
+  files: Record<string, ProjectFile>
+): Promise<{ id: string; url: string; readyState: string; alias?: string[] }> {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/vercel-deploy`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ANON_KEY}` },
+    body: JSON.stringify({ action: 'deploy', token, projectName, files }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Deploy failed' }));
+    throw new Error(err.error || `Vercel deploy failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+async function vercelEdgeStatus(
+  token: string,
+  deploymentId: string
+): Promise<{ readyState: string; url: string; alias?: string[] } | null> {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/vercel-deploy`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ANON_KEY}` },
+    body: JSON.stringify({ action: 'status', token, deploymentId }),
+  });
+  if (!response.ok) return null;
   return response.json();
 }
 
@@ -175,9 +209,8 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
     addLog(`Files: ${Object.keys(projectFiles).length} files`, 'info');
 
     try {
-      addLog('Creating Vercel project...', 'info');
-      const deployment = await deployToVercel(integrations.vercel_token, customName, projectFiles);
-      if (!deployment) throw new Error('Failed to create deployment');
+      addLog('Creating Vercel project (via server)...', 'info');
+      const deployment = await vercelEdgeDeploy(integrations.vercel_token, customName, projectFiles);
 
       addLog('Deployment created!', 'success');
       addLog(`Build ID: ${deployment.id.substring(0, 12)}...`, 'info');
@@ -185,7 +218,7 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
 
       let attempts = 0;
       while (attempts < 60) {
-        const status = await getDeploymentStatus(integrations.vercel_token!, deployment.id);
+        const status = await vercelEdgeStatus(integrations.vercel_token!, deployment.id);
         if (status?.readyState === 'READY') {
           const finalUrl = status.alias?.length ? `https://${status.alias[0]}` : status.url;
           addLog('Build completed!', 'success');

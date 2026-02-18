@@ -445,6 +445,39 @@ export type Database = {
         }
         Relationships: []
       }
+      vivora_deployments: {
+        Row: {
+          cloudflare_deployment_id: string | null
+          created_at: string
+          id: string
+          status: string
+          subdomain: string
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          cloudflare_deployment_id?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          subdomain: string
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          cloudflare_deployment_id?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          subdomain?: string
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
