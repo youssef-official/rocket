@@ -140,11 +140,18 @@ export default async function handler(req, res) {
     const endpointUrl = `${protocol}://${host}/api/inngest`;
 
     return sendJson(res, 200, {
+      name: 'vivora-api',
+      app_id: 'vivora-api',
       url: endpointUrl,
       framework: 'api',
-      sdk: 'inngest-js:v3',
+      sdk: 'inngest-js:v3.0.0',
       v: '1',
-      appId: 'vivora-api',
+      authentication_succeeded: true,
+      schema_version: '2024-05-24',
+      function_count: inngestFunctions.length,
+      has_event_key: !!INNGEST_EVENT_KEY,
+      has_signing_key: true,
+      mode: 'cloud',
       functions: inngestFunctions,
     });
   }
