@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/inngest",
-      "destination": "/api/inngest.js"
+      "destination": "/api/inngest.ts"
     },
     {
       "source": "/((?!api/).*)",
