@@ -1,11 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/api/inngest",
-      "destination": "/api/inngest.ts"
-    },
-    {
-      "source": "/((?!api/).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]

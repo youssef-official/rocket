@@ -1,94 +1,45 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { ProjectFile } from '@/types';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 interface AutoRedeployOptions {
   projectId: string;
   userId?: string;
 }
 
-interface PendingInngestEvent {
-  eventName: string;
-  eventData: Record<string, unknown>;
-  queuedAt: number;
-}
-
-const INNGEST_API_PATH = '/api/inngest';
-const PENDING_EVENTS_KEY = 'vivora_inngest_pending_events';
-
-function readPendingEvents(): PendingInngestEvent[] {
-  if (typeof window === 'undefined') return [];
-
+/**
+ * Sends an event to self-hosted Inngest via the inngest edge function.
+ * This ensures background redeployment even if the user closes the tab.
+ */
+async function sendInngestEvent(
+  eventName: string,
+  eventData: Record<string, unknown>
+): Promise<boolean> {
   try {
-    const raw = window.localStorage.getItem(PENDING_EVENTS_KEY);
-    return raw ? (JSON.parse(raw) as PendingInngestEvent[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writePendingEvents(events: PendingInngestEvent[]) {
-  if (typeof window === 'undefined') return;
-
-  window.localStorage.setItem(PENDING_EVENTS_KEY, JSON.stringify(events.slice(-50)));
-}
-
-async function sendInngestEvent(eventName: string, eventData: Record<string, unknown>): Promise<boolean> {
-  try {
-    const resp = await fetch(INNGEST_API_PATH, {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/inngest`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${ANON_KEY}`,
       },
       body: JSON.stringify({
         action: 'send-event',
         eventName,
         eventData,
       }),
-      keepalive: true,
     });
-
     return resp.ok;
   } catch {
     return false;
   }
 }
 
-async function flushPendingInngestEvents() {
-  const pending = readPendingEvents();
-  if (!pending.length) return;
-
-  const stillPending: PendingInngestEvent[] = [];
-  for (const item of pending) {
-    const ok = await sendInngestEvent(item.eventName, item.eventData);
-    if (!ok) stillPending.push(item);
-  }
-
-  writePendingEvents(stillPending);
-}
-
 export function useAutoRedeploy({ projectId, userId }: AutoRedeployOptions) {
   const redeployDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    flushPendingInngestEvents();
-
-    const onOnline = () => {
-      void flushPendingInngestEvents();
-    };
-
-    window.addEventListener('online', onOnline);
-    return () => {
-      window.removeEventListener('online', onOnline);
-    };
-  }, []);
-
-  const queueEventForRetry = useCallback((eventName: string, eventData: Record<string, unknown>) => {
-    const pending = readPendingEvents();
-    pending.push({ eventName, eventData, queuedAt: Date.now() });
-    writePendingEvents(pending);
-  }, []);
 
   /**
    * Trigger Vivora auto-redeploy in background via Inngest.
@@ -98,6 +49,7 @@ export function useAutoRedeploy({ projectId, userId }: AutoRedeployOptions) {
     async (files: Record<string, ProjectFile>) => {
       if (!userId) return;
 
+      // Check if project has an active Vivora deployment
       const { data: deployment } = await supabase
         .from('vivora_deployments')
         .select('subdomain, status')
@@ -108,6 +60,7 @@ export function useAutoRedeploy({ projectId, userId }: AutoRedeployOptions) {
 
       if (!deployment || deployment.status !== 'active') return;
 
+      // Convert files to flat string map for edge function
       const fileMap: Record<string, string> = {};
       Object.entries(files).forEach(([path, file]) => {
         fileMap[path] = file.content;
@@ -116,27 +69,24 @@ export function useAutoRedeploy({ projectId, userId }: AutoRedeployOptions) {
       if (redeployDebounceRef.current) clearTimeout(redeployDebounceRef.current);
 
       redeployDebounceRef.current = setTimeout(async () => {
-        const payload = {
+        // Send to Inngest for background processing
+        const ok = await sendInngestEvent('vivora/project.updated', {
           subdomain: deployment.subdomain,
           files: fileMap,
           userId,
           projectId,
           timestamp: Date.now(),
-        };
-
-        const ok = await sendInngestEvent('vivora/project.updated', payload);
-        if (!ok) {
-          queueEventForRetry('vivora/project.updated', payload);
-          return;
-        }
-
-        toast({
-          title: '🔄 Auto-deploying...',
-          description: `Updating ${deployment.subdomain}.vivorax.online`,
         });
+
+        if (ok) {
+          toast({
+            title: '🔄 Auto-deploying...',
+            description: `Updating ${deployment.subdomain}.vivorax.online`,
+          });
+        }
       }, 3000);
     },
-    [projectId, queueEventForRetry, userId],
+    [userId, projectId]
   );
 
   /**
@@ -146,6 +96,7 @@ export function useAutoRedeploy({ projectId, userId }: AutoRedeployOptions) {
     async (files: Record<string, ProjectFile>, projectName: string) => {
       if (!userId) return;
 
+      // Get Vercel token from user integrations
       const { data: integration } = await supabase
         .from('user_integrations')
         .select('vercel_token, vercel_connected')
@@ -157,7 +108,7 @@ export function useAutoRedeploy({ projectId, userId }: AutoRedeployOptions) {
       if (redeployDebounceRef.current) clearTimeout(redeployDebounceRef.current);
 
       redeployDebounceRef.current = setTimeout(async () => {
-        const payload = {
+        const ok = await sendInngestEvent('vercel/project.updated', {
           token: integration.vercel_token,
           projectName: projectName
             .toLowerCase()
@@ -168,21 +119,17 @@ export function useAutoRedeploy({ projectId, userId }: AutoRedeployOptions) {
           userId,
           projectId,
           timestamp: Date.now(),
-        };
-
-        const ok = await sendInngestEvent('vercel/project.updated', payload);
-        if (!ok) {
-          queueEventForRetry('vercel/project.updated', payload);
-          return;
-        }
-
-        toast({
-          title: '🔄 Auto-deploying to Vercel...',
-          description: `Updating ${projectName}`,
         });
+
+        if (ok) {
+          toast({
+            title: '🔄 Auto-deploying to Vercel...',
+            description: `Updating ${projectName}`,
+          });
+        }
       }, 3000);
     },
-    [projectId, queueEventForRetry, userId],
+    [userId, projectId]
   );
 
   return { triggerVivoraRedeploy, triggerVercelRedeploy };
