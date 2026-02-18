@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, X, Zap, Star, Crown, Rocket, ArrowLeft } from 'lucide-react';
+import { Check, X, Zap, Star, Crown, Rocket, ArrowLeft, Globe, Server } from 'lucide-react';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,27 +8,12 @@ import { PLAN_CONFIG, type PlanType } from '@/hooks/useUserPlan';
 import { PayPalButton } from '@/components/shared/PayPalButton';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
-const plans: { key: PlanType; icon: React.ReactNode; color: string; popular?: boolean }[] = [
-  { key: 'spark', icon: <Zap className="w-5 h-5" />, color: 'gray' },
-  { key: 'builder', icon: <Star className="w-5 h-5" />, color: 'blue', },
-  { key: 'creator', icon: <Crown className="w-5 h-5" />, color: 'purple', popular: true },
-  { key: 'scale', icon: <Rocket className="w-5 h-5" />, color: 'orange' }
+const plans: { key: PlanType; icon: React.ReactNode; color: string; emoji: string; popular?: boolean }[] = [
+  { key: 'spark',   icon: <Zap className="w-5 h-5" />,    color: 'gray',   emoji: '🆓' },
+  { key: 'builder', icon: <Star className="w-5 h-5" />,   color: 'blue',   emoji: '🔨' },
+  { key: 'creator', icon: <Crown className="w-5 h-5" />,  color: 'purple', emoji: '⚡', popular: true },
+  { key: 'scale',   icon: <Rocket className="w-5 h-5" />, color: 'orange', emoji: '🚀' }
 ];
-
-const getFeaturesList = (planKey: PlanType) => {
-  const config = PLAN_CONFIG[planKey];
-  const features: { text: string; included: boolean }[] = [];
-
-  if (planKey === 'spark') {
-    features.push({ text: `${config.dailyCredits} Credits / day`, included: true });
-  } else {
-    features.push({ text: `${config.dailyCredits} Credits / day + ${config.monthlyCredits} / month`, included: true });
-  }
-
-  features.push({ text: 'ZIP Export', included: config.features.zipExport });
-
-  return features;
-};
 
 export const Pricing: React.FC = () => {
   const { t, isRTL } = useLanguage();
@@ -45,8 +30,7 @@ export const Pricing: React.FC = () => {
         backgroundAttachment: 'fixed',
       }}
     >
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/50" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60" />
 
       {/* Header */}
       <header className="relative z-10 px-6 py-4">
@@ -64,36 +48,27 @@ export const Pricing: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="relative z-10 px-6 py-16">
+      <main className="relative z-10 px-4 py-12">
         <div className="max-w-7xl mx-auto">
           {/* Hero */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
               🚀 {t('pricing.title')} <span className="text-pink-400">{t('pricing.subtitle')}</span>
             </h1>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto">
-              {t('pricing.description')}
-            </p>
+            <p className="text-xl text-white/80 max-w-2xl mx-auto">{t('pricing.description')}</p>
           </motion.div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            {plans.map(({ key, icon, color, popular }, index) => {
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+            {plans.map(({ key, icon, color, emoji, popular }, index) => {
               const config = PLAN_CONFIG[key];
-              const features = getFeaturesList(key);
-
               return (
                 <motion.div
                   key={key}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className={`relative bg-white/10 backdrop-blur-md rounded-2xl border overflow-hidden ${
+                  className={`relative bg-white/10 backdrop-blur-md rounded-2xl border overflow-hidden flex flex-col ${
                     popular ? 'border-purple-400 ring-2 ring-purple-400/50' : 'border-white/10'
                   }`}
                 >
@@ -102,10 +77,9 @@ export const Pricing: React.FC = () => {
                       ⭐ {t('pricing.popular')}
                     </div>
                   )}
-
-                  <div className={`p-6 ${popular ? 'pt-10' : ''}`}>
-                    <div className={`flex items-center gap-3 mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  <div className={`p-5 flex flex-col flex-1 ${popular ? 'pt-9' : ''}`}>
+                    <div className={`flex items-center gap-3 mb-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
                         color === 'gray' ? 'bg-gray-500/20 text-gray-400' :
                         color === 'blue' ? 'bg-blue-500/20 text-blue-400' :
                         color === 'purple' ? 'bg-purple-500/20 text-purple-400' :
@@ -113,53 +87,64 @@ export const Pricing: React.FC = () => {
                       }`}>
                         {icon}
                       </div>
-                      <h3 className="text-xl font-bold text-white">{config.name}</h3>
+                      <h3 className="text-lg font-bold text-white">{emoji} {config.name}</h3>
                     </div>
 
-                    <div className="mb-4">
-                      <span className="text-4xl font-bold text-white">${config.price}</span>
-                      <span className="text-white/60">/{t('upgrade.month')}</span>
+                    <div className="mb-3">
+                      <span className="text-3xl font-bold text-white">${config.price}</span>
+                      <span className="text-white/60 text-sm">/{t('upgrade.month')}</span>
                     </div>
 
-                    <p className="text-white/70 mb-6 text-sm">
-                      {key === 'spark' && 'Perfect for testing & learning'}
-                      {key === 'builder' && 'For indie developers'}
-                      {key === 'creator' && 'For serious builders'}
-                      {key === 'scale' && 'For teams & startups'}
-                    </p>
+                    {/* Stats */}
+                    <div className="space-y-2 mb-4 text-sm">
+                      <div className="flex justify-between text-white/70">
+                        <span>Credits / day</span>
+                        <span className="font-bold text-yellow-400">{config.dailyCredits}</span>
+                      </div>
+                      <div className="flex justify-between text-white/70">
+                        <span>Max Tokens</span>
+                        <span className="font-bold text-blue-400">{(config.maxTokens / 1000).toFixed(0)}k</span>
+                      </div>
+                      <div className="flex justify-between text-white/70">
+                        <span>AI Calls</span>
+                        <span className="font-bold text-green-400">
+                          {config.features.allCalls ? 'All calls' : 'Code only'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-white/70">
+                        <span>Publishing</span>
+                        <span className="font-bold text-purple-400 text-xs">Vivora + Vercel ✅</span>
+                      </div>
+                      <div className="flex justify-between text-white/70">
+                        <span>Vivora Projects</span>
+                        <span className="font-bold text-pink-400">
+                          {config.vivoraProjects === 1 ? '1 project' : `${config.vivoraProjects} projects`}
+                        </span>
+                      </div>
+                    </div>
 
-                    <ul className="space-y-2 mb-6">
-                      {features.map((feature, i) => (
-                        <li key={i} className={`flex items-center gap-2 text-sm ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          {feature.included ? (
-                            <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
-                          ) : (
-                            <X className="w-4 h-4 text-red-400/50 flex-shrink-0" />
-                          )}
-                          <span className={feature.included ? 'text-white/80' : 'text-white/40 line-through'}>
-                            {feature.text}
-                          </span>
+                    {/* Features */}
+                    <ul className="space-y-1.5 mb-5 text-sm flex-1">
+                      {[
+                        { label: 'ZIP Export', v: config.features.zipExport },
+                        { label: 'Private Projects', v: config.features.privateProjects },
+                        { label: 'Priority Access', v: config.features.priorityAccess },
+                      ].map(f => (
+                        <li key={f.label} className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                          {f.v ? <Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0" /> : <X className="w-3.5 h-3.5 text-red-400/50 flex-shrink-0" />}
+                          <span className={f.v ? 'text-white/80' : 'text-white/40 line-through'}>{f.label}</span>
                         </li>
                       ))}
                     </ul>
 
                     {key !== 'spark' && user ? (
-                      <PayPalButton
-                        plan={key}
-                        onSuccess={() => window.location.reload()}
-                        className="!rounded-xl"
-                      />
+                      <PayPalButton plan={key} onSuccess={() => window.location.reload()} className="!rounded-xl" />
                     ) : key !== 'spark' ? (
-                      <a
-                        href="/login"
-                        className="w-full py-3 rounded-xl font-medium transition-colors bg-white/10 hover:bg-white/20 text-white block text-center"
-                      >
+                      <a href="/login" className="w-full py-2.5 rounded-xl font-medium transition-colors bg-white/10 hover:bg-white/20 text-white block text-center text-sm">
                         {t('auth.goToLogin')}
                       </a>
                     ) : (
-                      <button
-                        className="w-full py-3 rounded-xl font-medium transition-colors bg-white/10 hover:bg-white/20 text-white"
-                      >
+                      <button className="w-full py-2.5 rounded-xl font-medium transition-colors bg-white/10 hover:bg-white/20 text-white text-sm">
                         {t('pricing.getStarted')}
                       </button>
                     )}
@@ -169,50 +154,90 @@ export const Pricing: React.FC = () => {
             })}
           </div>
 
-          {/* Credit System Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-8 mb-16"
-          >
-            <h2 className="text-2xl font-bold text-white mb-4">💳 Credit System</h2>
-            <p className="text-white/70 mb-6">
-              Each successful code generation costs 1 credit. Daily credits reset at UTC midnight.
-            </p>
-
-            <div className="grid md:grid-cols-4 gap-4">
-              {Object.entries(PLAN_CONFIG).map(([key, config]) => (
-                <div key={key} className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
-                  <div className="text-2xl font-bold text-yellow-400">{config.dailyCredits}/day</div>
-                  {config.monthlyCredits > 0 && (
-                    <div className="text-green-400 font-medium">+{config.monthlyCredits}/month</div>
-                  )}
-                  <div className="text-white/60 text-sm mt-1">{config.name}</div>
-                </div>
-              ))}
+          {/* Comparison Table */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mb-12">
+            <h2 className="text-2xl font-bold text-white mb-6 text-center">📊 Full Comparison</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden">
+                <thead>
+                  <tr className="bg-white/10">
+                    <th className="text-left text-white/80 font-semibold px-5 py-4 text-sm">Feature</th>
+                    {plans.map(p => (
+                      <th key={p.key} className="text-center text-white/80 font-semibold px-4 py-4 text-sm">
+                        {p.emoji} {PLAN_CONFIG[p.key].name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {[
+                    { label: 'Price', vals: ['$0', '$9/mo', '$15/mo', '$22/mo'] },
+                    { label: 'Credits / day', vals: ['3', '40', '50', '70'] },
+                    { label: 'Max Tokens', vals: ['8k', '30k', '40k', '60k'] },
+                    { label: 'AI Calls', vals: ['Code only', 'All calls', 'All calls', 'All calls + Priority'] },
+                    { label: 'Vivora Hosting', vals: ['1 project', '5 projects', '10 projects', '15 projects'] },
+                    { label: 'Vercel Deploy', vals: ['✅ Unlimited', '✅ Unlimited', '✅ Unlimited', '✅ Unlimited'] },
+                    { label: 'ZIP Export', vals: ['❌', '✅', '✅', '✅'] },
+                    { label: 'Private Projects', vals: ['❌', '❌', '✅', '✅'] },
+                  ].map((row, i) => (
+                    <tr key={row.label} className={i % 2 === 0 ? '' : 'bg-white/3'}>
+                      <td className="text-white/70 px-5 py-3.5 text-sm font-medium">{row.label}</td>
+                      {row.vals.map((v, vi) => (
+                        <td key={vi} className="text-center text-white/90 px-4 py-3.5 text-sm">{v}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </motion.div>
 
-          {/* FAQ Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="text-center"
-          >
+          {/* Publishing Options */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="grid md:grid-cols-2 gap-6 mb-12">
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                  <Server className="w-5 h-5 text-orange-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Vivora Hosting</h3>
+              </div>
+              <p className="text-white/70 text-sm mb-4">Deploy to <code className="text-pink-400">yourname.vivorax.online</code> — powered by Cloudflare Pages. Fast, global CDN.</p>
+              <ul className="space-y-2 text-sm text-white/70">
+                <li>✅ Custom subdomain: <code className="text-blue-400">project.vivorax.online</code></li>
+                <li>✅ SSL included automatically</li>
+                <li>✅ Global CDN via Cloudflare</li>
+                <li>⚡ No Vercel account needed</li>
+              </ul>
+            </div>
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                  <Globe className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Vercel Deploy</h3>
+              </div>
+              <p className="text-white/70 text-sm mb-4">Connect your Vercel account and deploy to <code className="text-green-400">yourproject.vercel.app</code> with production URLs.</p>
+              <ul className="space-y-2 text-sm text-white/70">
+                <li>✅ Unlimited projects (all plans)</li>
+                <li>✅ Real production URL</li>
+                <li>✅ Auto build logs & error detection</li>
+                <li>⚡ Requires Vercel account</li>
+              </ul>
+            </div>
+          </motion.div>
+
+          {/* FAQ */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="text-center">
             <h2 className="text-2xl font-bold text-white mb-4">❓ {t('pricing.faq')}</h2>
-            <p className="text-white/70 mb-8">{t('pricing.faqSubtitle')}</p>
-            
-            <div className="grid md:grid-cols-3 gap-6 text-left max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-5 text-left max-w-4xl mx-auto">
               {[
-                { q: 'How are credits used?', a: 'Each successful generation uses 1 credit.' },
-                { q: 'When do credits reset?', a: 'Daily credits reset at UTC midnight.' },
-                { q: 'Can I buy more credits?', a: 'Extra credits can be purchased at any time.' },
+                { q: 'How are credits used?', a: 'Each AI generation uses credits based on complexity (0.5–3 credits). Simple edits cost less.' },
+                { q: 'When do credits reset?', a: 'Daily credits reset at UTC midnight every day.' },
+                { q: 'What is Vivora Hosting?', a: 'Deploy to yourname.vivorax.online instantly. Free plan gets 1 project, paid plans get more.' },
               ].map((faq) => (
                 <div key={faq.q} className="bg-white/5 rounded-xl p-5 border border-white/10">
-                  <h3 className="font-semibold text-white mb-2">{faq.q}</h3>
-                  <p className="text-white/70 text-sm">{faq.a}</p>
+                  <h3 className="font-semibold text-white mb-2 text-sm">{faq.q}</h3>
+                  <p className="text-white/70 text-xs leading-relaxed">{faq.a}</p>
                 </div>
               ))}
             </div>
