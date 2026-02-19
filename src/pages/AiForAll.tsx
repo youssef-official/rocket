@@ -241,23 +241,6 @@ export default function Chatbot({ systemPrompt = "You are a helpful assistant." 
           ))}
         </motion.div>
 
-        {/* Models */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-20">
-          <h2 className="text-3xl font-bold mb-2 text-center">Available Models</h2>
-          <p className="text-muted-foreground text-center mb-8">All models accessible from the same endpoint — no switching required</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {models.map((model) => (
-              <div key={model.id} className="bg-card border border-border rounded-xl p-4 hover:border-primary/50 transition-colors">
-                <div className="flex items-start justify-between mb-2">
-                  <span className="text-sm font-bold">{model.name}</span>
-                  <span className="text-xs bg-muted rounded-full px-2 py-0.5">{model.badge}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">{model.desc}</p>
-                <div className="font-mono text-xs text-primary bg-primary/10 rounded px-2 py-1 break-all">{model.id}</div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
 
         {/* Base URL */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-12">

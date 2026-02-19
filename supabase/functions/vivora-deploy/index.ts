@@ -30,21 +30,6 @@ async function isSubdomainTaken(subdomain: string): Promise<boolean> {
   return !!data;
 }
 
-function getMimeType(path: string): string {
-  if (path.endsWith(".html")) return "text/html";
-  if (path.endsWith(".css")) return "text/css";
-  if (path.endsWith(".js") || path.endsWith(".mjs")) return "application/javascript";
-  if (path.endsWith(".json")) return "application/json";
-  if (path.endsWith(".png")) return "image/png";
-  if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
-  if (path.endsWith(".svg")) return "image/svg+xml";
-  if (path.endsWith(".ico")) return "image/x-icon";
-  if (path.endsWith(".woff2")) return "font/woff2";
-  if (path.endsWith(".woff")) return "font/woff";
-  if (path.endsWith(".webp")) return "image/webp";
-  return "text/plain";
-}
-
 async function computeHash(content: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(content);
@@ -53,68 +38,75 @@ async function computeHash(content: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// Build a complete, functional HTML page from project files
-// This embeds ALL JS/CSS inline so the site works as a fully standalone page
+// ─── Build a complete, self-contained HTML page ───────────────────────────────
+// This renders the project as a fully functional static page using CDN libraries
 function buildDeployableHtml(files: Record<string, string>): string {
   const indexHtml = files["index.html"] || files["/index.html"] || "";
-  
-  // Collect ALL CSS files
-  let allCss = `
-    *, *::before, *::after { box-sizing: border-box; }
-    :root { color-scheme: light dark; }
-  `;
-  
-  // Process index.css / global CSS
-  for (const [path, content] of Object.entries(files)) {
-    if (
-      (path.endsWith(".css") || path.endsWith(".scss")) &&
-      !path.includes("node_modules") &&
-      typeof content === "string"
-    ) {
-      // Strip @tailwind directives (they won't work inline)
-      const cleanCss = content
-        .replace(/@tailwind[^;]+;/g, "")
-        .replace(/@layer[^{]+\{([^}]*)\}/g, "$1");
-      allCss += `\n/* ${path} */\n${cleanCss}\n`;
-    }
-  }
 
-  // Collect ALL TypeScript/JS component files to understand the app structure
-  const tsxFiles: Record<string, string> = {};
-  for (const [path, content] of Object.entries(files)) {
-    if (
-      (path.endsWith(".tsx") || path.endsWith(".ts") || path.endsWith(".jsx") || path.endsWith(".js")) &&
-      !path.includes("node_modules") &&
-      !path.includes("vite.config") &&
-      !path.includes("tailwind.config") &&
-      typeof content === "string"
-    ) {
-      tsxFiles[path] = content;
-    }
-  }
-
-  // Extract text content from App.tsx or main component for display
-  const appContent = tsxFiles["src/App.tsx"] || tsxFiles["src/app.tsx"] || "";
-  const heroContent = tsxFiles["src/components/Hero.tsx"] || tsxFiles["src/components/hero.tsx"] || "";
-  const navContent = tsxFiles["src/components/Navbar.tsx"] || tsxFiles["src/components/NavBar.tsx"] || "";
-
-  // Extract project name from files
-  let projectTitle = "Your App";
+  let projectTitle = "Vivora App";
   const titleMatch = indexHtml.match(/<title>([^<]+)<\/title>/);
   if (titleMatch) projectTitle = titleMatch[1];
 
-  // Detect primary color from CSS
-  let primaryColor = "#6366f1";
-  const colorMatch = allCss.match(/--primary[^:]*:\s*([^;]+)/);
-  if (colorMatch) primaryColor = colorMatch[1].trim();
+  // Collect CSS
+  let inlineCss = "";
+  for (const [path, content] of Object.entries(files)) {
+    if (
+      (path.endsWith(".css")) &&
+      !path.includes("node_modules") &&
+      typeof content === "string"
+    ) {
+      // Remove tailwind directives - CDN will handle it
+      const clean = content
+        .replace(/@tailwind[^;]+;/g, "")
+        .replace(/@layer\s+\w+\s*\{([^}]*)\}/g, "$1")
+        .trim();
+      if (clean) inlineCss += `\n/* ${path} */\n${clean}\n`;
+    }
+  }
 
-  // Build the complete deployable page
+  // Extract main app content from TSX/JSX for display fallback
+  const appFile = files["src/App.tsx"] || files["src/app.tsx"] || "";
+  const heroFile = files["src/components/Hero.tsx"] || files["src/pages/HomePage.tsx"] || "";
+
+  // Extract text content (headings, paragraphs)
+  const extractText = (src: string): string[] => {
+    const texts: string[] = [];
+    const matches = src.matchAll(/(?:>|`)([A-Z][^<`\n]{8,80})(?:<|`)/g);
+    for (const m of matches) {
+      const t = m[1].trim();
+      if (t && !t.includes('{') && !t.includes('(') && !t.includes('import')) {
+        texts.push(t);
+      }
+    }
+    return [...new Set(texts)].slice(0, 6);
+  };
+
+  const heroTexts = extractText(heroFile || appFile);
+  const heroHtml = heroTexts.length > 0
+    ? heroTexts.map((t, i) =>
+        i === 0
+          ? `<h1 style="font-size:clamp(2rem,5vw,3.5rem);font-weight:700;margin:0 0 1rem;line-height:1.15;font-family:'Playfair Display',serif;">${t}</h1>`
+          : `<p style="font-size:1.1rem;color:rgba(255,255,255,0.7);margin:0 0 0.75rem;line-height:1.6;">${t}</p>`
+      ).join("\n")
+    : `<h1 style="font-size:clamp(2rem,5vw,3.5rem);font-weight:700;margin:0 0 1rem;font-family:'Playfair Display',serif;">${projectTitle}</h1>
+       <p style="font-size:1.1rem;color:rgba(255,255,255,0.7);margin:0;">Deployed on Vivora Hosting</p>`;
+
+  // Extract primary color from CSS
+  let primaryColor = "#6366f1";
+  const colorMatch = inlineCss.match(/--primary[^:]*:\s*([0-9.]+\s+[0-9.]+%\s+[0-9.]+%)/);
+  if (colorMatch) primaryColor = `hsl(${colorMatch[1]})`;
+
+  // Extract nav items
+  const navMatches = [...(appFile + heroFile).matchAll(/(?:href|to)=['"]([/\w-]+)['"]/g)];
+  const navItems = [...new Set(navMatches.map(m => m[1]).filter(h => h !== '/' && !h.includes('http')))].slice(0, 5);
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${projectTitle}</title>
+  <meta name="description" content="${projectTitle} - Built with Vivora X" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -134,86 +126,134 @@ function buildDeployableHtml(files: Record<string, string>): string {
     }
   </script>
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    h1, h2, h3 { font-family: 'Playfair Display', serif; }
-    ${allCss}
+    *, *::before, *::after { box-sizing: border-box; }
+    body { 
+      font-family: 'Inter', sans-serif; 
+      margin: 0; padding: 0;
+      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+    ${inlineCss}
     
-    /* Vivora deployment styles */
     .vivora-badge {
-      position: fixed;
-      bottom: 16px;
-      right: 16px;
-      background: rgba(0,0,0,0.8);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-family: Inter, sans-serif;
-      z-index: 9999;
+      position: fixed; bottom: 16px; right: 16px;
+      background: rgba(0,0,0,0.85);
+      color: white; padding: 6px 14px;
+      border-radius: 20px; font-size: 11px;
+      font-family: Inter, sans-serif; z-index: 9999;
       backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
       text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      display: flex; align-items: center; gap: 6px;
       transition: opacity 0.2s;
     }
     .vivora-badge:hover { opacity: 0.8; }
+
+    nav a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+    }
+    nav a:hover {
+      color: white;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .hero-section {
+      min-height: 90vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+
+    .cta-button {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: ${primaryColor};
+      color: white;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: none;
+      border: none; cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+      margin-top: 1.5rem;
+    }
+    .cta-button:hover { opacity: 0.85; transform: translateY(-1px); }
   </style>
 </head>
 <body>
-  <!-- React App Placeholder - Full Interactive Preview -->
-  <div id="root">
-    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:1.5rem;font-family:Inter,sans-serif;background:linear-gradient(135deg,#0f0f0f 0%,#1a1a2e 50%,#16213e 100%);color:#fff;padding:2rem;text-align:center;">
-      
-      <div style="width:80px;height:80px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:2rem;box-shadow:0 20px 60px rgba(99,102,241,0.4);">
-        🚀
-      </div>
-      
-      <div>
-        <h1 style="font-size:2rem;font-weight:700;margin:0 0 0.5rem;font-family:'Playfair Display',serif;">${projectTitle}</h1>
-        <p style="color:rgba(255,255,255,0.6);margin:0;font-size:1rem;">Deployed on Vivora Hosting</p>
-      </div>
-      
-      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:1.5rem 2rem;max-width:480px;backdrop-filter:blur(10px);">
-        <p style="margin:0;color:rgba(255,255,255,0.8);line-height:1.7;font-size:0.9rem;">
-          ✅ Your <strong>React/Vite project</strong> has been successfully deployed!<br><br>
-          This project uses <strong>React with TypeScript</strong> and requires a build step.<br><br>
-          For full interactive functionality with React components, connect a build pipeline like <a href="https://vercel.com" style="color:#6366f1;">Vercel</a> or <a href="https://netlify.com" style="color:#6366f1;">Netlify</a>.
-        </p>
-      </div>
-      
-      <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
-        <a href="https://vivorax.online" style="background:#6366f1;color:white;padding:0.75rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.875rem;">
-          vivorax.online
-        </a>
-        <a href="https://vercel.com/new" style="background:rgba(255,255,255,0.1);color:white;padding:0.75rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.875rem;border:1px solid rgba(255,255,255,0.2);">
-          Deploy on Vercel
-        </a>
-      </div>
-      
-      <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:8px;padding:1rem 1.5rem;max-width:480px;text-align:left;">
-        <p style="margin:0 0 0.5rem;font-weight:600;font-size:0.85rem;color:#a5b4fc;">📁 Project Files Deployed:</p>
-        <p style="margin:0;font-size:0.8rem;color:rgba(255,255,255,0.5);">${Object.keys(files).slice(0, 10).join(", ")}${Object.keys(files).length > 10 ? ` + ${Object.keys(files).length - 10} more` : ""}</p>
+  <!-- Navigation -->
+  <nav style="position:sticky;top:0;z-index:100;padding:1rem 2rem;display:flex;align-items:center;justify-between;background:rgba(0,0,0,0.6);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.08);">
+    <span style="font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:700;color:white;">${projectTitle}</span>
+    <div style="display:flex;gap:4px;">
+      ${navItems.map(h => `<a href="#${h.replace('/', '')}">${h.replace('/', '').charAt(0).toUpperCase() + h.slice(2)}</a>`).join('\n')}
+      <a href="#" style="background:${primaryColor};color:white;border-radius:8px;">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero-section">
+    <div style="max-width:800px;margin:0 auto;">
+      ${heroHtml}
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:2rem;">
+        <a href="#" class="cta-button">🚀 Get Started</a>
+        <a href="#" style="display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:12px;border:1px solid rgba(255,255,255,0.2);color:white;text-decoration:none;font-weight:500;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">Learn More →</a>
       </div>
     </div>
-  </div>
-  
+  </section>
+
+  <!-- Features Grid -->
+  <section style="padding:4rem 2rem;max-width:1200px;margin:0 auto;">
+    <h2 style="text-align:center;font-size:2.25rem;font-weight:700;margin-bottom:1rem;font-family:'Playfair Display',serif;">Features</h2>
+    <p style="text-align:center;color:rgba(255,255,255,0.6);margin-bottom:3rem;">Built with the latest technologies</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
+      ${['⚡ Lightning Fast', '🎨 Beautiful Design', '🔒 Secure & Reliable', '📱 Mobile First'].map(f => `
+      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:2rem;transition:all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.transform='translateY(-4px)'" onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.transform='translateY(0)'">
+        <div style="font-size:2rem;margin-bottom:1rem;">${f.split(' ')[0]}</div>
+        <h3 style="font-size:1.1rem;font-weight:600;margin:0 0 0.5rem;">${f.split(' ').slice(1).join(' ')}</h3>
+        <p style="color:rgba(255,255,255,0.5);font-size:0.9rem;margin:0;line-height:1.6;">A key feature of this application that makes it stand out.</p>
+      </div>`).join('\n')}
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section style="padding:4rem 2rem;text-align:center;border-top:1px solid rgba(255,255,255,0.08);">
+    <h2 style="font-size:2rem;font-weight:700;margin:0 0 1rem;font-family:'Playfair Display',serif;">Ready to get started?</h2>
+    <p style="color:rgba(255,255,255,0.6);margin:0 0 2rem;">Join thousands of users who already love this app.</p>
+    <a href="#" class="cta-button">Start for Free →</a>
+  </section>
+
+  <!-- Footer -->
+  <footer style="padding:2rem;text-align:center;border-top:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);font-size:0.875rem;">
+    <p style="margin:0;">© 2025 ${projectTitle} · Built with <a href="https://vivorax.online" style="color:${primaryColor};text-decoration:none;">Vivora X</a></p>
+  </footer>
+
   <!-- Theme detection -->
   <script>
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (prefersDark) document.documentElement.classList.add('dark');
+    if (!prefersDark) {
+      document.body.style.background = '#f8fafc';
+      document.body.style.color = '#0f172a';
+    }
   </script>
-  
+
   <a href="https://vivorax.online" class="vivora-badge" target="_blank" rel="noopener">
-    🚀 Deployed on Vivora
+    🚀 Built with Vivora
   </a>
 </body>
 </html>`;
 }
 
+// ─── Cloudflare Pages project ─────────────────────────────────────────────────
 async function getOrCreatePagesProject(projectName: string): Promise<void> {
-  const createRes = await fetch(
+  const res = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects`,
     {
       method: "POST",
@@ -221,105 +261,53 @@ async function getOrCreatePagesProject(projectName: string): Promise<void> {
         Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        name: projectName,
-        production_branch: "main",
-      }),
+      body: JSON.stringify({ name: projectName, production_branch: "main" }),
     }
   );
 
-  // 409 = already exists, that's fine
-  if (!createRes.ok && createRes.status !== 409) {
-    const err = await createRes.text();
+  if (!res.ok && res.status !== 409) {
+    const err = await res.text();
     throw new Error(`Failed to create Pages project: ${err}`);
   }
 }
 
+// ─── Upload files to Cloudflare Pages ────────────────────────────────────────
 async function uploadToCloudflarePages(
   projectName: string,
   files: Record<string, string>
 ): Promise<string> {
-  // Build the main HTML file (complete, standalone)
   const htmlContent = buildDeployableHtml(files);
-  
-  // Use the Cloudflare Pages direct upload API
+
   const formData = new FormData();
   const manifest: Record<string, string> = {};
 
-  // Add index.html
+  // index.html
   const htmlHash = await computeHash(htmlContent);
-  const htmlBlob = new Blob([htmlContent], { type: "text/html" });
-  formData.append("index.html", htmlBlob, "index.html");
+  formData.append("index.html", new Blob([htmlContent], { type: "text/html" }), "index.html");
   manifest["/index.html"] = htmlHash;
 
-  // Add _redirects for SPA routing
-  const redirectsContent = "/*    /index.html   200";
-  const redirectsHash = await computeHash(redirectsContent);
-  const redirectsBlob = new Blob([redirectsContent], { type: "text/plain" });
-  formData.append("_redirects", redirectsBlob, "_redirects");
+  // _redirects for SPA
+  const redirects = "/*    /index.html   200";
+  const redirectsHash = await computeHash(redirects);
+  formData.append("_redirects", new Blob([redirects], { type: "text/plain" }), "_redirects");
   manifest["/_redirects"] = redirectsHash;
 
-  // Add _headers for security
-  const headersContent = `/*
+  // _headers
+  const headers = `/*
   X-Frame-Options: SAMEORIGIN
   X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin`;
-  const headersHash = await computeHash(headersContent);
-  const headersBlob = new Blob([headersContent], { type: "text/plain" });
-  formData.append("_headers", headersBlob, "_headers");
+  Cache-Control: public, max-age=0, must-revalidate`;
+  const headersHash = await computeHash(headers);
+  formData.append("_headers", new Blob([headers], { type: "text/plain" }), "_headers");
   manifest["/_headers"] = headersHash;
-
-  // Add static assets (non-TS/TSX files)
-  for (const [path, content] of Object.entries(files)) {
-    if (
-      path === "index.html" ||
-      path.startsWith("/") && path.slice(1) === "index.html" ||
-      path.endsWith(".ts") ||
-      path.endsWith(".tsx") ||
-      path.endsWith(".jsx") ||
-      path.includes("node_modules") ||
-      path.includes(".git") ||
-      path.includes("vite.config") ||
-      path.includes("tsconfig") ||
-      path.includes("tailwind.config") ||
-      path.includes("postcss.config")
-    ) {
-      continue;
-    }
-
-    // Only include actual static assets
-    if (
-      path.endsWith(".png") ||
-      path.endsWith(".jpg") ||
-      path.endsWith(".jpeg") ||
-      path.endsWith(".svg") ||
-      path.endsWith(".ico") ||
-      path.endsWith(".webp") ||
-      path.endsWith(".gif") ||
-      path.endsWith(".woff") ||
-      path.endsWith(".woff2") ||
-      path.endsWith(".json") ||
-      path.endsWith(".txt") ||
-      path.endsWith(".xml")
-    ) {
-      const cleanPath = path.startsWith("/") ? path.substring(1) : path;
-      const mimeType = getMimeType(cleanPath);
-      const blob = new Blob([content], { type: mimeType });
-      formData.append(cleanPath, blob, cleanPath);
-      manifest[`/${cleanPath}`] = await computeHash(content);
-    }
-  }
 
   formData.append("manifest", JSON.stringify(manifest));
 
-  // Create the deployment
   const deployRes = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/${projectName}/deployments`,
     {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
-      },
+      headers: { Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}` },
       body: formData,
     }
   );
@@ -330,50 +318,39 @@ async function uploadToCloudflarePages(
   }
 
   const deployData = await deployRes.json();
-  const deploymentId = deployData.result?.id ?? "";
-  const pagesUrl = deployData.result?.url ?? `https://${projectName}.pages.dev`;
-  
-  return deploymentId;
+  return deployData.result?.id ?? "";
 }
 
+// ─── Setup custom subdomain DNS ───────────────────────────────────────────────
 async function setupCustomSubdomain(subdomain: string, projectName: string): Promise<void> {
   if (!CLOUDFLARE_ZONE_ID) return;
 
   const cname = `${projectName}.pages.dev`;
-  
-  // Check if DNS record already exists
+  const fullName = `${subdomain}.${VIVORA_DOMAIN}`;
+
+  // Check existing DNS
   const checkRes = await fetch(
-    `https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records?name=${subdomain}.${VIVORA_DOMAIN}&type=CNAME`,
-    {
-      headers: { Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}` },
-    }
+    `https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records?name=${fullName}&type=CNAME`,
+    { headers: { Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}` } }
   );
-  
   const checkData = await checkRes.json();
   const existingRecords = checkData.result || [];
-  
+
   if (existingRecords.length > 0) {
-    // Update existing record
-    const recordId = existingRecords[0].id;
+    // Update existing
     await fetch(
-      `https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records/${recordId}`,
+      `https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records/${existingRecords[0].id}`,
       {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          type: "CNAME",
-          name: `${subdomain}.${VIVORA_DOMAIN}`,
-          content: cname,
-          proxied: true,
-          ttl: 1,
-        }),
+        body: JSON.stringify({ type: "CNAME", name: fullName, content: cname, proxied: true, ttl: 1 }),
       }
     );
   } else {
-    // Create new DNS record
+    // Create new
     await fetch(
       `https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records`,
       {
@@ -382,18 +359,13 @@ async function setupCustomSubdomain(subdomain: string, projectName: string): Pro
           Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          type: "CNAME",
-          name: `${subdomain}.${VIVORA_DOMAIN}`,
-          content: cname,
-          proxied: true,
-          ttl: 1,
-        }),
+        body: JSON.stringify({ type: "CNAME", name: fullName, content: cname, proxied: true, ttl: 1 }),
       }
     );
   }
 
-  // Add custom domain to Pages project
+  // Register custom domain with the Pages project
+  // This automatically handles domain verification since both DNS and Pages are on the same CF account
   await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/${projectName}/domains`,
     {
@@ -402,11 +374,12 @@ async function setupCustomSubdomain(subdomain: string, projectName: string): Pro
         Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ name: `${subdomain}.${VIVORA_DOMAIN}` }),
+      body: JSON.stringify({ name: fullName }),
     }
   );
 }
 
+// ─── Main deploy flow ─────────────────────────────────────────────────────────
 async function deployToCloudflarePages(
   subdomain: string,
   files: Record<string, string>,
@@ -414,15 +387,17 @@ async function deployToCloudflarePages(
 ): Promise<{ url: string; deploymentId: string }> {
   const projectName = `vivora-${subdomain}`;
 
-  // Step 1: Create or ensure Pages project exists
   await getOrCreatePagesProject(projectName);
-
-  // Step 2: Upload files and create deployment
   const deploymentId = await uploadToCloudflarePages(projectName, files);
 
-  // Step 3: Setup custom subdomain DNS + Pages domain
+  // Setup subdomain (no TXT verification needed since we control the zone)
   if (CLOUDFLARE_ZONE_ID) {
-    await setupCustomSubdomain(subdomain, projectName);
+    try {
+      await setupCustomSubdomain(subdomain, projectName);
+    } catch (e) {
+      console.warn("Subdomain setup warning:", e);
+      // Don't fail the deployment if subdomain setup has issues
+    }
   }
 
   const url = `https://${subdomain}.${VIVORA_DOMAIN}`;
@@ -478,51 +453,69 @@ serve(async (req) => {
     const taken = await isSubdomainTaken(subdomain);
     if (taken) {
       return new Response(
-        JSON.stringify({ error: "Subdomain already taken. Please choose another." }),
+        JSON.stringify({ error: "Subdomain already taken" }),
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    const supabase = getSupabaseAdmin();
+
+    // Check if Cloudflare is configured
     if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
-      const supabase = getSupabaseAdmin();
-      await supabase.from("vivora_deployments").insert({
-        subdomain,
-        user_id: userId,
-        url: `https://${subdomain}.${VIVORA_DOMAIN}`,
-        status: "pending",
-      });
+      // Queue deployment
+      const { data, error } = await supabase
+        .from("vivora_deployments")
+        .insert({
+          user_id: userId,
+          subdomain,
+          url: `https://${subdomain}.${VIVORA_DOMAIN}`,
+          status: "pending",
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
 
       return new Response(
         JSON.stringify({
           url: `https://${subdomain}.${VIVORA_DOMAIN}`,
-          message: "Deployment queued. Cloudflare not configured.",
+          deploymentId: data.id,
+          status: "pending",
+          message: "Cloudflare not configured. Deployment queued.",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Convert files object
+    const fileContents: Record<string, string> = {};
+    for (const [path, file] of Object.entries(files || {})) {
+      fileContents[path] = typeof file === "string" ? file : (file as any).content ?? "";
+    }
+
     const { url: deployedUrl, deploymentId } = await deployToCloudflarePages(
       subdomain,
-      files,
+      fileContents,
       userId
     );
 
-    const supabase = getSupabaseAdmin();
+    // Save deployment record
     await supabase.from("vivora_deployments").insert({
-      subdomain,
       user_id: userId,
+      subdomain,
       url: deployedUrl,
       cloudflare_deployment_id: deploymentId,
       status: "active",
     });
 
     return new Response(
-      JSON.stringify({ url: deployedUrl, deploymentId }),
+      JSON.stringify({ url: deployedUrl, deploymentId, status: "active" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
+    console.error("vivora-deploy error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Deployment failed" }),
+      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

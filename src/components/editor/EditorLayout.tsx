@@ -10,6 +10,7 @@ import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
 import { VisualEditMode } from './VisualEditMode';
 import { VercelDeployDialog } from './IntegrationDialogs';
+import { DatabasePanel } from './DatabasePanel';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVersions, type ProjectVersion } from '@/hooks/useVersions';
@@ -759,69 +760,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               </div>
               {/* Database Tab */}
               {currentView === 'database' && !showVisualEdit && (
-                <div className="h-full overflow-y-auto bg-background p-8">
-                  <div className="max-w-2xl mx-auto">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
-                        <Database className="w-5 h-5 text-green-500" />
-                      </div>
-                      <div>
-                        <h2 className="text-lg font-bold text-foreground">Connect Supabase Database</h2>
-                        <p className="text-sm text-muted-foreground">Add a real backend to your project</p>
-                      </div>
-                    </div>
-                    <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Connect your own Supabase project to enable persistent storage, authentication, and real-time features. Your credentials are stored securely in the project.
-                      </p>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-xs font-medium text-foreground block mb-1.5">Supabase Project URL</label>
-                          <input
-                            type="url"
-                            placeholder="https://xxxx.supabase.co"
-                            className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-foreground block mb-1.5">Anon (Public) Key</label>
-                          <input
-                            type="text"
-                            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                            className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
-                          />
-                        </div>
-                      </div>
-                      <button
-                        className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-2.5 rounded-xl transition-colors text-sm"
-                        onClick={() => {
-                          onSendMessage("Db Connected - تم ربط قاعدة البيانات بنجاح. الآن عدّل الملفات لتستخدم Supabase client مع الـ URL والـ anon key الجديدين. أضف supabase client في src/lib/supabase.ts واستخدمه في جميع عمليات البيانات.", false);
-                        }}
-                      >
-                        Connect Database
-                      </button>
-                      <div className="pt-2 border-t border-border">
-                        <a
-                          href="/supabase-connect"
-                          target="_blank"
-                          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          <span>📖 How to get your Supabase URL & Key</span>
-                          <span className="text-primary">→</span>
-                        </a>
-                      </div>
-                    </div>
-                    <div className="mt-6 bg-card border border-border rounded-2xl p-6">
-                      <h3 className="text-sm font-bold mb-3">What happens after connecting?</h3>
-                      <ul className="space-y-2 text-sm text-muted-foreground">
-                        <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> AI will update your files to use your real database</li>
-                        <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> SQL migration files will be created in <code className="text-green-500 bg-green-500/10 px-1 rounded">migrations/</code></li>
-                        <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> Run migration files in your Supabase SQL Editor</li>
-                        <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> Edge functions appear in <code className="text-green-500 bg-green-500/10 px-1 rounded">supabase/functions/</code></li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
+                <DatabasePanel projectId={project?.id || null} onSendMessage={onSendMessage} />
               )}
               {showVisualEdit && (
                 <div className="absolute inset-0 z-10 flex">
