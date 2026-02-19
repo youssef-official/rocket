@@ -160,13 +160,7 @@ export default function Chatbot() {
     },
   ];
 
-  const models = [
-    { id: "google/gemini-3-flash-preview", name: "Gemini 3 Flash", desc: "Fast & efficient — default", badge: "⚡ Fast" },
-    { id: "google/gemini-2.5-pro", name: "Gemini 2.5 Pro", desc: "Best for complex reasoning", badge: "🧠 Smart" },
-    { id: "google/gemini-2.5-flash", name: "Gemini 2.5 Flash", desc: "Balanced speed & quality", badge: "⚖️ Balanced" },
-    { id: "openai/gpt-5", name: "GPT-5", desc: "OpenAI's most powerful model", badge: "🔥 Powerful" },
-    { id: "openai/gpt-5-mini", name: "GPT-5 Mini", desc: "Fast & cost-efficient", badge: "💨 Quick" },
-  ];
+
 
   return (
     <div className="min-h-screen bg-background text-foreground">
