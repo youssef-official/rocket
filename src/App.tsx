@@ -395,13 +395,15 @@ const ProjectEditorRoute = () => {
                   // Use the smart credit analyzer to determine actual cost
                   const userMsg = [...messages].reverse().find((m: any) => m.role === 'user')?.content || '';
                   calculateRequestCredits(typeof userMsg === 'string' ? userMsg : JSON.stringify(userMsg))
-                    .then(creditsToDeduct => {
-                      deductPointsAfterGeneration(
+                    .then(async (creditsToDeduct) => {
+                      await deductPointsAfterGeneration(
                         user.id,
                         localProject.id,
                         `Generated ${fileList.length} files`,
                         creditsToDeduct
                       );
+                      // Force refresh the user plan to show updated credits immediately
+                      queryClient.invalidateQueries({ queryKey: ['userPlan'] });
                     });
                 }
 
@@ -730,6 +732,8 @@ const ProjectEditorRoute = () => {
               try {
                 const creditsToDeduct = await calculateRequestCredits(content);
                 await deductPointsAfterGeneration(user.id, localProject.id, content, creditsToDeduct);
+                // Force refresh the user plan to show updated credits immediately
+                queryClient.invalidateQueries({ queryKey: ['userPlan'] });
               } catch (e) {
                 console.error('Failed to deduct credits:', e);
               }
