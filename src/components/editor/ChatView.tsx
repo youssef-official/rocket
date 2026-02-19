@@ -657,7 +657,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           // Empty State
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="mb-6 opacity-40">
-              <VivoraLogo size="lg" showText={false} className="justify-center" />
+              <VivoraLogo size="md" showText={false} className="justify-center" />
             </div>
             <p className="text-muted-foreground text-lg">Your preview will appear here</p>
           </div>
