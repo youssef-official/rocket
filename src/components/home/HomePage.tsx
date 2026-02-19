@@ -452,78 +452,80 @@ export const HomePage: React.FC<HomePageProps> = ({
         </motion.div>
       </main>
 
-      {/* Meet Vivora X Section */}
-      <section className="relative z-10 py-20 md:py-32 px-4 md:px-6 bg-black/60 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="mb-16"
-          >
-            <h2 className="text-4xl md:text-6xl font-bold text-white mb-4">Meet Vivora X</h2>
-          </motion.div>
-
-          <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${isRTL ? 'lg:flex-row-reverse' : ''}`}>
-            {/* Video */}
+      {/* Meet Vivora X Section - only visible for non-logged in users */}
+      {!user && (
+        <section className="relative z-10 py-20 md:py-32 px-4 md:px-6 bg-black/60 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, x: isRTL ? 40 : -40 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.7 }}
-              className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black/40"
+              transition={{ duration: 0.6 }}
+              className="mb-16"
             >
-              <video
-                src="/videos/meet-vivora.mp4"
-                autoPlay
-                muted
-                loop
-                playsInline
-                className="w-full h-auto object-cover rounded-2xl"
-              />
-              <div className="absolute inset-0 rounded-2xl ring-1 ring-white/10 pointer-events-none" />
+              <h2 className="text-4xl md:text-6xl font-bold text-white mb-4">Meet Vivora X</h2>
             </motion.div>
 
-            {/* Steps */}
-            <motion.div
-              initial={{ opacity: 0, x: isRTL ? -40 : 40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7, delay: 0.15 }}
-              className="space-y-10"
-            >
-              {[
-                {
-                  title: isRTL ? 'ابدأ بفكرة' : 'Start with an idea',
-                  desc: isRTL ? 'صف التطبيق أو الموقع الذي تريد إنشاءه أو أرفق لقطات شاشة ووثائق' : 'Describe the app or website you want to create or drop in screenshots and docs',
-                  step: '01',
-                },
-                {
-                  title: isRTL ? 'شاهده ينبض بالحياة' : 'Watch it come to life',
-                  desc: isRTL ? 'شاهد رؤيتك تتحول إلى نموذج أولي عامل في الوقت الفعلي بينما يبنيه الذكاء الاصطناعي' : 'See your vision transform into a working prototype in real-time as AI builds it for you',
-                  step: '02',
-                },
-                {
-                  title: isRTL ? 'حسّن وانشر' : 'Refine and ship',
-                  desc: isRTL ? 'كرّر ابتكارك بملاحظات بسيطة وانشره للعالم بنقرة واحدة' : 'Iterate on your creation with simple feedback and deploy it to the world with one click',
-                  step: '03',
-                },
-              ].map((item, i) => (
-                <div key={i} className={`flex gap-6 ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/40 text-sm font-mono">
-                    {item.step}
+            <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${isRTL ? 'lg:flex-row-reverse' : ''}`}>
+              {/* Video */}
+              <motion.div
+                initial={{ opacity: 0, x: isRTL ? 40 : -40 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.7 }}
+                className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black/40"
+              >
+                <video
+                  src="/videos/meet-vivora.mp4"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-auto object-cover rounded-2xl"
+                />
+                <div className="absolute inset-0 rounded-2xl ring-1 ring-white/10 pointer-events-none" />
+              </motion.div>
+
+              {/* Steps */}
+              <motion.div
+                initial={{ opacity: 0, x: isRTL ? -40 : 40 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.7, delay: 0.15 }}
+                className="space-y-10"
+              >
+                {[
+                  {
+                    title: isRTL ? 'ابدأ بفكرة' : 'Start with an idea',
+                    desc: isRTL ? 'صف التطبيق أو الموقع الذي تريد إنشاءه أو أرفق لقطات شاشة ووثائق' : 'Describe the app or website you want to create or drop in screenshots and docs',
+                    step: '01',
+                  },
+                  {
+                    title: isRTL ? 'شاهده ينبض بالحياة' : 'Watch it come to life',
+                    desc: isRTL ? 'شاهد رؤيتك تتحول إلى نموذج أولي عامل في الوقت الفعلي بينما يبنيه الذكاء الاصطناعي' : 'See your vision transform into a working prototype in real-time as AI builds it for you',
+                    step: '02',
+                  },
+                  {
+                    title: isRTL ? 'حسّن وانشر' : 'Refine and ship',
+                    desc: isRTL ? 'كرّر ابتكارك بملاحظات بسيطة وانشره للعالم بنقرة واحدة' : 'Iterate on your creation with simple feedback and deploy it to the world with one click',
+                    step: '03',
+                  },
+                ].map((item, i) => (
+                  <div key={i} className={`flex gap-6 ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/40 text-sm font-mono">
+                      {item.step}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
+                      <p className="text-white/60 leading-relaxed">{item.desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
-                    <p className="text-white/60 leading-relaxed">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
+                ))}
+              </motion.div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Projects Section */}
       {user && projects.length > 0 && (
