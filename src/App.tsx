@@ -274,6 +274,23 @@ const ProjectEditorRoute = () => {
             }]);
           }
 
+          // DEDUCT CREDITS BEFORE generation starts (smart: cost based on complexity)
+          if (user) {
+            try {
+              const creditsToDeduct = await calculateRequestCredits(prompt);
+              await deductPointsAfterGeneration(
+                user.id,
+                localProject.id,
+                `Pre-deduct: Initial generation`,
+                creditsToDeduct
+              );
+              // Force refresh the user plan to show updated credits immediately
+              queryClient.invalidateQueries({ queryKey: ['userPlan'] });
+            } catch (e) {
+              console.error('Failed to pre-deduct credits:', e);
+            }
+          }
+
           // Build prompt with safety rules
           const userPrompt = `${prompt}\n\n[STRICT RULE: Every component used MUST be imported. If you use <AnimatePresence>, you MUST add: import { motion, AnimatePresence } from "framer-motion"; at the top of the file. NO EXCEPTIONS.]`;
 
@@ -390,22 +407,7 @@ const ProjectEditorRoute = () => {
                   summary
                 }));
 
-                // DEDUCT CREDITS after generation completes (smart: cost based on complexity)
-                if (user) {
-                  // Use the smart credit analyzer to determine actual cost
-                  const userMsg = [...messages].reverse().find((m: any) => m.role === 'user')?.content || '';
-                  calculateRequestCredits(typeof userMsg === 'string' ? userMsg : JSON.stringify(userMsg))
-                    .then(async (creditsToDeduct) => {
-                      await deductPointsAfterGeneration(
-                        user.id,
-                        localProject.id,
-                        `Generated ${fileList.length} files`,
-                        creditsToDeduct
-                      );
-                      // Force refresh the user plan to show updated credits immediately
-                      queryClient.invalidateQueries({ queryKey: ['userPlan'] });
-                    });
-                }
+                // Credits already deducted before generation started
 
                 // Generate suggestions after completion
                 if (localProject.description) {
@@ -658,6 +660,18 @@ const ProjectEditorRoute = () => {
       let fullResponse = '';
       const detectedFiles = new Set<string>();
 
+      // DEDUCT CREDITS BEFORE generation starts
+      if (user) {
+        try {
+          const creditsToDeduct = await calculateRequestCredits(content);
+          await deductPointsAfterGeneration(user.id, localProject.id, `Pre-deduct: ${content.slice(0, 50)}`, creditsToDeduct);
+          // Force refresh the user plan to show updated credits immediately
+          queryClient.invalidateQueries({ queryKey: ['userPlan'] });
+        } catch (e) {
+          console.error('Failed to pre-deduct credits:', e);
+        }
+      }
+
       // Pass existing file list so AI knows what files exist and can do targeted edits
       const existingFilesList = Object.keys(localProject.files);
 
@@ -727,17 +741,7 @@ const ProjectEditorRoute = () => {
               setLocalProject(prev => prev ? { ...prev, files: mergedFiles } : null);
             }
 
-            // Deduct credits after successful generation
-            if (user) {
-              try {
-                const creditsToDeduct = await calculateRequestCredits(content);
-                await deductPointsAfterGeneration(user.id, localProject.id, content, creditsToDeduct);
-                // Force refresh the user plan to show updated credits immediately
-                queryClient.invalidateQueries({ queryKey: ['userPlan'] });
-              } catch (e) {
-                console.error('Failed to deduct credits:', e);
-              }
-            }
+            // Credits already deducted before generation started
 
             // Mark all steps as complete
             const allStepsComplete = planLines.map((_, i) => i);

@@ -37,13 +37,14 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(
   }) => {
     const { language, isRTL } = useLanguage();
     const isArabic = language === 'ar';
+
     /* ===============================
        Sizes
     ================================ */
-    const sizeClasses = {
-      sm: 'w-7 h-7',
-      md: 'w-9 h-9',
-      lg: 'w-14 h-14',
+    const logoSizes = {
+      sm: { width: '28px', height: '28px' },
+      md: { width: '36px', height: '36px' },
+      lg: { width: '56px', height: '56px' },
     };
 
     const textSizeClasses = {
@@ -83,17 +84,58 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(
           ${className}
         `}
       >
-        {/* Logo Image */}
-        <img
-          src="/favicon.svg"
-          alt="Vivora X Logo"
-          loading="lazy"
-          draggable={false}
-          className={`
-            ${sizeClasses[size]}
-            object-contain
-          `}
-        />
+        {/* CSS-based Logo */}
+        <div 
+          className="relative overflow-visible"
+          style={{
+            ...logoSizes[size],
+            animation: 'intro 1.5s cubic-bezier(.17,.67,.83,.67) forwards, float 4s ease-in-out infinite'
+          }}
+        >
+          {/* Style Tag for Animations and Psuedo-elements */}
+          <style>{`
+            @keyframes drawPink {
+              0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+              100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            }
+            @keyframes drawWhite {
+              0% { transform: scale(0) rotate(20deg); opacity: 0; }
+              100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            }
+            @keyframes intro {
+              0% { transform: scale(0.8); opacity: 0; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+            @keyframes float {
+              0%,100% { transform: translateY(0px); }
+              50% { transform: translateY(-4px); }
+            }
+          `}</style>
+          
+          {/* Pink Part */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(135deg, #ff0055, #ff2d7a)',
+              clipPath: 'polygon(0% 0%, 35% 0%, 50% 45%, 65% 0%, 100% 0%, 50% 100%)',
+              transform: 'scale(0)',
+              animation: 'drawPink 1s ease forwards 0.3s',
+              filter: 'drop-shadow(0 0 15px rgba(255,0,100,0.6))'
+            }}
+          />
+          
+          {/* White Part */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: '#ffffff',
+              clipPath: 'polygon(55% 0%, 90% 0%, 50% 100%, 35% 70%)',
+              transform: 'scale(0)',
+              animation: 'drawWhite 1s ease forwards 0.6s',
+              filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.4))'
+            }}
+          />
+        </div>
 
         {/* Text */}
         {showText && (
