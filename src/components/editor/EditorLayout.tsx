@@ -417,7 +417,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           {/* Logo - Clickable to go home */}
           <button onClick={handleLogoClick} className="hover:opacity-80 transition-opacity">
             <VivoraLogo
-              size="md"
+              size="sm"
               showText={false}
               className={isRTL ? 'rotate-180' : ''}
             />
