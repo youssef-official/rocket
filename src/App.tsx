@@ -14,6 +14,7 @@ import { ThemeInitializer } from "@/components/shared/ThemeInitializer";
 import { useProjects } from "@/hooks/useProjects";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useVersions } from "@/hooks/useVersions";
+import { useBackgroundJobs, type GenerationJob } from "@/hooks/useBackgroundJobs";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -84,7 +85,24 @@ const ProjectEditorRoute = () => {
 
   const { createVersion } = useVersions(id || null);
 
-  // Load project from database and restore generation state
+  // Background jobs - handles generation when tab is closed
+  const handleJobComplete = useCallback(async (job: GenerationJob) => {
+    if (!job.resultFiles || !localProject) return;
+    // Apply the result files to local project
+    setLocalProject(prev => prev ? { ...prev, files: job.resultFiles as any } : null);
+    // Add completion message to chat
+    if (job.resultMessage) {
+      await addMessage('assistant', job.resultMessage, undefined, job.resultActions || []);
+    }
+    clearActiveJob();
+  }, [localProject, addMessage]);
+
+  const { activeJob, isBackgroundProcessing, createBackgroundJob, clearActiveJob } = useBackgroundJobs({
+    projectId: id || null,
+    onJobComplete: handleJobComplete,
+  });
+
+
   useEffect(() => {
     if (id && !projectsLoading && projects.length > 0) {
       const dbProject = projects.find(p => p.id === id);
@@ -895,6 +913,8 @@ const ProjectEditorRoute = () => {
       currentVersion={currentVersion}
       isChatMode={isChatMode}
       suggestions={suggestions}
+      isBackgroundProcessing={isBackgroundProcessing}
+      backgroundJobStatus={activeJob?.status}
     />
   );
 };

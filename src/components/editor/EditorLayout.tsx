@@ -63,6 +63,8 @@ interface EditorLayoutProps {
   currentVersion?: number | null;
   isChatMode?: boolean;
   suggestions?: Suggestion[];
+  isBackgroundProcessing?: boolean;
+  backgroundJobStatus?: string;
 }
 
 export const EditorLayout: React.FC<EditorLayoutProps> = ({
@@ -83,6 +85,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   currentVersion,
   isChatMode = false,
   suggestions = [],
+  isBackgroundProcessing = false,
+  backgroundJobStatus,
 }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -382,7 +386,29 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
   return (
     <div className="h-screen flex flex-col bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* CreditWarningBanner removed */}
+      {/* Background Job Processing Banner */}
+      <AnimatePresence>
+        {isBackgroundProcessing && backgroundJobStatus !== 'done' && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-primary/10 border-b border-primary/20 overflow-hidden"
+          >
+            <div className={`flex items-center gap-3 px-4 py-2 text-sm ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse flex-shrink-0" />
+              <span className="text-primary font-medium">
+                {isRTL
+                  ? 'جارٍ التوليد في الخلفية... يمكنك إغلاق التاب والعودة لاحقاً'
+                  : 'Generating in background... You can close this tab and come back later'}
+              </span>
+              <span className="text-muted-foreground text-xs">
+                ({backgroundJobStatus === 'processing' ? (isRTL ? 'يعمل' : 'working') : (isRTL ? 'في الانتظار' : 'pending')})
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Header - Bolt Style */}
       <header className={`h-14 flex items-center justify-between px-4 bg-card ${isRTL ? 'flex-row-reverse' : ''}`}>
         {/* Left Section */}

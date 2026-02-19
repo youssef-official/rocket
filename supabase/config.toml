@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.vercel-deploy]
 verify_jwt = false
+
+[functions.background-generate]
+verify_jwt = false
