@@ -210,6 +210,17 @@ export const translations: Translations = {
 
   // Common
   'common.copied': { en: 'Copied!', ar: 'تم النسخ!', zh: '已复制!', ja: 'コピーしました!', fr: 'Copié !' },
+  'aiforall.title': { en: 'AI for All', ar: 'الذكاء الاصطناعي للجميع', zh: '全民 AI', ja: 'すべての人のためのAI', fr: 'L\'IA pour tous' },
+  'aiforall.heroTitle': { en: 'AI for All', ar: 'الذكاء الاصطناعي للجميع', zh: '全民 AI', ja: 'すべての人のためのAI', fr: 'L\'IA pour tous' },
+  'aiforall.heroSubtitle': { en: 'A free, unlimited AI gateway for developers. No API key. No billing. No rate limits. Just build.', ar: 'بوابة ذكاء اصطناعي مجانية وغير محدودة للمطورين. بدون مفتاح API. بدون فواتير. بدون حدود للسرعة. فقط ابدأ بالبناء.', zh: '面向开发者的免费、无限 AI 网关。无需 API 密钥。无需计费。无速率限制。尽情构建。', ja: '開発者のための無料・無制限のAIゲートウェイ。APIキー不要。課金なし。レート制限なし。ただ構築するだけ。', fr: 'Une passerelle IA gratuite et illimitée pour les développeurs. Pas de clé API. Pas de facturation. Pas de limite de débit. Construisez simplement.' },
+  'aiforall.freeBadge': { en: 'Free for Developers · No API Key Required', ar: 'مجاني للمطورين · لا يتطلب مفتاح API', zh: '开发者免费 · 无需 API 密钥', ja: '開発者向け無料 · APIキー不要', fr: 'Gratuit pour les développeurs · Aucune clé API requise' },
+  'aiforall.liveStatus': { en: 'Live & Operational', ar: 'مباشر ويعمل الآن', zh: '在线且运行正常', ja: 'ライブ・稼働中', fr: 'En direct et opérationnel' },
+  'aiforall.backToVivora': { en: 'Back to Vivora X', ar: 'العودة إلى فيفورا إكس', zh: '返回 Vivora X', ja: 'Vivora X に戻る', fr: 'Retour à Vivora X' },
+  'aiforall.chatHeader': { en: 'AI Chat Bot', ar: 'بوت دردشة الذكاء الاصطناعي', zh: 'AI 聊天机器人', ja: 'AIチャットボット', fr: 'Bot de chat IA' },
+  'aiforall.inputPlaceholder': { en: 'Type your question...', ar: 'اكتب سؤالك...', zh: '输入您的问题...', ja: '質問を入力してください...', fr: 'Tapez votre question...' },
+  'aiforall.send': { en: 'Send', ar: 'إرسال', zh: '发送', ja: '送信', fr: 'Envoyer' },
+  'aiforall.thinking': { en: 'AI is thinking...', ar: 'الذكاء الاصطناعي يفكر...', zh: 'AI 正在思考...', ja: 'AIが考えています...', fr: 'L\'IA réfléchit...' },
+  'aiforall.error': { en: '❌ Error connecting to AI', ar: '❌ خطأ في الاتصال بالذكاء الاصطناعي', zh: '❌ 连接 AI 出错', ja: '❌ AIへの接続エラー', fr: '❌ Erreur de connexion à l\'IA' },
 
   // Project Visibility
   'project.notFound': { en: 'Project not found or has been deleted', ar: 'المشروع غير موجود أو تم حذفه', zh: '项目未找到或已删除', ja: 'プロジェクトが見つからないか削除されました', fr: 'Projet introuvable ou supprimé' },

@@ -725,6 +725,16 @@ const ProjectEditorRoute = () => {
               setLocalProject(prev => prev ? { ...prev, files: mergedFiles } : null);
             }
 
+            // Deduct credits after successful generation
+            if (user) {
+              try {
+                const creditsToDeduct = await calculateRequestCredits(content);
+                await deductPointsAfterGeneration(user.id, localProject.id, content, creditsToDeduct);
+              } catch (e) {
+                console.error('Failed to deduct credits:', e);
+              }
+            }
+
             // Mark all steps as complete
             const allStepsComplete = planLines.map((_, i) => i);
 
