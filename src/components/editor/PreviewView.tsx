@@ -373,6 +373,19 @@ export default defineConfig({
   const errorSentRef = useRef(false);
 
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        if (sandboxStatus.toLowerCase().includes("error") || sandboxStatus.toLowerCase().includes("timeout")) {
+          setSandboxId(null);
+          setIsSandboxReady(false);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [sandboxStatus]);
+
+  useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'preview-error' && event.data?.message) {
         const errMsg = event.data.message;
@@ -402,7 +415,14 @@ export default defineConfig({
     setPreviewErrors([]);
   }, [filesHash]);
 
-  const refresh = () => setKey(k => k + 1);
+  const refresh = () => {
+    // If sandbox timed out or errored, reset sandboxId to trigger recreation
+    if (sandboxStatus.toLowerCase().includes("error") || sandboxStatus.toLowerCase().includes("timeout")) {
+      setSandboxId(null);
+      setIsSandboxReady(false);
+    }
+    setKey(k => k + 1);
+  };
 
   // Show loading placeholder
   if (isLoading || (sandboxId && !isSandboxReady)) {

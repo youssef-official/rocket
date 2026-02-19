@@ -19,7 +19,7 @@ image = (
 )
 
 # Web Endpoint to spawn sandboxes
-@app.function(image=image, timeout=3600)
+@app.function(image=image, timeout=300)
 @modal.asgi_app()
 def create_sandbox():
     from fastapi import FastAPI
@@ -43,7 +43,7 @@ def create_sandbox():
             "python", "/root/server.py",
             image=image,
             encrypted_ports=[8000, 5173],
-            timeout=3600  # 1 hour
+            timeout=300  # 5 minutes
         )
         
         print(f"Sandbox created: {sandbox.object_id}")
