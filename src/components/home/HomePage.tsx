@@ -454,7 +454,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* Meet Vivora X Section - only visible for non-logged in users */}
       {!user && (
-        <section className="relative z-10 py-20 md:py-32 px-4 md:px-6 bg-black/60 backdrop-blur-sm">
+        <section className="relative z-10 py-12 md:py-16 px-4 md:px-6">
           <div className="max-w-7xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
