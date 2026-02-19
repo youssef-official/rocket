@@ -295,6 +295,8 @@ export type Database = {
           name: string
           project_type: string
           published_slug: string | null
+          supabase_anon_key: string | null
+          supabase_url: string | null
           updated_at: string
           user_id: string
           vercel_url: string | null
@@ -312,6 +314,8 @@ export type Database = {
           name?: string
           project_type?: string
           published_slug?: string | null
+          supabase_anon_key?: string | null
+          supabase_url?: string | null
           updated_at?: string
           user_id: string
           vercel_url?: string | null
@@ -329,6 +333,8 @@ export type Database = {
           name?: string
           project_type?: string
           published_slug?: string | null
+          supabase_anon_key?: string | null
+          supabase_url?: string | null
           updated_at?: string
           user_id?: string
           vercel_url?: string | null

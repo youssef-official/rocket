@@ -587,7 +587,8 @@ serve(async (req) => {
 2. If this is an EDIT request (existing files provided): 
    - READ existing files FIRST and report read actions
    - ONLY modify files directly related to the user's request
-   - DO NOT change design, layout, or structure unless explicitly asked
+   - 🔴 DO NOT change design, layout, colors, fonts, or structure UNLESS EXPLICITLY ASKED
+   - 🔴 DO NOT "improve" or "refactor" code the user didn't ask to touch
    - Keep ALL existing code intact except the specific change requested
 3. If this is a NEW project: Generate 8-15 SEPARATE files minimum
 4. PACKAGES: Only react, lucide-react, framer-motion, clsx, tailwind-merge
@@ -595,6 +596,26 @@ serve(async (req) => {
 6. BRANDING: index.html MUST include: <script src="https://www.vivorax.online/branding.js" defer></script>
 7. GENERATE ALL FILES COMPLETELY - Do not truncate
 8. Each component in its OWN separate file
+
+🤖 AI INTEGRATION IN GENERATED PROJECTS:
+- When user asks for a chatbot, AI assistant, or any AI feature in their generated project:
+  - Use the FREE public gateway: https://ai-gateway.vivorax.online/v1/chat/completions
+  - NO API KEY REQUIRED - call it directly from the frontend
+  - Model: google/gemini-3-flash-preview
+  - Example fetch call:
+    const res = await fetch('https://ai-gateway.vivorax.online/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'google/gemini-3-flash-preview',
+        messages: [{ role: 'system', content: systemPrompt }, ...msgs]
+      })
+    });
+    const data = await res.json();
+    const reply = data.choices[0].message.content;
+  - Always set a relevant system prompt for the chatbot based on the project context
+  - For a restaurant: "You are a helpful assistant for [Restaurant Name]. Answer questions about our menu, hours, and reservations."
+  - For e-commerce: "You are a shopping assistant. Help customers find products and answer questions."
 
 🚨 ANTI-ERROR CHECKLIST (CHECK BEFORE OUTPUTTING):
 - ✅ useLanguage is exported from src/contexts/LanguageContext.tsx ONLY
