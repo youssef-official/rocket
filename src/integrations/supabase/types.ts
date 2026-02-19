@@ -102,6 +102,54 @@ export type Database = {
           },
         ]
       }
+      generation_jobs: {
+        Row: {
+          created_at: string
+          credits_used: number | null
+          error_message: string | null
+          id: string
+          messages: Json
+          mode: string
+          project_id: string
+          result_actions: Json | null
+          result_files: Json | null
+          result_message: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_used?: number | null
+          error_message?: string | null
+          id?: string
+          messages?: Json
+          mode?: string
+          project_id: string
+          result_actions?: Json | null
+          result_files?: Json | null
+          result_message?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_used?: number | null
+          error_message?: string | null
+          id?: string
+          messages?: Json
+          mode?: string
+          project_id?: string
+          result_actions?: Json | null
+          result_files?: Json | null
+          result_message?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       inbox_notifications: {
         Row: {
           body: string | null
