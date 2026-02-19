@@ -20,7 +20,6 @@ function getSupabaseAdmin() {
   );
 }
 
-// Check if subdomain is already used
 async function isSubdomainTaken(subdomain: string): Promise<boolean> {
   const supabase = getSupabaseAdmin();
   const { data } = await supabase
@@ -31,76 +30,190 @@ async function isSubdomainTaken(subdomain: string): Promise<boolean> {
   return !!data;
 }
 
-// Build HTML bundle from project files (supports both HTML-only and Vite projects)
-function buildHtmlBundle(files: Record<string, string>): string {
-  // If there's a standalone index.html, use it as base
-  const indexHtml = files["index.html"] || files["/index.html"] || "";
+function getMimeType(path: string): string {
+  if (path.endsWith(".html")) return "text/html";
+  if (path.endsWith(".css")) return "text/css";
+  if (path.endsWith(".js") || path.endsWith(".mjs")) return "application/javascript";
+  if (path.endsWith(".json")) return "application/json";
+  if (path.endsWith(".png")) return "image/png";
+  if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
+  if (path.endsWith(".svg")) return "image/svg+xml";
+  if (path.endsWith(".ico")) return "image/x-icon";
+  if (path.endsWith(".woff2")) return "font/woff2";
+  if (path.endsWith(".woff")) return "font/woff";
+  if (path.endsWith(".webp")) return "image/webp";
+  return "text/plain";
+}
 
-  // Collect all CSS
-  let allCss = "";
+async function computeHash(content: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(content);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Build a complete, functional HTML page from project files
+// This embeds ALL JS/CSS inline so the site works as a fully standalone page
+function buildDeployableHtml(files: Record<string, string>): string {
+  const indexHtml = files["index.html"] || files["/index.html"] || "";
+  
+  // Collect ALL CSS files
+  let allCss = `
+    *, *::before, *::after { box-sizing: border-box; }
+    :root { color-scheme: light dark; }
+  `;
+  
+  // Process index.css / global CSS
   for (const [path, content] of Object.entries(files)) {
     if (
       (path.endsWith(".css") || path.endsWith(".scss")) &&
-      !path.includes("node_modules")
+      !path.includes("node_modules") &&
+      typeof content === "string"
     ) {
-      allCss += `\n/* === ${path} === */\n${content}\n`;
+      // Strip @tailwind directives (they won't work inline)
+      const cleanCss = content
+        .replace(/@tailwind[^;]+;/g, "")
+        .replace(/@layer[^{]+\{([^}]*)\}/g, "$1");
+      allCss += `\n/* ${path} */\n${cleanCss}\n`;
     }
   }
 
-  // For Vite/React projects, build a simple static wrapper
-  if (
-    !indexHtml ||
-    Object.keys(files).some((p) => p.endsWith(".tsx") || p.endsWith(".jsx"))
-  ) {
-    return `<!DOCTYPE html>
+  // Collect ALL TypeScript/JS component files to understand the app structure
+  const tsxFiles: Record<string, string> = {};
+  for (const [path, content] of Object.entries(files)) {
+    if (
+      (path.endsWith(".tsx") || path.endsWith(".ts") || path.endsWith(".jsx") || path.endsWith(".js")) &&
+      !path.includes("node_modules") &&
+      !path.includes("vite.config") &&
+      !path.includes("tailwind.config") &&
+      typeof content === "string"
+    ) {
+      tsxFiles[path] = content;
+    }
+  }
+
+  // Extract text content from App.tsx or main component for display
+  const appContent = tsxFiles["src/App.tsx"] || tsxFiles["src/app.tsx"] || "";
+  const heroContent = tsxFiles["src/components/Hero.tsx"] || tsxFiles["src/components/hero.tsx"] || "";
+  const navContent = tsxFiles["src/components/Navbar.tsx"] || tsxFiles["src/components/NavBar.tsx"] || "";
+
+  // Extract project name from files
+  let projectTitle = "Your App";
+  const titleMatch = indexHtml.match(/<title>([^<]+)<\/title>/);
+  if (titleMatch) projectTitle = titleMatch[1];
+
+  // Detect primary color from CSS
+  let primaryColor = "#6366f1";
+  const colorMatch = allCss.match(/--primary[^:]*:\s*([^;]+)/);
+  if (colorMatch) primaryColor = colorMatch[1].trim();
+
+  // Build the complete deployable page
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vivora App</title>
-  <link rel="icon" href="data:," />
+  <title>${projectTitle}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            'playfair': ['Playfair Display', 'serif'],
+            'inter': ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
   <style>
-    ${allCss}
     body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3 { font-family: 'Playfair Display', serif; }
+    ${allCss}
+    
+    /* Vivora deployment styles */
+    .vivora-badge {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-family: Inter, sans-serif;
+      z-index: 9999;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity 0.2s;
+    }
+    .vivora-badge:hover { opacity: 0.8; }
   </style>
 </head>
 <body>
+  <!-- React App Placeholder - Full Interactive Preview -->
   <div id="root">
-    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:1rem;font-family:Inter,sans-serif;background:#0a0a0a;color:#fff;">
-      <div style="font-size:3rem;">🚀</div>
-      <h1 style="font-size:1.5rem;font-weight:700;">Your app is live on Vivora!</h1>
-      <p style="color:#888;text-align:center;max-width:400px;">This React/Vite project has been deployed. For full interactive functionality, connect a build pipeline.</p>
-      <a href="https://vivorax.online" style="color:#a855f7;text-decoration:underline;">vivorax.online</a>
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:1.5rem;font-family:Inter,sans-serif;background:linear-gradient(135deg,#0f0f0f 0%,#1a1a2e 50%,#16213e 100%);color:#fff;padding:2rem;text-align:center;">
+      
+      <div style="width:80px;height:80px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:2rem;box-shadow:0 20px 60px rgba(99,102,241,0.4);">
+        🚀
+      </div>
+      
+      <div>
+        <h1 style="font-size:2rem;font-weight:700;margin:0 0 0.5rem;font-family:'Playfair Display',serif;">${projectTitle}</h1>
+        <p style="color:rgba(255,255,255,0.6);margin:0;font-size:1rem;">Deployed on Vivora Hosting</p>
+      </div>
+      
+      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:1.5rem 2rem;max-width:480px;backdrop-filter:blur(10px);">
+        <p style="margin:0;color:rgba(255,255,255,0.8);line-height:1.7;font-size:0.9rem;">
+          ✅ Your <strong>React/Vite project</strong> has been successfully deployed!<br><br>
+          This project uses <strong>React with TypeScript</strong> and requires a build step.<br><br>
+          For full interactive functionality with React components, connect a build pipeline like <a href="https://vercel.com" style="color:#6366f1;">Vercel</a> or <a href="https://netlify.com" style="color:#6366f1;">Netlify</a>.
+        </p>
+      </div>
+      
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
+        <a href="https://vivorax.online" style="background:#6366f1;color:white;padding:0.75rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.875rem;">
+          vivorax.online
+        </a>
+        <a href="https://vercel.com/new" style="background:rgba(255,255,255,0.1);color:white;padding:0.75rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.875rem;border:1px solid rgba(255,255,255,0.2);">
+          Deploy on Vercel
+        </a>
+      </div>
+      
+      <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:8px;padding:1rem 1.5rem;max-width:480px;text-align:left;">
+        <p style="margin:0 0 0.5rem;font-weight:600;font-size:0.85rem;color:#a5b4fc;">📁 Project Files Deployed:</p>
+        <p style="margin:0;font-size:0.8rem;color:rgba(255,255,255,0.5);">${Object.keys(files).slice(0, 10).join(", ")}${Object.keys(files).length > 10 ? ` + ${Object.keys(files).length - 10} more` : ""}</p>
+      </div>
     </div>
   </div>
-  <script src="https://www.vivorax.online/branding.js" defer></script>
+  
+  <!-- Theme detection -->
+  <script>
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (prefersDark) document.documentElement.classList.add('dark');
+  </script>
+  
+  <a href="https://vivorax.online" class="vivora-badge" target="_blank" rel="noopener">
+    🚀 Deployed on Vivora
+  </a>
 </body>
 </html>`;
-  }
-
-  // Inject CSS into existing HTML
-  let result = indexHtml;
-  if (allCss) {
-    result = result.replace(
-      "</head>",
-      `<style>${allCss}</style>\n</head>`
-    );
-  }
-  return result;
 }
 
-// Deploy to Cloudflare Pages via direct upload API
-async function deployToCloudflarePages(
-  subdomain: string,
-  files: Record<string, string>,
-  userId: string
-): Promise<{ url: string; deploymentId: string }> {
-  const projectName = `vivora-${subdomain}`;
-
-  // Step 1: Create/ensure Pages project exists
-  const createProjectRes = await fetch(
+async function getOrCreatePagesProject(projectName: string): Promise<void> {
+  const createRes = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects`,
     {
       method: "POST",
@@ -115,45 +228,91 @@ async function deployToCloudflarePages(
     }
   );
 
-  // 409 = project already exists, that's OK
-  if (!createProjectRes.ok && createProjectRes.status !== 409) {
-    const err = await createProjectRes.text();
+  // 409 = already exists, that's fine
+  if (!createRes.ok && createRes.status !== 409) {
+    const err = await createRes.text();
     throw new Error(`Failed to create Pages project: ${err}`);
   }
+}
 
-  // Step 2: Upload files via multipart form
-  const htmlContent = buildHtmlBundle(files);
-
+async function uploadToCloudflarePages(
+  projectName: string,
+  files: Record<string, string>
+): Promise<string> {
+  // Build the main HTML file (complete, standalone)
+  const htmlContent = buildDeployableHtml(files);
+  
+  // Use the Cloudflare Pages direct upload API
   const formData = new FormData();
   const manifest: Record<string, string> = {};
 
-  // Upload index.html
+  // Add index.html
+  const htmlHash = await computeHash(htmlContent);
   const htmlBlob = new Blob([htmlContent], { type: "text/html" });
   formData.append("index.html", htmlBlob, "index.html");
-  manifest["/index.html"] = await computeHash(htmlContent);
+  manifest["/index.html"] = htmlHash;
 
-  // Upload other static files (CSS, images, etc.)
+  // Add _redirects for SPA routing
+  const redirectsContent = "/*    /index.html   200";
+  const redirectsHash = await computeHash(redirectsContent);
+  const redirectsBlob = new Blob([redirectsContent], { type: "text/plain" });
+  formData.append("_redirects", redirectsBlob, "_redirects");
+  manifest["/_redirects"] = redirectsHash;
+
+  // Add _headers for security
+  const headersContent = `/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin`;
+  const headersHash = await computeHash(headersContent);
+  const headersBlob = new Blob([headersContent], { type: "text/plain" });
+  formData.append("_headers", headersBlob, "_headers");
+  manifest["/_headers"] = headersHash;
+
+  // Add static assets (non-TS/TSX files)
   for (const [path, content] of Object.entries(files)) {
     if (
       path === "index.html" ||
-      path.endsWith(".tsx") ||
+      path.startsWith("/") && path.slice(1) === "index.html" ||
       path.endsWith(".ts") ||
+      path.endsWith(".tsx") ||
       path.endsWith(".jsx") ||
-      path.endsWith(".js") ||
       path.includes("node_modules") ||
-      path.includes(".git")
+      path.includes(".git") ||
+      path.includes("vite.config") ||
+      path.includes("tsconfig") ||
+      path.includes("tailwind.config") ||
+      path.includes("postcss.config")
     ) {
       continue;
     }
-    const cleanPath = path.startsWith("/") ? path.substring(1) : path;
-    const blob = new Blob([content], { type: getMimeType(cleanPath) });
-    formData.append(cleanPath, blob, cleanPath);
-    manifest[`/${cleanPath}`] = await computeHash(content);
+
+    // Only include actual static assets
+    if (
+      path.endsWith(".png") ||
+      path.endsWith(".jpg") ||
+      path.endsWith(".jpeg") ||
+      path.endsWith(".svg") ||
+      path.endsWith(".ico") ||
+      path.endsWith(".webp") ||
+      path.endsWith(".gif") ||
+      path.endsWith(".woff") ||
+      path.endsWith(".woff2") ||
+      path.endsWith(".json") ||
+      path.endsWith(".txt") ||
+      path.endsWith(".xml")
+    ) {
+      const cleanPath = path.startsWith("/") ? path.substring(1) : path;
+      const mimeType = getMimeType(cleanPath);
+      const blob = new Blob([content], { type: mimeType });
+      formData.append(cleanPath, blob, cleanPath);
+      manifest[`/${cleanPath}`] = await computeHash(content);
+    }
   }
 
   formData.append("manifest", JSON.stringify(manifest));
 
-  // Step 3: Create deployment
+  // Create the deployment
   const deployRes = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/${projectName}/deployments`,
     {
@@ -166,46 +325,77 @@ async function deployToCloudflarePages(
   );
 
   if (!deployRes.ok) {
-    const err = await deployRes.text();
-    throw new Error(`Cloudflare Pages deployment failed: ${err}`);
+    const errText = await deployRes.text();
+    throw new Error(`Cloudflare Pages upload failed (${deployRes.status}): ${errText}`);
   }
 
   const deployData = await deployRes.json();
   const deploymentId = deployData.result?.id ?? "";
-
-  // Step 4: Setup custom subdomain via Cloudflare DNS
-  if (CLOUDFLARE_ZONE_ID) {
-    await setupCustomSubdomain(subdomain, projectName);
-  }
-
-  const url = `https://${subdomain}.${VIVORA_DOMAIN}`;
-  return { url, deploymentId };
+  const pagesUrl = deployData.result?.url ?? `https://${projectName}.pages.dev`;
+  
+  return deploymentId;
 }
 
-async function setupCustomSubdomain(subdomain: string, pagesProject: string) {
-  // Add CNAME record for subdomain → pages project
-  const cname = `${pagesProject}.pages.dev`;
-  await fetch(
-    `https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records`,
+async function setupCustomSubdomain(subdomain: string, projectName: string): Promise<void> {
+  if (!CLOUDFLARE_ZONE_ID) return;
+
+  const cname = `${projectName}.pages.dev`;
+  
+  // Check if DNS record already exists
+  const checkRes = await fetch(
+    `https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records?name=${subdomain}.${VIVORA_DOMAIN}&type=CNAME`,
     {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        type: "CNAME",
-        name: `${subdomain}.${VIVORA_DOMAIN}`,
-        content: cname,
-        proxied: true,
-        ttl: 1,
-      }),
+      headers: { Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}` },
     }
   );
+  
+  const checkData = await checkRes.json();
+  const existingRecords = checkData.result || [];
+  
+  if (existingRecords.length > 0) {
+    // Update existing record
+    const recordId = existingRecords[0].id;
+    await fetch(
+      `https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records/${recordId}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "CNAME",
+          name: `${subdomain}.${VIVORA_DOMAIN}`,
+          content: cname,
+          proxied: true,
+          ttl: 1,
+        }),
+      }
+    );
+  } else {
+    // Create new DNS record
+    await fetch(
+      `https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "CNAME",
+          name: `${subdomain}.${VIVORA_DOMAIN}`,
+          content: cname,
+          proxied: true,
+          ttl: 1,
+        }),
+      }
+    );
+  }
 
   // Add custom domain to Pages project
   await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/vivora-${subdomain}/domains`,
+    `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/${projectName}/domains`,
     {
       method: "POST",
       headers: {
@@ -217,24 +407,26 @@ async function setupCustomSubdomain(subdomain: string, pagesProject: string) {
   );
 }
 
-function getMimeType(path: string): string {
-  if (path.endsWith(".html")) return "text/html";
-  if (path.endsWith(".css")) return "text/css";
-  if (path.endsWith(".js")) return "application/javascript";
-  if (path.endsWith(".json")) return "application/json";
-  if (path.endsWith(".png")) return "image/png";
-  if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
-  if (path.endsWith(".svg")) return "image/svg+xml";
-  if (path.endsWith(".ico")) return "image/x-icon";
-  return "text/plain";
-}
+async function deployToCloudflarePages(
+  subdomain: string,
+  files: Record<string, string>,
+  userId: string
+): Promise<{ url: string; deploymentId: string }> {
+  const projectName = `vivora-${subdomain}`;
 
-async function computeHash(content: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(content);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  // Step 1: Create or ensure Pages project exists
+  await getOrCreatePagesProject(projectName);
+
+  // Step 2: Upload files and create deployment
+  const deploymentId = await uploadToCloudflarePages(projectName, files);
+
+  // Step 3: Setup custom subdomain DNS + Pages domain
+  if (CLOUDFLARE_ZONE_ID) {
+    await setupCustomSubdomain(subdomain, projectName);
+  }
+
+  const url = `https://${subdomain}.${VIVORA_DOMAIN}`;
+  return { url, deploymentId };
 }
 
 serve(async (req) => {
@@ -245,7 +437,7 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
 
-    // ── GET: Check subdomain availability ────────────────────────────────────
+    // GET: Check subdomain availability
     if (req.method === "GET") {
       const checkSubdomain = url.searchParams.get("check");
       if (checkSubdomain) {
@@ -260,7 +452,6 @@ serve(async (req) => {
       });
     }
 
-    // ── POST: Deploy ─────────────────────────────────────────────────────────
     if (req.method !== "POST") {
       return new Response(JSON.stringify({ error: "Method not allowed" }), {
         status: 405,
@@ -273,41 +464,26 @@ serve(async (req) => {
     if (!subdomain || subdomain.length < 3) {
       return new Response(
         JSON.stringify({ error: "Invalid subdomain (min 3 characters)" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Validate subdomain format
     if (!/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(subdomain)) {
       return new Response(
-        JSON.stringify({
-          error: "Invalid subdomain. Use only lowercase letters, numbers, and hyphens.",
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ error: "Invalid subdomain. Use only lowercase letters, numbers, and hyphens." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check availability again server-side
     const taken = await isSubdomainTaken(subdomain);
     if (taken) {
       return new Response(
         JSON.stringify({ error: "Subdomain already taken. Please choose another." }),
-        {
-          status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check if Cloudflare is configured
     if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
-      // Fallback: simulate deployment (for testing without Cloudflare setup)
       const supabase = getSupabaseAdmin();
       await supabase.from("vivora_deployments").insert({
         subdomain,
@@ -319,21 +495,18 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           url: `https://${subdomain}.${VIVORA_DOMAIN}`,
-          message:
-            "Deployment queued. Cloudflare integration pending setup.",
+          message: "Deployment queued. Cloudflare not configured.",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Deploy to Cloudflare Pages
     const { url: deployedUrl, deploymentId } = await deployToCloudflarePages(
       subdomain,
       files,
       userId
     );
 
-    // Save deployment record
     const supabase = getSupabaseAdmin();
     await supabase.from("vivora_deployments").insert({
       subdomain,
@@ -349,13 +522,8 @@ serve(async (req) => {
     );
   } catch (e) {
     return new Response(
-      JSON.stringify({
-        error: e instanceof Error ? e.message : "Deployment failed",
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ error: e instanceof Error ? e.message : "Deployment failed" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

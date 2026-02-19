@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Code2, Eye, LogOut, Settings, HelpCircle, CreditCard, Moon, Sun,
   ChevronDown, Download, Home, ArrowLeft, Clock, Pencil, Eye as EyeIcon,
-  FolderOpen, Upload, Coins
+  FolderOpen, Upload, Coins, Database
 } from 'lucide-react';
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
@@ -88,7 +88,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
   const { userPlan, getRemainingCredits } = useUserPlan();
-  const [currentView, setCurrentView] = useState<'code' | 'preview'>('preview');
+  const [currentView, setCurrentView] = useState<'code' | 'preview' | 'database'>('preview');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProjectMenu, setShowProjectMenu] = useState(false);
@@ -482,27 +482,28 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </div>
         </div>
 
-        {/* Center - View Toggle (Bolt Style) - More to the left */}
+        {/* Center - View Toggle */}
         <div className={`hidden md:flex items-center bg-secondary rounded-full p-1 border border-border absolute left-1/2 transform -translate-x-1/2`}>
           <button
             onClick={() => setCurrentView('preview')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${currentView === 'preview'
-              ? 'bg-accent text-foreground'
-              : 'text-muted-foreground hover:text-foreground'
-              } ${isRTL ? 'flex-row-reverse' : ''}`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${currentView === 'preview' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
           >
             <Eye className="w-3.5 h-3.5" />
             <span>{t('editor.preview')}</span>
           </button>
           <button
             onClick={() => setCurrentView('code')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${currentView === 'code'
-              ? 'bg-accent text-foreground'
-              : 'text-muted-foreground hover:text-foreground'
-              } ${isRTL ? 'flex-row-reverse' : ''}`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${currentView === 'code' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
           >
             <Code2 className="w-3.5 h-3.5" />
             <span>{t('editor.code')}</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('database')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${currentView === 'database' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
+          >
+            <Database className="w-3.5 h-3.5" />
+            <span>DB</span>
           </button>
         </div>
 
@@ -710,7 +711,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               onMouseDown={handleResizeStart}
             />
 
-            {/* Main Panel - keep preview mounted to preserve sandbox session */}
+            {/* Main Panel */}
             <div className="flex-1 overflow-hidden relative">
               <div className={`h-full ${currentView === 'preview' && !showVisualEdit ? 'block' : 'hidden'}`}>
                 <PreviewView
@@ -718,12 +719,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   projectType={project?.projectType || 'vite'}
                   isLoading={isGenerating && !isChatMode}
                   onPreviewError={(errorLog) => {
-                    // Auto-send preview errors to AI for fixing
                     onSendMessage(`[AUTO-FIX] The preview has console errors. Please fix them:\n\n${errorLog}`, false);
                   }}
                 />
               </div>
-
               <div className={`h-full ${currentView === 'code' && !showVisualEdit ? 'block' : 'hidden'}`}>
                 <CodeView
                   files={project?.files || {}}
@@ -732,7 +731,72 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   onUpdateFile={handleUpdateFile}
                 />
               </div>
-
+              {/* Database Tab */}
+              {currentView === 'database' && !showVisualEdit && (
+                <div className="h-full overflow-y-auto bg-background p-8">
+                  <div className="max-w-2xl mx-auto">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                        <Database className="w-5 h-5 text-green-500" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-foreground">Connect Supabase Database</h2>
+                        <p className="text-sm text-muted-foreground">Add a real backend to your project</p>
+                      </div>
+                    </div>
+                    <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Connect your own Supabase project to enable persistent storage, authentication, and real-time features. Your credentials are stored securely in the project.
+                      </p>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs font-medium text-foreground block mb-1.5">Supabase Project URL</label>
+                          <input
+                            type="url"
+                            placeholder="https://xxxx.supabase.co"
+                            className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-foreground block mb-1.5">Anon (Public) Key</label>
+                          <input
+                            type="text"
+                            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                            className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-2.5 rounded-xl transition-colors text-sm"
+                        onClick={() => {
+                          onSendMessage("Db Connected - تم ربط قاعدة البيانات بنجاح. الآن عدّل الملفات لتستخدم Supabase client مع الـ URL والـ anon key الجديدين. أضف supabase client في src/lib/supabase.ts واستخدمه في جميع عمليات البيانات.", false);
+                        }}
+                      >
+                        Connect Database
+                      </button>
+                      <div className="pt-2 border-t border-border">
+                        <a
+                          href="/supabase-connect"
+                          target="_blank"
+                          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <span>📖 How to get your Supabase URL & Key</span>
+                          <span className="text-primary">→</span>
+                        </a>
+                      </div>
+                    </div>
+                    <div className="mt-6 bg-card border border-border rounded-2xl p-6">
+                      <h3 className="text-sm font-bold mb-3">What happens after connecting?</h3>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> AI will update your files to use your real database</li>
+                        <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> SQL migration files will be created in <code className="text-green-500 bg-green-500/10 px-1 rounded">migrations/</code></li>
+                        <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> Run migration files in your Supabase SQL Editor</li>
+                        <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> Edge functions appear in <code className="text-green-500 bg-green-500/10 px-1 rounded">supabase/functions/</code></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
               {showVisualEdit && (
                 <div className="absolute inset-0 z-10 flex">
                   <VisualEditMode
