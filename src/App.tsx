@@ -1125,6 +1125,8 @@ import FAQ from "@/pages/FAQ";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import { NewVibeTool } from "@/pages/NewVibeTool";
+import AiForAll from "@/pages/AiForAll";
+import SupabaseConnect from "@/pages/SupabaseConnect";
 // AdminPanel already imported at the top
 
 const App = () => (
@@ -1151,6 +1153,8 @@ const App = () => (
               <Route path="/new-vibe-tool" element={<NewVibeTool />} />
               <Route path="/oauth/consent" element={<OAuthConsent />} />
               <Route path="/oauth/vercel/callback" element={<VercelOAuthCallback />} />
+              <Route path="/ai-for-all" element={<AiForAll />} />
+              <Route path="/supabase-connect" element={<SupabaseConnect />} />
               <Route path="/" element={<AppContent />} />
             </Routes>
           </BrowserRouter>
