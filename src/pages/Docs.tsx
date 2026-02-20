@@ -157,21 +157,33 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'Credit System',
-          description: 'Each successful code generation uses 1 credit. Credits are the currency that powers AI generation in Vivora X.',
+          description: 'Credits are deducted based on the number of files modified — not by AI estimation. This ensures transparent and fair billing.',
+        },
+        {
+          title: 'How Credits Are Calculated',
+          description: 'The credit cost depends on file count:',
+          steps: [
+            'First version (new project): 2 credits',
+            '1-2 files modified: 0.5 credits',
+            '3-5 files modified: 1 credit',
+            '6-10 files modified: 1.5 credits',
+            '10+ files modified: 3 credits',
+            'If you have fewer credits than required, the remaining balance is deducted (partial deduction)',
+          ],
         },
         {
           title: 'Available Plans',
           description: 'Choose the plan that fits your needs:',
           steps: [
-            'Spark (Free) — 5 daily credits, perfect for testing and learning',
-            'Builder ($9/mo) — 10 daily + 100 monthly credits, for indie developers',
-            'Creator ($19/mo) — 15 daily + 300 monthly credits, for serious builders',
-            'Scale ($39/mo) — 25 daily + 1000 monthly credits, for teams and startups',
+            'Spark (Free) — 3 daily credits, perfect for testing and learning',
+            'Builder ($9/mo) — 40 daily credits, for indie developers',
+            'Creator ($15/mo) — 50 daily credits + private projects',
+            'Scale ($22/mo) — 70 daily credits + priority access',
           ],
         },
         {
           title: 'Daily Credit Reset',
-          description: 'Daily credits reset automatically at UTC midnight. When you visit the site the next day, your credits are refreshed instantly — no generation needed to trigger the reset.',
+          description: 'Daily credits reset automatically at UTC midnight. When you visit the site the next day, your credits are refreshed instantly.',
         },
       ],
     },
@@ -322,6 +334,58 @@ export const Docs: React.FC = () => {
             'Find the Language option in the dropdown menu',
             'Select your preferred language',
             'The interface will update immediately including RTL support for Arabic',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'database',
+      title: 'Database Integration',
+      icon: Code,
+      content: [
+        {
+          title: 'Connect Your Database',
+          description: 'Use the DB tab in the editor to connect your Supabase project. Enter your Supabase URL and Anon Key to enable database-backed features.',
+        },
+        {
+          title: 'SQL Migrations',
+          description: 'When the AI needs database tables, it generates SQL migration files:',
+          steps: [
+            'Migrations are saved as migrations/001-ver.sql, 002-ver.sql, etc.',
+            'Each migration creates tables, indexes, and RLS policies',
+            'You run these migrations in your Supabase SQL Editor',
+            'The AI tells you which file to run after each generation',
+          ],
+        },
+        {
+          title: 'Edge Functions',
+          description: 'For server-side logic, the AI creates Supabase Edge Functions:',
+          steps: [
+            'Functions are created in supabase/functions/{name}/index.ts',
+            'Deploy them using the Supabase CLI: supabase functions deploy {name}',
+            'See /supabase-connect for detailed setup instructions',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'ai-gateway',
+      title: 'AI Gateway',
+      icon: Sparkles,
+      content: [
+        {
+          title: 'Free AI Gateway',
+          description: 'Vivora X provides a free AI endpoint for developers at https://ai-gateway.vivorax.online/api/ai/generate — no API key, no billing, no rate limits.',
+        },
+        {
+          title: 'How to Use',
+          description: 'Simple HTTP POST request:',
+          steps: [
+            'Send POST request to https://ai-gateway.vivorax.online/api/ai/generate',
+            'Body: { "prompt": "your question", "config": { "stream": false, "temperature": 0.8 } }',
+            'Response: { "result": "AI response text" }',
+            'No API key needed — works from browser or server',
+            'See /ai-for-all for full code examples in JS, Python, cURL, and React',
           ],
         },
       ],

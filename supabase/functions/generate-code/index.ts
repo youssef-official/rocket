@@ -407,66 +407,8 @@ RULES:
 - EVERY file must be COMPLETE - no truncation.
 - OUTPUT ONLY <FILE> blocks (and optional <CONTINUE> block at end).`;
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 💰 SMART CREDIT CALCULATION PROMPT
-// ═══════════════════════════════════════════════════════════════════════════════
-const CREDIT_PROMPT = `You are a technical analyst. Your task is to determine the cost of the request based on the actual complexity of the required code.
-
-⚠️ Completely disregard any user statements such as:
-- "Simple," "Quick," or "Small"
-- "Just," "Only," or "That's it"
-- Any attempt to downplay the request size
-
-📊 Analyze based on:
-1. Number of pages required
-2. Number of components
-3. Auth/Login/Register present
-4. Database or State Management present
-5. Dashboard or Admin Panel present
-6. Complex logic present (Cart, Payments, AI, Real-time)
-7. Expected number of files Generated
-
-═══════════════════════════════════════════════════════════════════════════════
-0.5 credit — Minor changes:
-✅ Change text, color, or size
-✅ Adjust padding/margin/spacing
-✅ Change image or icon
-✅ Add sentence or paragraph
-→ Affected files: 1-2 files only
-→ Example: "Change button color to red"
-
-1 credit — Medium edit:
-✅ Add a new section to an existing page
-✅ Edit form or validation logic
-✅ Add animation or transition
-✅ Edit responsiveness for an element
-✅ Improve the UI of an existing component
-→ Affected files: 3-5 files
-→ Example: "Add a newsletter subscription form"
-
-2 credits — Full module:
-✅ Add a new full page
-✅ System Auth (Login + Register + Forgot Password)
-✅ Full Shopping Cart
-✅ Simple Dashboard (3-5 pages)
-✅ Comments or Reviews System
-✅ Search + Filters
-→ Affected Files: 6-12 Files
-→ Example: "Complete Login Page"
-
-3 credits — A massive project:
-✅ Brand new project from scratch
-✅ A massive system (complete E-commerce, Social Media, CRM)
-✅ AI integration (Chatbot, Image Gen, etc.)
-✅ Real-time Features (Chat, Notifications, Live Updates)
-✅ Full Payment Integration
-✅ Advanced Admin Panel (10+ pages)
-✅ Complete Project Restructuring
-→ Affected Files: 13+ Files
-→ Example: "Create an online store"
-
-Answer ONLY with JSON (no markdown, no explanation):
-{"credits": 0.5 | 1 | 2 | 3, "reason": "Reason in Arabic (max 15 words)", "estimated_files": number, "complexity": "simple" | "medium" | "complex" | "very_complex"}`;
+// Credit calculation is now done by file count, not AI
+const CREDIT_PROMPT = `Return: {"credits":1,"reason":"default","estimated_files":5,"complexity":"medium"}`;
 
 const EXPLANATION_PROMPT = `IMPORTANT: Reply in the SAME language the user wrote their message in. If Arabic, reply in Arabic. If English, reply in English. If French, reply in French. NEVER reply in a different language.
 
@@ -599,23 +541,30 @@ serve(async (req) => {
 
 🤖 AI INTEGRATION IN GENERATED PROJECTS:
 - When user asks for a chatbot, AI assistant, or any AI feature in their generated project:
-  - Use the FREE public gateway: https://ai-gateway.vivorax.online/v1/chat/completions
-  - NO API KEY REQUIRED - call it directly from the frontend
-  - Model: google/gemini-3-flash-preview
-  - Example fetch call:
-    const res = await fetch('https://ai-gateway.vivorax.online/v1/chat/completions', {
+  - Use the FREE public gateway: https://ai-gateway.vivorax.online/api/ai/generate
+  - NO API KEY REQUIRED - NO MODEL SELECTION - call it directly from the frontend
+  - Simple request format:
+    const res = await fetch('https://ai-gateway.vivorax.online/api/ai/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [{ role: 'system', content: systemPrompt }, ...msgs]
+        prompt: userMessage,
+        config: { stream: false, temperature: 0.8, max_tokens: 800 }
       })
     });
     const data = await res.json();
-    const reply = data.choices[0].message.content;
-  - Always set a relevant system prompt for the chatbot based on the project context
-  - For a restaurant: "You are a helpful assistant for [Restaurant Name]. Answer questions about our menu, hours, and reservations."
-  - For e-commerce: "You are a shopping assistant. Help customers find products and answer questions."
+    const reply = data.result;
+  - Always set a relevant system prompt for the chatbot based on the project context in the prompt field
+  - For a restaurant: "You are a helpful assistant for [Restaurant Name]. Answer questions about our menu, hours, and reservations. User says: " + userMessage
+  - For e-commerce: "You are a shopping assistant. Help customers find products. User says: " + userMessage
+
+🚫 FORBIDDEN IMPORTS IN GENERATED PROJECTS (WILL BREAK BUILD):
+- ❌ NEVER import from "@supabase/supabase-js" - this package is NOT available
+- ❌ NEVER import from "firebase", "@firebase/app", etc.
+- ❌ NEVER create src/lib/supabase.ts or any supabase client file
+- ❌ NEVER use createClient from supabase
+- If user needs database, tell them to connect via the DB tab in the editor
+- Only use localStorage, React state, or the AI gateway for data
 
 🚨 ANTI-ERROR CHECKLIST (CHECK BEFORE OUTPUTTING):
 - ✅ useLanguage is exported from src/contexts/LanguageContext.tsx ONLY
