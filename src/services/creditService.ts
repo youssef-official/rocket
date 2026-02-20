@@ -47,8 +47,13 @@ export async function checkCreditsAvailable(userId: string): Promise<boolean> {
 }
 
 /**
- * Deduct credits based on actual complexity (0.5 / 1 / 2 / 3)
- * creditsToDeduct: determined by the AI credit analyzer
+ * Deduct credits based on file count algorithm:
+ * - First version: 2 credits
+ * - 1-2 files: 0.5 credits
+ * - 3-5 files: 1 credit
+ * - 6-10 files: 1.5 credits
+ * - 10+ files: 3 credits
+ * If user has fewer credits than required, deduct whatever remains
  */
 export async function deductCredits(
   userId: string,
@@ -102,18 +107,19 @@ export async function deductCredits(
     const monthlyRemaining = Math.max(0, monthlyMax - totalUsed);
     const totalRemaining = dailyRemaining + monthlyRemaining;
 
-    // Use minimum 0.5 credits
+    // If not enough credits, deduct whatever remains (allow partial)
     const actual = Math.max(0.5, creditsToDeduct);
+    const toDeduct = Math.min(actual, totalRemaining);
 
-    if (totalRemaining < actual) {
+    if (toDeduct <= 0) {
       return { success: false, creditsDeducted: 0, error: 'Insufficient credits' };
     }
 
     // Deduct from daily first, then monthly
-    const dailyDeduct = Math.min(actual, dailyRemaining);
-    const monthlyDeduct = actual - dailyDeduct;
+    const dailyDeduct = Math.min(toDeduct, dailyRemaining);
+    const monthlyDeduct = toDeduct - dailyDeduct;
 
-    console.log(`[creditService] Attempting to deduct ${actual} credits for user ${userId}. Daily: ${dailyDeduct}, Monthly: ${monthlyDeduct}`);
+    console.log(`[creditService] Deducting ${toDeduct} credits for user ${userId}. Daily: ${dailyDeduct}, Monthly: ${monthlyDeduct}`);
 
     const { error: updateError } = await supabase
       .from('user_plans')
@@ -136,7 +142,7 @@ export async function deductCredits(
       .insert([{
         user_id: userId,
         project_id: projectId || null,
-        credits_used: actual,
+        credits_used: toDeduct,
         model_used: 'google/gemini-3-flash-preview',
         work_type: 'code_generation',
         description: workDescription
@@ -149,7 +155,7 @@ export async function deductCredits(
       console.log(`[creditService] Successfully recorded transaction for ${userId}`);
     }
 
-    return { success: true, creditsDeducted: actual };
+    return { success: true, creditsDeducted: toDeduct };
   } catch {
     return { success: false, creditsDeducted: 0, error: 'Unknown error' };
   }

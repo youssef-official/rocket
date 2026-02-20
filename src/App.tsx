@@ -274,17 +274,17 @@ const ProjectEditorRoute = () => {
             }]);
           }
 
-          // DEDUCT CREDITS BEFORE generation starts (smart: cost based on complexity)
+          // DEDUCT CREDITS BEFORE generation (first version = 2 credits)
           if (user) {
             try {
-              const creditsToDeduct = await calculateRequestCredits(prompt);
+              const { calculateCreditsByFileCount } = await import('@/services/directAiService');
+              const creditsToDeduct = calculateCreditsByFileCount(0, true); // isFirstVersion = true → 2 credits
               await deductPointsAfterGeneration(
                 user.id,
                 localProject.id,
-                `Pre-deduct: Initial generation`,
+                `Initial generation`,
                 creditsToDeduct
               );
-              // Force refresh the user plan to show updated credits immediately
               queryClient.invalidateQueries({ queryKey: ['userPlan'] });
             } catch (e) {
               console.error('Failed to pre-deduct credits:', e);
@@ -660,12 +660,10 @@ const ProjectEditorRoute = () => {
       let fullResponse = '';
       const detectedFiles = new Set<string>();
 
-      // DEDUCT CREDITS BEFORE generation starts
+      // DEDUCT CREDITS BEFORE generation (1 credit pre-deduct, adjusted after by file count)
       if (user) {
         try {
-          const creditsToDeduct = await calculateRequestCredits(content);
-          await deductPointsAfterGeneration(user.id, localProject.id, `Pre-deduct: ${content.slice(0, 50)}`, creditsToDeduct);
-          // Force refresh the user plan to show updated credits immediately
+          await deductPointsAfterGeneration(user.id, localProject.id, `Pre-deduct: ${content.slice(0, 50)}`, 1);
           queryClient.invalidateQueries({ queryKey: ['userPlan'] });
         } catch (e) {
           console.error('Failed to pre-deduct credits:', e);

@@ -13,10 +13,10 @@ const features = [
 ];
 
 const plans = [
-  { name: 'Spark', price: 'Free', credits: '5 daily', monthly: '—', color: 'from-gray-400 to-gray-500' },
-  { name: 'Builder', price: '$8/mo', credits: '5 daily', monthly: '100', color: 'from-blue-400 to-blue-600', popular: false },
-  { name: 'Creator', price: '$19/mo', credits: '5 daily', monthly: '300', color: 'from-pink-400 to-pink-600', popular: true },
-  { name: 'Scale', price: '$49/mo', credits: '5 daily', monthly: '700', color: 'from-purple-400 to-purple-600' },
+  { name: 'Spark', price: 'Free', credits: '3 daily', monthly: '—', color: 'from-gray-400 to-gray-500' },
+  { name: 'Builder', price: '$9/mo', credits: '40 daily', monthly: '—', color: 'from-blue-400 to-blue-600', popular: false },
+  { name: 'Creator', price: '$15/mo', credits: '50 daily', monthly: '—', color: 'from-pink-400 to-pink-600', popular: true },
+  { name: 'Scale', price: '$22/mo', credits: '70 daily', monthly: '—', color: 'from-purple-400 to-purple-600' },
 ];
 
 const whyDifferent = [

@@ -5,7 +5,7 @@ function getSupabaseUrl(): string {
     return import.meta.env.VITE_SUPABASE_URL || '';
 }
 
-// SMART CREDIT DEDUCTION: Calculate credit cost based on complexity then deduct
+// SMART CREDIT DEDUCTION: Calculate credit cost based on file count then deduct
 export async function deductPointsAfterGeneration(
     userId: string,
     projectId?: string,
@@ -19,36 +19,19 @@ export async function deductPointsAfterGeneration(
     };
 }
 
-// Calculate how many credits a request should cost (0.5 / 1 / 2 / 3)
-export async function calculateRequestCredits(userMessage: string): Promise<number> {
-    const supabaseUrl = getSupabaseUrl();
-    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Calculate credits based on number of files modified (file-count algorithm)
+export function calculateCreditsByFileCount(fileCount: number, isFirstVersion: boolean): number {
+    if (isFirstVersion) return 2; // First version always costs 2 credits
+    if (fileCount <= 2) return 0.5;
+    if (fileCount <= 5) return 1;
+    if (fileCount <= 10) return 1.5;
+    return 3; // 10+ files
+}
 
-    try {
-        const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${anonKey}`
-            },
-            body: JSON.stringify({
-                mode: 'credit',
-                messages: [{ role: 'user', content: userMessage }]
-            })
-        });
-
-        if (!response.ok) return 1;
-
-        const data = await response.json();
-        const credits = typeof data?.credits === 'number' ? data.credits : 1;
-        // Clamp to valid values: 0.5, 1, 2, 3
-        if (credits <= 0.5) return 0.5;
-        if (credits <= 1) return 1;
-        if (credits <= 2) return 2;
-        return 3;
-    } catch {
-        return 1; // Default to 1 credit on error
-    }
+// Legacy function - no longer calls AI, uses file count instead
+export async function calculateRequestCredits(_userMessage: string): Promise<number> {
+    // Default to 1 credit pre-deduction; actual amount adjusted after generation
+    return 1;
 }
 
 // Main function to call AI via Supabase Edge Function
