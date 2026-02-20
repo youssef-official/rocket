@@ -18,7 +18,6 @@ import {
 import { useIntegrations } from '@/hooks/useIntegrations';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
-// Vercel deployments now go through edge function to avoid CORS/403 issues
 import { toast } from '@/hooks/use-toast';
 import type { ProjectFile } from '@/types';
 import vercelLogo from '@/assets/logos/vercel.svg';
@@ -36,8 +35,7 @@ interface PublishDialogProps {
 
 export type { PublishDialogProps as VercelDeployDialogProps };
 
-type DeployStep = 'choose' | 'input' | 'deploying' | 'success' | 'error';
-type DeployTarget = 'vercel' | 'vivora';
+type DeployStep = 'input' | 'deploying' | 'success' | 'error';
 
 interface DeployLog {
   time: string;
@@ -48,33 +46,6 @@ interface DeployLog {
 // ─── Deploy Services (server-side via edge functions) ─────────────────────────
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-async function deployToVivora(
-  subdomain: string,
-  files: Record<string, ProjectFile>,
-  userId?: string
-): Promise<{ url: string }> {
-  const fileEntries: Record<string, string> = {};
-  Object.entries(files).forEach(([path, file]) => {
-    fileEntries[path] = file.content;
-  });
-
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/vivora-deploy`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${ANON_KEY}`,
-    },
-    body: JSON.stringify({ subdomain, files: fileEntries, userId }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ error: 'Deploy failed' }));
-    throw new Error(err.error || `Deploy failed: ${response.status}`);
-  }
-
-  return response.json();
-}
 
 async function vercelEdgeDeploy(
   token: string,
@@ -106,7 +77,7 @@ async function vercelEdgeStatus(
   return response.json();
 }
 
-// ─── Main Dialog ──────────────────────────────────────────────────────────────
+// ─── Main Dialog (Vercel Only) ────────────────────────────────────────────────
 
 export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
   open,
@@ -120,33 +91,25 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
   const { t } = useLanguage();
   const { userPlan, getRemainingCredits } = useUserPlan();
 
-  const [step, setStep] = useState<DeployStep>('choose');
-  const [target, setTarget] = useState<DeployTarget>('vivora');
+  const [step, setStep] = useState<DeployStep>('input');
   const [customName, setCustomName] = useState('');
-  const [vivoraSubdomain, setVivoraSubdomain] = useState('');
   const [productionUrl, setProductionUrl] = useState<string | null>(null);
   const [logs, setLogs] = useState<DeployLog[]>([]);
   const [showLogs, setShowLogs] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [subdomainAvailable, setSubdomainAvailable] = useState<boolean | null>(null);
-  const [checkingSubdomain, setCheckingSubdomain] = useState(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
-  const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (open) {
-      setStep('choose');
-      setTarget('vivora');
+      setStep('input');
       setProductionUrl(null);
       setLogs([]);
       setShowLogs(false);
       setShowPricing(false);
       setErrorMessage(null);
-      setSubdomainAvailable(null);
       const slug = projectName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').substring(0, 40);
       setCustomName(slug);
-      setVivoraSubdomain(slug);
     }
   }, [open, projectName]);
 
@@ -162,37 +125,6 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
   const hasCredits = () => {
     if (!userPlan) return false;
     return getRemainingCredits().total > 0;
-  };
-
-  const getVivoraProjectLimit = () => {
-    if (!userPlan) return 1;
-    return PLAN_CONFIG[userPlan.plan].vivoraProjects;
-  };
-
-  const checkSubdomainAvailability = async (subdomain: string) => {
-    if (!subdomain || subdomain.length < 3) { setSubdomainAvailable(null); return; }
-    setCheckingSubdomain(true);
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const response = await fetch(`${supabaseUrl}/functions/v1/vivora-deploy?check=${encodeURIComponent(subdomain)}`, {
-        headers: { 'Authorization': `Bearer ${anonKey}` },
-      });
-      const data = await response.json().catch(() => ({ available: true }));
-      setSubdomainAvailable(data.available !== false);
-    } catch {
-      setSubdomainAvailable(true);
-    } finally {
-      setCheckingSubdomain(false);
-    }
-  };
-
-  const handleVivoraSubdomainChange = (val: string) => {
-    const clean = val.toLowerCase().replace(/[^a-z0-9-]/g, '').substring(0, 40);
-    setVivoraSubdomain(clean);
-    setSubdomainAvailable(null);
-    if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
-    checkTimeoutRef.current = setTimeout(() => checkSubdomainAvailability(clean), 600);
   };
 
   const handleVercelDeploy = async () => {
@@ -246,38 +178,6 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
     }
   };
 
-  const handleVivoraDeploy = async () => {
-    if (!hasCredits()) { setShowPricing(true); return; }
-    if (!vivoraSubdomain || vivoraSubdomain.length < 3) return;
-    if (subdomainAvailable === false) {
-      toast({ title: 'Subdomain taken', description: 'Please choose a different subdomain', variant: 'destructive' });
-      return;
-    }
-
-    setStep('deploying'); setShowLogs(true); setErrorMessage(null);
-    addLog('Starting Vivora deployment...', 'info');
-    addLog(`Subdomain: ${vivoraSubdomain}.vivorax.online`, 'info');
-    addLog(`Files: ${Object.keys(projectFiles).length} files`, 'info');
-    addLog('Uploading to Cloudflare Pages...', 'info');
-
-    try {
-      await deployToVivora(vivoraSubdomain, projectFiles);
-      const url = `https://${vivoraSubdomain}.vivorax.online`;
-      addLog('Uploaded successfully!', 'success');
-      addLog(`Live at: ${url}`, 'success');
-      setProductionUrl(url);
-      setStep('success');
-      onDeployed?.(url);
-      toast({ title: '🚀 Published to Vivora!', description: `Live at ${url}` });
-    } catch (err: any) {
-      const errMsg = err.message || 'Unknown error';
-      addLog(`Error: ${errMsg}`, 'error');
-      setErrorMessage(errMsg);
-      setStep('error');
-      toast({ title: 'Deploy failed', description: errMsg, variant: 'destructive' });
-    }
-  };
-
   const handleSendErrorToChat = () => {
     if (onSendErrorToChat && logs.length > 0) {
       const logText = logs.map(l => `[${l.time}] [${l.type.toUpperCase()}] ${l.message}`).join('\n');
@@ -303,8 +203,7 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
               {step === 'success' ? '🎉 Published Successfully' : 'Publish Project'}
             </DialogTitle>
             <DialogDescription>
-              {step === 'choose' && 'Choose where to publish your project'}
-              {step === 'input' && `Configure your ${target === 'vercel' ? 'Vercel' : 'Vivora'} deployment`}
+              {step === 'input' && 'Deploy your project to Vercel'}
               {step === 'deploying' && 'Building and deploying your project...'}
               {step === 'success' && 'Your app is live and ready!'}
               {step === 'error' && 'Something went wrong during deployment'}
@@ -326,95 +225,8 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
             </div>
           )}
 
-          {/* Step: Choose */}
-          {step === 'choose' && !showPricing && (
-            <div className="space-y-3">
-              <button
-                onClick={() => { setTarget('vivora'); setStep('input'); }}
-                className="w-full flex items-center gap-4 p-4 bg-secondary/50 hover:bg-secondary rounded-xl border border-border hover:border-primary/50 transition-all text-left group"
-              >
-                <div className="w-11 h-11 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Server className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-sm font-bold text-foreground">Vivora Hosting</p>
-                    <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">Recommended</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate">yourname.vivorax.online — Cloudflare CDN</p>
-                  <p className="text-xs text-purple-400 mt-0.5">
-                    {getVivoraProjectLimit()} project{getVivoraProjectLimit() !== 1 ? 's' : ''} on your plan
-                  </p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-              </button>
-
-              <button
-                onClick={() => { setTarget('vercel'); setStep('input'); }}
-                className="w-full flex items-center gap-4 p-4 bg-secondary/50 hover:bg-secondary rounded-xl border border-border hover:border-primary/50 transition-all text-left group"
-              >
-                <div className="w-11 h-11 bg-card rounded-xl flex items-center justify-center border border-border flex-shrink-0">
-                  <img src={vercelLogo} alt="Vercel" className="w-6 h-6 dark:invert" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-sm font-bold text-foreground">Vercel Deploy</p>
-                    <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Unlimited</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate">yourproject.vercel.app — requires Vercel account</p>
-                  {!integrations?.vercel_connected && (
-                    <p className="text-xs text-amber-400 mt-0.5">⚠ Connect Vercel in Settings first</p>
-                  )}
-                </div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
-              </button>
-            </div>
-          )}
-
-          {/* Step: Input - Vivora */}
-          {step === 'input' && target === 'vivora' && !showPricing && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Choose your subdomain</Label>
-                <p className="text-xs text-muted-foreground">Your project will be live at this address</p>
-                <div className="flex items-center gap-2 p-3 bg-secondary rounded-lg border border-border focus-within:border-primary/50 transition-colors">
-                  <Server className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <Input
-                    value={vivoraSubdomain}
-                    onChange={(e) => handleVivoraSubdomainChange(e.target.value)}
-                    placeholder="my-project"
-                    className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0 shadow-none"
-                  />
-                  <span className="text-xs text-muted-foreground flex-shrink-0">.vivorax.online</span>
-                </div>
-                {vivoraSubdomain.length >= 3 && (
-                  <div className={`flex items-center gap-1.5 text-xs ${
-                    checkingSubdomain ? 'text-muted-foreground' :
-                    subdomainAvailable === true ? 'text-green-400' :
-                    subdomainAvailable === false ? 'text-red-400' : ''
-                  }`}>
-                    {checkingSubdomain && <><Loader2 className="w-3 h-3 animate-spin" /> Checking...</>}
-                    {!checkingSubdomain && subdomainAvailable === true && <><Check className="w-3 h-3" /> Available!</>}
-                    {!checkingSubdomain && subdomainAvailable === false && <><X className="w-3 h-3" /> Already taken</>}
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep('choose')} className="flex-1">Back</Button>
-                <Button
-                  onClick={handleVivoraDeploy}
-                  disabled={!vivoraSubdomain || vivoraSubdomain.length < 3 || subdomainAvailable === false}
-                  className="flex-1"
-                >
-                  <Upload className="w-4 h-4 mr-1.5" />
-                  Publish to Vivora
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step: Input - Vercel */}
-          {step === 'input' && target === 'vercel' && !showPricing && (
+          {/* Step: Input - Vercel Only */}
+          {step === 'input' && !showPricing && (
             <div className="space-y-4">
               {!integrations?.vercel_connected && (
                 <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
@@ -428,7 +240,7 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Website address</Label>
                 <div className="flex items-center gap-2 p-3 bg-secondary rounded-lg border border-border">
-                  <Globe className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <img src={vercelLogo} alt="Vercel" className="w-4 h-4 dark:invert flex-shrink-0" />
                   <Input
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
@@ -438,17 +250,14 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
                   <span className="text-xs text-muted-foreground flex-shrink-0">.vercel.app</span>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep('choose')} className="flex-1">Back</Button>
-                <Button
-                  onClick={handleVercelDeploy}
-                  disabled={!customName.trim() || !integrations?.vercel_connected}
-                  className="flex-1"
-                >
-                  <img src={vercelLogo} alt="" className="w-4 h-4 mr-1.5 dark:invert" />
-                  Deploy to Vercel
-                </Button>
-              </div>
+              <Button
+                onClick={handleVercelDeploy}
+                disabled={!customName.trim() || !integrations?.vercel_connected}
+                className="w-full"
+              >
+                <img src={vercelLogo} alt="" className="w-4 h-4 mr-1.5 dark:invert" />
+                Deploy to Vercel
+              </Button>
             </div>
           )}
 
@@ -458,9 +267,7 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
               <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
                 <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {target === 'vivora' ? 'Publishing to Vivora...' : 'Building on Vercel...'}
-                  </p>
+                  <p className="text-sm font-medium text-foreground">Building on Vercel...</p>
                   <p className="text-xs text-muted-foreground mt-0.5">This usually takes 30-60 seconds</p>
                 </div>
               </div>
@@ -475,7 +282,7 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
                 <Check className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-foreground">Your app is live! 🎉</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">via {target === 'vivora' ? 'Vivora Hosting' : 'Vercel'}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">via Vercel</p>
                 </div>
               </div>
               <div
@@ -497,7 +304,7 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
               </button>
               {showLogs && <DeployLogs logs={logs} logsEndRef={logsEndRef} />}
               <div className="flex gap-2">
-                <Button onClick={() => { setStep('choose'); setLogs([]); setProductionUrl(null); }} variant="outline" className="flex-1" size="sm">
+                <Button onClick={() => { setStep('input'); setLogs([]); setProductionUrl(null); }} variant="outline" className="flex-1" size="sm">
                   <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                   Redeploy
                 </Button>
@@ -518,7 +325,7 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
               </div>
               <DeployLogs logs={logs} logsEndRef={logsEndRef} />
               <div className="flex gap-2">
-                <Button onClick={() => setStep('choose')} variant="outline" className="flex-1" size="sm">
+                <Button onClick={() => setStep('input')} variant="outline" className="flex-1" size="sm">
                   <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                   Try Again
                 </Button>

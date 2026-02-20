@@ -38,7 +38,8 @@ export async function calculateRequestCredits(_userMessage: string): Promise<num
 export async function callingDirectAI(
     mode: 'code' | 'status' | 'explanation' | 'project-name' | 'suggestions' | 'chat' | 'version-name',
     messages: any[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    userPlan?: string
 ): Promise<Response> {
     const supabaseUrl = getSupabaseUrl();
     const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -72,7 +73,8 @@ export async function callingDirectAI(
         },
         body: JSON.stringify({ 
             mode, 
-            messages: formattedMessages 
+            messages: formattedMessages,
+            userPlan: userPlan || 'spark'
         }),
         signal
     });
