@@ -503,7 +503,7 @@ serve(async (req) => {
   }
 
   try {
-    const { mode, messages } = await req.json();
+    const { mode, messages, userPlan } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
@@ -559,12 +559,10 @@ serve(async (req) => {
   - For e-commerce: "You are a shopping assistant. Help customers find products. User says: " + userMessage
 
 🚫 FORBIDDEN IMPORTS IN GENERATED PROJECTS (WILL BREAK BUILD):
-- ❌ NEVER import from "@supabase/supabase-js" - this package is NOT available
 - ❌ NEVER import from "firebase", "@firebase/app", etc.
-- ❌ NEVER create src/lib/supabase.ts or any supabase client file
-- ❌ NEVER use createClient from supabase
-- If user needs database, tell them to connect via the DB tab in the editor
-- Only use localStorage, React state, or the AI gateway for data
+- If the user asks to connect a database OTHER than Supabase, tell them: "The current environment only supports Supabase. Please use the DB tab in the editor to connect your Supabase project."
+- If the user asks to connect Supabase, generate a proper src/lib/supabase.ts file with createClient import from "@supabase/supabase-js" and placeholder URL/key that the user will fill from the DB tab
+- Only use localStorage, React state, Supabase, or the AI gateway for data
 
 🚨 ANTI-ERROR CHECKLIST (CHECK BEFORE OUTPUTTING):
 - ✅ useLanguage is exported from src/contexts/LanguageContext.tsx ONLY
@@ -599,14 +597,23 @@ serve(async (req) => {
     // Use non-streaming for credit mode (need JSON response)
     const shouldStream = mode !== "credit";
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Model selection based on user plan
+    // Free (spark) → xiaomi/mimo-v2-flash via Vercel AI gateway
+    // Paid plans → google/gemini-3-flash-preview via Lovable AI gateway
+    const isFree = !userPlan || userPlan === 'spark';
+    const model = isFree ? "xiaomi/mimo-v2-flash" : "google/gemini-3-flash-preview";
+    const gatewayUrl = isFree 
+      ? "https://ai-gateway.vercel.sh/v1/chat/completions" 
+      : "https://ai.gateway.lovable.dev/v1/chat/completions";
+
+    const response = await fetch(gatewayUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model,
         messages: [{ role: "system", content: systemPrompt }, ...finalMessages],
         stream: shouldStream,
         max_tokens: maxTokens,

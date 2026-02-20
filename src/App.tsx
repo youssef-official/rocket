@@ -1163,7 +1163,28 @@ import Terms from "@/pages/Terms";
 import { NewVibeTool } from "@/pages/NewVibeTool";
 import AiForAll from "@/pages/AiForAll";
 import SupabaseConnect from "@/pages/SupabaseConnect";
+import { ArabicHome } from "@/pages/ArabicHome";
 // AdminPanel already imported at the top
+
+// Arabic home route wrapper
+const ArabicHomeRoute = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { projects, deleteProject, forkProject } = useProjects();
+  return (
+    <ArabicHome
+      onStartBuilding={(prompt, type, modelId, imageFile) => {
+        // Same logic as AppContent but redirect after
+        navigate('/');
+      }}
+      onViewDashboard={() => navigate('/dashboard')}
+      onOpenProject={(id) => navigate(`/projects/${id}`)}
+      onDeleteProject={deleteProject}
+      onShowAuth={() => navigate('/login')}
+      projects={projects.map(p => ({ id: p.id, name: p.name, description: p.description, projectType: p.projectType, isPublished: p.isPublished, createdAt: p.createdAt, updatedAt: p.updatedAt }))}
+    />
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -1191,6 +1212,7 @@ const App = () => (
               <Route path="/oauth/vercel/callback" element={<VercelOAuthCallback />} />
               <Route path="/ai-for-all" element={<AiForAll />} />
               <Route path="/supabase-connect" element={<SupabaseConnect />} />
+              <Route path="/ar" element={<ArabicHomeRoute />} />
               <Route path="/" element={<AppContent />} />
             </Routes>
           </BrowserRouter>

@@ -6,35 +6,35 @@
 
 @layer base {
   :root {
-    /* Light mode (default) */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 8%;
+    /* Light mode - Softer, less bright */
+    --background: 220 14% 96%;
+    --foreground: 220 13% 18%;
     
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 8%;
+    --card: 220 16% 98%;
+    --card-foreground: 220 13% 18%;
     
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 8%;
+    --popover: 220 16% 98%;
+    --popover-foreground: 220 13% 18%;
     
     /* Blue accent color */
-    --primary: 217 91% 60%;
+    --primary: 217 91% 55%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 8%;
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 220 13% 18%;
     
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 220 14% 92%;
+    --muted-foreground: 220 9% 46%;
     
-    --accent: 0 0% 94%;
-    --accent-foreground: 0 0% 8%;
+    --accent: 220 14% 90%;
+    --accent-foreground: 220 13% 18%;
     
     --destructive: 0 63% 50%;
     --destructive-foreground: 0 0% 98%;
     
-    --border: 0 0% 90%;
-    --input: 0 0% 92%;
-    --ring: 217 91% 60%;
+    --border: 220 13% 86%;
+    --input: 220 14% 90%;
+    --ring: 217 91% 55%;
     
     --radius: 0.75rem;
     
@@ -49,19 +49,19 @@
     --gradient-glass: linear-gradient(135deg, hsla(0, 0%, 100%, 0.9) 0%, hsla(0, 0%, 100%, 0.7) 100%);
     
     /* Shadows */
-    --shadow-glow: 0 0 60px -12px hsla(217, 91%, 60%, 0.25);
-    --shadow-card: 0 6px 24px -10px hsla(0, 0%, 0%, 0.18);
-    --shadow-elevated: 0 20px 40px -18px hsla(0, 0%, 0%, 0.25);
+    --shadow-glow: 0 0 60px -12px hsla(217, 91%, 55%, 0.2);
+    --shadow-card: 0 4px 16px -6px hsla(220, 13%, 18%, 0.08);
+    --shadow-elevated: 0 12px 32px -12px hsla(220, 13%, 18%, 0.12);
     
     /* Sidebar */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 10%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-background: 220 14% 95%;
+    --sidebar-foreground: 220 13% 18%;
+    --sidebar-primary: 217 91% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 94%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 88%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 220 14% 90%;
+    --sidebar-accent-foreground: 220 13% 18%;
+    --sidebar-border: 220 13% 86%;
+    --sidebar-ring: 217 91% 55%;
   }
 
   .dark {

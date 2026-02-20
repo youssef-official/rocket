@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
 import type { ProjectVersion } from '@/hooks/useVersions';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
+import { useUserPlan } from '@/hooks/useUserPlan';
+import { toast } from '@/hooks/use-toast';
 
 interface FileActivity {
   name: string;
@@ -169,6 +171,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onRollback
 }) => {
   const { t } = useLanguage();
+  const { userPlan } = useUserPlan();
+  const isPaidPlan = userPlan?.plan && userPlan.plan !== 'spark';
   const [input, setInput] = useState('');
   const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({});
   const [isChatMode, setIsChatMode] = useState(false);
@@ -205,6 +209,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
+
+    if (!isPaidPlan) {
+      toast({ title: 'Upgrade Required', description: 'File upload is available on paid plans only.', variant: 'destructive' });
+      return;
+    }
 
     const files = Array.from(e.dataTransfer.files);
     const supportedFiles = files.filter(f => 
@@ -837,24 +846,36 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     <button
                       type="button"
                       onClick={() => {
+                        if (!isPaidPlan) {
+                          toast({ title: t('common.upgradeRequired') || 'Upgrade Required', description: t('common.upgradeToUpload') || 'Image upload is available on paid plans only.', variant: 'destructive' });
+                          setShowPlusMenu(false);
+                          return;
+                        }
                         fileInputRef.current?.click();
                         setShowPlusMenu(false);
                       }}
                       className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left text-muted-foreground hover:text-foreground"
                     >
-                      <ImageIcon className="w-4 h-4" />
+                      {isPaidPlan ? <ImageIcon className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                       <span className="text-sm">{t('chat.uploadImage')}</span>
+                      {!isPaidPlan && <span className="text-[10px] text-amber-500 ml-auto">PRO</span>}
                     </button>
                     <button
                       type="button"
                       onClick={() => {
+                        if (!isPaidPlan) {
+                          toast({ title: t('common.upgradeRequired') || 'Upgrade Required', description: t('common.upgradeToUpload') || 'File upload is available on paid plans only.', variant: 'destructive' });
+                          setShowPlusMenu(false);
+                          return;
+                        }
                         docInputRef.current?.click();
                         setShowPlusMenu(false);
                       }}
                       className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left text-muted-foreground hover:text-foreground border-t border-border"
                     >
-                      <File className="w-4 h-4" />
+                      {isPaidPlan ? <File className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                       <span className="text-sm">{t('chat.uploadFile') || 'Upload File (PDF, Excel, Font)'}</span>
+                      {!isPaidPlan && <span className="text-[10px] text-amber-500 ml-auto">PRO</span>}
                     </button>
                     <button
                       type="button"
