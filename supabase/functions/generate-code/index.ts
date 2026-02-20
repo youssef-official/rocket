@@ -599,17 +599,17 @@ serve(async (req) => {
 
     // Model selection based on user plan
     // Free (spark) → xiaomi/mimo-v2-flash via Vercel AI gateway
-    // Paid plans → google/gemini-3-flash-preview via Lovable AI gateway
+    // Paid plans → google/gemini-3-flash via Vercel AI gateway
+    const VERCEL_AI_KEY = Deno.env.get("VERCEL_AI_API_KEY") || LOVABLE_API_KEY;
     const isFree = !userPlan || userPlan === 'spark';
-    const model = isFree ? "xiaomi/mimo-v2-flash" : "google/gemini-3-flash-preview";
-    const gatewayUrl = isFree 
-      ? "https://ai-gateway.vercel.sh/v1/chat/completions" 
-      : "https://ai.gateway.lovable.dev/v1/chat/completions";
+    const model = isFree ? "xiaomi/mimo-v2-flash" : "google/gemini-3-flash";
+    const gatewayUrl = "https://ai-gateway.vercel.sh/v1/chat/completions";
+    const authToken = VERCEL_AI_KEY;
 
     const response = await fetch(gatewayUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${authToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

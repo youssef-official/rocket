@@ -466,12 +466,12 @@ export default defineConfig({
             {sandboxId ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
-                Modal Sandbox Active
+                Live Preview
               </>
             ) : (
               <>
                 <span className="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>
-                Initializing...
+                Starting...
               </>
             )}
           </div>
