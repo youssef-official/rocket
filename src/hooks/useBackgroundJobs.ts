@@ -147,9 +147,10 @@ export function useBackgroundJobs({ projectId, onJobComplete }: UseBackgroundJob
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-      // Don't await - let it run in background
+      // Use keepalive to ensure request survives tab close
       fetch(`${supabaseUrl}/functions/v1/background-generate`, {
         method: 'POST',
+        keepalive: true,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${anonKey}`,

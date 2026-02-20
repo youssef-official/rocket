@@ -13,6 +13,7 @@ import { UpgradeModal } from '@/components/shared/UpgradeModal';
 import { SettingsModal } from '@/components/shared/SettingsModal';
 import { NotificationInbox } from '@/components/shared/NotificationInbox';
 import { useUserPlan } from '@/hooks/useUserPlan';
+import { toast } from '@/hooks/use-toast';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 interface Project {
@@ -51,6 +52,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   const { user, signOut } = useAuth();
   const { t, isRTL, language } = useLanguage();
   const { userPlan, shouldShowUpgradeBanner, canUsePrivateProjects, getRemainingCredits } = useUserPlan();
+  const isPaidPlan = userPlan?.plan && userPlan.plan !== 'spark';
 
   const [prompt, setPrompt] = useState('');
   const [selectedFramework, setSelectedFramework] = useState('React');
@@ -127,6 +129,11 @@ export const HomePage: React.FC<HomePageProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
+    // Block image upload for free plan
+    if (!isPaidPlan) {
+      toast({ title: 'Upgrade Required', description: 'Image upload is available on paid plans only.', variant: 'destructive' });
+      return;
+    }
     const files = e.dataTransfer.files;
     if (files && files[0] && files[0].type.startsWith('image/')) {
       const file = files[0];
@@ -135,6 +142,10 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
   };
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isPaidPlan) {
+      toast({ title: 'Upgrade Required', description: 'Image upload is available on paid plans only.', variant: 'destructive' });
+      return;
+    }
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
       const preview = URL.createObjectURL(file);

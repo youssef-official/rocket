@@ -58,7 +58,17 @@ export const TemplatesSection: React.FC<TemplatesSectionProps> = ({ onSelectTemp
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              onClick={() => onSelectTemplate(tpl.prompt)}
+          onClick={() => {
+                onSelectTemplate(tpl.prompt);
+                // Scroll to prompt input
+                setTimeout(() => {
+                  const textarea = document.querySelector('textarea');
+                  if (textarea) {
+                    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    textarea.focus();
+                  }
+                }, 100);
+              }}
               className="group cursor-pointer"
             >
               <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden hover:bg-white/15 hover:border-white/20 transition-all duration-300">
