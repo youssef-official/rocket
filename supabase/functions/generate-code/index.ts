@@ -458,15 +458,24 @@ const STATUS_PROMPT = `Generate ONE ultra-short status (Max 4 words). No emojis.
 
 function getPromptForMode(mode: string): string {
   switch (mode) {
-    case "code": return CODE_GENERATION_PROMPT;
-    case "status": return STATUS_PROMPT;
-    case "explanation": return EXPLANATION_PROMPT;
-    case "project-name": return PROJECT_NAME_PROMPT;
-    case "suggestions": return SUGGESTIONS_PROMPT;
-    case "chat": return CHAT_PROMPT;
-    case "version-name": return VERSION_NAME_PROMPT;
-    case "credit": return CREDIT_PROMPT;
-    default: return CODE_GENERATION_PROMPT;
+    case "code":
+      return CODE_GENERATION_PROMPT;
+    case "status":
+      return STATUS_PROMPT;
+    case "explanation":
+      return EXPLANATION_PROMPT;
+    case "project-name":
+      return PROJECT_NAME_PROMPT;
+    case "suggestions":
+      return SUGGESTIONS_PROMPT;
+    case "chat":
+      return CHAT_PROMPT;
+    case "version-name":
+      return VERSION_NAME_PROMPT;
+    case "credit":
+      return CREDIT_PROMPT;
+    default:
+      return CODE_GENERATION_PROMPT;
   }
 }
 
@@ -520,9 +529,10 @@ serve(async (req) => {
         finalMessages = [...messages];
         finalMessages[lastUserMsgIndex] = {
           ...finalMessages[lastUserMsgIndex],
-          content: appendTextToMessageContent(finalMessages[lastUserMsgIndex].content,
+          content: appendTextToMessageContent(
+            finalMessages[lastUserMsgIndex].content,
 
-`
+            `
 
 ⚠️ CRITICAL REQUIREMENTS:
 1. OUTPUT ONLY <FILE> blocks (no JSON, no markdown, no explanations)
@@ -580,29 +590,39 @@ serve(async (req) => {
 - Analyze each attached image carefully before coding
 - Extract layout, hierarchy, colors, spacing, typography, and components
 - Recreate/fix the design based on what is visible in the image
-- If user asks to solve issues in the screenshot, identify the likely root cause and fix it in code`),
+- If user asks to solve issues in the screenshot, identify the likely root cause and fix it in code`,
+          ),
         };
       }
     }
 
-    console.log(`[generate-code] Mode: ${mode}, Messages: ${messages.length}`);
+    console.log(`[generate-code] Mode: ${mode}, Messages: ${messages.length}, userPlan: "${userPlan}"`);
 
     // Determine max tokens and model based on mode
-    const maxTokens = mode === "code" ? 100000 : 
-                      mode === "project-name" || mode === "version-name" ? 100 : 
-                      mode === "suggestions" ? 800 :
-                      mode === "credit" ? 200 :
-                      mode === "explanation" ? 2000 : 8000;
+    const maxTokens =
+      mode === "code"
+        ? 100000
+        : mode === "project-name" || mode === "version-name"
+          ? 100
+          : mode === "suggestions"
+            ? 800
+            : mode === "credit"
+              ? 200
+              : mode === "explanation"
+                ? 2000
+                : 8000;
 
     // Use non-streaming for credit mode (need JSON response)
     const shouldStream = mode !== "credit";
 
     // Model selection based on user plan
-    // Free (spark) → xiaomi/mimo-v2-flash via Vercel AI gateway
-    // Paid plans → google/gemini-3-flash via Vercel AI gateway
+    // Free (spark) or missing/empty plan → xiaomi/mimo-v2-flash
+    // Paid plans (builder | creator | scale) → google/gemini-3-flash
+    const PAID_PLANS = ["builder", "creator", "scale"];
+    const isPaid = typeof userPlan === "string" && PAID_PLANS.includes(userPlan);
+    const model = isPaid ? "google/gemini-3-flash" : "xiaomi/mimo-v2-flash";
+
     const VERCEL_AI_KEY = Deno.env.get("VERCEL_AI_API_KEY") || LOVABLE_API_KEY;
-    const isFree = !userPlan || userPlan === 'spark';
-    const model = isFree ? "xiaomi/mimo-v2-flash" : "google/gemini-3-flash";
     const gatewayUrl = "https://ai-gateway.vercel.sh/v1/chat/completions";
     const authToken = VERCEL_AI_KEY;
 
@@ -645,7 +665,9 @@ serve(async (req) => {
     // For credit mode, return JSON directly
     if (!shouldStream) {
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content ?? '{"credits":1,"reason":"خطأ في الحساب","estimated_files":5,"complexity":"medium"}';
+      const content =
+        data.choices?.[0]?.message?.content ??
+        '{"credits":1,"reason":"خطأ في الحساب","estimated_files":5,"complexity":"medium"}';
       return new Response(content, {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
