@@ -26,6 +26,12 @@ async function getOrCreateVercelProject(
   token: string,
   name: string
 ): Promise<{ id: string; name: string }> {
+  // Try to get existing project first
+  const getRes = await fetch(`https://api.vercel.com/v9/projects/${encodeURIComponent(name)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (getRes.ok) return await getRes.json();
+
   // Try create
   const createRes = await fetch("https://api.vercel.com/v9/projects", {
     method: "POST",
@@ -36,11 +42,10 @@ async function getOrCreateVercelProject(
   if (createRes.ok) return await createRes.json();
 
   const err = await createRes.json().catch(() => ({}));
-  if (err?.error?.code === "project_already_exists") {
-    const getRes = await fetch(`https://api.vercel.com/v9/projects/${name}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (getRes.ok) return await getRes.json();
+  
+  // If token is invalid, give a clear message
+  if (err?.error?.invalidToken || err?.error?.code === "forbidden") {
+    throw new Error("Your Vercel token has expired or is invalid. Please reconnect your Vercel account in Settings.");
   }
 
   throw new Error(`Failed to create/get Vercel project: ${JSON.stringify(err)}`);

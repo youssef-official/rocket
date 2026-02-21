@@ -8,7 +8,6 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 
 // Parse <FILE path="...">...</FILE> blocks
 function parseFileBlocks(text: string): Record<string, string> {
@@ -45,6 +44,15 @@ async function readSSEStream(response: Response): Promise<string> {
     }
   }
   return fullText;
+}
+
+// Credit calculation by file count
+function calculateCreditsByFileCount(fileCount: number, isFirstVersion: boolean): number {
+  if (isFirstVersion) return 2;
+  if (fileCount <= 2) return 0.5;
+  if (fileCount <= 3) return 1;
+  if (fileCount <= 5) return 3;
+  return 5;
 }
 
 serve(async (req) => {
@@ -92,6 +100,7 @@ serve(async (req) => {
       .single();
 
     const existingFiles = project?.files ? Object.keys(project.files as Record<string, unknown>) : [];
+    const isFirstVersion = existingFiles.length === 0;
     const existingFilesContext = existingFiles.length > 0
       ? `\n\nEXISTING FILES IN PROJECT (do targeted edits, don't recreate):\n${existingFiles.join('\n')}`
       : '';
@@ -99,7 +108,6 @@ serve(async (req) => {
     // Build messages for AI
     const messages = (job.messages as any[]) || [];
 
-    // Add existing files context to last user message
     const finalMessages = messages.map((m: any, idx: number) => {
       if (idx === messages.length - 1 && m.role === 'user') {
         const content = typeof m.content === 'string'
@@ -127,15 +135,16 @@ ANTI-ERROR CHECKLIST:
 - index.html has <link rel="icon" href="data:," />
 - NO exports of contexts from App.tsx`;
 
-    // Call AI gateway
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Call AI via Vercel AI gateway
+    const VERCEL_AI_KEY = Deno.env.get('VERCEL_AI_API_KEY') || Deno.env.get('LOVABLE_API_KEY')!;
+    const aiResponse = await fetch("https://ai-gateway.vercel.sh/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${VERCEL_AI_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-3-flash",
         messages: [{ role: "system", content: systemPrompt }, ...finalMessages],
         stream: true,
         max_tokens: 100000,
@@ -155,10 +164,7 @@ ANTI-ERROR CHECKLIST:
       });
     }
 
-    // Read the full SSE stream
     const fullResponse = await readSSEStream(aiResponse);
-
-    // Parse file blocks
     const newFiles = parseFileBlocks(fullResponse);
     const fileList = Object.keys(newFiles);
 
@@ -195,43 +201,47 @@ ANTI-ERROR CHECKLIST:
       action: existingFiles.includes(name) ? 'edited' : 'created',
     }));
 
-    // Calculate credits (simple: 1 per 10k tokens estimated)
-    const estimatedCredits = Math.max(1, Math.ceil(fullResponse.length / 5000));
+    // Calculate credits by file count (deduct AFTER generation)
+    const creditsToDeduct = calculateCreditsByFileCount(fileList.length, isFirstVersion);
 
-    // Deduct credits from user_plans
+    // Deduct credits: daily first, then monthly
     try {
       const { data: planData } = await supabase
         .from('user_plans')
-        .select('credits_used_today, total_credits_used')
+        .select('daily_credits, credits_used_today, total_credits_used, plan')
         .eq('user_id', job.user_id)
         .single();
 
       if (planData) {
+        const dailyRemaining = Math.max(0, (planData.daily_credits || 5) - (planData.credits_used_today || 0));
+        const dailyDeduct = Math.min(creditsToDeduct, dailyRemaining);
+        const monthlyDeduct = creditsToDeduct - dailyDeduct;
+
         await supabase
           .from('user_plans')
           .update({
-            credits_used_today: (planData.credits_used_today || 0) + estimatedCredits,
-            total_credits_used: (planData.total_credits_used || 0) + estimatedCredits,
+            credits_used_today: (planData.credits_used_today || 0) + dailyDeduct,
+            total_credits_used: (planData.total_credits_used || 0) + monthlyDeduct,
+            updated_at: new Date().toISOString(),
           })
           .eq('user_id', job.user_id);
       }
 
-      // Record transaction
       await supabase.from('credit_transactions').insert({
         user_id: job.user_id,
         project_id: job.project_id,
-        credits_used: estimatedCredits,
+        credits_used: creditsToDeduct,
         work_type: 'background_generation',
-        description: `Background: Generated ${fileList.length} files`,
+        description: `Background: ${fileList.length} files, ${creditsToDeduct} credits`,
       });
     } catch (e) {
       console.error('Credit deduction error:', e);
     }
 
-    // Mark job as done with results
+    // Mark job as done
     const resultMessage = fileList.length > 0
-      ? `✅ تم الانتهاء! تم إنشاء/تعديل ${fileList.length} ملف في الخلفية.\n\n${fileList.slice(0, 8).map(f => `- ${f}`).join('\n')}${fileList.length > 8 ? `\n... و ${fileList.length - 8} ملفات أخرى` : ''}`
-      : '✅ تمت المعالجة في الخلفية.';
+      ? `✅ Done! Generated/modified ${fileList.length} files in background.\n\n${fileList.slice(0, 8).map(f => `- ${f}`).join('\n')}${fileList.length > 8 ? `\n... and ${fileList.length - 8} more files` : ''}`
+      : '✅ Background processing complete.';
 
     await supabase
       .from('generation_jobs')
@@ -240,7 +250,7 @@ ANTI-ERROR CHECKLIST:
         result_files: mergedFiles,
         result_message: resultMessage,
         result_actions: actions,
-        credits_used: estimatedCredits,
+        credits_used: creditsToDeduct,
       })
       .eq('id', job_id);
 

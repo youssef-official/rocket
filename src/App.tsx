@@ -274,22 +274,7 @@ const ProjectEditorRoute = () => {
             }]);
           }
 
-          // DEDUCT CREDITS BEFORE generation (first version = 2 credits)
-          if (user) {
-            try {
-              const { calculateCreditsByFileCount } = await import('@/services/directAiService');
-              const creditsToDeduct = calculateCreditsByFileCount(0, true); // isFirstVersion = true → 2 credits
-              await deductPointsAfterGeneration(
-                user.id,
-                localProject.id,
-                `Initial generation`,
-                creditsToDeduct
-              );
-              queryClient.invalidateQueries({ queryKey: ['userPlan'] });
-            } catch (e) {
-              console.error('Failed to pre-deduct credits:', e);
-            }
-          }
+          // Credits will be deducted AFTER generation completes (in onComplete)
 
           // Build prompt with safety rules
           const userPrompt = `${prompt}\n\n[STRICT RULE: Every component used MUST be imported. If you use <AnimatePresence>, you MUST add: import { motion, AnimatePresence } from "framer-motion"; at the top of the file. NO EXCEPTIONS.]`;
@@ -407,7 +392,17 @@ const ProjectEditorRoute = () => {
                   summary
                 }));
 
-                // Credits already deducted before generation started
+                // Deduct credits AFTER generation (first version = 2 credits)
+                if (user) {
+                  try {
+                    const { calculateCreditsByFileCount } = await import('@/services/directAiService');
+                    const creditsToDeduct = calculateCreditsByFileCount(activities.length, true);
+                    await deductPointsAfterGeneration(user.id, localProject.id, `Initial: ${activities.length} files`, creditsToDeduct);
+                    queryClient.invalidateQueries({ queryKey: ['userPlan'] });
+                  } catch (e) {
+                    console.error('Credit deduction failed:', e);
+                  }
+                }
 
                 // Generate suggestions after completion
                 if (localProject.description) {
@@ -660,15 +655,7 @@ const ProjectEditorRoute = () => {
       let fullResponse = '';
       const detectedFiles = new Set<string>();
 
-      // DEDUCT CREDITS BEFORE generation (1 credit pre-deduct, adjusted after by file count)
-      if (user) {
-        try {
-          await deductPointsAfterGeneration(user.id, localProject.id, `Pre-deduct: ${content.slice(0, 50)}`, 1);
-          queryClient.invalidateQueries({ queryKey: ['userPlan'] });
-        } catch (e) {
-          console.error('Failed to pre-deduct credits:', e);
-        }
-      }
+      // Credits will be deducted AFTER generation completes (in onComplete)
 
       // Pass existing file list so AI knows what files exist and can do targeted edits
       const existingFilesList = Object.keys(localProject.files);
@@ -739,7 +726,17 @@ const ProjectEditorRoute = () => {
               setLocalProject(prev => prev ? { ...prev, files: mergedFiles } : null);
             }
 
-            // Credits already deducted before generation started
+            // Deduct credits AFTER generation based on file count
+            if (user) {
+              try {
+                const { calculateCreditsByFileCount } = await import('@/services/directAiService');
+                const creditsToDeduct = calculateCreditsByFileCount(fileList.length, false);
+                await deductPointsAfterGeneration(user.id, localProject.id, `Edit: ${fileList.length} files`, creditsToDeduct);
+                queryClient.invalidateQueries({ queryKey: ['userPlan'] });
+              } catch (e) {
+                console.error('Credit deduction failed:', e);
+              }
+            }
 
             // Mark all steps as complete
             const allStepsComplete = planLines.map((_, i) => i);
@@ -1163,6 +1160,7 @@ import Terms from "@/pages/Terms";
 import { NewVibeTool } from "@/pages/NewVibeTool";
 import AiForAll from "@/pages/AiForAll";
 import SupabaseConnect from "@/pages/SupabaseConnect";
+import GitHubCallback from "@/pages/GitHubCallback";
 // AdminPanel already imported at the top
 
 const App = () => (
@@ -1189,6 +1187,7 @@ const App = () => (
               <Route path="/new-vibe-tool" element={<NewVibeTool />} />
               <Route path="/oauth/consent" element={<OAuthConsent />} />
               <Route path="/oauth/vercel/callback" element={<VercelOAuthCallback />} />
+              <Route path="/oauth/github/callback" element={<GitHubCallback />} />
               <Route path="/ai-for-all" element={<AiForAll />} />
               <Route path="/supabase-connect" element={<SupabaseConnect />} />
               <Route path="/" element={<AppContent />} />

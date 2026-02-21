@@ -59,10 +59,7 @@ serve(async (req) => {
         client_id: VERCEL_CLIENT_ID,
         redirect_uri: redirectUri,
         response_type: "code",
-        scope: "openid email profile offline_access",
         state: oauthState,
-        code_challenge: codeChallenge,
-        code_challenge_method: "S256",
       });
 
       const authUrl = `https://vercel.com/oauth/authorize?${queryParams.toString()}`;
@@ -92,14 +89,13 @@ serve(async (req) => {
 
       const codeVerifier = stored.code_verifier;
 
-      const tokenResponse = await fetch("https://api.vercel.com/login/oauth/token", {
+      const tokenResponse = await fetch("https://api.vercel.com/v2/oauth/access_token", {
         method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
-          grant_type: "authorization_code",
           client_id: VERCEL_CLIENT_ID,
           client_secret: VERCEL_CLIENT_SECRET,
           code,
-          code_verifier: codeVerifier,
           redirect_uri: redirectUri,
         }),
       });
@@ -116,14 +112,15 @@ serve(async (req) => {
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
 
-      const userResponse = await fetch("https://api.vercel.com/login/oauth/userinfo", {
+      // Get user info from Vercel v2 API
+      const userResponse = await fetch("https://api.vercel.com/v2/user", {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 
       let username = "";
       if (userResponse.ok) {
         const userData = await userResponse.json();
-        username = userData.preferred_username || userData.name || userData.email || "";
+        username = userData.user?.username || userData.user?.name || userData.user?.email || "";
       }
 
       return new Response(JSON.stringify({ access_token: accessToken, username }), {

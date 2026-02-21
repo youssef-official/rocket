@@ -108,7 +108,7 @@ export async function deductCredits(
     const totalRemaining = dailyRemaining + monthlyRemaining;
 
     // If not enough credits, deduct whatever remains (allow partial)
-    const actual = Math.max(0.5, creditsToDeduct);
+    const actual = creditsToDeduct;
     const toDeduct = Math.min(actual, totalRemaining);
 
     if (toDeduct <= 0) {

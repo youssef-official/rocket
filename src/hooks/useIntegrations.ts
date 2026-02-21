@@ -9,6 +9,9 @@ interface UserIntegrations {
   vercel_token: string | null;
   vercel_username: string | null;
   vercel_connected: boolean;
+  github_token: string | null;
+  github_username: string | null;
+  github_connected: boolean;
 }
 
 export function useIntegrations() {
@@ -182,6 +185,102 @@ export function useIntegrations() {
     }
   };
 
+  // Start GitHub OAuth flow
+  const startGitHubOAuth = async () => {
+    const redirectUri = `${window.location.origin}/oauth/github/callback`;
+    sessionStorage.setItem('github_return_to', window.location.pathname);
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/github-push`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({ action: 'get-auth-url', redirectUri }),
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Error starting GitHub OAuth:', error);
+      toast({ title: 'Error', description: 'Failed to start GitHub login.', variant: 'destructive' });
+    }
+  };
+
+  // Handle GitHub OAuth callback
+  const handleGitHubCallback = async (code: string, state: string): Promise<boolean> => {
+    if (!user) return false;
+    const redirectUri = `${window.location.origin}/oauth/github/callback`;
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/github-push`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({ action: 'exchange-code', code, state, redirectUri }),
+      });
+      const data = await response.json();
+      
+      if (data.token) {
+        await supabase.from('user_integrations').upsert({
+          user_id: user.id,
+          github_token: data.token,
+          github_username: data.username,
+          github_connected: true,
+        }, { onConflict: 'user_id' });
+        
+        toast({ title: 'GitHub Connected', description: `Connected as ${data.username}` });
+        await fetchIntegrations();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error exchanging GitHub code:', error);
+      toast({ title: 'Error', description: 'Failed to connect GitHub', variant: 'destructive' });
+      return false;
+    }
+  };
+
+  // Push to GitHub
+  const pushToGitHub = async (repoName: string, files: Record<string, { content: string }>, commitMessage?: string): Promise<{ repo_url: string; full_name: string } | null> => {
+    if (!integrations?.github_token) return null;
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/github-push`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({
+          action: 'push',
+          token: integrations.github_token,
+          repoName,
+          files,
+          commitMessage: commitMessage || 'Update from Vivora X',
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast({ title: 'Pushed to GitHub', description: `Code pushed to ${data.full_name}` });
+        return { repo_url: data.repo_url, full_name: data.full_name };
+      }
+      throw new Error(data.error);
+    } catch (error: any) {
+      toast({ title: 'Push Failed', description: error.message, variant: 'destructive' });
+      return null;
+    }
+  };
+
+  const disconnectGitHub = async (): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      await supabase.from('user_integrations').update({
+        github_token: null,
+        github_username: null,
+        github_connected: false,
+      }).eq('user_id', user.id);
+      toast({ title: 'GitHub Disconnected' });
+      await fetchIntegrations();
+      return true;
+    } catch { return false; }
+  };
+
   return {
     integrations,
     loading,
@@ -189,6 +288,10 @@ export function useIntegrations() {
     startVercelOAuth,
     handleVercelCallback,
     disconnectVercel,
+    startGitHubOAuth,
+    handleGitHubCallback,
+    pushToGitHub,
+    disconnectGitHub,
     refetch: fetchIntegrations,
   };
 }
