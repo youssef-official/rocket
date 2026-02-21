@@ -20,6 +20,7 @@ export interface ProjectData {
   generatedName?: string;
   buildingPlan?: string[];
   generationStatus?: string;
+  githubRepoUrl?: string;
 }
 
 export interface ChatMessage {
@@ -54,6 +55,7 @@ export interface Project {
   generatedName?: string;
   buildingPlan?: string[];
   generationStatus?: string;
+  githubRepoUrl?: string;
 }
 
 export interface FileActivity {

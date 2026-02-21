@@ -11,6 +11,7 @@ import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
 import { VisualEditMode } from './VisualEditMode';
 import { VercelDeployDialog } from './IntegrationDialogs';
+import { GitHubPushDialog } from './GitHubPushDialog';
 import { DatabasePanel } from './DatabasePanel';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -556,6 +557,15 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             {t('editor.share')}
           </button>
 
+          {/* GitHub Push Button */}
+          <button
+            onClick={() => setShowGitHubPush(true)}
+            className="p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+            title="Push to GitHub"
+          >
+            <img src={githubLogo} alt="GitHub" className="w-4 h-4 dark:invert" />
+          </button>
+
           {/* Publish Button */}
           <button
             onClick={() => setShowVercelDialog(true)}
@@ -820,8 +830,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         )}
       </div>
 
-      {/* Integration Dialogs - Vercel only */}
-
+      {/* Integration Dialogs */}
       <VercelDeployDialog
         open={showVercelDialog}
         onOpenChange={setShowVercelDialog}
@@ -829,9 +838,17 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         projectFiles={project?.files || {}}
         onDeployed={setDeployedUrl}
         onSendErrorToChat={(errorLog) => {
-          // Send the deploy error to the AI chat for auto-fix
           onSendMessage(`[AUTO-FIX] The deployment to Vercel failed. Please analyze the error log and fix any issues in the code:\n\n${errorLog}`, false);
         }}
+      />
+
+      <GitHubPushDialog
+        open={showGitHubPush}
+        onOpenChange={setShowGitHubPush}
+        projectName={project?.name || 'untitled-project'}
+        projectFiles={project?.files || {}}
+        projectId={project?.id || null}
+        existingRepoUrl={project?.githubRepoUrl || null}
       />
     </div>
   );

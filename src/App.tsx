@@ -117,6 +117,7 @@ const ProjectEditorRoute = () => {
           publishedSlug: dbProject.publishedSlug,
           createdAt: dbProject.createdAt,
           updatedAt: dbProject.updatedAt,
+          githubRepoUrl: dbProject.githubRepoUrl,
         });
 
         // Restore generation state from database if available
@@ -981,6 +982,7 @@ const AppContent = () => {
           publishedSlug: dbProject.publishedSlug,
           createdAt: dbProject.createdAt,
           updatedAt: dbProject.updatedAt,
+          githubRepoUrl: dbProject.githubRepoUrl,
         });
       }
     }
