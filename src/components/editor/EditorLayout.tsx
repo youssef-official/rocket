@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Code2, Eye, LogOut, Settings, HelpCircle, CreditCard, Moon, Sun,
   ChevronDown, Download, Home, ArrowLeft, Clock, Pencil, Eye as EyeIcon,
-  FolderOpen, Upload, Coins, Database
+  FolderOpen, Upload, Coins, Database, GitBranch
 } from 'lucide-react';
+import githubLogo from '@/assets/logos/github.svg';
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
@@ -106,6 +107,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [showVisualEdit, setShowVisualEdit] = useState(false);
   // GitHub removed - Vercel only
   const [showVercelDialog, setShowVercelDialog] = useState(false);
+  const [showGitHubPush, setShowGitHubPush] = useState(false);
+  const [gitHubRepoName, setGitHubRepoName] = useState('');
   // connectedRepoUrl removed
   const [deployedUrl, setDeployedUrl] = useState<string | null>(null);
   const isResizing = useRef(false);

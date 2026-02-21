@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ArrowLeft, HelpCircle, Sparkles, CreditCard, Zap, Shield, Globe } from 'lucide-react';
+import { ChevronDown, ArrowLeft, HelpCircle, Sparkles, CreditCard, Zap, Shield, Globe, GitBranch } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { Footer } from '@/components/shared/Footer';
-import { useLanguage } from '@/contexts/LanguageContext';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 interface FAQItem {
@@ -20,7 +19,7 @@ const faqData: FAQItem[] = [
   },
   {
     question: "How do credits work?",
-    answer: "Each successful code generation costs 1 credit. Daily credits reset at midnight UTC, and monthly credits are tied to your billing period. Credits are deducted from daily allowance first, then monthly. You can track your usage in the user menu.",
+    answer: "Credits are deducted AFTER each successful generation based on the number of files modified:\n\n• First version (new project): 2 credits\n• 1–2 files modified: 0.5 credits\n• 2–3 files modified: 1 credit\n• 4–5 files modified: 3 credits\n• 6+ files modified: 5 credits\n\nAll plans get 5 daily credits that reset at midnight UTC. Paid plans also receive monthly credits (Builder: 40, Creator: 50, Scale: 70). Daily credits are used first, then monthly credits. If your remaining balance is less than required, whatever you have left is deducted (partial usage allowed).",
     icon: CreditCard
   },
   {
@@ -30,37 +29,36 @@ const faqData: FAQItem[] = [
   },
   {
     question: "Is my code secure?",
-    answer: "Yes! Your code is stored securely and you can make projects private. We use industry-standard encryption and never share your code with third parties. You retain full ownership of everything you create.",
+    answer: "Yes! Your code is stored securely and you can make projects private (paid plans). We use industry-standard encryption and never share your code with third parties. You retain full ownership of everything you create.",
     icon: Shield
   },
   {
     question: "Can I deploy my projects?",
-    answer: "Absolutely! You can deploy directly to Vercel with one click. Your projects get a live URL that you can share with anyone. You can also download your project as a ZIP file to host anywhere.",
+    answer: "Absolutely! You can deploy directly to Vercel with one click, or push your code to a GitHub repository. Your projects get a live URL that you can share with anyone. Paid plans can also download projects as ZIP files.",
     icon: Globe
   },
   {
-    question: "What frameworks does Vivora X support?",
-    answer: "Vivora X generates React applications with TypeScript and Tailwind CSS. The generated code uses modern best practices including Vite for fast development, shadcn/ui components, and Framer Motion for animations.",
-    icon: Sparkles
+    question: "Can I push my code to GitHub?",
+    answer: "Yes! Connect your GitHub account in the editor, then push your project to any repository. Each new version can be pushed as a new commit. Your repo link is saved per project for easy updates.",
+    icon: GitBranch
   },
   {
-    question: "Can I use my own images?",
-    answer: "Yes! You can drag and drop images directly into the chat or use the attachment button. The AI can analyze your images and incorporate them into your designs, or use them as inspiration for generating new layouts.",
-    icon: HelpCircle
+    question: "What are the plan differences?",
+    answer: "• Free (Spark): 5 daily credits, public projects only, no ZIP export\n• Builder ($9/mo): 5 daily + 40 monthly credits, ZIP export\n• Creator ($15/mo): 5 daily + 50 monthly credits, private projects, ZIP export\n• Scale ($22/mo): 5 daily + 70 monthly credits, private projects, ZIP export, priority access",
+    icon: CreditCard
   },
   {
     question: "How do I get more credits?",
-    answer: "You can upgrade your plan to get more monthly credits. All plans include daily credits that reset at midnight UTC. Higher tiers provide more credits and additional features like private projects and priority generation.",
+    answer: "Upgrade your plan to get monthly credits on top of your daily allowance. Daily credits (5) reset every midnight UTC. Monthly credits renew when you renew your subscription. If you don't renew, you revert to the free plan.",
     icon: CreditCard
   }
 ];
 
 export const FAQ: React.FC = () => {
-  const { isRTL } = useLanguage();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen flex flex-col">
       <div 
         className="flex-1 relative"
         style={{
@@ -70,30 +68,26 @@ export const FAQ: React.FC = () => {
           backgroundAttachment: 'fixed',
         }}
       >
-        {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/70" />
 
-        {/* Header */}
         <header className="relative z-10 px-6 py-4 border-b border-white/10">
-          <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <a href="/" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="/" className="flex items-center gap-2">
               <VivoraLogo size="md" />
               <span className="text-white/60">|</span>
               <span className="text-white font-medium">FAQ</span>
             </a>
             <a 
               href="/"
-              className={`flex items-center gap-2 text-white/80 hover:text-white transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+              className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
             >
-              <ArrowLeft className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
+              <ArrowLeft className="w-4 h-4" />
               Back to Home
             </a>
           </div>
         </header>
 
-        {/* Main Content */}
         <div className="relative z-10 max-w-4xl mx-auto px-6 py-16">
-          {/* Title */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -107,11 +101,10 @@ export const FAQ: React.FC = () => {
               Got <span className="text-pink-400">Questions?</span>
             </h1>
             <p className="text-white/70 text-lg max-w-2xl mx-auto">
-              Find answers to the most common questions about Vivora X and how it can help you build amazing web applications.
+              Find answers to the most common questions about Vivora X.
             </p>
           </motion.div>
 
-          {/* FAQ Items */}
           <div className="space-y-4">
             {faqData.map((item, index) => (
               <motion.div
@@ -123,7 +116,7 @@ export const FAQ: React.FC = () => {
               >
                 <button
                   onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                  className={`w-full flex items-center gap-4 p-6 text-left hover:bg-white/5 transition-colors ${isRTL ? 'flex-row-reverse text-right' : ''}`}
+                  className="w-full flex items-center gap-4 p-6 text-left hover:bg-white/5 transition-colors"
                 >
                   <div className="w-12 h-12 rounded-xl bg-pink-500/20 flex items-center justify-center flex-shrink-0">
                     <item.icon className="w-6 h-6 text-pink-400" />
@@ -148,8 +141,8 @@ export const FAQ: React.FC = () => {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className={`px-6 pb-6 ${isRTL ? 'pr-24 text-right' : 'pl-24'}`}>
-                        <p className="text-white/70 leading-relaxed">
+                      <div className="px-6 pb-6 pl-24">
+                        <p className="text-white/70 leading-relaxed whitespace-pre-line">
                           {item.answer}
                         </p>
                       </div>
@@ -160,7 +153,6 @@ export const FAQ: React.FC = () => {
             ))}
           </div>
 
-          {/* Contact Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

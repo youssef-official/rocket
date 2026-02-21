@@ -23,9 +23,9 @@ export async function deductPointsAfterGeneration(
 export function calculateCreditsByFileCount(fileCount: number, isFirstVersion: boolean): number {
     if (isFirstVersion) return 2; // First version always costs 2 credits
     if (fileCount <= 2) return 0.5;
-    if (fileCount <= 5) return 1;
-    if (fileCount <= 10) return 1.5;
-    return 3; // 10+ files
+    if (fileCount <= 3) return 1;
+    if (fileCount <= 5) return 3;
+    return 5; // 6+ files
 }
 
 // Legacy function - no longer calls AI, uses file count instead
