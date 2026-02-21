@@ -13,10 +13,10 @@ const features = [
 ];
 
 const plans = [
-  { name: 'Spark', price: 'Free', credits: '3 daily', monthly: '—', color: 'from-gray-400 to-gray-500' },
-  { name: 'Builder', price: '$9/mo', credits: '40 daily', monthly: '—', color: 'from-blue-400 to-blue-600', popular: false },
-  { name: 'Creator', price: '$15/mo', credits: '50 daily', monthly: '—', color: 'from-pink-400 to-pink-600', popular: true },
-  { name: 'Scale', price: '$22/mo', credits: '70 daily', monthly: '—', color: 'from-purple-400 to-purple-600' },
+  { name: 'Spark', price: 'Free', daily: '5/day', monthly: '—', color: 'from-gray-400 to-gray-500' },
+  { name: 'Builder', price: '$9/mo', daily: '5/day', monthly: '+40/mo', color: 'from-blue-400 to-blue-600' },
+  { name: 'Creator', price: '$15/mo', daily: '5/day', monthly: '+50/mo', color: 'from-pink-400 to-pink-600', popular: true },
+  { name: 'Scale', price: '$22/mo', daily: '5/day', monthly: '+70/mo', color: 'from-purple-400 to-purple-600' },
 ];
 
 const whyDifferent = [
@@ -34,9 +34,7 @@ export const NewVibeTool: React.FC = () => {
       {/* Header */}
       <header className="relative z-10 px-6 py-4 border-b border-white/10">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
-            <VivoraLogo size="md" />
-          </a>
+          <a href="/" className="flex items-center gap-2"><VivoraLogo size="md" /></a>
           <a href="/" className="flex items-center gap-2 text-white/70 hover:text-white transition-colors text-sm">
             <ArrowLeft className="w-4 h-4" /> Back to Home
           </a>
@@ -52,8 +50,7 @@ export const NewVibeTool: React.FC = () => {
               <span className="text-pink-300 text-sm font-medium">A New Era of Web Development</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Vivora <span className="text-pink-400">X</span>
-              <br />
+              Vivora <span className="text-pink-400">X</span><br />
               <span className="text-3xl md:text-5xl text-white/80">The Vibe Coding Revolution</span>
             </h1>
             <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto mb-8 leading-relaxed">
@@ -66,7 +63,7 @@ export const NewVibeTool: React.FC = () => {
         </div>
       </section>
 
-      {/* What Makes Us Different */}
+      {/* Why Different */}
       <section className="relative z-10 py-16 px-6">
         <div className="max-w-5xl mx-auto">
           <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="text-3xl md:text-4xl font-bold text-white text-center mb-12" style={{ fontFamily: "'Playfair Display', serif" }}>
@@ -123,9 +120,11 @@ export const NewVibeTool: React.FC = () => {
                 <h3 className="text-lg font-bold text-white mb-1">{plan.name}</h3>
                 <div className="text-2xl font-bold text-white mb-4">{plan.price}</div>
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-white/70"><Check className="w-4 h-4 text-green-400" /> {plan.credits} credits</div>
-                  <div className="flex items-center gap-2 text-white/70"><Check className="w-4 h-4 text-green-400" /> {plan.monthly} monthly bonus</div>
-                  <div className="flex items-center gap-2 text-white/70"><Check className="w-4 h-4 text-green-400" /> Unlimited projects</div>
+                  <div className="flex items-center gap-2 text-white/70"><Check className="w-4 h-4 text-green-400" /> {plan.daily} daily credits</div>
+                  {plan.monthly !== '—' && (
+                    <div className="flex items-center gap-2 text-white/70"><Check className="w-4 h-4 text-green-400" /> {plan.monthly} monthly bonus</div>
+                  )}
+                  <div className="flex items-center gap-2 text-white/70"><Check className="w-4 h-4 text-green-400" /> Vercel Deploy</div>
                 </div>
                 <a href="/pricing" className={`mt-6 block text-center py-2.5 rounded-xl font-medium text-sm transition-all ${plan.popular ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:shadow-lg' : 'bg-white/10 text-white hover:bg-white/20'}`}>
                   {plan.price === 'Free' ? 'Get Started' : 'Upgrade Now'}
@@ -151,9 +150,7 @@ export const NewVibeTool: React.FC = () => {
         </div>
       </section>
 
-      <div className="relative z-10">
-        <Footer />
-      </div>
+      <div className="relative z-10"><Footer /></div>
     </div>
   );
 };

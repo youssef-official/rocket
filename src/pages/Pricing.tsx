@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, X, Zap, Star, Crown, Rocket, ArrowLeft, Globe, Server } from 'lucide-react';
+import { Check, X, Zap, Star, Crown, Rocket, ArrowLeft, Globe } from 'lucide-react';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,13 +16,12 @@ const plans: { key: PlanType; icon: React.ReactNode; color: string; emoji: strin
 ];
 
 export const Pricing: React.FC = () => {
-  const { t, isRTL } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
 
   return (
     <div 
       className="min-h-screen relative overflow-hidden"
-      dir={isRTL ? 'rtl' : 'ltr'}
       style={{
         backgroundImage: `url(${spaceHeroBg})`,
         backgroundSize: 'cover',
@@ -34,15 +33,12 @@ export const Pricing: React.FC = () => {
 
       {/* Header */}
       <header className="relative z-10 px-6 py-4">
-        <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <a href="/" className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <a href="/" className="flex items-center gap-2">
             <VivoraXLogo size="md" />
           </a>
-          <a 
-            href="/"
-            className={`flex items-center gap-2 text-white/80 hover:text-white transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
-          >
-            <ArrowLeft className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
+          <a href="/" className="flex items-center gap-2 text-white/80 hover:text-white transition-colors">
+            <ArrowLeft className="w-4 h-4" />
             {t('nav.backToHome')}
           </a>
         </div>
@@ -78,7 +74,7 @@ export const Pricing: React.FC = () => {
                     </div>
                   )}
                   <div className={`p-5 flex flex-col flex-1 ${popular ? 'pt-9' : ''}`}>
-                    <div className={`flex items-center gap-3 mb-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div className="flex items-center gap-3 mb-3">
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
                         color === 'gray' ? 'bg-gray-500/20 text-gray-400' :
                         color === 'blue' ? 'bg-blue-500/20 text-blue-400' :
@@ -98,28 +94,18 @@ export const Pricing: React.FC = () => {
                     {/* Stats */}
                     <div className="space-y-2 mb-4 text-sm">
                       <div className="flex justify-between text-white/70">
-                        <span>Credits / day</span>
-                        <span className="font-bold text-yellow-400">{config.dailyCredits}</span>
+                        <span>Daily Credits</span>
+                        <span className="font-bold text-yellow-400">{config.dailyCredits}/day</span>
                       </div>
-                      <div className="flex justify-between text-white/70">
-                        <span>Max Tokens</span>
-                        <span className="font-bold text-blue-400">{(config.maxTokens / 1000).toFixed(0)}k</span>
-                      </div>
-                      <div className="flex justify-between text-white/70">
-                        <span>AI Calls</span>
-                        <span className="font-bold text-green-400">
-                          {config.features.allCalls ? 'All calls' : 'Code only'}
-                        </span>
-                      </div>
+                      {config.monthlyCredits > 0 && (
+                        <div className="flex justify-between text-white/70">
+                          <span>Monthly Credits</span>
+                          <span className="font-bold text-green-400">+{config.monthlyCredits}/mo</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-white/70">
                         <span>Publishing</span>
-                        <span className="font-bold text-purple-400 text-xs">Vivora + Vercel ✅</span>
-                      </div>
-                      <div className="flex justify-between text-white/70">
-                        <span>Vivora Projects</span>
-                        <span className="font-bold text-pink-400">
-                          {config.vivoraProjects === 1 ? '1 project' : `${config.vivoraProjects} projects`}
-                        </span>
+                        <span className="font-bold text-purple-400 text-xs">Vercel ✅</span>
                       </div>
                     </div>
 
@@ -130,7 +116,7 @@ export const Pricing: React.FC = () => {
                         { label: 'Private Projects', v: config.features.privateProjects },
                         { label: 'Priority Access', v: config.features.priorityAccess },
                       ].map(f => (
-                        <li key={f.label} className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <li key={f.label} className="flex items-center gap-2">
                           {f.v ? <Check className="w-3.5 h-3.5 text-green-400 flex-shrink-0" /> : <X className="w-3.5 h-3.5 text-red-400/50 flex-shrink-0" />}
                           <span className={f.v ? 'text-white/80' : 'text-white/40 line-through'}>{f.label}</span>
                         </li>
@@ -172,13 +158,12 @@ export const Pricing: React.FC = () => {
                 <tbody className="divide-y divide-white/5">
                   {[
                     { label: 'Price', vals: ['$0', '$9/mo', '$15/mo', '$22/mo'] },
-                    { label: 'Credits / day', vals: ['3', '40', '50', '70'] },
-                    { label: 'Max Tokens', vals: ['8k', '30k', '40k', '60k'] },
-                    { label: 'AI Calls', vals: ['Code only', 'All calls', 'All calls', 'All calls + Priority'] },
-                    { label: 'Vivora Hosting', vals: ['1 project', '5 projects', '10 projects', '15 projects'] },
-                    { label: 'Vercel Deploy', vals: ['✅ Unlimited', '✅ Unlimited', '✅ Unlimited', '✅ Unlimited'] },
+                    { label: 'Daily Credits', vals: ['5', '5', '5', '5'] },
+                    { label: 'Monthly Credits', vals: ['—', '+40', '+50', '+70'] },
+                    { label: 'Vercel Deploy', vals: ['✅', '✅', '✅', '✅'] },
                     { label: 'ZIP Export', vals: ['❌', '✅', '✅', '✅'] },
                     { label: 'Private Projects', vals: ['❌', '❌', '✅', '✅'] },
+                    { label: 'Priority Access', vals: ['❌', '❌', '❌', '✅'] },
                   ].map((row, i) => (
                     <tr key={row.label} className={i % 2 === 0 ? '' : 'bg-white/3'}>
                       <td className="text-white/70 px-5 py-3.5 text-sm font-medium">{row.label}</td>
@@ -192,23 +177,8 @@ export const Pricing: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Publishing Options */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="grid md:grid-cols-2 gap-6 mb-12">
-            <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center">
-                  <Server className="w-5 h-5 text-orange-400" />
-                </div>
-                <h3 className="text-lg font-bold text-white">Vivora Hosting</h3>
-              </div>
-              <p className="text-white/70 text-sm mb-4">Deploy to <code className="text-pink-400">yourname.vivorax.online</code> — powered by Cloudflare Pages. Fast, global CDN.</p>
-              <ul className="space-y-2 text-sm text-white/70">
-                <li>✅ Custom subdomain: <code className="text-blue-400">project.vivorax.online</code></li>
-                <li>✅ SSL included automatically</li>
-                <li>✅ Global CDN via Cloudflare</li>
-                <li>⚡ No Vercel account needed</li>
-              </ul>
-            </div>
+          {/* Publishing - Vercel Only */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="max-w-2xl mx-auto mb-12">
             <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
@@ -231,9 +201,9 @@ export const Pricing: React.FC = () => {
             <h2 className="text-2xl font-bold text-white mb-4">❓ {t('pricing.faq')}</h2>
             <div className="grid md:grid-cols-3 gap-5 text-left max-w-4xl mx-auto">
               {[
-                { q: 'How are credits used?', a: 'Each AI generation uses credits based on complexity (0.5–3 credits). Simple edits cost less.' },
-                { q: 'When do credits reset?', a: 'Daily credits reset at UTC midnight every day.' },
-                { q: 'What is Vivora Hosting?', a: 'Deploy to yourname.vivorax.online instantly. Free plan gets 1 project, paid plans get more.' },
+                { q: 'How are credits used?', a: 'Each AI generation uses credits based on file count (0.5–3 credits). Simple edits cost less.' },
+                { q: 'When do credits reset?', a: 'Daily credits (5/day) reset at UTC midnight. Monthly credits are granted on subscription renewal.' },
+                { q: 'Can I cancel anytime?', a: 'Yes! If you cancel, you keep your plan until the end of the billing cycle, then revert to Free.' },
               ].map((faq) => (
                 <div key={faq.q} className="bg-white/5 rounded-xl p-5 border border-white/10">
                   <h3 className="font-semibold text-white mb-2 text-sm">{faq.q}</h3>

@@ -7,7 +7,7 @@ export const LanguageSelector: React.FC = () => {
   const { language, setLanguage, isRTL } = useLanguage();
   const [showMenu, setShowMenu] = useState(false);
 
-  const languages: Language[] = ['en', 'ar', 'zh', 'ja', 'fr'];
+  const languages: Language[] = ['en', 'zh', 'ja', 'fr'];
 
   return (
     <div className="relative">

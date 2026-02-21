@@ -615,12 +615,8 @@ serve(async (req) => {
     // Use non-streaming for credit mode (need JSON response)
     const shouldStream = mode !== "credit";
 
-    // Model selection based on user plan
-    // Free (spark) or missing/empty plan → xiaomi/mimo-v2-flash
-    // Paid plans (builder | creator | scale) → google/gemini-3-flash
-    const PAID_PLANS = ["builder", "creator", "scale"];
-    const isPaid = typeof userPlan === "string" && PAID_PLANS.includes(userPlan);
-    const model = isPaid ? "google/gemini-3-flash" : "xiaomi/mimo-v2-flash";
+    // All plans use the same model
+    const model = "google/gemini-3-flash";
 
     const VERCEL_AI_KEY = Deno.env.get("VERCEL_AI_API_KEY") || LOVABLE_API_KEY;
     const gatewayUrl = "https://ai-gateway.vercel.sh/v1/chat/completions";
