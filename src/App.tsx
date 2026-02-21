@@ -242,7 +242,7 @@ const ProjectEditorRoute = () => {
 
           // Add explanation message for initial generation (keep it SHORT)
           const assistantId = crypto.randomUUID();
-           const planIntro = language === 'ar' ? '### **هعملك:**' : '### **What I will build:**';
+           const planIntro = '### **What I will build:**';
            const planContent = planLines.length > 0
              ? `${planIntro}\n${planLines.slice(0, 4).map((line) => `- ${line}`).join('\n')}\n\n`
              : '';

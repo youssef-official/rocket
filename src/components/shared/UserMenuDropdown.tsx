@@ -210,7 +210,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                 </button>
               )}
 
-              {/* Language Selector */}
+              {/* Language Selector (no Arabic) */}
               <LanguageSelector />
 
               {/* Theme Toggle */}

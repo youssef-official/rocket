@@ -35,8 +35,7 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(
     onClick,
     showText = true,
   }) => {
-    const { language, isRTL } = useLanguage();
-    const isArabic = language === 'ar';
+    const { isRTL } = useLanguage();
 
     /* ===============================
        Sizes
@@ -144,7 +143,7 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(
               flex items-center gap-1
               font-bold text-white
               ${textSizeClasses[size]}
-              ${isArabic ? 'text-[0.9em]' : ''}
+              
               ${isRTL ? 'flex-row-reverse' : ''}
             `}
           >
