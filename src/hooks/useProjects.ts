@@ -40,6 +40,7 @@ export function useProjects() {
         generatedName: p.generated_name || undefined,
         buildingPlan: p.building_plan || undefined,
         generationStatus: p.generation_status || undefined,
+        githubRepoUrl: p.github_repo_url || undefined,
       }));
 
       setProjects(mapped);
@@ -96,6 +97,7 @@ export function useProjects() {
         generatedName: data.generated_name || undefined,
         buildingPlan: data.building_plan || undefined,
         generationStatus: data.generation_status || undefined,
+        githubRepoUrl: data.github_repo_url || undefined,
       };
 
       setProjects((prev) => [newProject, ...prev]);
