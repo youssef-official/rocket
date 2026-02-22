@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ArrowLeft, HelpCircle, Sparkles, CreditCard, Zap, Shield, Globe, GitBranch } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { Footer } from '@/components/shared/Footer';
+import { SEOHead } from '@/components/shared/SEOHead';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 interface FAQItem {
@@ -59,6 +60,12 @@ export const FAQ: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEOHead
+        title="FAQ — Vivora X Frequently Asked Questions"
+        description="Find answers to common questions about Vivora X vibe coding platform. Learn about credits, plans, deployment, GitHub integration, and more."
+        keywords="vivora x faq, vibe coding questions, vivorax help, AI web builder faq, credits system, pricing plans"
+        canonical="https://vivorax.online/faq"
+      />
       <div 
         className="flex-1 relative"
         style={{

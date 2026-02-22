@@ -9,6 +9,7 @@ import {
   PenTool, Bell, Users, Wand2
 } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
+import { SEOHead } from '@/components/shared/SEOHead';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
@@ -425,6 +426,12 @@ export const Docs: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
+      <SEOHead
+        title="Documentation — Vivora X Guide"
+        description="Complete guide to using Vivora X vibe coding platform. Learn how to build React apps with AI, deploy to Vercel, manage credits, and integrate GitHub."
+        keywords="vivora x docs, vibe coding documentation, vivorax guide, AI web builder tutorial, React app builder guide, how to use vivora x"
+        canonical="https://vivorax.online/docs"
+      />
       <div 
         className="flex-1 relative"
         style={{

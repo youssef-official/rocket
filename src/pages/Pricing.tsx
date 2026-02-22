@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { PLAN_CONFIG, type PlanType } from '@/hooks/useUserPlan';
 import { PayPalButton } from '@/components/shared/PayPalButton';
+import { SEOHead } from '@/components/shared/SEOHead';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 const plans: { key: PlanType; icon: React.ReactNode; color: string; emoji: string; popular?: boolean }[] = [
@@ -29,6 +30,12 @@ export const Pricing: React.FC = () => {
         backgroundAttachment: 'fixed',
       }}
     >
+      <SEOHead
+        title="Pricing — Vivora X Plans & Credits"
+        description="Choose your Vivora X plan. Free, Builder, Creator, or Scale — get daily & monthly credits, ZIP export, private projects, and deploy to Vercel. Start vibe coding today."
+        keywords="vivora x pricing, vibe coding plans, vivorax credits, AI web builder pricing, free AI coding tool, web app builder plans"
+        canonical="https://vivorax.online/pricing"
+      />
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60" />
 
       {/* Header */}
