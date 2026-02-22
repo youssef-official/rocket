@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
+import { lovable } from '@/integrations/lovable/index';
 import authVideo from '@/assets/vivora-auth-video.mp4';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
@@ -162,6 +163,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                   {/* Google Button */}
                   <button
                     type="button"
+                    onClick={async () => {
+                      setIsLoading(true);
+                      setError(null);
+                      const { error } = await lovable.auth.signInWithOAuth("google", {
+                        redirect_uri: window.location.origin,
+                      });
+                      if (error) {
+                        setError(error.message || 'Google sign-in failed');
+                        setIsLoading(false);
+                      }
+                    }}
+                    disabled={isLoading}
                     className="w-full flex items-center justify-center gap-3 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium text-gray-800 transition-colors mb-6"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
