@@ -43,6 +43,12 @@ const Blog: React.FC = () => {
     fetchData();
   }, []);
 
+  // Get categories that actually have posts
+  const activeCategorySlugs = new Set(posts.map(p => p.category));
+  const visibleCategories = categories.filter(
+    c => c.slug === 'latest' || activeCategorySlugs.has(c.slug)
+  );
+
   const filteredPosts = activeCategory === 'latest'
     ? posts
     : posts.filter(p => p.category === activeCategory);
@@ -71,7 +77,7 @@ const Blog: React.FC = () => {
               <p className="text-sm text-muted-foreground mb-8">Notes from the Vivora team</p>
               <div className="w-8 h-px bg-border mb-6" />
               <nav className="flex flex-col gap-1">
-                {categories.map(cat => (
+                {visibleCategories.map(cat => (
                   <button
                     key={cat.id}
                     onClick={() => setSearchParams(cat.slug === 'latest' ? {} : { category: cat.slug })}
@@ -94,7 +100,7 @@ const Blog: React.FC = () => {
                 <h1 className="text-3xl font-bold mb-2">Blog</h1>
                 <p className="text-sm text-muted-foreground">Notes from the Vivora team</p>
                 <div className="flex gap-2 mt-4 flex-wrap">
-                  {categories.map(cat => (
+                  {visibleCategories.map(cat => (
                     <button
                       key={cat.id}
                       onClick={() => setSearchParams(cat.slug === 'latest' ? {} : { category: cat.slug })}
