@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Zap, Star, Shield, Layers, Globe, Rocket, Crown, Check, ArrowRight } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
-import { Footer } from '@/components/shared/Footer';
+
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 const features = [
@@ -150,7 +150,7 @@ export const NewVibeTool: React.FC = () => {
         </div>
       </section>
 
-      <div className="relative z-10"><Footer /></div>
+      
     </div>
   );
 };

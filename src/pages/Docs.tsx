@@ -9,7 +9,7 @@ import {
   PenTool, Bell, Users, Wand2
 } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
-import { Footer } from '@/components/shared/Footer';
+
 import { useLanguage } from '@/contexts/LanguageContext';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
@@ -558,7 +558,7 @@ export const Docs: React.FC = () => {
           </main>
         </div>
       </div>
-      <Footer />
+      
     </div>
   );
 };
