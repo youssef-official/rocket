@@ -566,20 +566,70 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Summary Block (plain text below activities)
-  const renderSummaryBlock = (summary: string | null, _activities: FileActivity[]) => {
+  // Streaming summary component
+  const StreamingSummary: React.FC<{ text: string; isNew?: boolean }> = ({ text, isNew = false }) => {
+    const [displayedLength, setDisplayedLength] = useState(isNew ? 0 : text.length);
+    const [isComplete, setIsComplete] = useState(!isNew);
+
+    useEffect(() => {
+      if (!isNew || isComplete) return;
+      
+      const totalLength = text.length;
+      if (displayedLength >= totalLength) {
+        setIsComplete(true);
+        return;
+      }
+
+      // Speed: ~15 chars per tick for smooth streaming
+      const timer = setTimeout(() => {
+        setDisplayedLength(prev => Math.min(prev + 8, totalLength));
+      }, 12);
+
+      return () => clearTimeout(timer);
+    }, [displayedLength, text, isNew, isComplete]);
+
+    const visibleText = text.slice(0, displayedLength);
+
+    return (
+      <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap" dir="auto">
+        {visibleText}
+        {!isComplete && (
+          <span className="inline-block w-0.5 h-4 bg-primary animate-pulse ml-0.5 align-middle" />
+        )}
+      </div>
+    );
+  };
+
+  // Format summary: ensure each ✅ item is on its own line
+  const formatSummary = (raw: string): string => {
+    let text = raw.replace(/^✅\s*/, '').trim();
+    // Split on ✅ and rejoin with newlines
+    text = text.replace(/\s*✅\s*/g, '\n✅ ').trim();
+    // Ensure first item starts with ✅ if it has numbered items
+    if (!text.startsWith('✅')) {
+      // Check if it's a multi-line summary with numbered items
+      const lines = text.split('\n');
+      if (lines.length > 1) {
+        text = lines.map(l => l.trim()).filter(Boolean).join('\n');
+      }
+    }
+    return text;
+  };
+
+  // Render Summary Block
+  const renderSummaryBlock = (summary: string | null, _activities: FileActivity[], isStreaming: boolean = false) => {
     if (!summary) return null;
 
-    const cleanSummary = summary.replace(/^✅\s*/, '').trim();
-    if (!cleanSummary) return null;
+    const formatted = formatSummary(summary);
+    if (!formatted) return null;
 
     return (
       <motion.div
         initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-3 prose prose-sm max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground/80 prose-strong:text-foreground prose-li:text-foreground/80"
+        className="mt-3 py-3 px-4 rounded-lg bg-secondary/50 border border-border/50"
       >
-        <ReactMarkdown>{cleanSummary}</ReactMarkdown>
+        <StreamingSummary text={formatted} isNew={isStreaming} />
       </motion.div>
     );
   };
@@ -776,7 +826,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
                         {/* Summary after live generation completes */}
                         {isLastAssistant && !isGenerating && generationPhase?.phase === 'complete' && generationPhase?.summary && versionActivities.length === 0 && (
-                          renderSummaryBlock(generationPhase.summary, [])
+                          renderSummaryBlock(generationPhase.summary, [], true)
                         )}
 
                         {/* Show stored activities for completed versions - always visible */}
