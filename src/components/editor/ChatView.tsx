@@ -577,7 +577,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       <motion.div
         initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-2 text-sm text-muted-foreground leading-relaxed"
+        className="mt-3 prose prose-sm max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground/80 prose-strong:text-foreground prose-li:text-foreground/80"
       >
         <ReactMarkdown>{cleanSummary}</ReactMarkdown>
       </motion.div>
