@@ -434,7 +434,8 @@ const ProjectEditorRoute = () => {
                   const finalContent = explanationMessage
                     .replace(/\*\*Now I['']ll start building\.\.\.\*\*/gi, '')
                     .replace(/Now I['']ll start building\.\.\./gi, '')
-                    .trim() + '\n\n' + summary;
+                    .replace(/\*\*.*?Generating.*?\*\*/gi, '')
+                    .trim() + `\n\n<!--SUMMARY-->${summary}<!--/SUMMARY-->`;
 
                   await updateMessage(assistantId, {
                     content: finalContent,
@@ -862,7 +863,8 @@ const ProjectEditorRoute = () => {
               const finalContent = explanationMessage
                 .replace(/\*\*Now I['']ll start building\.\.\.\*\*/gi, '')
                 .replace(/Now I['']ll start building\.\.\./gi, '')
-                .trim() + '\n\n' + summary;
+                .replace(/\*\*.*?Generating.*?\*\*/gi, '')
+                .trim() + `\n\n<!--SUMMARY-->${summary}<!--/SUMMARY-->`;
 
               await updateMessage(assistantId, {
                 content: finalContent,
