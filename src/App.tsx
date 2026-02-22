@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useParams, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useParams, useNavigate, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { AuthPage } from "@/components/auth/AuthPage";
@@ -1266,7 +1266,7 @@ const App = () => (
               <Route path="/oauth/consent" element={<OAuthConsent />} />
               <Route path="/oauth/vercel/callback" element={<VercelOAuthCallback />} />
               <Route path="/oauth/github/callback" element={<GitHubCallback />} />
-              <Route path="/ai-for-all" element={<AiForAll />} />
+              <Route path="/ai-for-all" element={<Navigate to="/blog/ai-for-all" replace />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/supabase-connect" element={<SupabaseConnect />} />
