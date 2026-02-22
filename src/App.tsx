@@ -1237,6 +1237,8 @@ import { NewVibeTool } from "@/pages/NewVibeTool";
 import AiForAll from "@/pages/AiForAll";
 import SupabaseConnect from "@/pages/SupabaseConnect";
 import GitHubCallback from "@/pages/GitHubCallback";
+import Blog from "@/pages/Blog";
+import BlogPost from "@/pages/BlogPost";
 // AdminPanel already imported at the top
 
 const App = () => (
@@ -1265,6 +1267,8 @@ const App = () => (
               <Route path="/oauth/vercel/callback" element={<VercelOAuthCallback />} />
               <Route path="/oauth/github/callback" element={<GitHubCallback />} />
               <Route path="/ai-for-all" element={<AiForAll />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/supabase-connect" element={<SupabaseConnect />} />
               <Route path="/" element={<AppContent />} />
             </Routes>

@@ -9,7 +9,9 @@ import {
   BarChart2, Download, ChevronDown, Filter, Code,
   LayoutGrid, MessageCircle, Calendar, DollarSign,
   ArrowLeftRight, GraduationCap, ShoppingCart, Star, Coins,
+  FileText,
 } from 'lucide-react';
+import { AdminBlogEditor } from '@/components/admin/AdminBlogEditor';
 
 interface AdminData {
   users: any[];
@@ -24,7 +26,7 @@ export const AdminPanel: React.FC = () => {
   const [data, setData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<'dashboard' | 'users' | 'plans' | 'transactions' | 'projects' | 'inbox' | 'templates'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'users' | 'plans' | 'transactions' | 'projects' | 'inbox' | 'templates' | 'blog'>('dashboard');
 
   const [inboxTitle, setInboxTitle] = useState('');
   const [inboxBody, setInboxBody] = useState('');
@@ -595,6 +597,7 @@ export const AdminPanel: React.FC = () => {
     { key: 'dashboard'    as const, label: 'Dashboard',    icon: LayoutGrid,  count: 0 },
     { key: 'users'        as const, label: 'Users',        icon: Users,       count: data.users.length },
     { key: 'inbox'        as const, label: 'Inbox',        icon: MessageCircle, count: notifications.length },
+    { key: 'blog'         as const, label: 'Blog',         icon: FileText,    count: 0 },
     { key: 'transactions' as const, label: 'Statistics',   icon: BarChart2,   count: data.transactions.length },
     { key: 'projects'     as const, label: 'Projects',     icon: FolderOpen,  count: data.projects.length },
     { key: 'plans'        as const, label: 'Plans',       icon: CreditCard,  count: data.plans.length },
@@ -603,7 +606,7 @@ export const AdminPanel: React.FC = () => {
 
   const pageTitles: Record<string, string> = {
     dashboard: 'Dashboard', users: 'Users', plans: 'Plans', transactions: 'Statistics',
-    projects: 'Projects', inbox: 'Inbox', templates: 'Templates',
+    projects: 'Projects', inbox: 'Inbox', templates: 'Templates', blog: 'Blog Manager',
   };
 
   const displayName = (data?.users?.find((u: any) => u.id === user?.id)?.display_name) || user?.email?.split('@')[0] || 'Admin';
@@ -975,6 +978,11 @@ export const AdminPanel: React.FC = () => {
                 )}
               </>
             )}
+
+            {/* ══════════════════════════════════════════════════════════════
+                BLOG
+            ══════════════════════════════════════════════════════════════ */}
+            {tab === 'blog' && <AdminBlogEditor />}
 
             {/* ══════════════════════════════════════════════════════════════
                 DATA TABLES
