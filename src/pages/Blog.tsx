@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
+import { SEOHead } from '@/components/shared/SEOHead';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 
@@ -55,6 +56,12 @@ const Blog: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SEOHead
+        title="Blog — Vivora X Vibe Coding Insights"
+        description="Read the latest articles on vibe coding, AI web development, React tips, and Vivora X updates. Stay ahead with insights from the Vivora team."
+        keywords="vivora x blog, vibe coding articles, AI web development blog, React tips, vivorax updates, AI coding tutorials"
+        canonical="https://vivorax.online/blog"
+      />
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
