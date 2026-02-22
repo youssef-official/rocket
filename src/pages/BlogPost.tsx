@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
+import { SEOHead } from '@/components/shared/SEOHead';
 import { ArrowLeft, Share2, Clock, Calendar, ChevronRight, Twitter, Facebook, Linkedin, Link2, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -89,6 +90,24 @@ const BlogPost: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SEOHead
+        title={post.title}
+        description={post.summary || `Read "${post.title}" on the Vivora X blog`}
+        ogImage={post.cover_image || undefined}
+        canonical={`https://vivorax.online/blog/${post.slug}`}
+        ogType="article"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          "headline": post.title,
+          "description": post.summary || '',
+          "image": post.cover_image || '',
+          "author": { "@type": "Person", "name": post.author_name },
+          "datePublished": post.published_at || post.created_at,
+          "publisher": { "@type": "Organization", "name": "Vivora X", "logo": { "@type": "ImageObject", "url": "https://vivorax.online/favicon.svg" } },
+          "mainEntityOfPage": `https://vivorax.online/blog/${post.slug}`
+        }}
+      />
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
