@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Footer } from '@/components/shared/Footer';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
-import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 
@@ -53,24 +51,24 @@ const Blog: React.FC = () => {
     <div className="min-h-screen bg-background text-foreground">
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <VivoraLogo size="sm" />
-            <span className="text-lg font-bold">Vivora X</span>
+            <span className="text-base font-bold">Vivora X</span>
           </Link>
-          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-            <ArrowLeft size={14} /> Back to Home
+          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+            <ArrowLeft size={14} /> Home
           </Link>
         </div>
       </nav>
 
-      <main className="pt-24 pb-20">
+      <main className="pt-20 pb-24">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex gap-16">
             {/* Sidebar */}
-            <aside className="w-48 shrink-0 hidden lg:block sticky top-28 self-start">
-              <h1 className="text-4xl font-bold mb-3">Blog</h1>
-              <p className="text-sm text-muted-foreground mb-8">Compiled notes from the Vivora team</p>
+            <aside className="w-48 shrink-0 hidden lg:block sticky top-24 self-start">
+              <h1 className="text-3xl font-bold mb-2">Blog</h1>
+              <p className="text-sm text-muted-foreground mb-8">Notes from the Vivora team</p>
               <div className="w-8 h-px bg-border mb-6" />
               <nav className="flex flex-col gap-1">
                 {categories.map(cat => (
@@ -94,7 +92,7 @@ const Blog: React.FC = () => {
               {/* Mobile title */}
               <div className="lg:hidden mb-8">
                 <h1 className="text-3xl font-bold mb-2">Blog</h1>
-                <p className="text-sm text-muted-foreground">Compiled notes from the Vivora team</p>
+                <p className="text-sm text-muted-foreground">Notes from the Vivora team</p>
                 <div className="flex gap-2 mt-4 flex-wrap">
                   {categories.map(cat => (
                     <button
@@ -169,8 +167,6 @@ const Blog: React.FC = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };
