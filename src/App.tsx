@@ -179,6 +179,7 @@ const ProjectEditorRoute = () => {
           createdAt: dbProject.createdAt,
           updatedAt: dbProject.updatedAt,
           githubRepoUrl: dbProject.githubRepoUrl,
+          vercelUrl: dbProject.vercelUrl,
         });
 
         // Restore generation state from database if available
@@ -1052,10 +1053,11 @@ const AppContent = () => {
           files: dbProject.files,
           isPublished: dbProject.isPublished,
           publishedSlug: dbProject.publishedSlug,
-          createdAt: dbProject.createdAt,
-          updatedAt: dbProject.updatedAt,
-          githubRepoUrl: dbProject.githubRepoUrl,
-        });
+           createdAt: dbProject.createdAt,
+           updatedAt: dbProject.updatedAt,
+           githubRepoUrl: dbProject.githubRepoUrl,
+           vercelUrl: dbProject.vercelUrl,
+         });
       }
     }
   }, [currentProjectId, projects, localProject]);

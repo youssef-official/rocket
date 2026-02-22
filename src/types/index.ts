@@ -21,6 +21,7 @@ export interface ProjectData {
   buildingPlan?: string[];
   generationStatus?: string;
   githubRepoUrl?: string;
+  vercelUrl?: string;
 }
 
 export interface ChatMessage {
@@ -56,6 +57,7 @@ export interface Project {
   buildingPlan?: string[];
   generationStatus?: string;
   githubRepoUrl?: string;
+  vercelUrl?: string;
 }
 
 export interface FileActivity {

@@ -41,6 +41,7 @@ export function useProjects() {
         buildingPlan: p.building_plan || undefined,
         generationStatus: p.generation_status || undefined,
         githubRepoUrl: p.github_repo_url || undefined,
+        vercelUrl: p.vercel_url || undefined,
       }));
 
       setProjects(mapped);
@@ -98,6 +99,7 @@ export function useProjects() {
         buildingPlan: data.building_plan || undefined,
         generationStatus: data.generation_status || undefined,
         githubRepoUrl: data.github_repo_url || undefined,
+        vercelUrl: data.vercel_url || undefined,
       };
 
       setProjects((prev) => [newProject, ...prev]);
