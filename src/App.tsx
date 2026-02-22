@@ -388,7 +388,7 @@ const ProjectEditorRoute = () => {
               onComplete: async (response) => {
                 if (isCancelled.current) return;
 
-                const { files, fileList, actionsTaken } = parseAIResponse(response);
+                const { files, fileList, actionsTaken, summary: aiSummary } = parseAIResponse(response);
 
                 const activities = actionsTaken && actionsTaken.length > 0
                   ? actionsTaken
@@ -425,8 +425,10 @@ const ProjectEditorRoute = () => {
                 // Mark all steps as complete
                 const allStepsComplete = planLines.map((_, i) => i);
 
-                // Create summary
-                const summary = `✅ Project created successfully! Created ${activities.length} file${activities.length > 1 ? 's' : ''}. Your project is ready to use!`;
+                // Use AI-generated summary if available
+                const summary = aiSummary
+                  ? `✅ ${aiSummary}`
+                  : `✅ Created ${activities.length} file${activities.length > 1 ? 's' : ''}. Your project is ready!`;
 
                 // Update original explanation message instead of adding a new one
                 if (assistantId) {

@@ -31,11 +31,13 @@ These errors WILL break the preview. You MUST follow ALL rules below:
   ALWAYS use: import X from 'module'; or import { X } from 'module';
   NEVER: const X = require('module');
 
-❌ ERROR: "does not provide an export named 'STORY_SCENES'" or similar missing exports
+❌ ERROR: "does not provide an export named 'MOCK_USER'" or 'MOCK_PRODUCTS' or similar
 ✅ FIX: NEVER import something that doesn't exist in the target file.
-  Before importing { X } from './file', make sure X is actually exported from that file.
-  If you need a constant, DEFINE IT in the file you're importing from, or in the file that uses it.
-  NEVER reference variables, functions, or constants that you haven't defined.
+   Before importing { X } from './file', make sure X is actually exported from that file.
+   If you need mock data (MOCK_USER, MOCK_PRODUCTS, etc.), DEFINE IT INSIDE the component file that uses it or in a dedicated data file you CREATE.
+   NEVER assume a constant exists in another file - if you didn't create it, it doesn't exist.
+   NEVER reference variables, functions, or constants that you haven't defined.
+   COMMON MISTAKE: Importing MOCK_USER, MOCK_PRODUCTS, mockData from src/lib/constants.ts - these do NOT exist there unless YOU explicitly created them in that file.
 
 ❌ ERROR: "Cannot read properties of undefined (reading 'someProperty')"
 ✅ FIX: ALWAYS use optional chaining and provide defaults:
