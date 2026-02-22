@@ -557,50 +557,20 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Summary Block (after activities, before version card)
-  const renderSummaryBlock = (summary: string | null, activities: FileActivity[]) => {
-    if (!summary && activities.length === 0) return null;
+  // Render Summary Block (plain text below activities)
+  const renderSummaryBlock = (summary: string | null, _activities: FileActivity[]) => {
+    if (!summary) return null;
 
-    const readCount = activities.filter(a => a.action === 'read').length;
-    const createdCount = activities.filter(a => a.action === 'created').length;
-    const editedCount = activities.filter(a => a.action === 'edited').length;
-    const deletedCount = activities.filter(a => a.action === 'deleted').length;
+    const cleanSummary = summary.replace(/^✅\s*/, '').trim();
+    if (!cleanSummary) return null;
 
     return (
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-3 p-3 rounded-xl bg-primary/5 border border-primary/10"
+        className="mt-2 text-sm text-muted-foreground leading-relaxed"
       >
-        <div className="flex items-center gap-2 mb-2">
-          <Files className="w-4 h-4 text-primary" />
-          <span className="text-sm font-semibold text-foreground">{t('chat.summary') || 'Summary'}</span>
-        </div>
-        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-          {readCount > 0 && (
-            <span className="flex items-center gap-1">
-              <Eye className="w-3 h-3" /> {t('action.read') || 'Read'}: {readCount}
-            </span>
-          )}
-          {createdCount > 0 && (
-            <span className="flex items-center gap-1 text-emerald-500">
-              <FileOutput className="w-3 h-3" /> {t('action.created') || 'Created'}: {createdCount}
-            </span>
-          )}
-          {editedCount > 0 && (
-            <span className="flex items-center gap-1 text-blue-500">
-              <Pencil className="w-3 h-3" /> {t('action.edited') || 'Edited'}: {editedCount}
-            </span>
-          )}
-          {deletedCount > 0 && (
-            <span className="flex items-center gap-1 text-red-500">
-              <Trash2 className="w-3 h-3" /> {t('action.deleted') || 'Deleted'}: {deletedCount}
-            </span>
-          )}
-        </div>
-        {summary && (
-          <p className="text-sm text-foreground/70 mt-2">{summary.replace(/^✅\s*/, '')}</p>
-        )}
+        <ReactMarkdown>{cleanSummary}</ReactMarkdown>
       </motion.div>
     );
   };
