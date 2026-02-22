@@ -305,9 +305,8 @@ const ProjectEditorRoute = () => {
 
           // Add explanation message for initial generation (keep it SHORT)
           const assistantId = crypto.randomUUID();
-           const planIntro = '### **What I will build:**';
            const planContent = planLines.length > 0
-             ? `${planIntro}\n${planLines.slice(0, 4).map((line) => `- ${line}`).join('\n')}\n\n`
+             ? `${planLines.slice(0, 4).map((line) => `- ${line}`).join('\n')}\n\n`
              : '';
            const explanationMessage = `${planContent}**${t('chat.generating')}**`;
           await addMessage('assistant', explanationMessage, undefined, undefined, undefined, assistantId);
@@ -712,7 +711,7 @@ const ProjectEditorRoute = () => {
       // Add the explanation message (keep it SHORT)
       const assistantId = crypto.randomUUID();
       const planContent = planLines.length > 0
-        ? `### **What I'm Building (Short):**\n${planLines.slice(0, 4).map((line, i) => `${i + 1}. ${line}`).join('\n')}\n\n`
+        ? `${planLines.slice(0, 4).map((line, i) => `${i + 1}. ${line}`).join('\n')}\n\n`
         : '';
       const explanationMessage = `${planContent}**${t('chat.generating')}**`;
       await addMessage('assistant', explanationMessage, undefined, undefined, undefined, assistantId);
