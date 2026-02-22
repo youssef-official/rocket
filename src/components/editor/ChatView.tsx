@@ -603,20 +603,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Format summary: ensure each ✅ item is on its own line
+  // Format summary: clean up and normalize
   const formatSummary = (raw: string): string => {
     let text = raw.replace(/^✅\s*/, '').trim();
-    // Split on ✅ and rejoin with newlines
-    text = text.replace(/\s*✅\s*/g, '\n✅ ').trim();
-    // Ensure first item starts with ✅ if it has numbered items
-    if (!text.startsWith('✅')) {
-      // Check if it's a multi-line summary with numbered items
-      const lines = text.split('\n');
-      if (lines.length > 1) {
-        text = lines.map(l => l.trim()).filter(Boolean).join('\n');
-      }
-    }
-    return text;
+    text = text.replace(/\s*✅\s*/g, '\n').trim();
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    return lines.join('\n');
   };
 
   // Render Summary Block

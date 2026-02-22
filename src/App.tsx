@@ -480,6 +480,7 @@ const ProjectEditorRoute = () => {
                 }
               },
               onError: async (error) => {
+                // Do NOT deduct credits on error
                 console.error('AI error:', error);
                 await addMessage('assistant', `I encountered an error: ${error.message}. I've created a starter template for you.`);
                 setIsGenerating(false);
@@ -594,6 +595,17 @@ const ProjectEditorRoute = () => {
         const { generateChatResponse } = await import('@/services/aiService');
         const response = await generateChatResponse(content, messages);
         addMessage('assistant', response);
+
+        // Deduct 1.5 credits for plan mode (or whatever remains)
+        if (user) {
+          try {
+            const { deductCredits } = await import('@/services/creditService');
+            await deductCredits(user.id, localProject.id, 'Plan mode chat', 1.5);
+            queryClient.invalidateQueries({ queryKey: ['userPlan'] });
+          } catch (e) {
+            console.error('Plan mode credit deduction failed:', e);
+          }
+        }
       } catch (error) {
         addMessage('assistant', "I'm here to help! Ask me anything about your project or web development.");
       }
@@ -905,6 +917,7 @@ const ProjectEditorRoute = () => {
             }
           },
           onError: async (error) => {
+            // Do NOT deduct credits on error
             await addMessage('assistant', `Sorry, I encountered an error: ${error.message}`);
             setIsGenerating(false);
             setStreamingContent('');

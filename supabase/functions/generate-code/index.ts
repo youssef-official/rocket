@@ -557,10 +557,19 @@ Format (numbered list, NO XML tags):
 const PROJECT_NAME_PROMPT = `Generate a creative 2-word project name. Title Case. No quotes or punctuation.
 Example: "Nova Dashboard", "Stellar Store", "Pixel Studio"`;
 
-const SUGGESTIONS_PROMPT = `Generate 4 feature suggestions as a JSON array.
+const SUGGESTIONS_PROMPT = `Generate 4 CREATIVE and NON-OBVIOUS feature suggestions as a JSON array.
 Only suggest features possible with: react, lucide-react, framer-motion, tailwind.
 
-CRITICAL: The suggestions MUST be in the SAME LANGUAGE as the user's last message. If the user wrote in Arabic, suggestions must be in Arabic. If English, in English. Match the user's language exactly.
+CRITICAL RULES:
+1. The suggestions MUST be in the SAME LANGUAGE as the user's last message.
+2. DO NOT suggest generic/obvious features like "add dark mode", "make responsive", or "add animations".
+3. Instead, suggest features the user probably FORGOT or DIDN'T THINK OF — things that would make their project stand out:
+   - Missing UX patterns (keyboard shortcuts, loading skeletons, empty states)
+   - Professional touches (scroll-to-top, breadcrumbs, 404 page, print styles)
+   - Engagement features (micro-interactions, progress indicators, tooltips)
+   - Accessibility improvements (skip links, focus management, screen reader labels)
+   - Content enhancements (FAQ accordion, testimonials carousel, stats counter)
+4. Each suggestion should feel like expert advice — something a senior developer would recommend.
 
 You MUST return ONLY this exact JSON format (no markdown, no explanation):
 [{"label":"short label","prompt":"detailed prompt describing the feature"},{"label":"short label","prompt":"detailed prompt"},{"label":"short label","prompt":"detailed prompt"},{"label":"short label","prompt":"detailed prompt"}]`;

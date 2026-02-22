@@ -84,81 +84,92 @@ export function useVersions(projectId: string | null) {
   ): Promise<ProjectVersion | null> => {
     if (!user || !projectId) return null;
 
-    try {
-      // Get current max version number
-      const { data: existing } = await supabase
-        .from('project_versions')
-        .select('version_number')
-        .eq('project_id', projectId)
-        .order('version_number', { ascending: false })
-        .limit(1);
+    const MAX_RETRIES = 10;
+    let attempt = 0;
 
-      const nextVersion = existing && existing.length > 0
-        ? (existing[0] as any).version_number + 1
-        : 1;
-
-      const { data, error } = await supabase
-        .from('project_versions')
-        .insert([{
-          project_id: projectId,
-          user_id: user.id,
-          version_number: nextVersion,
-          name: name || `Version ${nextVersion}`,
-          files: files as any,
-          chat_messages: chatMessages as any,
-          actions_taken: actionsTaken as any || [],
-          credits_used: creditsUsed,
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const newVersion: ProjectVersion = {
-        id: data.id,
-        projectId: data.project_id,
-        userId: data.user_id,
-        versionNumber: data.version_number,
-        name: data.name ?? undefined,
-        files: data.files as unknown as Record<string, ProjectFile>,
-        chatMessages: data.chat_messages as unknown as ChatMessage[],
-        actionsTaken: data.actions_taken as unknown as FileActivity[] | undefined,
-        creditsUsed: data.credits_used ?? undefined,
-        createdAt: data.created_at,
-      };
-
-      setVersions(prev => [newVersion, ...prev]);
-
-      // Play completion sound
+    while (attempt < MAX_RETRIES) {
+      attempt++;
       try {
-        const audio = new Audio('/sounds/version-complete.mp3');
-        audio.volume = 0.5;
-        audio.play().catch(() => {});
-      } catch {}
+        // Get current max version number
+        const { data: existing } = await supabase
+          .from('project_versions')
+          .select('version_number')
+          .eq('project_id', projectId)
+          .order('version_number', { ascending: false })
+          .limit(1);
 
-      // Send browser notification
-      if (Notification.permission === 'granted') {
-        new Notification('Vivora X', {
-          body: `✅ Version ${nextVersion} saved successfully!`,
-          icon: '/favicon.svg',
+        const nextVersion = existing && existing.length > 0
+          ? (existing[0] as any).version_number + 1
+          : 1;
+
+        const { data, error } = await supabase
+          .from('project_versions')
+          .insert([{
+            project_id: projectId,
+            user_id: user.id,
+            version_number: nextVersion,
+            name: name || `Version ${nextVersion}`,
+            files: files as any,
+            chat_messages: chatMessages as any,
+            actions_taken: actionsTaken as any || [],
+            credits_used: creditsUsed,
+          }])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const newVersion: ProjectVersion = {
+          id: data.id,
+          projectId: data.project_id,
+          userId: data.user_id,
+          versionNumber: data.version_number,
+          name: data.name ?? undefined,
+          files: data.files as unknown as Record<string, ProjectFile>,
+          chatMessages: data.chat_messages as unknown as ChatMessage[],
+          actionsTaken: data.actions_taken as unknown as FileActivity[] | undefined,
+          creditsUsed: data.credits_used ?? undefined,
+          createdAt: data.created_at,
+        };
+
+        setVersions(prev => [newVersion, ...prev]);
+
+        // Play completion sound
+        try {
+          const audio = new Audio('/sounds/version-complete.mp3');
+          audio.volume = 0.5;
+          audio.play().catch(() => {});
+        } catch {}
+
+        // Send browser notification
+        if (Notification.permission === 'granted') {
+          new Notification('Vivora X', {
+            body: `Version ${nextVersion} saved successfully!`,
+            icon: '/favicon.svg',
+          });
+        }
+
+        toast({
+          title: 'Version saved',
+          description: `Version ${nextVersion} created successfully`,
         });
+
+        return newVersion;
+      } catch (error) {
+        console.error(`[useVersions] Attempt ${attempt}/${MAX_RETRIES} failed:`, error);
+        if (attempt >= MAX_RETRIES) {
+          toast({
+            title: 'Error',
+            description: 'Failed to save version after multiple attempts',
+            variant: 'destructive',
+          });
+          return null;
+        }
+        // Wait before retrying (exponential backoff: 500ms, 1s, 2s, ...)
+        await new Promise(r => setTimeout(r, Math.min(500 * Math.pow(2, attempt - 1), 5000)));
       }
-
-      toast({
-        title: 'Version saved',
-        description: `Version ${nextVersion} created successfully`,
-      });
-
-      return newVersion;
-    } catch (error) {
-      console.error('Error creating version:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save version',
-        variant: 'destructive',
-      });
-      return null;
     }
+    return null;
   }, [user, projectId]);
 
   const getVersion = useCallback((versionNumber: number): ProjectVersion | undefined => {
