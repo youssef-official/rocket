@@ -80,6 +80,9 @@ export const Footer: React.FC = () => {
             <a href="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               FAQ
             </a>
+            <a href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              About Us
+            </a>
           </div>
         </div>
 
