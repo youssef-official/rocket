@@ -661,18 +661,7 @@ const ProjectEditorRoute = () => {
       });
     }
 
-    // Add "Reading" activities for existing project files (simulate AI reading before editing)
-    const existingFileKeys = Object.keys(localProject.files);
-    if (existingFileKeys.length > 0) {
-      const readFiles = existingFileKeys.slice(0, 6); // Show max 6 read activities
-      readFiles.forEach(filePath => {
-        initialActivities.push({
-          name: filePath,
-          status: 'done',
-          action: 'read'
-        });
-      });
-    }
+    // Note: Read activities will come from the AI's <ACTIONS> block, not hardcoded
 
     setFileActivities(initialActivities);
 
@@ -800,18 +789,23 @@ const ProjectEditorRoute = () => {
           onComplete: async (response) => {
             if (isCancelled.current) return;
 
-            const { files: newFiles, fileList, actionsTaken, deletedFiles } = parseAIResponse(response);
+            const { files: newFiles, fileList, actionsTaken, deletedFiles, summary: aiSummary } = parseAIResponse(response);
 
-            // Build activities including reads, edits, creates, and deletes
-            const readActivities: FileActivity[] = fileActivities.filter(a => a.action === 'read' || a.action === 'analyzed_image');
+            // Use AI's actions_taken for read/edit/create activities
+            const imageActivities: FileActivity[] = fileActivities.filter(a => a.action === 'analyzed_image');
             
-            const fileActivitiesList = actionsTaken && actionsTaken.length > 0
-              ? actionsTaken.map(a => ({ ...a, status: 'done' as const }))
-              : fileList.map(name => ({
+            let fileActivitiesList: FileActivity[];
+            if (actionsTaken && actionsTaken.length > 0) {
+              // AI provided its own actions (reads + edits + creates)
+              fileActivitiesList = actionsTaken.map(a => ({ ...a, status: 'done' as const }));
+            } else {
+              // Fallback: derive from fileList
+              fileActivitiesList = fileList.map(name => ({
                 name,
                 status: 'done' as const,
                 action: (localProject.files[name] ? 'edited' : 'created') as 'edited' | 'created'
               }));
+            }
 
             // Add delete activities
             const deleteActivities: FileActivity[] = (deletedFiles || []).map(name => ({
@@ -820,7 +814,7 @@ const ProjectEditorRoute = () => {
               action: 'deleted' as const
             }));
 
-            const activities = [...readActivities, ...fileActivitiesList, ...deleteActivities];
+            const activities = [...imageActivities, ...fileActivitiesList, ...deleteActivities];
 
             setFileActivities(activities);
 
@@ -835,7 +829,6 @@ const ProjectEditorRoute = () => {
 
             if (Object.keys(newFiles).length > 0 || (deletedFiles && deletedFiles.length > 0)) {
               const mergedFiles = { ...localProject.files, ...newFiles };
-              // Remove deleted files
               if (deletedFiles) {
                 deletedFiles.forEach(f => delete mergedFiles[f]);
               }
@@ -858,17 +851,10 @@ const ProjectEditorRoute = () => {
             // Mark all steps as complete
             const allStepsComplete = planLines.map((_, i) => i);
 
-            // Create summary with read/created/edited/deleted counts
-            const readCount = activities.filter(a => a.action === 'read').length;
-            const editedCount = activities.filter(a => a.action === 'edited').length;
-            const createdCount = activities.filter(a => a.action === 'created').length;
-            const deletedCount = activities.filter(a => a.action === 'deleted').length;
-            const parts = [];
-            if (readCount > 0) parts.push(`Read ${readCount} file${readCount > 1 ? 's' : ''}`);
-            if (createdCount > 0) parts.push(`Created ${createdCount} file${createdCount > 1 ? 's' : ''}`);
-            if (editedCount > 0) parts.push(`Edited ${editedCount} file${editedCount > 1 ? 's' : ''}`);
-            if (deletedCount > 0) parts.push(`Deleted ${deletedCount} file${deletedCount > 1 ? 's' : ''}`);
-            const summary = `✅ ${parts.join(', ')}. Your project is ready!`;
+            // Use AI-generated summary if available, otherwise create a basic one
+            const summary = aiSummary
+              ? `✅ ${aiSummary}`
+              : `✅ Updated ${fileList.length} file${fileList.length !== 1 ? 's' : ''}. Your project is ready!`;
 
             // Update original explanation message instead of adding a new one
             if (assistantId) {

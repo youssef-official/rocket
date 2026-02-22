@@ -159,10 +159,12 @@ function manualExtractFiles(text: string): { files: Record<string, any>, fileLis
 /**
  * Parses <FILE path="...">...</FILE> blocks (preferred for code mode).
  */
-function parseFileBlocks(text: string): { files: Record<string, any>, fileList: string[], deletedFiles: string[] } | null {
+function parseFileBlocks(text: string): { files: Record<string, any>, fileList: string[], deletedFiles: string[], actionsTaken: FileActivity[], summary: string } | null {
   const files: Record<string, any> = {};
   const fileList: string[] = [];
   const deletedFiles: string[] = [];
+  let actionsTaken: FileActivity[] = [];
+  let summary = '';
 
   // Parse FILE blocks
   const re = /<FILE\s+path=("|')([^"']+)\1>\s*([\s\S]*?)\s*<\/FILE>/g;
@@ -186,8 +188,33 @@ function parseFileBlocks(text: string): { files: Record<string, any>, fileList: 
     }
   }
 
-  if (fileList.length === 0 && deletedFiles.length === 0) return null;
-  return { files, fileList, deletedFiles };
+  // Parse ACTIONS block
+  const actionsMatch = text.match(/<ACTIONS>([\s\S]*?)<\/ACTIONS>/);
+  if (actionsMatch) {
+    const actionsText = actionsMatch[1];
+    const actionLines = actionsText.split('\n').filter(l => l.trim().startsWith('{'));
+    actionLines.forEach(line => {
+      try {
+        const action = JSON.parse(line.trim());
+        if (action.name && action.action) {
+          actionsTaken.push({
+            name: action.name,
+            status: action.status || 'done',
+            action: action.action
+          });
+        }
+      } catch { /* skip invalid lines */ }
+    });
+  }
+
+  // Parse SUMMARY block
+  const summaryMatch = text.match(/<SUMMARY>([\s\S]*?)<\/SUMMARY>/);
+  if (summaryMatch) {
+    summary = summaryMatch[1].trim();
+  }
+
+  if (fileList.length === 0 && deletedFiles.length === 0 && actionsTaken.length === 0) return null;
+  return { files, fileList, deletedFiles, actionsTaken, summary };
 }
 
 /**
@@ -279,7 +306,7 @@ function detectTruncation(response: string): boolean {
 }
 
 // Main parser with robust error handling
-export function parseAIResponse(response: string): { files: Record<string, any>, fileList: string[], actionsTaken?: FileActivity[], deletedFiles?: string[] } {
+export function parseAIResponse(response: string): { files: Record<string, any>, fileList: string[], actionsTaken?: FileActivity[], deletedFiles?: string[], summary?: string } {
   try {
     // Handle "json|..." format from AI gateways
     if (response.startsWith('json|')) {
@@ -291,9 +318,9 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
 
     // Preferred: parse <FILE> blocks (doesn't require JSON escaping)
     const fileBlocks = parseFileBlocks(response);
-    if (fileBlocks && (fileBlocks.fileList.length > 0 || fileBlocks.deletedFiles.length > 0)) {
-      console.log('[parseAIResponse] Parsed <FILE> blocks:', fileBlocks.fileList, 'Deleted:', fileBlocks.deletedFiles);
-      return { ...fileBlocks, actionsTaken: [] };
+    if (fileBlocks && (fileBlocks.fileList.length > 0 || fileBlocks.deletedFiles.length > 0 || fileBlocks.actionsTaken.length > 0)) {
+      console.log('[parseAIResponse] Parsed <FILE> blocks:', fileBlocks.fileList, 'Deleted:', fileBlocks.deletedFiles, 'Actions:', fileBlocks.actionsTaken.length, 'Summary:', !!fileBlocks.summary);
+      return { files: fileBlocks.files, fileList: fileBlocks.fileList, deletedFiles: fileBlocks.deletedFiles, actionsTaken: fileBlocks.actionsTaken, summary: fileBlocks.summary };
     }
 
     // Check for truncation

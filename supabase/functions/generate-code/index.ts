@@ -398,14 +398,6 @@ When file metadata is provided (e.g. [FILE:pdf:document.pdf]URL):
 - Reference uploaded file URLs directly in the generated code
 
 ═══════════════════════════════════════════════════════════════════════════════
-📊 ACTIONS TRACKING (Report what you're doing)
-═══════════════════════════════════════════════════════════════════════════════
-When generating code, your actions should accurately reflect what you're doing.
-For EDITING mode, include actions like:
-- {"name": "user-image.png", "action": "analyzed_image", "status": "done"} - when analyzing an uploaded image
-- {"name": "src/components/Hero.tsx", "action": "read", "status": "done"} - when reading existing files to understand context
-- {"name": "src/components/Hero.tsx", "action": "edited", "status": "done"} - when modifying an existing file
-- {"name": "src/components/NewComponent.tsx", "action": "created", "status": "done"} - when creating a new file
 
 ═══════════════════════════════════════════════════════════════════════════════
 🧭 NAVIGATION PATTERN (Without react-router-dom)
@@ -428,9 +420,43 @@ const [currentPage, setCurrentPage] = useState<PageType>('home');
 </AnimatePresence>
 
 ═══════════════════════════════════════════════════════════════════════════════
+📊 ACTIONS TRACKING (MANDATORY - Report what you read/changed)
+═══════════════════════════════════════════════════════════════════════════════
+You MUST include an <ACTIONS> block listing EVERY file you read or changed.
+For EDITING existing projects, you MUST read the relevant files FIRST before making changes.
+Only list files you ACTUALLY analyzed - NOT every file in the project.
+
+<ACTIONS>
+{"name": "src/components/Hero.tsx", "action": "read", "status": "done"}
+{"name": "src/components/Navbar.tsx", "action": "read", "status": "done"}
+{"name": "src/components/Hero.tsx", "action": "edited", "status": "done"}
+{"name": "src/components/NewSection.tsx", "action": "created", "status": "done"}
+</ACTIONS>
+
+Rules for actions:
+- "read": Files you analyzed to understand the context before editing
+- "edited": Existing files you modified
+- "created": New files you created
+- "deleted": Files you removed via <DELETE>
+- Only include "read" for files you ACTUALLY needed to understand the change
+- Do NOT blindly list all project files as "read"
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 SUMMARY (MANDATORY - Describe what you did)
+═══════════════════════════════════════════════════════════════════════════════
+After all <FILE> blocks, include a <SUMMARY> block describing what you built/changed.
+Write in the SAME language as the user's message.
+Be concise: 1-4 bullet points. Focus on WHAT changed, not HOW.
+
+<SUMMARY>
+- Added responsive hero section with animated CTA
+- Created new contact form with validation
+</SUMMARY>
+
+═══════════════════════════════════════════════════════════════════════════════
 📤 OUTPUT FORMAT - CRITICAL
 ═══════════════════════════════════════════════════════════════════════════════
-Return ONLY <FILE> blocks. NO JSON. NO MARKDOWN. NO EXPLANATIONS.
+Return <FILE> blocks, then <ACTIONS>, then <SUMMARY>. NO JSON. NO MARKDOWN outside these blocks.
 
 <FILE path="index.html">
 <!DOCTYPE html>
