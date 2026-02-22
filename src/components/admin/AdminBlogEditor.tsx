@@ -170,21 +170,21 @@ export const AdminBlogEditor: React.FC = () => {
     await fetchPosts();
   };
 
-  // ── Preview Renderer ──
+  // ── Preview Renderer (dark themed) ──
   const renderPreview = () => {
     const previewHtml = blocksToHtml(contentBlocks);
     return (
       <div style={{
-        background: '#fff', borderRadius: 16, border: '1px solid rgba(0,105,92,0.1)',
+        background: '#1e2030', borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)',
         overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column',
       }}>
         {/* Preview toolbar */}
         <div style={{
-          padding: '12px 16px', borderBottom: '1px solid rgba(0,105,92,0.08)',
+          padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'rgba(0,131,143,0.03)',
+          background: 'rgba(255,255,255,0.02)',
         }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#00695c', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#7dd3fc', textTransform: 'uppercase', letterSpacing: 0.5 }}>
             Live Preview
           </span>
           <div style={{ display: 'flex', gap: 4 }}>
@@ -192,16 +192,16 @@ export const AdminBlogEditor: React.FC = () => {
               onClick={() => setPreviewDevice('desktop')}
               style={{
                 padding: '4px 8px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                background: previewDevice === 'desktop' ? '#00838f' : 'transparent',
-                color: previewDevice === 'desktop' ? '#fff' : '#78909c',
+                background: previewDevice === 'desktop' ? '#7dd3fc' : 'transparent',
+                color: previewDevice === 'desktop' ? '#0f1117' : '#78909c',
               }}
             ><Monitor size={14} /></button>
             <button
               onClick={() => setPreviewDevice('mobile')}
               style={{
                 padding: '4px 8px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                background: previewDevice === 'mobile' ? '#00838f' : 'transparent',
-                color: previewDevice === 'mobile' ? '#fff' : '#78909c',
+                background: previewDevice === 'mobile' ? '#7dd3fc' : 'transparent',
+                color: previewDevice === 'mobile' ? '#0f1117' : '#78909c',
               }}
             ><Smartphone size={14} /></button>
           </div>
@@ -223,25 +223,25 @@ export const AdminBlogEditor: React.FC = () => {
             )}
             <div style={{ marginBottom: 16 }}>
               <span style={{
-                fontSize: 11, fontWeight: 600, color: '#00838f',
+                fontSize: 11, fontWeight: 600, color: '#7dd3fc',
                 textTransform: 'uppercase', letterSpacing: 0.5,
               }}>{category}</span>
             </div>
             <h1 style={{
               fontSize: previewDevice === 'mobile' ? 24 : 32,
-              fontWeight: 800, color: '#1a1a1a', marginBottom: 12, lineHeight: 1.2,
+              fontWeight: 800, color: '#e8eaed', marginBottom: 12, lineHeight: 1.2,
             }}>{title || 'Untitled Post'}</h1>
             {summary && (
-              <p style={{ fontSize: 16, color: '#607d8b', marginBottom: 24, lineHeight: 1.6 }}>{summary}</p>
+              <p style={{ fontSize: 16, color: '#90a4ae', marginBottom: 24, lineHeight: 1.6 }}>{summary}</p>
             )}
             <div style={{
-              fontSize: 12, color: '#90a4ae', marginBottom: 32,
-              paddingBottom: 24, borderBottom: '1px solid #eee',
+              fontSize: 12, color: '#546e7a', marginBottom: 32,
+              paddingBottom: 24, borderBottom: '1px solid rgba(255,255,255,0.06)',
             }}>
               By {authorName} • {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </div>
             <div
-              style={{ fontSize: 15, lineHeight: 1.8, color: '#37474f' }}
+              style={{ fontSize: 15, lineHeight: 1.8, color: '#b0bec5' }}
               dangerouslySetInnerHTML={{ __html: previewHtml }}
             />
           </div>
@@ -251,11 +251,11 @@ export const AdminBlogEditor: React.FC = () => {
   };
 
   const blockTypeConfig = {
-    heading: { icon: Type, label: 'H2', color: '#6a1b9a' },
-    paragraph: { icon: AlignLeft, label: 'P', color: '#1565c0' },
-    image: { icon: ImageIcon, label: 'IMG', color: '#e65100' },
-    quote: { icon: Quote, label: 'Q', color: '#2e7d32' },
-    code: { icon: Code, label: '<>', color: '#455a64' },
+    heading: { icon: Type, label: 'H2', color: '#a78bfa' },
+    paragraph: { icon: AlignLeft, label: 'P', color: '#7dd3fc' },
+    image: { icon: ImageIcon, label: 'IMG', color: '#fb923c' },
+    quote: { icon: Quote, label: 'Q', color: '#4ade80' },
+    code: { icon: Code, label: '<>', color: '#78909c' },
   };
 
   // ── Editor View ──
@@ -269,7 +269,7 @@ export const AdminBlogEditor: React.FC = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button className="vivora-icon-btn" onClick={closeEditor}><ArrowLeft size={16} /></button>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a' }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#e8eaed' }}>
               {isNew ? 'New Post' : 'Edit Post'}
             </h2>
           </div>
@@ -335,17 +335,17 @@ export const AdminBlogEditor: React.FC = () => {
             {/* Block toolbar */}
             <div style={{
               display: 'flex', gap: 6, marginBottom: 16, padding: '10px 12px',
-              background: '#fff', borderRadius: 12, border: '1px solid rgba(0,105,92,0.08)',
+              background: '#1e2030', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)',
             }}>
-              <span style={{ fontSize: 11, color: '#90a4ae', fontWeight: 600, alignSelf: 'center', marginRight: 8 }}>ADD:</span>
+              <span style={{ fontSize: 11, color: '#546e7a', fontWeight: 600, alignSelf: 'center', marginRight: 8 }}>ADD:</span>
               {(['heading', 'paragraph', 'image', 'quote', 'code'] as const).map(type => {
                 const cfg = blockTypeConfig[type];
                 const Icon = cfg.icon;
                 return (
                   <button key={type} onClick={() => addBlock(type)} style={{
                     display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(0,105,92,0.12)',
-                    background: 'rgba(0,131,143,0.04)', cursor: 'pointer', fontSize: 11,
+                    padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'rgba(255,255,255,0.04)', cursor: 'pointer', fontSize: 11,
                     fontWeight: 600, color: cfg.color, fontFamily: "'Geist', sans-serif",
                   }}>
                     <Icon size={13} /> {cfg.label}
@@ -368,22 +368,22 @@ export const AdminBlogEditor: React.FC = () => {
                     onDragEnd={handleDragEnd}
                     style={{
                       display: 'flex', alignItems: 'stretch', gap: 0,
-                      background: dragOverIdx === idx ? 'rgba(0,131,143,0.06)' : '#fff',
-                      border: `1px solid ${dragOverIdx === idx ? '#00838f' : 'rgba(0,105,92,0.08)'}`,
+                      background: dragOverIdx === idx ? 'rgba(125,211,252,0.06)' : '#1e2030',
+                      border: `1px solid ${dragOverIdx === idx ? '#7dd3fc' : 'rgba(255,255,255,0.06)'}`,
                       borderRadius: 10, overflow: 'hidden',
                       transition: 'all 0.15s',
                       transform: dragIdx === idx ? 'scale(1.02)' : 'none',
-                      boxShadow: dragIdx === idx ? '0 8px 24px rgba(0,0,0,0.12)' : 'none',
+                      boxShadow: dragIdx === idx ? '0 8px 24px rgba(0,0,0,0.3)' : 'none',
                     }}
                   >
                     {/* Drag handle + type badge */}
                     <div style={{
                       width: 40, display: 'flex', flexDirection: 'column',
                       alignItems: 'center', justifyContent: 'center', gap: 6,
-                      background: 'rgba(0,131,143,0.03)', cursor: 'grab',
-                      borderRight: '1px solid rgba(0,105,92,0.06)',
+                      background: 'rgba(255,255,255,0.02)', cursor: 'grab',
+                      borderRight: '1px solid rgba(255,255,255,0.04)',
                     }}>
-                      <GripVertical size={14} color="#90a4ae" />
+                      <GripVertical size={14} color="#546e7a" />
                       <span style={{
                         fontSize: 8, fontWeight: 800, color: cfg.color,
                         textTransform: 'uppercase', letterSpacing: 0.5,
@@ -422,10 +422,10 @@ export const AdminBlogEditor: React.FC = () => {
                     <button onClick={() => removeBlock(block.id)} style={{
                       width: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: 'none', border: 'none', cursor: 'pointer',
-                      color: '#bbb', transition: 'color 0.15s',
+                      color: '#546e7a', transition: 'color 0.15s',
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.color = '#c62828')}
-                    onMouseLeave={e => (e.currentTarget.style.color = '#bbb')}
+                    onMouseEnter={e => (e.currentTarget.style.color = '#ef5350')}
+                    onMouseLeave={e => (e.currentTarget.style.color = '#546e7a')}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -450,7 +450,7 @@ export const AdminBlogEditor: React.FC = () => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>
+        <h3 style={{ fontSize: 15, fontWeight: 600, color: '#e8eaed' }}>
           {posts.length} Post{posts.length !== 1 ? 's' : ''}
         </h3>
         <button className="vivora-btn vivora-btn-primary" onClick={() => openEditor()}>
@@ -471,20 +471,20 @@ export const AdminBlogEditor: React.FC = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
           {posts.map(post => (
             <div key={post.id} style={{
-              background: '#fff', borderRadius: 16, border: '1px solid rgba(0,105,92,0.08)',
-              overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+              background: '#1e2030', borderRadius: 16, border: '1px solid rgba(255,255,255,0.06)',
+              overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
               transition: 'all 0.2s', cursor: 'pointer',
             }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.04)'; e.currentTarget.style.transform = 'none'; }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.2)'; e.currentTarget.style.transform = 'none'; }}
             >
               {post.cover_image ? (
                 <div style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
                   <img src={post.cover_image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ) : (
-                <div style={{ aspectRatio: '16/9', background: 'linear-gradient(135deg, rgba(0,131,143,0.15), rgba(0,105,92,0.08))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <FileText size={32} color="#00838f" />
+                <div style={{ aspectRatio: '16/9', background: 'linear-gradient(135deg, rgba(125,211,252,0.1), rgba(167,139,250,0.08))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <FileText size={32} color="#7dd3fc" />
                 </div>
               )}
               <div style={{ padding: '16px 18px' }}>
@@ -494,9 +494,9 @@ export const AdminBlogEditor: React.FC = () => {
                     {post.is_published ? 'Published' : 'Draft'}
                   </span>
                 </div>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', marginBottom: 4, lineHeight: 1.3 }}>{post.title}</h3>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#e8eaed', marginBottom: 4, lineHeight: 1.3 }}>{post.title}</h3>
                 {post.summary && <p style={{ fontSize: 12, color: '#78909c', lineHeight: 1.5, marginBottom: 8 }}>{post.summary}</p>}
-                <div style={{ fontSize: 11, color: '#90a4ae', marginBottom: 12 }}>
+                <div style={{ fontSize: 11, color: '#546e7a', marginBottom: 12 }}>
                   {post.author_name} • {new Date(post.created_at).toLocaleDateString()}
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
