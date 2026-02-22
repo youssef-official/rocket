@@ -94,7 +94,6 @@ const BlogPost: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <VivoraLogo size="sm" />
-            <span className="text-base font-bold">Vivora X</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link to="/blog" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
