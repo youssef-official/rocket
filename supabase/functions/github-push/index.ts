@@ -104,13 +104,76 @@ async function createOrGetRepo(token: string, repoName: string): Promise<{ full_
   throw new Error(`Failed to create repo: ${JSON.stringify(err)}`);
 }
 
+// Generate professional README
+function generateReadme(repoName: string): string {
+  const title = repoName.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return `<div align="center">
+
+# ${title}
+
+<img src="https://vivorax.online/favicon.svg" alt="Vivora X" width="80" height="80" />
+
+**Built with [Vivora X](https://vivorax.online/) — The AI-Powered Web Builder**
+
+[![Built with Vivora X](https://img.shields.io/badge/Built%20with-Vivora%20X-blueviolet?style=for-the-badge)](https://vivorax.online/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+
+---
+
+</div>
+
+## 🚀 About
+
+This project was created using **[Vivora X](https://vivorax.online/)**, an AI-powered platform for building modern web applications instantly.
+
+## 🛠️ Tech Stack
+
+- ⚛️ **React 18** — Modern UI library
+- 🔷 **TypeScript** — Type-safe development
+- 🎨 **Tailwind CSS** — Utility-first styling
+- ⚡ **Vite** — Lightning-fast build tool
+- 🎭 **Framer Motion** — Smooth animations
+
+## 📦 Getting Started
+
+\`\`\`bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/${repoName}.git
+
+# Navigate to the project
+cd ${repoName}
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+\`\`\`
+
+## 🌐 Live Demo
+
+Visit **[vivorax.online](https://vivorax.online/)** to create your own project!
+
+---
+
+<div align="center">
+
+Made with ❤️ using [Vivora X](https://vivorax.online/)
+
+</div>
+`;
+}
+
 // Push files to GitHub repo using the Git Trees API
 async function pushFilesToRepo(
   token: string,
   fullName: string,
   branch: string,
   files: Record<string, { content: string }>,
-  commitMessage: string
+  commitMessage: string,
+  repoName: string
 ): Promise<string> {
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "User-Agent": "Vivora-X" };
 
@@ -127,9 +190,12 @@ async function pushFilesToRepo(
     baseTreeSha = commitData.tree.sha;
   }
 
+  // Auto-add professional README
+  const allFiles = { ...files, "README.md": { content: generateReadme(repoName) } };
+
   // Create blobs for each file
   const tree: { path: string; mode: string; type: string; sha: string }[] = [];
-  for (const [path, file] of Object.entries(files)) {
+  for (const [path, file] of Object.entries(allFiles)) {
     const cleanPath = path.startsWith("/") ? path.substring(1) : path;
     const blobRes = await fetch(`https://api.github.com/repos/${fullName}/git/blobs`, {
       method: "POST",
@@ -212,7 +278,7 @@ serve(async (req) => {
       }
 
       const repo = await createOrGetRepo(ghToken, repoName);
-      const sha = await pushFilesToRepo(ghToken, repo.full_name, repo.default_branch, files, commitMessage || "Update from Vivora X");
+      const sha = await pushFilesToRepo(ghToken, repo.full_name, repo.default_branch, files, commitMessage || "Update from Vivora X", repoName);
 
       return new Response(JSON.stringify({ 
         success: true, 
