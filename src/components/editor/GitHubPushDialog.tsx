@@ -39,7 +39,7 @@ export const GitHubPushDialog: React.FC<GitHubPushDialogProps> = ({
   projectId,
   existingRepoUrl,
 }) => {
-  const { integrations, pushToGitHub, startGitHubOAuth } = useIntegrations();
+  const { integrations, pushToGitHub } = useIntegrations();
   const [step, setStep] = useState<PushStep>('input');
   const [repoName, setRepoName] = useState('');
   const [repoUrl, setRepoUrl] = useState<string | null>(existingRepoUrl);
@@ -126,12 +126,11 @@ export const GitHubPushDialog: React.FC<GitHubPushDialogProps> = ({
                 <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-foreground">GitHub not connected</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Connect your GitHub account to push code</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Add your GitHub token in Settings → Integrations</p>
                 </div>
               </div>
-              <Button onClick={startGitHubOAuth} className="w-full gap-2">
-                <img src={githubLogo} alt="" className="w-4 h-4 dark:invert" />
-                Sign in with GitHub
+              <Button onClick={() => onOpenChange(false)} variant="outline" className="w-full gap-2">
+                Go to Settings to connect GitHub
               </Button>
             </div>
           )}
