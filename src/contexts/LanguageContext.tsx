@@ -36,9 +36,9 @@ export const translations: Translations = {
   'nav.backToHome': { en: 'Back to Home', zh: '返回首页', ja: 'ホームに戻る', fr: 'Retour à l\'accueil' },
 
   // Home page
-  'home.title1': { en: 'Think It.', zh: '想一想.', ja: '考えて.', fr: 'Pensez-y.' },
-  'home.title2': { en: 'Type It.', zh: '输入它.', ja: '入力して.', fr: 'Tapez-le.' },
-  'home.title3': { en: 'Launch It.', zh: '启动它.', ja: '起動して.', fr: 'Lancez-le.' },
+  'home.title1': { en: 'Dream It.', zh: '梦想它.', ja: '夢見て.', fr: 'Rêvez-le.' },
+  'home.title2': { en: 'Prompt It.', zh: '描述它.', ja: '伝えて.', fr: 'Décrivez-le.' },
+  'home.title3': { en: 'Ship It.', zh: '发布它.', ja: '届けて.', fr: 'Expédiez-le.' },
   'home.subtitle': { en: 'Build production-ready', zh: '构建生产就绪', ja: '本番対応の構築', fr: 'Créez des applications prêtes' },
   'home.placeholder': { en: 'What can I build for you today?', zh: '今天我能为您构建什么？', ja: '今日は何を作りましょうか？', fr: 'Que puis-je construire pour vous aujourd\'hui ?' },
   'home.import': { en: 'Import', zh: '导入', ja: 'インポート', fr: 'Importer' },
