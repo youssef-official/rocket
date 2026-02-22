@@ -63,5 +63,5 @@ export interface Project {
 export interface FileActivity {
   name: string;
   status: 'editing' | 'done';
-  action: 'read' | 'edited' | 'created' | 'analyzed_image';
+  action: 'read' | 'edited' | 'created' | 'analyzed_image' | 'deleted';
 }
