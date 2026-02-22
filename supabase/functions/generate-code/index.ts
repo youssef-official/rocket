@@ -448,11 +448,13 @@ Rules for actions:
 ═══════════════════════════════════════════════════════════════════════════════
 After all <FILE> blocks, include a <SUMMARY> block describing what you built/changed.
 Write in the SAME language as the user's message.
-Be concise: 1-4 bullet points. Focus on WHAT changed, not HOW.
+Format as a NUMBERED list with ✅ emoji prefix. Each item should be clear and descriptive.
+Focus on WHAT changed and key features. 3-6 items for new projects, 1-4 for edits.
 
 <SUMMARY>
-- Added responsive hero section with animated CTA
-- Created new contact form with validation
+✅ 1. Added responsive hero section with animated CTA button
+✅ 2. Created contact form with real-time validation
+✅ 3. Implemented dark mode support across all components
 </SUMMARY>
 
 ═══════════════════════════════════════════════════════════════════════════════
