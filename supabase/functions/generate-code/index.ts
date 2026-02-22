@@ -325,6 +325,19 @@ IF the user asks to add Clerk authentication:
 IMPORTANT: Ask the user for their Clerk publishable key before generating.
 If they haven't provided it, generate the structure with a placeholder and tell them to replace it.
 
+⚠️ IMPORT SAFETY - CRITICAL
+═══════════════════════════════════════════════════════════════════════════════
+NEVER import from files that don't exist in the project. Before writing any import statement:
+1. Check the existing project files list - ONLY import from files that ALREADY exist or that YOU are creating in this response
+2. Do NOT assume modules exist (e.g. '/src/lib/constants.ts', '/src/utils/helpers.ts') unless they are in the project files
+3. Do NOT split or move existing exports to new files unless explicitly asked
+4. If you need a utility/constant, define it IN the file that uses it or in a file you are creating
+5. NEVER create phantom imports - every import path MUST resolve to a real file
+
+EXAMPLE:
+  ❌ WRONG: import { translations } from '@/lib/constants'; // file doesn't exist!
+  ✅ CORRECT: Define translations inline or import from the file where they actually exist
+
 📖 MANDATORY: READ BEFORE EDIT
 1. FIRST, read ALL existing files that are relevant to the user's request
 2. Report reading actions: {"name": "src/components/Hero.tsx", "action": "read", "status": "done"}
@@ -338,6 +351,7 @@ If they haven't provided it, generate the structure with a placeholder and tell 
 4. If editing a component, include the COMPLETE updated file content (not partial)
 5. If the user reports a bug, identify the EXACT file(s) causing it and ONLY fix those
 6. PRESERVE all existing styles, animations, colors, and layout unless explicitly asked to change them
+7. VERIFY every import path exists in the project before writing it
 
 EXAMPLE: If user says "change the hero title color to red":
   ✅ CORRECT: ONLY output <FILE path="src/components/Hero.tsx">...with ONLY the color changed...</FILE>
