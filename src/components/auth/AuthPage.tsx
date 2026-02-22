@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
-import heroImg from '@/assets/hero-bg.webp';
+import authVideo from '@/assets/vivora-auth-video.mp4';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 interface AuthPageProps {
@@ -93,9 +93,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
         <div className="bg-white rounded-3xl overflow-hidden shadow-2xl flex">
           {/* Left - Image */}
           <div className="hidden lg:block w-1/2 relative">
-            <img 
-              src={heroImg} 
-              alt="Hero" 
+            <video 
+              src={authVideo} 
+              autoPlay 
+              loop 
+              muted 
+              playsInline
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
