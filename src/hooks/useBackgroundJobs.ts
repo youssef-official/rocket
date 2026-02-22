@@ -34,18 +34,30 @@ export function useBackgroundJobs({ projectId, onJobComplete }: UseBackgroundJob
     if (!projectId || !user) return;
 
     try {
+      // Check for pending/processing jobs
       const { data } = await supabase
         .from('generation_jobs')
         .select('*')
         .eq('project_id', projectId)
-        .in('status', ['pending', 'processing'])
+        .in('status', ['pending', 'processing', 'done'])
         .order('created_at', { ascending: false })
         .limit(1);
 
       if (data && data.length > 0) {
-        const job = data[0];
-        setActiveJob(mapJob(job));
-        setIsBackgroundProcessing(true);
+        const job = mapJob(data[0]);
+        setActiveJob(job);
+        
+        if (job.status === 'done' && job.resultFiles) {
+          // Job completed while we were away - apply results
+          setIsBackgroundProcessing(false);
+          toast({
+            title: '✅ Generation Complete',
+            description: 'Your background generation finished while you were away.',
+          });
+          onJobCompleteRef.current?.(job);
+        } else if (job.status === 'pending' || job.status === 'processing') {
+          setIsBackgroundProcessing(true);
+        }
       }
     } catch (e) {
       console.error('Error checking existing jobs:', e);
@@ -84,22 +96,22 @@ export function useBackgroundJobs({ projectId, onJobComplete }: UseBackgroundJob
             // Notify user if tab was in background
             if (document.visibilityState === 'hidden') {
               try {
-                new Notification('✅ VivoraX - اكتملت المهمة!', {
-                  body: 'تم توليد الكود بنجاح في الخلفية.',
+                new Notification('✅ VivoraX - Generation Complete!', {
+                  body: 'Your code has been generated in the background.',
                   icon: '/favicon.svg',
                 });
               } catch {}
             }
             toast({
-              title: '✅ اكتملت المهمة',
-              description: job.resultMessage?.slice(0, 100) || 'تم توليد الكود في الخلفية',
+              title: '✅ Generation Complete',
+              description: job.resultMessage?.slice(0, 100) || 'Code generated in the background',
             });
             onJobCompleteRef.current?.(job);
           } else if (job.status === 'error') {
             setIsBackgroundProcessing(false);
             toast({
-              title: '❌ خطأ في التوليد',
-              description: job.errorMessage || 'حدث خطأ أثناء التوليد في الخلفية',
+              title: '❌ Generation Error',
+              description: job.errorMessage || 'An error occurred during background generation',
               variant: 'destructive',
             });
           }
@@ -109,8 +121,17 @@ export function useBackgroundJobs({ projectId, onJobComplete }: UseBackgroundJob
 
     realtimeChannelRef.current = channel;
 
+    // Re-check jobs when tab becomes visible (in case we missed realtime events)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkExistingJobs();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [projectId, user, checkExistingJobs]);
 

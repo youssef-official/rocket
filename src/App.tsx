@@ -85,22 +85,83 @@ const ProjectEditorRoute = () => {
 
   const { createVersion } = useVersions(id || null);
 
+  // Track if we've already switched to background for current generation
+  const backgroundFallbackTriggered = useRef(false);
+  const currentGenerationMessages = useRef<any[]>([]);
+
   // Background jobs - handles generation when tab is closed
   const handleJobComplete = useCallback(async (job: GenerationJob) => {
     if (!job.resultFiles || !localProject) return;
     // Apply the result files to local project
-    setLocalProject(prev => prev ? { ...prev, files: job.resultFiles as any } : null);
+    const mergedFiles = { ...localProject.files, ...job.resultFiles as any };
+    setLocalProject(prev => prev ? { ...prev, files: mergedFiles } : null);
+    
+    // Save to database
+    await updateProject(localProject.id, { files: mergedFiles, generationStatus: 'complete' });
+    
     // Add completion message to chat
-    if (job.resultMessage) {
-      await addMessage('assistant', job.resultMessage, undefined, job.resultActions || []);
-    }
+    const fileCount = Object.keys(job.resultFiles).length;
+    const summary = job.resultMessage || `✅ Background generation complete! ${fileCount} files generated.`;
+    await addMessage('assistant', summary, undefined, job.resultActions || []);
+    
+    // Reset generation state
+    setIsGenerating(false);
+    setStreamingContent('');
+    setStatusMessage('');
+    setGenerationPhase(prev => prev ? {
+      ...prev,
+      phase: 'complete',
+      message: t('chat.complete'),
+      status: t('chat.complete'),
+      summary
+    } : null);
+    
+    backgroundFallbackTriggered.current = false;
     clearActiveJob();
-  }, [localProject, addMessage]);
+    
+    // Refresh credits
+    queryClient.invalidateQueries({ queryKey: ['userPlan'] });
+  }, [localProject, addMessage, updateProject, t]);
 
   const { activeJob, isBackgroundProcessing, createBackgroundJob, clearActiveJob } = useBackgroundJobs({
     projectId: id || null,
     onJobComplete: handleJobComplete,
   });
+
+  // Auto-switch to background generation when tab is hidden during active generation
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (
+        document.visibilityState === 'hidden' && 
+        isGenerating && 
+        !backgroundFallbackTriggered.current &&
+        localProject &&
+        currentGenerationMessages.current.length > 0
+      ) {
+        console.log('[Generation] Tab hidden during generation - switching to background mode');
+        backgroundFallbackTriggered.current = true;
+        
+        // Cancel the streaming generation
+        isCancelled.current = true;
+        stopGeneration();
+        
+        // Create a background job with the current messages
+        const jobId = await createBackgroundJob(currentGenerationMessages.current, 'code');
+        
+        if (jobId) {
+          console.log('[Generation] Background job created:', jobId);
+          setStatusMessage('Continuing in background...');
+          toast({
+            title: '🔄 Continuing in background',
+            description: 'Your generation will continue even if you close this tab.',
+          });
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isGenerating, localProject, createBackgroundJob]);
 
 
   useEffect(() => {
@@ -284,6 +345,9 @@ const ProjectEditorRoute = () => {
           if (savedImageUrl) {
             aiMessages[0].imageUrls = [savedImageUrl];
           }
+          // Store for background fallback
+          currentGenerationMessages.current = aiMessages;
+          backgroundFallbackTriggered.current = false;
 
           await streamAICodeGeneration(
             aiMessages,
@@ -378,6 +442,8 @@ const ProjectEditorRoute = () => {
                   await addMessage('assistant', summary, undefined, activities);
                 }
 
+                currentGenerationMessages.current = [];
+                backgroundFallbackTriggered.current = false;
                 setIsGenerating(false);
                 setStreamingContent('');
                 setStatusMessage('');
@@ -653,6 +719,10 @@ const ProjectEditorRoute = () => {
         },
       ];
 
+      // Store for background fallback
+      currentGenerationMessages.current = conversationHistory;
+      backgroundFallbackTriggered.current = false;
+
       let fullResponse = '';
       const detectedFiles = new Set<string>();
 
@@ -762,6 +832,8 @@ const ProjectEditorRoute = () => {
               await addMessage('assistant', summary, undefined, activities);
             }
 
+            currentGenerationMessages.current = [];
+            backgroundFallbackTriggered.current = false;
             setIsGenerating(false);
             setStreamingContent('');
             setStatusMessage('');
