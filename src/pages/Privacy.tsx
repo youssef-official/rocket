@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Shield } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { Footer } from '@/components/shared/Footer';
+import { SEOHead } from '@/components/shared/SEOHead';
 import { useLanguage } from '@/contexts/LanguageContext';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
@@ -11,6 +12,12 @@ export const Privacy: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
+      <SEOHead
+        title="Privacy Policy"
+        description="Vivora X privacy policy. Learn how we collect, use, and protect your data on our AI-powered vibe coding platform."
+        keywords="vivora x privacy, vivorax privacy policy, data protection, AI coding platform privacy"
+        canonical="https://vivorax.online/privacy"
+      />
       <div 
         className="flex-1 relative"
         style={{

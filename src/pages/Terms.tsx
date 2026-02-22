@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, FileText } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { Footer } from '@/components/shared/Footer';
+import { SEOHead } from '@/components/shared/SEOHead';
 import { useLanguage } from '@/contexts/LanguageContext';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
@@ -11,6 +12,12 @@ export const Terms: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
+      <SEOHead
+        title="Terms of Service"
+        description="Vivora X terms of service. Read the terms and conditions for using our AI-powered vibe coding and web application builder platform."
+        keywords="vivora x terms, vivorax terms of service, AI coding platform terms, vibe coding terms"
+        canonical="https://vivorax.online/terms"
+      />
       <div 
         className="flex-1 relative"
         style={{

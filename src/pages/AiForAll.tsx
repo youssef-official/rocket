@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Copy, Check, Zap, Globe, Code2, Sparkles, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { SEOHead } from '@/components/shared/SEOHead';
 
 const AI_GATEWAY_URL = "https://ai-gateway.vivorax.online";
 
@@ -164,6 +165,12 @@ export default function Chatbot() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SEOHead
+        title="AI for All — Free AI Gateway"
+        description="Free unlimited AI gateway for developers. Access powerful AI models with zero setup, no API key required. Build chatbots, generate content, and more with Vivora X."
+        keywords="free AI API, AI gateway, vivora x AI, free GPT API, AI for developers, no API key AI, vibe coding AI, unlimited AI access"
+        canonical="https://vivorax.online/ai-for-all"
+      />
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">

@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Zap, Star, Shield, Layers, Globe, Rocket, Crown, Check, ArrowRight } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
+import { SEOHead } from '@/components/shared/SEOHead';
 
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
@@ -29,6 +30,12 @@ const whyDifferent = [
 export const NewVibeTool: React.FC = () => {
   return (
     <div className="min-h-screen" style={{ backgroundImage: `url(${spaceHeroBg})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+      <SEOHead
+        title="New Vibe Tool — Build Web Apps with AI"
+        description="Discover Vivora X, the new vibe coding tool that transforms your ideas into production-ready React apps. AI-powered web development with no coding required."
+        keywords="vibe coding tool, vivora x features, AI web builder, new coding tool, AI app generator, build apps with AI, vivorax tool"
+        canonical="https://vivorax.online/new-vibe-tool"
+      />
       <div className="absolute inset-0 bg-black/60" />
 
       {/* Header */}
