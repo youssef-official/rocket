@@ -590,11 +590,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
     const visibleText = text.slice(0, displayedLength);
 
+    // Detect if text is primarily Arabic/RTL
+    const isRTL = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(visibleText.slice(0, 50));
+
     return (
-      <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap" dir="auto">
+      <div className={`text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         {visibleText}
         {!isComplete && (
-          <span className="inline-block w-0.5 h-4 bg-primary animate-pulse ml-0.5 align-middle" />
+          <span className={`inline-block w-0.5 h-4 bg-primary animate-pulse ${isRTL ? 'mr-0.5' : 'ml-0.5'} align-middle`} />
         )}
       </div>
     );
