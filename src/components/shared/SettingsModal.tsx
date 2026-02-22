@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, Settings as SettingsIcon,
-    Loader2, LogIn
+    Loader2, Key, Eye, EyeOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIntegrations } from '@/hooks/useIntegrations';
@@ -23,23 +24,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     const {
         integrations,
         loading,
-        startVercelOAuth,
+        saveVercelToken,
+        saveGitHubToken,
         disconnectVercel,
-        startGitHubOAuth,
         disconnectGitHub,
     } = useIntegrations();
 
-    const [connectingVercel, setConnectingVercel] = useState(false);
-    const [connectingGitHub, setConnectingGitHub] = useState(false);
+    const [vercelToken, setVercelToken] = useState('');
+    const [githubToken, setGitHubToken] = useState('');
+    const [savingVercel, setSavingVercel] = useState(false);
+    const [savingGitHub, setSavingGitHub] = useState(false);
+    const [showVercelToken, setShowVercelToken] = useState(false);
+    const [showGitHubToken, setShowGitHubToken] = useState(false);
 
-    const handleConnectVercel = async () => {
-        setConnectingVercel(true);
-        await startVercelOAuth();
+    const handleSaveVercel = async () => {
+        if (!vercelToken.trim()) return;
+        setSavingVercel(true);
+        const success = await saveVercelToken(vercelToken.trim());
+        setSavingVercel(false);
+        if (success) setVercelToken('');
     };
 
-    const handleConnectGitHub = async () => {
-        setConnectingGitHub(true);
-        await startGitHubOAuth();
+    const handleSaveGitHub = async () => {
+        if (!githubToken.trim()) return;
+        setSavingGitHub(true);
+        const success = await saveGitHubToken(githubToken.trim());
+        setSavingGitHub(false);
+        if (success) setGitHubToken('');
     };
 
     return (
@@ -90,30 +101,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                             ) : (
                                 <div className="space-y-8">
                                     {/* Vercel Integration */}
-                                    <IntegrationCard
+                                    <TokenIntegrationCard
                                         logo={vercelLogo}
                                         name="Vercel"
                                         description={t('integrations.vercelDesc')}
                                         connected={!!integrations?.vercel_connected}
                                         username={integrations?.vercel_username}
-                                        onConnect={handleConnectVercel}
+                                        tokenValue={vercelToken}
+                                        onTokenChange={setVercelToken}
+                                        onSave={handleSaveVercel}
                                         onDisconnect={disconnectVercel}
-                                        connecting={connectingVercel}
+                                        saving={savingVercel}
+                                        showToken={showVercelToken}
+                                        onToggleShow={() => setShowVercelToken(!showVercelToken)}
+                                        placeholder="Enter your Vercel Access Token"
+                                        helpUrl="https://vercel.com/account/tokens"
+                                        helpText="Get token from Vercel → Settings → Tokens"
                                         isRTL={isRTL}
                                         logoClassName="dark:invert"
                                         t={t}
                                     />
 
                                     {/* GitHub Integration */}
-                                    <IntegrationCard
+                                    <TokenIntegrationCard
                                         logo={githubLogo}
                                         name="GitHub"
                                         description="Push your projects to GitHub repositories"
                                         connected={!!integrations?.github_connected}
                                         username={integrations?.github_username}
-                                        onConnect={handleConnectGitHub}
+                                        tokenValue={githubToken}
+                                        onTokenChange={setGitHubToken}
+                                        onSave={handleSaveGitHub}
                                         onDisconnect={disconnectGitHub}
-                                        connecting={connectingGitHub}
+                                        saving={savingGitHub}
+                                        showToken={showGitHubToken}
+                                        onToggleShow={() => setShowGitHubToken(!showGitHubToken)}
+                                        placeholder="Enter your GitHub Personal Access Token"
+                                        helpUrl="https://github.com/settings/tokens/new"
+                                        helpText="Get token from GitHub → Settings → Developer settings → Personal access tokens"
                                         isRTL={isRTL}
                                         logoClassName="dark:invert"
                                         t={t}
@@ -128,20 +153,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     );
 };
 
-// Reusable integration card
-const IntegrationCard: React.FC<{
+// Token-based integration card
+const TokenIntegrationCard: React.FC<{
     logo: string;
     name: string;
     description: string;
     connected: boolean;
     username?: string | null;
-    onConnect: () => void;
+    tokenValue: string;
+    onTokenChange: (val: string) => void;
+    onSave: () => void;
     onDisconnect: () => Promise<boolean>;
-    connecting: boolean;
+    saving: boolean;
+    showToken: boolean;
+    onToggleShow: () => void;
+    placeholder: string;
+    helpUrl: string;
+    helpText: string;
     isRTL: boolean;
     logoClassName?: string;
     t: (key: string) => string;
-}> = ({ logo, name, description, connected, username, onConnect, onDisconnect, connecting, isRTL, logoClassName, t }) => (
+}> = ({ logo, name, description, connected, username, tokenValue, onTokenChange, onSave, onDisconnect, saving, showToken, onToggleShow, placeholder, helpUrl, helpText, isRTL, logoClassName, t }) => (
     <div className="space-y-4">
         <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -172,7 +204,7 @@ const IntegrationCard: React.FC<{
                     </div>
                     <div className={isRTL ? 'text-right' : ''}>
                         <p className="text-sm font-medium text-white">{username}</p>
-                        <p className="text-xs text-white/40">Connected via OAuth</p>
+                        <p className="text-xs text-white/40">Connected via Token</p>
                     </div>
                 </div>
                 <Button
@@ -185,18 +217,47 @@ const IntegrationCard: React.FC<{
                 </Button>
             </div>
         ) : (
-            <Button
-                onClick={onConnect}
-                disabled={connecting}
-                className="w-full bg-white text-black hover:bg-white/90 gap-2"
-            >
-                {connecting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                    <LogIn className="w-4 h-4" />
-                )}
-                Sign in with {name}
-            </Button>
+            <div className="space-y-3">
+                <div className="relative">
+                    <Input
+                        type={showToken ? 'text' : 'password'}
+                        value={tokenValue}
+                        onChange={(e) => onTokenChange(e.target.value)}
+                        placeholder={placeholder}
+                        className="bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-10"
+                        onKeyDown={(e) => e.key === 'Enter' && onSave()}
+                    />
+                    <button
+                        type="button"
+                        onClick={onToggleShow}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+                    >
+                        {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                </div>
+                <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <a
+                        href={helpUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-400 hover:text-blue-300 hover:underline"
+                    >
+                        {helpText}
+                    </a>
+                </div>
+                <Button
+                    onClick={onSave}
+                    disabled={saving || !tokenValue.trim()}
+                    className="w-full bg-white text-black hover:bg-white/90 gap-2"
+                >
+                    {saving ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                        <Key className="w-4 h-4" />
+                    )}
+                    Connect {name}
+                </Button>
+            </div>
         )}
     </div>
 );

@@ -46,84 +46,7 @@ export function useIntegrations() {
     fetchIntegrations();
   }, [fetchIntegrations]);
 
-  // Start Vercel OAuth flow
-  const startVercelOAuth = async () => {
-    const redirectUri = `${window.location.origin}/oauth/vercel/callback`;
-    sessionStorage.setItem('vercel_return_to', window.location.pathname);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('vercel-oauth', {
-        body: { action: 'get-auth-url', redirectUri }
-      });
-
-      if (error) throw error;
-      if (data?.url) {
-        sessionStorage.setItem('vercel_redirect_uri', redirectUri);
-        // Store the state for PKCE flow
-        if (data.state) {
-          sessionStorage.setItem('vercel_oauth_state', data.state);
-        }
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error('Error starting Vercel OAuth:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to start Vercel login. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Handle OAuth callback
-  const handleVercelCallback = async (code: string): Promise<boolean> => {
-    if (!user) return false;
-
-    const redirectUri = sessionStorage.getItem('vercel_redirect_uri') || `${window.location.origin}/oauth/vercel/callback`;
-    const state = sessionStorage.getItem('vercel_oauth_state');
-
-    try {
-      const { data, error } = await supabase.functions.invoke('vercel-oauth', {
-        body: { action: 'exchange-code', code, redirectUri, state }
-      });
-
-      if (error) throw error;
-
-      if (data?.access_token) {
-        const { error: dbError } = await supabase
-          .from('user_integrations')
-          .upsert({
-            user_id: user.id,
-            vercel_token: data.access_token,
-            vercel_username: data.username,
-            vercel_connected: true,
-          }, { onConflict: 'user_id' });
-
-        if (dbError) throw dbError;
-
-        toast({
-          title: 'Vercel Connected',
-          description: `Connected as ${data.username}`,
-        });
-
-        sessionStorage.removeItem('vercel_redirect_uri');
-        sessionStorage.removeItem('vercel_oauth_state');
-        await fetchIntegrations();
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error exchanging Vercel code:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to connect Vercel account',
-        variant: 'destructive',
-      });
-      return false;
-    }
-  };
-
-  // Legacy: save token directly (kept for backward compat)
+  // Save Vercel token directly (validates against Vercel API)
   const saveVercelToken = async (token: string): Promise<boolean> => {
     if (!user) return false;
 
@@ -133,12 +56,12 @@ export function useIntegrations() {
       });
 
       if (!response.ok) {
-        toast({ title: 'Invalid Token', description: 'The Vercel token is invalid.', variant: 'destructive' });
+        toast({ title: 'Invalid Token', description: 'The Vercel token is invalid. Please check and try again.', variant: 'destructive' });
         return false;
       }
 
       const userData = await response.json();
-      const username = userData.user?.username || userData.user?.name;
+      const username = userData.user?.username || userData.user?.name || userData.user?.email;
 
       const { error } = await supabase
         .from('user_integrations')
@@ -185,56 +108,40 @@ export function useIntegrations() {
     }
   };
 
-  // Start GitHub OAuth flow
-  const startGitHubOAuth = async () => {
-    const redirectUri = `${window.location.origin}/oauth/github/callback`;
-    sessionStorage.setItem('github_return_to', window.location.pathname);
-    
-    try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/github-push`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ action: 'get-auth-url', redirectUri }),
-      });
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error('Error starting GitHub OAuth:', error);
-      toast({ title: 'Error', description: 'Failed to start GitHub login.', variant: 'destructive' });
-    }
-  };
-
-  // Handle GitHub OAuth callback
-  const handleGitHubCallback = async (code: string, state: string): Promise<boolean> => {
+  // Save GitHub token directly (validates against GitHub API)
+  const saveGitHubToken = async (token: string): Promise<boolean> => {
     if (!user) return false;
-    const redirectUri = `${window.location.origin}/oauth/github/callback`;
-    
+
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/github-push`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ action: 'exchange-code', code, state, redirectUri }),
+      const response = await fetch('https://api.github.com/user', {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await response.json();
-      
-      if (data.token) {
-        await supabase.from('user_integrations').upsert({
+
+      if (!response.ok) {
+        toast({ title: 'Invalid Token', description: 'The GitHub token is invalid. Please check and try again.', variant: 'destructive' });
+        return false;
+      }
+
+      const userData = await response.json();
+      const username = userData.login || userData.name || '';
+
+      const { error } = await supabase
+        .from('user_integrations')
+        .upsert({
           user_id: user.id,
-          github_token: data.token,
-          github_username: data.username,
+          github_token: token,
+          github_username: username,
           github_connected: true,
         }, { onConflict: 'user_id' });
-        
-        toast({ title: 'GitHub Connected', description: `Connected as ${data.username}` });
-        await fetchIntegrations();
-        return true;
-      }
-      return false;
+
+      if (error) throw error;
+
+      toast({ title: 'GitHub Connected', description: `Connected as ${username}` });
+      await fetchIntegrations();
+      return true;
     } catch (error) {
-      console.error('Error exchanging GitHub code:', error);
-      toast({ title: 'Error', description: 'Failed to connect GitHub', variant: 'destructive' });
+      console.error('Error saving GitHub token:', error);
+      toast({ title: 'Error', description: 'Failed to save GitHub token', variant: 'destructive' });
       return false;
     }
   };
@@ -285,11 +192,8 @@ export function useIntegrations() {
     integrations,
     loading,
     saveVercelToken,
-    startVercelOAuth,
-    handleVercelCallback,
+    saveGitHubToken,
     disconnectVercel,
-    startGitHubOAuth,
-    handleGitHubCallback,
     pushToGitHub,
     disconnectGitHub,
     refetch: fetchIntegrations,
