@@ -1280,6 +1280,7 @@ import SupabaseConnect from "@/pages/SupabaseConnect";
 import GitHubCallback from "@/pages/GitHubCallback";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
+import AboutUs from "@/pages/AboutUs";
 // AdminPanel already imported at the top
 
 const App = () => (
@@ -1311,6 +1312,7 @@ const App = () => (
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/supabase-connect" element={<SupabaseConnect />} />
+              <Route path="/about" element={<AboutUs />} />
               <Route path="/" element={<AppContent />} />
             </Routes>
           </BrowserRouter>
