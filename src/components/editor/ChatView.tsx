@@ -627,7 +627,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       <motion.div
         initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-3 py-3 px-4 rounded-lg bg-secondary/50 border border-border/50"
+        className="mt-3"
       >
         <StreamingSummary text={formatted} isNew={isStreaming} />
       </motion.div>
