@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
@@ -12,7 +12,7 @@ import { toast } from '@/hooks/use-toast';
 interface FileActivity {
   name: string;
   status: 'editing' | 'done';
-  action: 'read' | 'edited' | 'created' | 'analyzed_image';
+  action: 'read' | 'edited' | 'created' | 'analyzed_image' | 'deleted';
 }
 
 interface Suggestion {
@@ -116,24 +116,32 @@ const cleanAIMessage = (content: string): string => {
   cleaned = cleaned.replace(/\{\s*"files"\s*:\s*\{[\s\S]*$/g, '');
   cleaned = cleaned.replace(/\[\s*\{[\s\S]*$/g, '');
 
-  // Remove summary sections
+  // Remove summary sections - they'll be rendered separately
   cleaned = cleaned.replace(/\*?\*?Summary:?\*?\*?[\s\S]*?(?=\*\*|$)/gi, '');
+
+  // Remove ✅ completion lines (rendered as summary block)
+  cleaned = cleaned.replace(/✅[^\n]*/g, '');
 
   // Filter out technical lines
   cleaned = cleaned.split('\n').filter(line => {
     const t = line.trim();
-    // Skip JSON-like content
     if (t.startsWith('"') && (t.includes('src/') || t.includes('index.html'))) return false;
     if (t.startsWith('{') || t === '}' || t === '],') return false;
     if (t.startsWith('[') && t.includes('"')) return false;
     if (t.toLowerCase().startsWith('summary:')) return false;
-    // Skip file path references
     if (/^["']?(src\/|index\.html|package\.json|tailwind|vite)/.test(t)) return false;
     return true;
   }).join('\n');
 
   // Clean excessive whitespace
   return cleaned.replace(/\n{3,}/g, '\n\n').trim();
+};
+
+// Extract summary line from AI message (✅ line)
+const extractSummaryFromMessage = (content: string): string | null => {
+  if (!content) return null;
+  const match = content.match(/✅[^\n]+/);
+  return match ? match[0] : null;
 };
 
 // Extract "What I'm Building" section from message
@@ -376,7 +384,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   const ActionIcon = file.action === 'edited' ? Pencil :
                     file.action === 'created' ? FileOutput :
                       file.action === 'read' ? Eye :
-                        file.action === 'analyzed_image' ? ImageIcon : FileOutput;
+                        file.action === 'deleted' ? Trash2 :
+                          file.action === 'analyzed_image' ? ImageIcon : FileOutput;
 
                   return (
                     <motion.div
@@ -545,6 +554,54 @@ export const ChatView: React.FC<ChatViewProps> = ({
           )}
         </motion.div>
       </div>
+    );
+  };
+
+  // Render Summary Block (after activities, before version card)
+  const renderSummaryBlock = (summary: string | null, activities: FileActivity[]) => {
+    if (!summary && activities.length === 0) return null;
+
+    const readCount = activities.filter(a => a.action === 'read').length;
+    const createdCount = activities.filter(a => a.action === 'created').length;
+    const editedCount = activities.filter(a => a.action === 'edited').length;
+    const deletedCount = activities.filter(a => a.action === 'deleted').length;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-3 p-3 rounded-xl bg-primary/5 border border-primary/10"
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <Files className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold text-foreground">{t('chat.summary') || 'Summary'}</span>
+        </div>
+        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+          {readCount > 0 && (
+            <span className="flex items-center gap-1">
+              <Eye className="w-3 h-3" /> {t('action.read') || 'Read'}: {readCount}
+            </span>
+          )}
+          {createdCount > 0 && (
+            <span className="flex items-center gap-1 text-emerald-500">
+              <FileOutput className="w-3 h-3" /> {t('action.created') || 'Created'}: {createdCount}
+            </span>
+          )}
+          {editedCount > 0 && (
+            <span className="flex items-center gap-1 text-blue-500">
+              <Pencil className="w-3 h-3" /> {t('action.edited') || 'Edited'}: {editedCount}
+            </span>
+          )}
+          {deletedCount > 0 && (
+            <span className="flex items-center gap-1 text-red-500">
+              <Trash2 className="w-3 h-3" /> {t('action.deleted') || 'Deleted'}: {deletedCount}
+            </span>
+          )}
+        </div>
+        {summary && (
+          <p className="text-sm text-foreground/70 mt-2">{summary.replace(/^✅\s*/, '')}</p>
+        )}
+      </motion.div>
     );
   };
 
@@ -741,6 +798,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         {/* Show stored activities for completed versions - always visible */}
                         {versionActivities.length > 0 && (
                           renderFileActivityPanelForMessage(msg.id, versionActivities, false)
+                        )}
+
+                        {/* Summary block - after activities, before version card */}
+                        {!isGenerating && versionActivities.length > 0 && (
+                          renderSummaryBlock(extractSummaryFromMessage(msg.content), versionActivities)
                         )}
 
                         {/* Show version card for message */}

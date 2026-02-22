@@ -14,7 +14,7 @@ export interface Suggestion {
 export interface FileActivity {
   name: string;
   status: 'editing' | 'done';
-  action: 'read' | 'edited' | 'created' | 'analyzed_image';
+  action: 'read' | 'edited' | 'created' | 'analyzed_image' | 'deleted';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -159,26 +159,35 @@ function manualExtractFiles(text: string): { files: Record<string, any>, fileLis
 /**
  * Parses <FILE path="...">...</FILE> blocks (preferred for code mode).
  */
-function parseFileBlocks(text: string): { files: Record<string, any>, fileList: string[] } | null {
+function parseFileBlocks(text: string): { files: Record<string, any>, fileList: string[], deletedFiles: string[] } | null {
   const files: Record<string, any> = {};
   const fileList: string[] = [];
+  const deletedFiles: string[] = [];
 
+  // Parse FILE blocks
   const re = /<FILE\s+path=("|')([^"']+)\1>\s*([\s\S]*?)\s*<\/FILE>/g;
   let match: RegExpExecArray | null;
 
   while ((match = re.exec(text)) !== null) {
     const path = match[2]?.trim();
     if (!path || /^\d+$/.test(path)) continue;
-
-    // Preserve content as-is (raw newlines etc.)
     const content = match[3] ?? '';
-
     if (!fileList.includes(path)) fileList.push(path);
     files[path] = { path, content, type: 'file' };
   }
 
-  if (fileList.length === 0) return null;
-  return { files, fileList };
+  // Parse DELETE blocks
+  const deleteRe = /<DELETE\s+path=("|')([^"']+)\1\s*\/?>/g;
+  let deleteMatch: RegExpExecArray | null;
+  while ((deleteMatch = deleteRe.exec(text)) !== null) {
+    const path = deleteMatch[2]?.trim();
+    if (path && !deletedFiles.includes(path)) {
+      deletedFiles.push(path);
+    }
+  }
+
+  if (fileList.length === 0 && deletedFiles.length === 0) return null;
+  return { files, fileList, deletedFiles };
 }
 
 /**
@@ -270,7 +279,7 @@ function detectTruncation(response: string): boolean {
 }
 
 // Main parser with robust error handling
-export function parseAIResponse(response: string): { files: Record<string, any>, fileList: string[], actionsTaken?: FileActivity[] } {
+export function parseAIResponse(response: string): { files: Record<string, any>, fileList: string[], actionsTaken?: FileActivity[], deletedFiles?: string[] } {
   try {
     // Handle "json|..." format from AI gateways
     if (response.startsWith('json|')) {
@@ -282,8 +291,8 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
 
     // Preferred: parse <FILE> blocks (doesn't require JSON escaping)
     const fileBlocks = parseFileBlocks(response);
-    if (fileBlocks && fileBlocks.fileList.length > 0) {
-      console.log('[parseAIResponse] Parsed <FILE> blocks:', fileBlocks.fileList);
+    if (fileBlocks && (fileBlocks.fileList.length > 0 || fileBlocks.deletedFiles.length > 0)) {
+      console.log('[parseAIResponse] Parsed <FILE> blocks:', fileBlocks.fileList, 'Deleted:', fileBlocks.deletedFiles);
       return { ...fileBlocks, actionsTaken: [] };
     }
 

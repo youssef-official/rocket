@@ -459,7 +459,27 @@ RULES:
 - Classic, elegant, professional design quality.
 - Smooth framer-motion animations everywhere.
 - EVERY file must be COMPLETE - no truncation.
-- OUTPUT ONLY <FILE> blocks (and optional <CONTINUE> block at end).`;
+- OUTPUT ONLY <FILE> blocks (and optional <CONTINUE> block at end).
+
+═══════════════════════════════════════════════════════════════════════════════
+🗑️ FILE DELETION (When user asks to delete/remove/replace a file)
+═══════════════════════════════════════════════════════════════════════════════
+If the user explicitly asks to DELETE or REMOVE a file, output a DELETE block:
+<DELETE path="src/components/OldComponent.tsx" />
+
+This will remove the file from the project. Use this when:
+- User says "delete", "remove", "حذف", "احذف", "شيل"
+- User wants to replace a file entirely (DELETE old + FILE new)
+- User wants to clean up unused files
+
+═══════════════════════════════════════════════════════════════════════════════
+🖼️ LOGO HANDLING (When user uploads a logo image)
+═══════════════════════════════════════════════════════════════════════════════
+If the user says "logo" / "لوجو" / "شعار" and provides an image:
+- The logo image is automatically saved to public/logo.png
+- Reference it in code as: <img src="/logo.png" alt="Logo" />
+- Update Navbar/Header to use the logo image if applicable
+- Do NOT regenerate/change other design elements`;
 
 // Credit calculation is now done by file count, not AI
 const CREDIT_PROMPT = `Return: {"credits":1,"reason":"default","estimated_files":5,"complexity":"medium"}`;

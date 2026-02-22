@@ -37,7 +37,7 @@ const queryClient = new QueryClient();
 interface FileActivity {
   name: string;
   status: 'editing' | 'done';
-  action: 'read' | 'edited' | 'created' | 'analyzed_image';
+  action: 'read' | 'edited' | 'created' | 'analyzed_image' | 'deleted';
 }
 
 interface GenerationPhase {
@@ -633,14 +633,47 @@ const ProjectEditorRoute = () => {
         } else {
           const imgName = url.split('/').pop() || 'uploaded-image';
           const isDesignRef = content.toLowerCase().includes('design') || content.toLowerCase().includes('تصميم') || content.toLowerCase().includes('mockup') || content.toLowerCase().includes('مثل');
+          const isLogoUpload = content.toLowerCase().includes('logo') || content.toLowerCase().includes('لوجو') || content.toLowerCase().includes('شعار');
           initialActivities.push({
-            name: isDesignRef ? `Analyzing design: ${imgName}` : `Analyzing image: ${imgName}`,
+            name: isLogoUpload ? `Logo: ${imgName}` : isDesignRef ? `Analyzing design: ${imgName}` : `Analyzing image: ${imgName}`,
             status: 'done',
             action: 'analyzed_image'
           });
+
+          // If it's a logo upload, copy image to project files
+          if (isLogoUpload) {
+            const logoFile = {
+              name: 'logo.png',
+              path: 'public/logo.png',
+              content: `[IMAGE_URL:${url}]`,
+              language: 'image'
+            };
+            const updatedFiles = { ...localProject.files, 'public/logo.png': logoFile };
+            setLocalProject(prev => prev ? { ...prev, files: updatedFiles } : null);
+            updateProject(localProject.id, { files: updatedFiles });
+            initialActivities.push({
+              name: 'public/logo.png',
+              status: 'done',
+              action: 'created'
+            });
+          }
         }
       });
     }
+
+    // Add "Reading" activities for existing project files (simulate AI reading before editing)
+    const existingFileKeys = Object.keys(localProject.files);
+    if (existingFileKeys.length > 0) {
+      const readFiles = existingFileKeys.slice(0, 6); // Show max 6 read activities
+      readFiles.forEach(filePath => {
+        initialActivities.push({
+          name: filePath,
+          status: 'done',
+          action: 'read'
+        });
+      });
+    }
+
     setFileActivities(initialActivities);
 
     try {
@@ -767,21 +800,29 @@ const ProjectEditorRoute = () => {
           onComplete: async (response) => {
             if (isCancelled.current) return;
 
-            const { files: newFiles, fileList, actionsTaken } = parseAIResponse(response);
+            const { files: newFiles, fileList, actionsTaken, deletedFiles } = parseAIResponse(response);
 
-            // Update file activities
-            const activities = actionsTaken && actionsTaken.length > 0
+            // Build activities including reads, edits, creates, and deletes
+            const readActivities: FileActivity[] = fileActivities.filter(a => a.action === 'read' || a.action === 'analyzed_image');
+            
+            const fileActivitiesList = actionsTaken && actionsTaken.length > 0
               ? actionsTaken.map(a => ({ ...a, status: 'done' as const }))
               : fileList.map(name => ({
                 name,
                 status: 'done' as const,
                 action: (localProject.files[name] ? 'edited' : 'created') as 'edited' | 'created'
               }));
-            // Preserve initial "Analyzing" activities at the top
-            setFileActivities(prev => {
-              const analyzingActivities = prev.filter(a => a.action === 'analyzed_image');
-              return [...analyzingActivities, ...activities];
-            });
+
+            // Add delete activities
+            const deleteActivities: FileActivity[] = (deletedFiles || []).map(name => ({
+              name,
+              status: 'done' as const,
+              action: 'deleted' as const
+            }));
+
+            const activities = [...readActivities, ...fileActivitiesList, ...deleteActivities];
+
+            setFileActivities(activities);
 
             // Distribute files across plan steps
             const filesPerStep = Math.ceil(fileList.length / Math.max(planLines.length, 1));
@@ -792,8 +833,12 @@ const ProjectEditorRoute = () => {
               stepFilesMap[stepIdx].push(file);
             });
 
-            if (Object.keys(newFiles).length > 0) {
+            if (Object.keys(newFiles).length > 0 || (deletedFiles && deletedFiles.length > 0)) {
               const mergedFiles = { ...localProject.files, ...newFiles };
+              // Remove deleted files
+              if (deletedFiles) {
+                deletedFiles.forEach(f => delete mergedFiles[f]);
+              }
               await updateProject(localProject.id, { files: mergedFiles });
               setLocalProject(prev => prev ? { ...prev, files: mergedFiles } : null);
             }
@@ -813,10 +858,17 @@ const ProjectEditorRoute = () => {
             // Mark all steps as complete
             const allStepsComplete = planLines.map((_, i) => i);
 
-            // Create summary
+            // Create summary with read/created/edited/deleted counts
+            const readCount = activities.filter(a => a.action === 'read').length;
             const editedCount = activities.filter(a => a.action === 'edited').length;
             const createdCount = activities.filter(a => a.action === 'created').length;
-            const summary = `✅ Completed! ${createdCount > 0 ? `Created ${createdCount} file${createdCount > 1 ? 's' : ''}` : ''}${createdCount > 0 && editedCount > 0 ? ' and ' : ''}${editedCount > 0 ? `edited ${editedCount} file${editedCount > 1 ? 's' : ''}` : ''}. Your project is ready!`;
+            const deletedCount = activities.filter(a => a.action === 'deleted').length;
+            const parts = [];
+            if (readCount > 0) parts.push(`Read ${readCount} file${readCount > 1 ? 's' : ''}`);
+            if (createdCount > 0) parts.push(`Created ${createdCount} file${createdCount > 1 ? 's' : ''}`);
+            if (editedCount > 0) parts.push(`Edited ${editedCount} file${editedCount > 1 ? 's' : ''}`);
+            if (deletedCount > 0) parts.push(`Deleted ${deletedCount} file${deletedCount > 1 ? 's' : ''}`);
+            const summary = `✅ ${parts.join(', ')}. Your project is ready!`;
 
             // Update original explanation message instead of adding a new one
             if (assistantId) {
