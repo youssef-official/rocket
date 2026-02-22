@@ -158,17 +158,72 @@ const BlogPost: React.FC = () => {
           )}
 
           {/* Content */}
+          <style>{`
+            .blog-content pre {
+              background: hsl(var(--card));
+              border: 1px solid hsl(var(--border) / 0.3);
+              border-radius: 12px;
+              padding: 20px 24px;
+              overflow-x: auto;
+              margin: 24px 0;
+              position: relative;
+            }
+            .blog-content pre code {
+              font-family: 'Geist Mono', 'Fira Code', monospace;
+              font-size: 13px;
+              line-height: 1.7;
+              color: hsl(var(--primary));
+              background: none;
+              padding: 0;
+              border-radius: 0;
+            }
+            .blog-content code:not(pre code) {
+              background: hsl(var(--primary) / 0.1);
+              color: hsl(var(--primary));
+              padding: 2px 6px;
+              border-radius: 4px;
+              font-size: 0.875em;
+              font-family: 'Geist Mono', monospace;
+            }
+            .blog-content blockquote {
+              border-left: 3px solid hsl(var(--primary));
+              background: hsl(var(--primary) / 0.05);
+              padding: 16px 24px;
+              border-radius: 0 12px 12px 0;
+              margin: 24px 0;
+              font-style: normal;
+            }
+            .blog-content h2 {
+              font-size: 1.5rem;
+              font-weight: 700;
+              margin-top: 48px;
+              margin-bottom: 16px;
+              letter-spacing: -0.02em;
+            }
+            .blog-content p {
+              line-height: 1.8;
+              color: hsl(var(--muted-foreground));
+              margin-bottom: 16px;
+            }
+            .blog-content strong {
+              color: hsl(var(--foreground));
+              font-weight: 600;
+            }
+            .blog-content img {
+              border-radius: 12px;
+              border: 1px solid hsl(var(--border) / 0.2);
+              margin: 24px 0;
+            }
+            .blog-content a {
+              color: hsl(var(--primary));
+              text-decoration: none;
+            }
+            .blog-content a:hover {
+              text-decoration: underline;
+            }
+          `}</style>
           <div
-            className="prose prose-neutral dark:prose-invert prose-lg max-w-none
-              prose-headings:font-bold prose-headings:tracking-tight
-              prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4
-              prose-p:leading-[1.8] prose-p:text-muted-foreground
-              prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-              prose-img:rounded-xl prose-img:border prose-img:border-border/20
-              prose-strong:text-foreground prose-strong:font-semibold
-              prose-blockquote:border-l-primary prose-blockquote:bg-primary/5 prose-blockquote:py-1 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:not-italic
-              prose-pre:bg-card prose-pre:border prose-pre:border-border/30 prose-pre:rounded-xl
-              prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none"
+            className="blog-content text-lg max-w-none"
             dangerouslySetInnerHTML={{ __html: post.content }}
           />
         </motion.article>
