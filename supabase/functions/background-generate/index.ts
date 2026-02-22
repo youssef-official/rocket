@@ -129,11 +129,16 @@ STRICT RULES:
 6. BRANDING: index.html MUST include: <script src="https://www.vivorax.online/branding.js" defer></script>
 7. DO NOT change design unless explicitly asked
 
-ANTI-ERROR CHECKLIST:
+ANTI-ERROR CHECKLIST (CRITICAL - violations break the preview):
+- NEVER use require(). Always use import/export (ESM only).
+- NEVER import something that doesn't exist in the target file.
+- ALWAYS use optional chaining for nested property access: obj?.prop ?? fallback
 - App.tsx has: export default function App()
 - All framer-motion imports include AnimatePresence explicitly
 - index.html has <link rel="icon" href="data:," />
-- NO exports of contexts from App.tsx`;
+- NO exports of contexts/hooks from App.tsx - put them in dedicated files
+- Every variable/constant MUST be defined before use
+- Every import MUST match a real export in the source file`;
 
     // Call AI via Vercel AI gateway
     const VERCEL_AI_KEY = Deno.env.get('VERCEL_AI_API_KEY') || Deno.env.get('LOVABLE_API_KEY')!;
