@@ -765,6 +765,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           </>
                         )}
 
+                        {/* Summary after live generation completes */}
+                        {isLastAssistant && !isGenerating && generationPhase?.phase === 'complete' && generationPhase?.summary && versionActivities.length === 0 && (
+                          renderSummaryBlock(generationPhase.summary, [])
+                        )}
+
                         {/* Show stored activities for completed versions - always visible */}
                         {versionActivities.length > 0 && (
                           renderFileActivityPanelForMessage(msg.id, versionActivities, false)
