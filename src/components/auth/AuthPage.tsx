@@ -267,8 +267,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                   {/* Terms */}
                   <p className="text-xs text-gray-500 text-center mt-6">
                     By continuing, you agree to our{' '}
-                    <a href="#" className="text-gray-900 underline">Terms</a> and{' '}
-                    <a href="#" className="text-gray-900 underline">Privacy Policy</a>.
+                    <a href="/terms" className="text-gray-900 underline">Terms</a> and{' '}
+                    <a href="/privacy" className="text-gray-900 underline">Privacy Policy</a>.
                   </p>
                 </motion.div>
               )}
