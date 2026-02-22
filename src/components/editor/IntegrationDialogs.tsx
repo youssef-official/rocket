@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ExternalLink, Loader2, Check, X,
@@ -31,6 +32,8 @@ interface PublishDialogProps {
   projectFiles: Record<string, ProjectFile>;
   onDeployed?: (url: string) => void;
   onSendErrorToChat?: (errorLog: string) => void;
+  projectId?: string | null;
+  existingVercelUrl?: string | null;
 }
 
 export type { PublishDialogProps as VercelDeployDialogProps };
@@ -86,6 +89,8 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
   projectFiles,
   onDeployed,
   onSendErrorToChat,
+  projectId,
+  existingVercelUrl,
 }) => {
   const { integrations } = useIntegrations();
   const { t } = useLanguage();
@@ -100,10 +105,12 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
+  const isUpdate = !!existingVercelUrl;
+
   useEffect(() => {
     if (open) {
-      setStep('input');
-      setProductionUrl(null);
+      setStep(isUpdate ? 'input' : 'input');
+      setProductionUrl(existingVercelUrl || null);
       setLogs([]);
       setShowLogs(false);
       setShowPricing(false);
@@ -111,7 +118,7 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
       const slug = projectName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').substring(0, 40);
       setCustomName(slug);
     }
-  }, [open, projectName]);
+  }, [open, projectName, existingVercelUrl, isUpdate]);
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -158,6 +165,10 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
           setProductionUrl(finalUrl);
           setStep('success');
           onDeployed?.(finalUrl);
+          // Save vercel_url to project
+          if (projectId) {
+            await supabase.from('projects').update({ vercel_url: finalUrl }).eq('id', projectId);
+          }
           toast({ title: t('integrations.vercelDeployed'), description: t('integrations.live') });
           return;
         } else if (status?.readyState === 'ERROR') {
@@ -200,10 +211,10 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <Upload className="w-5 h-5 text-primary" />
-              {step === 'success' ? '🎉 Published Successfully' : 'Publish Project'}
+              {step === 'success' ? '🎉 Published Successfully' : isUpdate ? 'Update Changes' : 'Publish Project'}
             </DialogTitle>
             <DialogDescription>
-              {step === 'input' && 'Deploy your project to Vercel'}
+              {step === 'input' && (isUpdate ? 'Push your latest changes to Vercel' : 'Deploy your project to Vercel')}
               {step === 'deploying' && 'Building and deploying your project...'}
               {step === 'success' && 'Your app is live and ready!'}
               {step === 'error' && 'Something went wrong during deployment'}
@@ -228,6 +239,15 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
           {/* Step: Input - Vercel Only */}
           {step === 'input' && !showPricing && (
             <div className="space-y-4">
+              {isUpdate && existingVercelUrl && (
+                <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <Globe className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Currently deployed</p>
+                    <a href={existingVercelUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate block">{existingVercelUrl}</a>
+                  </div>
+                </div>
+              )}
               {!integrations?.vercel_connected && (
                 <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
                   <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
@@ -256,7 +276,7 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
                 className="w-full"
               >
                 <img src={vercelLogo} alt="" className="w-4 h-4 mr-1.5 dark:invert" />
-                Deploy to Vercel
+                {isUpdate ? 'Update Changes' : 'Deploy to Vercel'}
               </Button>
             </div>
           )}
