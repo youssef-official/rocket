@@ -461,14 +461,15 @@ Rules for actions:
 📝 SUMMARY (MANDATORY - Describe what you did)
 ═══════════════════════════════════════════════════════════════════════════════
 After all <FILE> blocks, include a <SUMMARY> block describing what you built/changed.
-Write in the SAME language as the user's message.
-Format as a NUMBERED list with ✅ emoji prefix. Each item should be clear and descriptive.
-Focus on WHAT changed and key features. 3-6 items for new projects, 1-4 for edits.
+Write in the SAME language as the user's message (if Arabic → Arabic, if English → English, etc.).
+Use a natural, conversational tone. Do NOT use ✅ emoji or checkmarks.
+Start with a brief intro like "تم إنشاء المشروع" or "Project created" then describe the changes as a simple numbered list.
+Focus on WHAT was built/changed and key features. 3-6 items for new projects, 1-4 for edits.
 
 <SUMMARY>
-✅ 1. Added responsive hero section with animated CTA button
-✅ 2. Created contact form with real-time validation
-✅ 3. Implemented dark mode support across all components
+1. تم إنشاء المشروع مع واجهة رئيسية متجاوبة وزر CTA متحرك
+2. تمت إضافة نموذج تواصل مع تحقق فوري من البيانات
+3. تم دعم الوضع الداكن في جميع المكونات
 </SUMMARY>
 
 ═══════════════════════════════════════════════════════════════════════════════

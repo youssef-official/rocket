@@ -142,7 +142,7 @@ const cleanAIMessage = (content: string): string => {
   return cleaned.replace(/\n{3,}/g, '\n\n').trim();
 };
 
-// Extract summary line from AI message (✅ line)
+// Extract summary line from AI message
 const extractSummaryFromMessage = (content: string): string | null => {
   if (!content) return null;
   // Try new marker format first
