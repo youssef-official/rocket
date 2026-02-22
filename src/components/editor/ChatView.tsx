@@ -116,11 +116,12 @@ const cleanAIMessage = (content: string): string => {
   cleaned = cleaned.replace(/\{\s*"files"\s*:\s*\{[\s\S]*$/g, '');
   cleaned = cleaned.replace(/\[\s*\{[\s\S]*$/g, '');
 
-  // Remove summary sections - they'll be rendered separately
+  // Remove summary sections and ✅ lines - they'll be rendered separately below activity log
   cleaned = cleaned.replace(/\*?\*?Summary:?\*?\*?[\s\S]*?(?=\*\*|$)/gi, '');
-
-  // Remove ✅ completion lines (rendered as summary block)
   cleaned = cleaned.replace(/✅[^\n]*/g, '');
+  // Remove "What I'm Building" headers
+  cleaned = cleaned.replace(/###?\s*\*?\*?What I['']?m Building.*?\*?\*?:?\s*/gi, '');
+  cleaned = cleaned.replace(/###?\s*\*?\*?What I will build.*?\*?\*?:?\s*/gi, '');
 
   // Filter out technical lines
   cleaned = cleaned.split('\n').filter(line => {
