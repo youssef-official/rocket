@@ -409,25 +409,50 @@ export default defineConfig({
     }
   }, [sandboxStatus]);
 
-  // Listen for iframe load errors (404, etc.)
+  // Listen for iframe load errors (404, ERR_CONNECTION_CLOSED, etc.)
   useEffect(() => {
     if (!previewUrl || !isSandboxReady) return;
+
+    const restartSandbox = (reason: string) => {
+      if (retryCountRef.current >= maxRetries) return;
+      retryCountRef.current += 1;
+      console.log(`[Preview] ${reason}, restarting (attempt ${retryCountRef.current})`);
+      setSandboxId(null);
+      setIsSandboxReady(false);
+      initializedHash.current = null;
+      lastSyncedHash.current = null;
+      setSandboxStatus(`${reason}, restarting...`);
+    };
+
+    // Check if preview URL is reachable
     const checkIframe = () => {
-      // Ping the preview URL to detect 404/5xx
       fetch(previewUrl, { method: 'HEAD', mode: 'no-cors' }).catch(() => {
-        if (retryCountRef.current < maxRetries) {
-          retryCountRef.current += 1;
-          console.log(`[Preview] Preview URL unreachable, restarting (attempt ${retryCountRef.current})`);
-          setSandboxId(null);
-          setIsSandboxReady(false);
-          initializedHash.current = null;
-          lastSyncedHash.current = null;
-          setSandboxStatus("Preview unreachable, restarting...");
-        }
+        restartSandbox("Preview unreachable");
       });
     };
     const timer = setTimeout(checkIframe, 10000);
-    return () => clearTimeout(timer);
+
+    // Listen for iframe errors (ERR_CONNECTION_CLOSED, etc.)
+    const iframeEl = document.querySelector('iframe[data-preview]') as HTMLIFrameElement | null;
+    const handleIframeError = () => {
+      restartSandbox("Connection closed");
+    };
+    iframeEl?.addEventListener('error', handleIframeError);
+
+    // Also listen for window error events that indicate connection issues
+    const handleWindowError = (e: ErrorEvent) => {
+      const msg = e.message?.toLowerCase() || '';
+      if (msg.includes('err_connection') || msg.includes('net::err_')) {
+        restartSandbox("Network error detected");
+      }
+    };
+    window.addEventListener('error', handleWindowError);
+
+    return () => {
+      clearTimeout(timer);
+      iframeEl?.removeEventListener('error', handleIframeError);
+      window.removeEventListener('error', handleWindowError);
+    };
   }, [previewUrl, isSandboxReady, key]);
 
   useEffect(() => {
@@ -548,6 +573,7 @@ export default defineConfig({
           <div className={`h-full w-full flex justify-center ${viewMode === 'mobile' ? 'bg-muted py-4 items-center' : 'bg-background'}`}>
             <motion.iframe
               key={key}
+              data-preview="true"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               src={previewUrl}
@@ -556,6 +582,16 @@ export default defineConfig({
                 : 'w-full h-full border-none'
                 }`}
               title="Modal Preview"
+              onError={() => {
+                if (retryCountRef.current < maxRetries) {
+                  retryCountRef.current += 1;
+                  setSandboxId(null);
+                  setIsSandboxReady(false);
+                  initializedHash.current = null;
+                  lastSyncedHash.current = null;
+                  setSandboxStatus("Connection lost, restarting...");
+                }
+              }}
             />
           </div>
         )}
