@@ -371,19 +371,64 @@ export default defineConfig({
   // Listen for errors from the preview iframe via postMessage
   const [previewErrors, setPreviewErrors] = useState<string[]>([]);
   const errorSentRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
 
+  // Auto-restart on errors, 404, or timeout
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         if (sandboxStatus.toLowerCase().includes("error") || sandboxStatus.toLowerCase().includes("timeout")) {
           setSandboxId(null);
           setIsSandboxReady(false);
+          initializedHash.current = null;
+          lastSyncedHash.current = null;
         }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [sandboxStatus]);
+
+  // Auto-recover: if sandbox stays in error/timeout for 8s, auto-restart
+  useEffect(() => {
+    if (sandboxStatus.toLowerCase().includes("error") || sandboxStatus.toLowerCase().includes("timeout")) {
+      if (retryCountRef.current >= maxRetries) return;
+      const timer = setTimeout(() => {
+        retryCountRef.current += 1;
+        console.log(`[Preview] Auto-restarting sandbox (attempt ${retryCountRef.current}/${maxRetries})`);
+        setSandboxId(null);
+        setIsSandboxReady(false);
+        initializedHash.current = null;
+        lastSyncedHash.current = null;
+        setSandboxStatus("Auto-restarting...");
+      }, 8000);
+      return () => clearTimeout(timer);
+    } else if (sandboxStatus === "Ready") {
+      retryCountRef.current = 0;
+    }
+  }, [sandboxStatus]);
+
+  // Listen for iframe load errors (404, etc.)
+  useEffect(() => {
+    if (!previewUrl || !isSandboxReady) return;
+    const checkIframe = () => {
+      // Ping the preview URL to detect 404/5xx
+      fetch(previewUrl, { method: 'HEAD', mode: 'no-cors' }).catch(() => {
+        if (retryCountRef.current < maxRetries) {
+          retryCountRef.current += 1;
+          console.log(`[Preview] Preview URL unreachable, restarting (attempt ${retryCountRef.current})`);
+          setSandboxId(null);
+          setIsSandboxReady(false);
+          initializedHash.current = null;
+          lastSyncedHash.current = null;
+          setSandboxStatus("Preview unreachable, restarting...");
+        }
+      });
+    };
+    const timer = setTimeout(checkIframe, 10000);
+    return () => clearTimeout(timer);
+  }, [previewUrl, isSandboxReady, key]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {

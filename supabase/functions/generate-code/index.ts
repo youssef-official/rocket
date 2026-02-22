@@ -26,6 +26,23 @@ const CODE_GENERATION_PROMPT = `You are VIVORA X, an elite Full-Stack Engineer a
 ═══════════════════════════════════════════════════════════════════════════════
 These errors WILL break the preview. You MUST follow ALL rules below:
 
+❌ ERROR: "require is not defined"
+✅ FIX: NEVER use require() anywhere. This is a Vite/ESM project.
+  ALWAYS use: import X from 'module'; or import { X } from 'module';
+  NEVER: const X = require('module');
+
+❌ ERROR: "does not provide an export named 'STORY_SCENES'" or similar missing exports
+✅ FIX: NEVER import something that doesn't exist in the target file.
+  Before importing { X } from './file', make sure X is actually exported from that file.
+  If you need a constant, DEFINE IT in the file you're importing from, or in the file that uses it.
+  NEVER reference variables, functions, or constants that you haven't defined.
+
+❌ ERROR: "Cannot read properties of undefined (reading 'someProperty')"
+✅ FIX: ALWAYS use optional chaining and provide defaults:
+  BAD:  config.ambientSound   // crashes if config is undefined
+  GOOD: config?.ambientSound ?? null
+  ALWAYS initialize state with proper defaults, never leave objects undefined.
+
 ❌ ERROR: "does not provide an export named 'useLanguage'"
 ✅ FIX: NEVER import useLanguage from App.tsx. If you need i18n, create your own context:
   // src/contexts/LanguageContext.tsx (standalone file)
@@ -43,8 +60,6 @@ These errors WILL break the preview. You MUST follow ALL rules below:
 ❌ ERROR: "does not provide an export named 'default' (at App.tsx)"
 ✅ FIX: App.tsx MUST have: export default function App() { ... }
   EVERY component file MUST have a default export.
-  Hero.tsx MUST have: export default function Hero() { ... }
-  Navbar.tsx MUST have: export default function Navbar() { ... }
 
 ❌ ERROR: "AnimatePresence is not defined"
 ✅ FIX: ALWAYS import AnimatePresence explicitly:
@@ -52,16 +67,16 @@ These errors WILL break the preview. You MUST follow ALL rules below:
 
 ❌ ERROR: "Cannot read properties of undefined (reading 'hero')"
 ✅ FIX: ALWAYS use optional chaining and fallbacks:
-  const { hero } = translations?.[lang] ?? translations['en'];
-  OR use a flat translation object with fallback:
   const t = (key: string) => translations[lang]?.[key] ?? translations['en'][key] ?? key;
 
 ❌ ERROR: "does not provide an export named 'translations' (at App.tsx)"
-✅ FIX: NEVER export translations from App.tsx. Put them in src/lib/constants.ts:
-  export const translations = { ... }; // in constants.ts ONLY
+✅ FIX: NEVER export translations from App.tsx. Put them in src/lib/constants.ts.
 
 ❌ ERROR: "the server responded with a status of 404" for favicon
 ✅ FIX: Add to index.html: <link rel="icon" href="data:," />
+
+GOLDEN RULE: Every import MUST match a real export. Every variable MUST be defined before use.
+Never use require(). Always use optional chaining for nested property access.
 
 IMPORT RULES:
 - App.tsx should ONLY import from its own components. NEVER export utilities from App.tsx.
