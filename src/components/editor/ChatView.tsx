@@ -116,12 +116,16 @@ const cleanAIMessage = (content: string): string => {
   cleaned = cleaned.replace(/\{\s*"files"\s*:\s*\{[\s\S]*$/g, '');
   cleaned = cleaned.replace(/\[\s*\{[\s\S]*$/g, '');
 
-  // Remove summary sections and ✅ lines - they'll be rendered separately below activity log
+  // Remove summary marker block - rendered separately below activity log
+  cleaned = cleaned.replace(/<!--SUMMARY-->[\s\S]*?<!--\/SUMMARY-->/g, '');
+  // Legacy: remove ✅ lines and summary sections
   cleaned = cleaned.replace(/\*?\*?Summary:?\*?\*?[\s\S]*?(?=\*\*|$)/gi, '');
   cleaned = cleaned.replace(/✅[^\n]*/g, '');
   // Remove "What I'm Building" headers
   cleaned = cleaned.replace(/###?\s*\*?\*?What I['']?m Building.*?\*?\*?:?\s*/gi, '');
   cleaned = cleaned.replace(/###?\s*\*?\*?What I will build.*?\*?\*?:?\s*/gi, '');
+  // Remove "Generating..." text
+  cleaned = cleaned.replace(/\*\*.*?Generating.*?\*\*/gi, '');
 
   // Filter out technical lines
   cleaned = cleaned.split('\n').filter(line => {
@@ -141,8 +145,12 @@ const cleanAIMessage = (content: string): string => {
 // Extract summary line from AI message (✅ line)
 const extractSummaryFromMessage = (content: string): string | null => {
   if (!content) return null;
-  const match = content.match(/✅[^\n]+/);
-  return match ? match[0] : null;
+  // Try new marker format first
+  const markerMatch = content.match(/<!--SUMMARY-->([\s\S]*?)<!--\/SUMMARY-->/);
+  if (markerMatch) return markerMatch[1].trim();
+  // Legacy: ✅ line
+  const legacyMatch = content.match(/✅[\s\S]*$/);
+  return legacyMatch ? legacyMatch[0].trim() : null;
 };
 
 // Extract "What I'm Building" section from message
