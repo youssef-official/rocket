@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp, Monitor } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
@@ -915,6 +915,45 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         {isPaidPlan ? <File className="w-4 h-4 text-purple-500" /> : <Lock className="w-4 h-4 text-muted-foreground" />}
                       </div>
                       <span className="text-sm text-foreground/80 group-hover/item:text-foreground">{t('chat.uploadFile') || 'Upload File'}</span>
+                      {!isPaidPlan && <span className="text-[10px] font-semibold text-amber-500 ml-auto px-1.5 py-0.5 rounded-md bg-amber-500/10">PRO</span>}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!isPaidPlan) {
+                          toast({ title: t('common.upgradeRequired') || 'Upgrade Required', description: 'Screenshot capture is available on paid plans only.', variant: 'destructive' });
+                          setShowPlusMenu(false);
+                          return;
+                        }
+                        setShowPlusMenu(false);
+                        try {
+                          const stream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'browser' } as any });
+                          const video = document.createElement('video');
+                          video.srcObject = stream;
+                          await video.play();
+                          await new Promise(r => setTimeout(r, 300));
+                          const canvas = document.createElement('canvas');
+                          canvas.width = video.videoWidth;
+                          canvas.height = video.videoHeight;
+                          canvas.getContext('2d')!.drawImage(video, 0, 0);
+                          stream.getTracks().forEach(t => t.stop());
+                          canvas.toBlob((blob) => {
+                            if (blob) {
+                              const file = new globalThis.File([blob], `screenshot-${Date.now()}.png`, { type: 'image/png' });
+                              const preview = URL.createObjectURL(blob);
+                              setUploadedImages(prev => [...prev, { file, preview }]);
+                            }
+                          }, 'image/png');
+                        } catch (err) {
+                          console.log('Screenshot cancelled or failed', err);
+                        }
+                      }}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left border-t border-border/50 group/item"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                        {isPaidPlan ? <Monitor className="w-4 h-4 text-cyan-500" /> : <Lock className="w-4 h-4 text-muted-foreground" />}
+                      </div>
+                      <span className="text-sm text-foreground/80 group-hover/item:text-foreground">{t('chat.takeScreenshot')}</span>
                       {!isPaidPlan && <span className="text-[10px] font-semibold text-amber-500 ml-auto px-1.5 py-0.5 rounded-md bg-amber-500/10">PRO</span>}
                     </button>
                     <button
