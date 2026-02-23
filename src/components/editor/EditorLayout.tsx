@@ -117,6 +117,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [renameValue, setRenameValue] = useState('');
   // connectedRepoUrl removed
   const [deployedUrl, setDeployedUrl] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const isResizing = useRef(false);
   const prevIsGenerating = useRef(isGenerating);
   const versionCreatedForSession = useRef(false);
@@ -749,6 +750,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   onPreviewError={(errorLog) => {
                     onSendMessage(`[AUTO-FIX] The preview has console errors. Please fix them:\n\n${errorLog}`, false);
                   }}
+                  onPreviewUrlChange={(url) => setPreviewUrl(url)}
                 />
               </div>
               <div className={`h-full ${currentView === 'code' && !showVisualEdit ? 'block' : 'hidden'}`}>
@@ -770,6 +772,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   activities={isGenerating ? fileActivities : detailsVersion.activities}
                   onClose={() => setCurrentView('preview')}
                   isGenerating={isGenerating}
+                  previewUrl={previewUrl}
                   onAutoFix={(errorLog) => {
                     onSendMessage(errorLog, false);
                   }}
@@ -816,6 +819,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 onPreviewError={(errorLog) => {
                   onSendMessage(`[AUTO-FIX] The preview has console errors. Please fix them:\n\n${errorLog}`, false);
                 }}
+                onPreviewUrlChange={(url) => setPreviewUrl(url)}
               />
             </div>
 

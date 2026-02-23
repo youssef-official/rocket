@@ -16,6 +16,7 @@ interface PreviewViewProps {
   projectType: 'vite' | 'html';
   isLoading?: boolean;
   onPreviewError?: (errorLog: string) => void;
+  onPreviewUrlChange?: (url: string | null) => void;
 }
 
 // Loading placeholder with rich animation - dark mode compatible
@@ -114,7 +115,7 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
   );
 };
 
-export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, isLoading, onPreviewError }) => {
+export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, isLoading, onPreviewError, onPreviewUrlChange }) => {
   const [viewMode, setViewMode] = React.useState<'desktop' | 'mobile'>('desktop');
   const [sandboxId, setSandboxId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -305,6 +306,7 @@ export default defineConfig({
         setSandboxId(sandbox_id);
         setApiUrl(api_url);
         setPreviewUrl(preview_url);
+        onPreviewUrlChange?.(preview_url);
         setSandboxStatus("Sandbox created. Initializing...");
       } catch (error) {
         console.error("Error creating sandbox:", error);
