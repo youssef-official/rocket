@@ -138,8 +138,16 @@ export function useVersions(projectId: string | null) {
         try {
           const audio = new Audio('/sounds/version-complete.mp3');
           audio.volume = 0.5;
-          audio.play().catch(() => {});
-        } catch {}
+          audio.load();
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((err) => {
+              console.warn('[useVersions] Audio play failed:', err.message);
+            });
+          }
+        } catch (err) {
+          console.warn('[useVersions] Audio creation failed:', err);
+        }
 
         // Send browser notification
         if (Notification.permission === 'granted') {
