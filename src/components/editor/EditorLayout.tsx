@@ -118,6 +118,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   // connectedRepoUrl removed
   const [deployedUrl, setDeployedUrl] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [waitingForTest, setWaitingForTest] = useState(false);
+  const pendingVersionRef = useRef<{ files: Record<string, ProjectFile>; messages: ChatMessage[]; activities: FileActivity[] } | null>(null);
   const isResizing = useRef(false);
   const prevIsGenerating = useRef(isGenerating);
   const versionCreatedForSession = useRef(false);
@@ -162,39 +164,49 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       const hasMessages = messages.length > 0;
 
       if (hasFiles && hasMessages) {
-        // Generate AI version name
-        const createVersionWithAIName = async () => {
-          const versionNumber = versions.length + 1;
-          const projectDescription = project.description || project.name || '';
-          const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
+        const isFirstVersion = versions.length === 0;
 
-          // Generate descriptive name based on what was built
-          const versionName = await generateVersionName(
-            projectDescription,
-            lastUserMessage,
-            versionNumber
-          );
-
-          // Check if this version already exists (prevent duplicates)
-          const alreadyExists = versions.some(v => 
-            v.chatMessages.length === messages.length && 
-            JSON.stringify(v.files) === JSON.stringify(project.files)
-          );
-
-          if (!alreadyExists) {
-            // Save version with actions_taken
-            await createVersion(
-              project.files,
-              messages,
-              versionName,
-              lastFileActivitiesRef.current.length > 0 ? lastFileActivitiesRef.current : undefined
-            );
-          }
-          setCurrentVersionNumber(null);
+        if (isFirstVersion) {
+          // For first version, wait for test to complete before saving
+          setWaitingForTest(true);
+          pendingVersionRef.current = {
+            files: { ...project.files },
+            messages: [...messages],
+            activities: lastFileActivitiesRef.current.length > 0 ? [...lastFileActivitiesRef.current] : [],
+          };
           versionCreatedForSession.current = true;
-        };
+        } else {
+          // For subsequent versions, save immediately (no test)
+          const createVersionWithAIName = async () => {
+            const versionNumber = versions.length + 1;
+            const projectDescription = project.description || project.name || '';
+            const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
 
-        createVersionWithAIName();
+            const versionName = await generateVersionName(
+              projectDescription,
+              lastUserMessage,
+              versionNumber
+            );
+
+            const alreadyExists = versions.some(v => 
+              v.chatMessages.length === messages.length && 
+              JSON.stringify(v.files) === JSON.stringify(project.files)
+            );
+
+            if (!alreadyExists) {
+              await createVersion(
+                project.files,
+                messages,
+                versionName,
+                lastFileActivitiesRef.current.length > 0 ? lastFileActivitiesRef.current : undefined
+              );
+            }
+            setCurrentVersionNumber(null);
+            versionCreatedForSession.current = true;
+          };
+
+          createVersionWithAIName();
+        }
       }
     }
 
@@ -204,6 +216,33 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
     prevIsGenerating.current = isGenerating;
   }, [isGenerating, messages, project?.files, project?.description, project?.name, createVersion, versions.length, isChatMode]);
+
+  // Handle test completion - save pending version
+  const handleTestComplete = useCallback(async (passed: boolean) => {
+    if (!waitingForTest || !pendingVersionRef.current) return;
+    
+    const pending = pendingVersionRef.current;
+    const versionNumber = versions.length + 1;
+    const projectDescription = project?.description || project?.name || '';
+    const lastUserMessage = pending.messages.filter(m => m.role === 'user').pop()?.content || '';
+
+    const versionName = await generateVersionName(
+      projectDescription,
+      lastUserMessage,
+      versionNumber
+    );
+
+    await createVersion(
+      pending.files,
+      pending.messages,
+      versionName,
+      pending.activities.length > 0 ? pending.activities : undefined
+    );
+
+    setCurrentVersionNumber(null);
+    setWaitingForTest(false);
+    pendingVersionRef.current = null;
+  }, [waitingForTest, versions.length, project?.description, project?.name, createVersion]);
 
   // Handle version selection - VIEW ONLY (no restore)
   const handleSelectVersion = (version: ProjectVersion) => {
@@ -773,6 +812,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   onClose={() => setCurrentView('preview')}
                   isGenerating={isGenerating}
                   previewUrl={previewUrl}
+                  isFirstVersion={versions.length === 0 || (versions.length === 1 && waitingForTest)}
+                  onTestComplete={handleTestComplete}
                   onAutoFix={(errorLog) => {
                     onSendMessage(errorLog, false);
                   }}
