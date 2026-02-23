@@ -13,6 +13,7 @@ import { VisualEditMode } from './VisualEditMode';
 import { VercelDeployDialog } from './IntegrationDialogs';
 import { GitHubPushDialog } from './GitHubPushDialog';
 import { DatabasePanel } from './DatabasePanel';
+import { DetailsPanel } from './DetailsPanel';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useVersions, type ProjectVersion } from '@/hooks/useVersions';
@@ -95,7 +96,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
   const { userPlan, getRemainingCredits } = useUserPlan();
-  const [currentView, setCurrentView] = useState<'code' | 'preview' | 'database'>('preview');
+  const [currentView, setCurrentView] = useState<'code' | 'preview' | 'database' | 'details'>('preview');
+  const [detailsVersion, setDetailsVersion] = useState<{ version: ProjectVersion; activities: any[] } | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProjectMenu, setShowProjectMenu] = useState(false);
@@ -216,6 +218,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       setCurrentVersionNumber(null);
     }
   }, [rollbackToVersion, onVersionRestore]);
+
+  // Handle show details in right panel
+  const handleShowDetails = useCallback((version: ProjectVersion, activities: any[]) => {
+    setDetailsVersion({ version, activities });
+    setCurrentView('details');
+  }, []);
 
   // Handle image upload to Supabase storage
   const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
@@ -742,6 +750,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 versions={versions}
                 onSelectVersion={handleSelectVersion}
                 onRollback={handleRollback}
+                onShowDetails={handleShowDetails}
               />
             </div>
 
@@ -775,6 +784,14 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               {currentView === 'database' && !showVisualEdit && (
                 <DatabasePanel projectId={project?.id || null} onSendMessage={onSendMessage} />
               )}
+              {/* Details Tab */}
+              {currentView === 'details' && !showVisualEdit && detailsVersion && (
+                <DetailsPanel
+                  version={detailsVersion.version}
+                  activities={detailsVersion.activities}
+                  onClose={() => setCurrentView('preview')}
+                />
+              )}
               {showVisualEdit && (
                 <div className="absolute inset-0 z-10 flex">
                   <VisualEditMode
@@ -804,6 +821,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               versions={versions}
               onSelectVersion={handleSelectVersion}
               onRollback={handleRollback}
+              onShowDetails={handleShowDetails}
             />
             )}
 
