@@ -119,7 +119,7 @@ export async function deductCredits(
     const dailyDeduct = Math.min(toDeduct, dailyRemaining);
     const monthlyDeduct = toDeduct - dailyDeduct;
 
-    console.log(`[creditService] Deducting ${toDeduct} credits for user ${userId}. Daily: ${dailyDeduct}, Monthly: ${monthlyDeduct}`);
+    // Deducting credits
 
     const { error: updateError } = await supabase
       .from('user_plans')
@@ -135,7 +135,7 @@ export async function deductCredits(
       return { success: false, creditsDeducted: 0, error: `Failed to update credits: ${updateError.message}` };
     }
 
-    console.log(`[creditService] Successfully updated user_plans for ${userId}`);
+    // Credits updated successfully
 
     const { error: transactionError } = await supabase
       .from('credit_transactions')
@@ -152,7 +152,7 @@ export async function deductCredits(
       console.error('[creditService] Failed to record transaction:', transactionError);
       // We still return success: true because the main credits were deducted
     } else {
-      console.log(`[creditService] Successfully recorded transaction for ${userId}`);
+      // Transaction recorded
     }
 
     return { success: true, creditsDeducted: toDeduct };

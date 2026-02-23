@@ -770,6 +770,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 onSelectVersion={handleSelectVersion}
                 onRollback={handleRollback}
                 onShowDetails={handleShowDetails}
+                waitingForTest={waitingForTest}
               />
             </div>
 
@@ -849,6 +850,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               onSelectVersion={handleSelectVersion}
               onRollback={handleRollback}
               onShowDetails={handleShowDetails}
+              waitingForTest={waitingForTest}
             />
             )}
 
