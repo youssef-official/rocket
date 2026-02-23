@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bookmark, Loader2, Pencil, FileOutput, Eye, Trash2, Image as ImageIcon, ChevronRight, CheckCircle2, Sparkles, Package, RotateCcw } from 'lucide-react';
+import { Bookmark, Loader2, Pencil, FileOutput, Eye, Trash2, Image as ImageIcon, CheckCircle2, Sparkles, RotateCcw, Code2, FileCode, FileType, File, Zap } from 'lucide-react';
 import type { ProjectVersion } from '@/hooks/useVersions';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -33,6 +33,17 @@ const getActionMeta = (action: string) => {
   }
 };
 
+const getFileIcon = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'tsx': case 'ts': return <Code2 className="w-3 h-3 text-blue-400" />;
+    case 'jsx': case 'js': return <FileCode className="w-3 h-3 text-yellow-400" />;
+    case 'css': return <FileType className="w-3 h-3 text-purple-400" />;
+    case 'html': return <File className="w-3 h-3 text-orange-400" />;
+    default: return <File className="w-3 h-3 text-muted-foreground" />;
+  }
+};
+
 export const VersionCardNew: React.FC<VersionCardNewProps> = ({
   version,
   isActive,
@@ -46,26 +57,29 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  const currentActivity = isLive
-    ? [...activities].reverse().find(a => a.status === 'editing') || activities[activities.length - 1]
-    : null;
-
-  const actionMeta = currentActivity ? getActionMeta(currentActivity.action) : null;
-  const CurrentIcon = actionMeta?.Icon || null;
-
-  // Count activities by type for the completed card
+  const doneCount = activities.filter(a => a.status === 'done').length;
+  const totalCount = activities.length;
   const editCount = activities.filter(a => a.action === 'edited').length;
   const createCount = activities.filter(a => a.action === 'created').length;
   const totalChanges = editCount + createCount;
+
+  // Get last 3 active files for the live ticker
+  const recentFiles = isLive
+    ? [...activities].reverse().slice(0, 3)
+    : [];
+
+  const progressPercent = totalCount > 0 ? (doneCount / totalCount) * 100 : 0;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={`rounded-2xl border overflow-hidden transition-all ${
-        isActive
-          ? 'border-primary/30 shadow-lg shadow-primary/5'
-          : 'border-border hover:border-border/80'
+        isLive
+          ? 'border-primary/30 shadow-lg shadow-primary/5 bg-card'
+          : isActive
+            ? 'border-primary/30 shadow-lg shadow-primary/5'
+            : 'border-border hover:border-border/80'
       }`}
     >
       <AnimatePresence mode="wait">
@@ -78,49 +92,91 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="px-4 py-3.5 bg-secondary/40">
-              {currentActivity && CurrentIcon && actionMeta ? (
-                <div className="flex items-center gap-3">
+            {/* Live Header */}
+            <div className="px-4 pt-3.5 pb-2">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-2">
                   <motion.div
-                    key={currentActivity.name}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-center gap-2.5 flex-1 min-w-0"
+                    animate={{ rotate: [0, 360] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                    className="w-6 h-6 rounded-lg bg-primary/15 flex items-center justify-center"
                   >
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${actionMeta.bg}`}>
-                      <CurrentIcon className={`w-3.5 h-3.5 ${actionMeta.color}`} />
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-semibold text-foreground/80 uppercase tracking-wide">
-                        {t(`action.${currentActivity.action}`)}
-                      </span>
-                      <span className="text-xs font-mono text-muted-foreground truncate">
-                        {currentActivity.name}
-                      </span>
-                    </div>
+                    <Zap className="w-3.5 h-3.5 text-primary" />
                   </motion.div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-[10px] font-medium text-muted-foreground tabular-nums">
-                      {activities.filter(a => a.status === 'done').length}/{activities.length}
-                    </span>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                  </div>
+                  <span className="text-xs font-bold text-foreground">Generating</span>
                 </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                  </div>
-                  <span className="text-xs text-muted-foreground font-medium">Generating...</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-primary tabular-nums">
+                    {doneCount}/{totalCount}
+                  </span>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
                 </div>
-              )}
-              {liveStatus && (
-                <p className="text-[11px] text-muted-foreground/70 mt-2 truncate pl-10">{liveStatus}</p>
-              )}
+              </div>
+
+              {/* Progress Bar */}
+              <div className="w-full h-1 rounded-full bg-secondary overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-primary/60"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercent}%` }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                />
+              </div>
             </div>
+
+            {/* Live File Ticker */}
+            <div className="px-3 py-2 space-y-0.5">
+              {recentFiles.map((file, i) => {
+                const meta = getActionMeta(file.action);
+                const isEditing = file.status === 'editing';
+                const fileName = file.name.split('/').pop() || file.name;
+
+                return (
+                  <motion.div
+                    key={file.name + i}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg ${
+                      isEditing ? 'bg-primary/5' : ''
+                    }`}
+                  >
+                    <div className={`w-5 h-5 rounded-md ${meta.bg} flex items-center justify-center flex-shrink-0`}>
+                      {isEditing ? (
+                        <Loader2 className={`w-3 h-3 ${meta.color} animate-spin`} />
+                      ) : (
+                        getFileIcon(file.name)
+                      )}
+                    </div>
+                    <span className={`text-[11px] font-mono truncate flex-1 ${
+                      isEditing ? 'text-primary font-medium' : 'text-foreground/60'
+                    }`}>
+                      {fileName}
+                    </span>
+                    <span className={`text-[9px] font-semibold uppercase tracking-wider ${meta.color}`}>
+                      {t(`action.${file.action}`)}
+                    </span>
+                    {isEditing && (
+                      <motion.div
+                        animate={{ opacity: [0.3, 1, 0.3] }}
+                        transition={{ duration: 1.2, repeat: Infinity }}
+                        className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"
+                      />
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Status text */}
+            {liveStatus && (
+              <div className="px-4 pb-2">
+                <p className="text-[11px] text-muted-foreground/60 truncate">{liveStatus}</p>
+              </div>
+            )}
+
             {/* Details button during live */}
-            <div className="px-3 py-2.5 border-t border-border/50">
+            <div className="px-3 py-2 border-t border-border/40">
               <button
                 onClick={() => onShowDetails?.(version, activities)}
                 className="w-full text-xs font-medium py-2 text-center rounded-xl transition-all text-muted-foreground hover:text-foreground hover:bg-accent/80 border border-border/50 hover:border-border"
@@ -138,7 +194,7 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
             transition={{ duration: 0.4, ease: 'easeOut' }}
           >
             {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3.5 bg-secondary/30">
+            <div className="flex items-center gap-3 px-4 py-3.5">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -158,10 +214,14 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
                   {version.name || `${t('chat.version')} ${version.versionNumber}`}
                 </p>
                 {totalChanges > 0 && (
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {totalChanges} {totalChanges === 1 ? 'change' : 'changes'}
-                    {createCount > 0 && ` · ${createCount} new`}
-                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {createCount > 0 && (
+                      <span className="text-[10px] text-emerald-400 font-medium">+{createCount} new</span>
+                    )}
+                    {editCount > 0 && (
+                      <span className="text-[10px] text-blue-400 font-medium">~{editCount} mod</span>
+                    )}
+                  </div>
                 )}
               </div>
               {/* Rollback */}
