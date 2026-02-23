@@ -1,6 +1,6 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Package, FileCode, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Package, FileCode, ChevronDown, CheckCircle2, AlertTriangle, Loader2, Monitor, Search, Wrench } from 'lucide-react';
 import type { ProjectVersion } from '@/hooks/useVersions';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -10,10 +10,14 @@ interface FileActivity {
   action: 'read' | 'edited' | 'created' | 'analyzed_image' | 'deleted';
 }
 
+type TestPhase = 'idle' | 'waiting' | 'scanning' | 'fixing' | 'success' | 'error';
+
 interface DetailsPanelProps {
   version: ProjectVersion;
   activities: FileActivity[];
   onClose: () => void;
+  isGenerating?: boolean;
+  onAutoFix?: (errorLog: string) => void;
 }
 
 // Custom SVG icons matching the reference design
@@ -58,16 +62,225 @@ const getActionConfig = (action: string) => {
   }
 };
 
-export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities, onClose }) => {
+export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities, onClose, isGenerating, onAutoFix }) => {
   const { t } = useLanguage();
+  const [testPhase, setTestPhase] = useState<TestPhase>('idle');
+  const [detectedErrors, setDetectedErrors] = useState<string[]>([]);
+  const prevIsGenerating = useRef(isGenerating);
+  const testTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasTestedRef = useRef(false);
 
   const changeCount = activities.filter(a => a.action !== 'read').length;
   const modifiedFiles = activities.filter(a => a.action === 'edited');
   const createdFiles = activities.filter(a => a.action === 'created');
   const readFiles = activities.filter(a => a.action === 'read');
   const otherFiles = activities.filter(a => !['edited', 'created', 'read'].includes(a.action));
-
   const groupedActivities = [...modifiedFiles, ...createdFiles, ...otherFiles, ...readFiles];
+
+  // When generation finishes, start testing phase
+  useEffect(() => {
+    const wasGenerating = prevIsGenerating.current;
+    const nowDone = !isGenerating;
+    prevIsGenerating.current = isGenerating;
+
+    if (wasGenerating && nowDone && activities.length > 0 && !hasTestedRef.current) {
+      hasTestedRef.current = true;
+      setTestPhase('waiting');
+      
+      // Wait 3s for preview to load, then start scanning
+      testTimeoutRef.current = setTimeout(() => {
+        setTestPhase('scanning');
+      }, 3000);
+    }
+
+    // Reset when generation starts again
+    if (isGenerating) {
+      hasTestedRef.current = false;
+      setTestPhase('idle');
+      setDetectedErrors([]);
+    }
+  }, [isGenerating, activities.length]);
+
+  // Listen for preview errors during scanning phase
+  useEffect(() => {
+    if (testPhase !== 'scanning') return;
+
+    const collectedErrors: string[] = [];
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'preview-error' && event.data?.message) {
+        collectedErrors.push(event.data.message);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // After 5s of scanning, evaluate results
+    const evalTimeout = setTimeout(() => {
+      window.removeEventListener('message', handleMessage);
+
+      if (collectedErrors.length > 0) {
+        setDetectedErrors(collectedErrors);
+        setTestPhase('fixing');
+        // Send errors to AI for auto-fix
+        if (onAutoFix) {
+          const errorLog = collectedErrors.slice(0, 5).join('\n');
+          onAutoFix(`[AUTO-FIX] Testing detected errors in the preview. Please fix:\n\n${errorLog}`);
+        }
+      } else {
+        setTestPhase('success');
+      }
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      clearTimeout(evalTimeout);
+    };
+  }, [testPhase, onAutoFix]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (testTimeoutRef.current) clearTimeout(testTimeoutRef.current);
+    };
+  }, []);
+
+  const getTestPhaseUI = () => {
+    switch (testPhase) {
+      case 'waiting':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-4 mt-3 p-3.5 rounded-xl bg-primary/5 border border-primary/20"
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Monitor className="w-5 h-5 text-primary" />
+                <motion.div
+                  className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary"
+                  animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 1.2, repeat: Infinity }}
+                />
+              </div>
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold text-foreground">Running Tests...</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Loading preview to check for errors</p>
+              </div>
+              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+            </div>
+          </motion.div>
+        );
+
+      case 'scanning':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-4 mt-3 p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/20"
+          >
+            <div className="flex items-center gap-3">
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+              >
+                <Search className="w-5 h-5 text-blue-500" />
+              </motion.div>
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold text-foreground">Scanning Preview...</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Checking console logs for errors</p>
+              </div>
+              <motion.div
+                className="flex gap-0.5"
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              </motion.div>
+            </div>
+          </motion.div>
+        );
+
+      case 'fixing':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-4 mt-3 p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20"
+          >
+            <div className="flex items-center gap-3">
+              <motion.div
+                animate={{ rotate: [0, -15, 15, -15, 0] }}
+                transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 1 }}
+              >
+                <Wrench className="w-5 h-5 text-amber-500" />
+              </motion.div>
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold text-foreground">Fixing Issues...</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Found {detectedErrors.length} error{detectedErrors.length > 1 ? 's' : ''} — auto-fixing now
+                </p>
+              </div>
+              <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />
+            </div>
+            {detectedErrors.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-amber-500/10">
+                {detectedErrors.slice(0, 3).map((err, i) => (
+                  <p key={i} className="text-[10px] font-mono text-amber-400/80 truncate mt-1">
+                    {err.slice(0, 80)}
+                  </p>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        );
+
+      case 'success':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-4 mt-3 p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20"
+          >
+            <div className="flex items-center gap-3">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+              >
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+              </motion.div>
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold text-foreground">All Tests Passed ✅</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">No errors detected — everything looks good!</p>
+              </div>
+            </div>
+          </motion.div>
+        );
+
+      case 'error':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-4 mt-3 p-3.5 rounded-xl bg-red-500/5 border border-red-500/20"
+          >
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold text-foreground">Issues Detected</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Some errors couldn't be auto-fixed</p>
+              </div>
+            </div>
+          </motion.div>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="h-full flex flex-col bg-card">
@@ -101,22 +314,15 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
                   transition={{ delay: i * 0.02, duration: 0.15 }}
                   className="flex items-center gap-3 px-5 py-3.5 transition-colors cursor-default group hover:bg-secondary/40"
                 >
-                  {/* Icon */}
                   <div className={`${config.color}`}>
                     <config.Icon />
                   </div>
-
-                  {/* Action Label */}
                   <span className={`text-[13px] font-medium min-w-[56px] ${config.color}`}>
                     {config.label}
                   </span>
-
-                  {/* File Name Badge */}
                   <span className="text-[12px] font-mono px-2 py-0.5 rounded bg-secondary/80 text-foreground/70 truncate">
                     {file.name}
                   </span>
-
-                  {/* Chevron for expandable items */}
                   {showChevron && (
                     <ChevronDown className="w-4 h-4 ml-auto text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors flex-shrink-0" />
                   )}
@@ -132,6 +338,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
             <p className="text-sm font-medium text-muted-foreground">No details available</p>
           </div>
         )}
+
+        {/* Auto-Test Phase UI */}
+        <AnimatePresence mode="wait">
+          {testPhase !== 'idle' && getTestPhaseUI()}
+        </AnimatePresence>
 
         {/* Footer Summary */}
         {activities.length > 0 && (

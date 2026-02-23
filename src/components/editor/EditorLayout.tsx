@@ -769,6 +769,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   version={detailsVersion.version}
                   activities={isGenerating ? fileActivities : detailsVersion.activities}
                   onClose={() => setCurrentView('preview')}
+                  isGenerating={isGenerating}
+                  onAutoFix={(errorLog) => {
+                    onSendMessage(errorLog, false);
+                  }}
                 />
               )}
               {showVisualEdit && (
