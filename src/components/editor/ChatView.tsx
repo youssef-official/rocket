@@ -685,10 +685,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     /* AI message */
                     <div className="w-full flex flex-col min-w-0 group">
                       {showHeader && (
-                        <div className="flex items-center gap-2.5 mb-3">
-                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <VivoraLogo size="sm" className="text-primary" />
-                          </div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <VivoraLogo size="sm" showText={true} />
                         </div>
                       )}
                       <div className="break-words overflow-hidden w-full">
@@ -773,10 +771,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
             {isGenerating && (messages.length === 0 || messages[messages.length - 1].role !== 'assistant') && (
               <div className="flex w-full justify-start">
                 <div className="w-full flex flex-col min-w-0">
-                  <div className="flex items-center gap-2.5 mb-3">
-                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <VivoraLogo size="sm" className="text-primary" />
-                    </div>
+                   <div className="flex items-center gap-2 mb-3">
+                    <VivoraLogo size="sm" showText={true} />
                   </div>
                   <div className="space-y-4">
                     {renderThinkingIndicator()}
