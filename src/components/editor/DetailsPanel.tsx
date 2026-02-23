@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Package, GitCommit, FileCode, ChevronDown } from 'lucide-react';
+import { Package, FileCode, ChevronDown } from 'lucide-react';
 import type { ProjectVersion } from '@/hooks/useVersions';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -49,12 +49,12 @@ const AnalyzedIcon = () => (
 
 const getActionConfig = (action: string) => {
   switch (action) {
-    case 'edited': return { label: 'Edited', color: 'text-yellow-400', Icon: EditedIcon, dotColor: 'bg-yellow-400' };
-    case 'created': return { label: 'Created', color: 'text-green-400', Icon: CreatedIcon, dotColor: 'bg-green-400' };
-    case 'read': return { label: 'Read', color: 'text-muted-foreground/90', Icon: ReadIcon, dotColor: 'bg-muted-foreground' };
-    case 'deleted': return { label: 'Deleted', color: 'text-red-400', Icon: DeletedIcon, dotColor: 'bg-red-400' };
-    case 'analyzed_image': return { label: 'Analyzed', color: 'text-purple-400', Icon: AnalyzedIcon, dotColor: 'bg-purple-400' };
-    default: return { label: action, color: 'text-muted-foreground', Icon: ReadIcon, dotColor: 'bg-muted-foreground' };
+    case 'edited': return { label: 'Edited', color: 'text-amber-500', Icon: EditedIcon };
+    case 'created': return { label: 'Created', color: 'text-muted-foreground', Icon: CreatedIcon };
+    case 'read': return { label: 'Read', color: 'text-muted-foreground/80', Icon: ReadIcon };
+    case 'deleted': return { label: 'Deleted', color: 'text-red-400', Icon: DeletedIcon };
+    case 'analyzed_image': return { label: 'Analyzed', color: 'text-purple-400', Icon: AnalyzedIcon };
+    default: return { label: action, color: 'text-muted-foreground', Icon: ReadIcon };
   }
 };
 
@@ -85,54 +85,10 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
         </span>
       </div>
 
-      {/* Version Summary Card */}
-      <div className="mx-4 mt-4 mb-3 rounded-xl overflow-hidden border border-border bg-secondary/50">
-        <div className="px-4 py-3 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10">
-            <GitCommit className="w-4 h-4 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">
-              {version.name || `Version ${version.versionNumber}`}
-            </p>
-            <p className="text-[11px] mt-0.5 text-muted-foreground">
-              Version {version.versionNumber} • {changeCount} {changeCount === 1 ? 'change' : 'changes'}
-            </p>
-          </div>
-          {version.creditsUsed !== undefined && version.creditsUsed > 0 && (
-            <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-yellow-400/10 text-yellow-500 border border-yellow-400/20">
-              {version.creditsUsed} cr
-            </span>
-          )}
-        </div>
-
-        {/* Stats Row */}
-        <div className="flex items-center gap-4 px-4 py-2 border-t border-border">
-          {createdFiles.length > 0 && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-              <span className="text-[11px] text-muted-foreground">{createdFiles.length} created</span>
-            </div>
-          )}
-          {modifiedFiles.length > 0 && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-              <span className="text-[11px] text-muted-foreground">{modifiedFiles.length} modified</span>
-            </div>
-          )}
-          {readFiles.length > 0 && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
-              <span className="text-[11px] text-muted-foreground">{readFiles.length} read</span>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* File Activities List */}
-      <div className="flex-1 overflow-y-auto pb-4 no-scrollbar">
+      <div className="flex-1 overflow-y-auto pt-2 pb-4 no-scrollbar">
         {groupedActivities.length > 0 ? (
-          <div>
+          <div className="divide-y divide-border/40">
             {groupedActivities.map((file, i) => {
               const config = getActionConfig(file.action);
               const showChevron = file.action === 'edited' || file.action === 'created';
@@ -143,7 +99,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.02, duration: 0.15 }}
-                  className="flex items-center gap-3 px-5 py-3 transition-colors cursor-default group hover:bg-secondary/50 border-b border-border/50"
+                  className="flex items-center gap-3 px-5 py-3.5 transition-colors cursor-default group hover:bg-secondary/40"
                 >
                   {/* Icon */}
                   <div className={`${config.color}`}>
@@ -151,18 +107,18 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
                   </div>
 
                   {/* Action Label */}
-                  <span className={`text-sm font-medium min-w-[60px] ${config.color}`}>
+                  <span className={`text-[13px] font-medium min-w-[56px] ${config.color}`}>
                     {config.label}
                   </span>
 
                   {/* File Name Badge */}
-                  <span className="text-[12px] font-mono px-2 py-0.5 rounded bg-secondary text-foreground/70 border border-border truncate">
+                  <span className="text-[12px] font-mono px-2 py-0.5 rounded bg-secondary/80 text-foreground/70 truncate">
                     {file.name}
                   </span>
 
                   {/* Chevron for expandable items */}
                   {showChevron && (
-                    <ChevronDown className="w-4 h-4 ml-auto text-muted-foreground/40 group-hover:text-muted-foreground transition-colors flex-shrink-0" />
+                    <ChevronDown className="w-4 h-4 ml-auto text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors flex-shrink-0" />
                   )}
                 </motion.div>
               );
