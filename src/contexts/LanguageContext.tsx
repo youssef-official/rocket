@@ -184,6 +184,7 @@ export const translations: Translations = {
   'chat.preview': { en: 'Preview', zh: '预览', ja: 'プレビュー', fr: 'Aperçu' },
   'chat.uploadFile': { en: 'Upload File', zh: '上传文件', ja: 'ファイルをアップロード', fr: 'Télécharger un fichier' },
   'chat.cancel': { en: 'Cancel', zh: '取消', ja: 'キャンセル', fr: 'Annuler' },
+  'chat.takeScreenshot': { en: 'Take Screenshot', zh: '截屏', ja: 'スクリーンショットを撮る', fr: 'Prendre une capture d\'écran' },
 
   // Models
   'models.selectModel': { en: 'Select AI Model', zh: '选择AI模型', ja: 'AIモデルを選択', fr: 'Sélectionner le modèle IA' },
