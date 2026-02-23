@@ -713,22 +713,32 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           <>
                             {renderThinkingIndicator()}
                             {renderStatusMessage()}
-                            {isGenerating && fileActivities.length > 0 && renderFileActivityPanelForMessage(msg.id, fileActivities, true)}
+                            {/* Live generation: show VersionCardNew with live activities */}
+                            {isGenerating && fileActivities.length > 0 && (
+                              <div className="mt-4">
+                                <VersionCardNew
+                                  version={{
+                                    id: 'live',
+                                    projectId: '',
+                                    userId: '',
+                                    versionNumber: maxVersionNumber + 1,
+                                    name: generationPhase?.status || statusMessage || 'Generating...',
+                                    files: {} as any,
+                                    chatMessages: [],
+                                    createdAt: new Date().toISOString(),
+                                  }}
+                                  isActive={true}
+                                  activities={fileActivities}
+                                  isLatestVersion={true}
+                                  isLive={true}
+                                />
+                              </div>
+                            )}
                           </>
                         )}
 
-                        {/* Summary after live generation completes */}
-                        {isLastAssistant && !isGenerating && generationPhase?.phase === 'complete' && generationPhase?.summary && versionActivities.length === 0 && (
-                          renderSummaryBlock(generationPhase.summary, [], true)
-                        )}
-
-                        {/* Summary block - before version card */}
-                        {!isGenerating && versionActivities.length > 0 && (
-                          renderSummaryBlock(extractSummaryFromMessage(msg.content), versionActivities)
-                        )}
-
-                        {/* New version card with Details/Preview tabs - replaces old version card + activity log */}
-                        {version && (
+                        {/* Version card FIRST, then summary */}
+                        {version && !isGenerating && (
                           <div className="mt-4">
                             <VersionCardNew
                               version={version}
@@ -739,6 +749,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
                               isLatestVersion={version.versionNumber === maxVersionNumber}
                             />
                           </div>
+                        )}
+
+                        {/* Summary after version card */}
+                        {isLastAssistant && !isGenerating && generationPhase?.phase === 'complete' && generationPhase?.summary && versionActivities.length === 0 && (
+                          renderSummaryBlock(generationPhase.summary, [], true)
+                        )}
+                        {!isGenerating && versionActivities.length > 0 && (
+                          renderSummaryBlock(extractSummaryFromMessage(msg.content), versionActivities)
                         )}
 
                         {/* Ready message for latest */}
@@ -764,7 +782,24 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   <div className="space-y-4">
                     {renderThinkingIndicator()}
                     {renderStatusMessage()}
-                    {fileActivities.length > 0 && renderFileActivityPanelForMessage('live', fileActivities, true)}
+                    {fileActivities.length > 0 && (
+                      <VersionCardNew
+                        version={{
+                          id: 'live-standalone',
+                          projectId: '',
+                          userId: '',
+                          versionNumber: maxVersionNumber + 1,
+                          name: generationPhase?.status || statusMessage || 'Generating...',
+                          files: {} as any,
+                          chatMessages: [],
+                          createdAt: new Date().toISOString(),
+                        }}
+                        isActive={true}
+                        activities={fileActivities}
+                        isLatestVersion={true}
+                        isLive={true}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
