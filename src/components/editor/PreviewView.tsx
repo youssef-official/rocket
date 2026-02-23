@@ -411,9 +411,17 @@ export default defineConfig({
     }
   }, [sandboxStatus]);
 
+  // Track consecutive failures for health check
+  const consecutiveFailsRef = useRef(0);
+  const readyTimestampRef = useRef<number>(0);
+
   // Listen for iframe load errors (404, ERR_CONNECTION_CLOSED, etc.)
   useEffect(() => {
     if (!previewUrl || !isSandboxReady) return;
+
+    // Record when sandbox became ready - give it a grace period
+    readyTimestampRef.current = Date.now();
+    consecutiveFailsRef.current = 0;
 
     const restartSandbox = (reason: string) => {
       if (retryCountRef.current >= maxRetries) return;
@@ -426,34 +434,25 @@ export default defineConfig({
       setSandboxStatus(`${reason}, restarting...`);
     };
 
-    // Check if preview URL is reachable every 1 second
+    // Check if preview URL is reachable every 5 seconds, with 20s grace period
     const checkIframe = () => {
-      fetch(previewUrl, { method: 'HEAD', mode: 'no-cors' }).catch(() => {
-        restartSandbox("Preview unreachable");
-      });
-    };
-    const intervalId = setInterval(checkIframe, 1000);
+      const elapsed = Date.now() - readyTimestampRef.current;
+      if (elapsed < 20000) return; // 20s grace period after ready
 
-    // Listen for iframe errors (ERR_CONNECTION_CLOSED, etc.)
-    const iframeEl = document.querySelector('iframe[data-preview]') as HTMLIFrameElement | null;
-    const handleIframeError = () => {
-      restartSandbox("Connection closed");
+      fetch(previewUrl, { method: 'HEAD', mode: 'no-cors' })
+        .then(() => { consecutiveFailsRef.current = 0; })
+        .catch(() => {
+          consecutiveFailsRef.current += 1;
+          if (consecutiveFailsRef.current >= 3) {
+            consecutiveFailsRef.current = 0;
+            restartSandbox("Preview unreachable");
+          }
+        });
     };
-    iframeEl?.addEventListener('error', handleIframeError);
-
-    // Also listen for window error events that indicate connection issues
-    const handleWindowError = (e: ErrorEvent) => {
-      const msg = e.message?.toLowerCase() || '';
-      if (msg.includes('err_connection') || msg.includes('net::err_')) {
-        restartSandbox("Network error detected");
-      }
-    };
-    window.addEventListener('error', handleWindowError);
+    const intervalId = setInterval(checkIframe, 5000);
 
     return () => {
       clearInterval(intervalId);
-      iframeEl?.removeEventListener('error', handleIframeError);
-      window.removeEventListener('error', handleWindowError);
     };
   }, [previewUrl, isSandboxReady, key]);
 
