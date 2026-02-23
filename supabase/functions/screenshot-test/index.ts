@@ -33,9 +33,16 @@ serve(async (req) => {
       });
     }
 
-    // Get the screenshot as base64
+    // Get the screenshot as base64 (chunk to avoid stack overflow)
     const imageBuffer = await captureResponse.arrayBuffer();
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+    const bytes = new Uint8Array(imageBuffer);
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    const base64Image = btoa(binary);
     const dataUrl = `data:image/png;base64,${base64Image}`;
 
     // Now send to AI for analysis
