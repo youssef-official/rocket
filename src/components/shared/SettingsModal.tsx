@@ -61,7 +61,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                     className="fixed inset-0 z-[100] flex items-center justify-center p-4"
                     onClick={onClose}
                 >
-                    <div className="absolute inset-0 backdrop-blur-md" style={{ background: 'rgba(1,4,9,0.75)' }} />
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-md" />
 
                     <motion.div
                         initial={{ opacity: 0, scale: 0.96, y: 16 }}
@@ -69,30 +69,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         exit={{ opacity: 0, scale: 0.96, y: 16 }}
                         transition={{ duration: 0.2, ease: 'easeOut' }}
                         onClick={(e) => e.stopPropagation()}
-                        className="relative w-full max-w-xl max-h-[85vh] overflow-hidden rounded-2xl shadow-2xl"
-                        style={{
-                            background: '#0d1117',
-                            border: '1px solid #21262d',
-                        }}
+                        className="relative w-full max-w-xl max-h-[85vh] overflow-hidden rounded-2xl shadow-2xl bg-card border border-border"
                         dir={isRTL ? 'rtl' : 'ltr'}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #21262d', background: '#010409' }}>
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background/50">
                             <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(56,139,253,0.12)', border: '1px solid rgba(56,139,253,0.2)' }}>
-                                    <Shield className="w-4 h-4" style={{ color: '#58a6ff' }} />
+                                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
+                                    <Shield className="w-4 h-4 text-primary" />
                                 </div>
                                 <div>
-                                    <h2 className="text-base font-bold" style={{ color: '#e1e4e8' }}>Account Settings</h2>
-                                    <p className="text-xs" style={{ color: '#484f58' }}>{user?.email}</p>
+                                    <h2 className="text-base font-bold text-foreground">Account Settings</h2>
+                                    <p className="text-xs text-muted-foreground">{user?.email}</p>
                                 </div>
                             </div>
                             <button
                                 onClick={onClose}
-                                className="p-2 rounded-lg transition-colors"
-                                style={{ color: '#484f58' }}
-                                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#161b22'; (e.currentTarget as HTMLElement).style.color = '#e1e4e8'; }}
-                                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#484f58'; }}
+                                className="p-2 rounded-lg transition-colors text-muted-foreground hover:bg-secondary hover:text-foreground"
                             >
                                 <X className="w-4.5 h-4.5" />
                             </button>
@@ -102,14 +95,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                         <div className="px-6 py-5 overflow-y-auto max-h-[calc(85vh-72px)] no-scrollbar">
                             {loading ? (
                                 <div className="flex items-center justify-center py-16">
-                                    <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#484f58' }} />
+                                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                                 </div>
                             ) : (
                                 <div className="space-y-4">
                                     {/* Section Label */}
                                     <div className="flex items-center gap-2 mb-1">
-                                        <Link2 className="w-3.5 h-3.5" style={{ color: '#484f58' }} />
-                                        <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: '#484f58' }}>Integrations</span>
+                                        <Link2 className="w-3.5 h-3.5 text-muted-foreground" />
+                                        <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Integrations</span>
                                     </div>
 
                                     {/* Vercel */}
@@ -189,32 +182,23 @@ const IntegrationCard: React.FC<{
     };
 
     return (
-        <div
-            className="rounded-xl overflow-hidden transition-colors"
-            style={{ background: '#161b22', border: '1px solid #21262d' }}
-        >
+        <div className="rounded-xl overflow-hidden transition-colors bg-secondary/60 border border-border">
             {/* Card Header */}
-            <div className="flex items-center gap-3.5 px-4 py-3.5" style={{ borderBottom: connected ? '1px solid #21262d' : 'none' }}>
-                <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: '#21262d', border: '1px solid #30363d' }}
-                >
+            <div className={`flex items-center gap-3.5 px-4 py-3.5 ${connected ? 'border-b border-border' : ''}`}>
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-accent border border-border">
                     <img src={logo} alt={name} className={`w-5 h-5 ${logoInvert ? 'dark:invert' : ''}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold" style={{ color: '#e1e4e8' }}>{name}</h3>
+                        <h3 className="text-sm font-semibold text-foreground">{name}</h3>
                         {connected && (
-                            <span
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                                style={{ background: 'rgba(63,185,80,0.12)', color: '#3fb950', border: '1px solid rgba(63,185,80,0.2)' }}
-                            >
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-500/10 text-green-500 border border-green-500/20">
                                 <CheckCircle2 className="w-2.5 h-2.5" />
                                 Connected
                             </span>
                         )}
                     </div>
-                    <p className="text-[12px] mt-0.5" style={{ color: '#484f58' }}>{description}</p>
+                    <p className="text-[12px] mt-0.5 text-muted-foreground">{description}</p>
                 </div>
             </div>
 
@@ -222,24 +206,18 @@ const IntegrationCard: React.FC<{
                 /* Connected State */
                 <div className="flex items-center justify-between px-4 py-3">
                     <div className="flex items-center gap-3">
-                        <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
-                            style={{ background: 'linear-gradient(135deg, #388bfd, #a371f7)', color: '#fff' }}
-                        >
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground">
                             {username?.[0]?.toUpperCase() || name[0]}
                         </div>
                         <div>
-                            <p className="text-[13px] font-medium" style={{ color: '#c9d1d9' }}>{username}</p>
-                            <p className="text-[11px]" style={{ color: '#484f58' }}>Connected via Token</p>
+                            <p className="text-[13px] font-medium text-foreground/90">{username}</p>
+                            <p className="text-[11px] text-muted-foreground">Connected via Token</p>
                         </div>
                     </div>
                     <button
                         onClick={handleDisconnect}
                         disabled={disconnecting}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
-                        style={{ color: '#f85149', background: 'rgba(248,81,73,0.08)', border: '1px solid rgba(248,81,73,0.15)' }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(248,81,73,0.15)'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(248,81,73,0.08)'; }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors text-destructive bg-destructive/8 border border-destructive/15 hover:bg-destructive/15"
                     >
                         {disconnecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Unplug className="w-3 h-3" />}
                         Disconnect
@@ -254,19 +232,13 @@ const IntegrationCard: React.FC<{
                             value={tokenValue}
                             onChange={(e) => onTokenChange(e.target.value)}
                             placeholder={placeholder}
-                            className="h-10 text-[13px] pr-10 rounded-lg font-mono"
-                            style={{
-                                background: '#0d1117',
-                                border: '1px solid #30363d',
-                                color: '#c9d1d9',
-                            }}
+                            className="h-10 text-[13px] pr-10 rounded-lg font-mono bg-background border-border text-foreground"
                             onKeyDown={(e) => e.key === 'Enter' && onSave()}
                         />
                         <button
                             type="button"
                             onClick={onToggleShow}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-                            style={{ color: '#484f58' }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors text-muted-foreground hover:text-foreground"
                         >
                             {showToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                         </button>
@@ -277,8 +249,7 @@ const IntegrationCard: React.FC<{
                             href={helpUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-[11px] font-medium transition-colors"
-                            style={{ color: '#58a6ff' }}
+                            className="flex items-center gap-1 text-[11px] font-medium transition-colors text-primary hover:text-primary/80"
                         >
                             <ExternalLink className="w-3 h-3" />
                             {helpText}
@@ -288,10 +259,6 @@ const IntegrationCard: React.FC<{
                             disabled={saving || !tokenValue.trim()}
                             size="sm"
                             className="h-8 px-4 rounded-lg text-[12px] font-semibold gap-1.5"
-                            style={{
-                                background: '#388bfd',
-                                color: '#fff',
-                            }}
                         >
                             {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Key className="w-3 h-3" />}
                             Connect
