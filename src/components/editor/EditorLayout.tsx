@@ -446,19 +446,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                       <button
                         onClick={() => {
                           setShowProjectMenu(false);
-                          const versionEl = document.getElementById('version-selector-panel');
-                          if (versionEl) versionEl.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <Clock className="w-3.5 h-3.5 text-primary" />
-                        </div>
-                        <span className="font-medium">{t('editor.versionHistory')}</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowProjectMenu(false);
                           setShowRenameDialog(true);
                         }}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
@@ -480,14 +467,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                         </div>
                         <span className="font-medium">{t('editor.export')}</span>
                       </button>
-                    </div>
-                    <div className="mx-3 border-t border-border/60" />
-                    <div className={`flex items-center gap-3 px-4.5 py-3 ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}>
-                      <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                        <Shield className="w-3.5 h-3.5 text-muted-foreground" />
-                      </div>
-                      <span className="text-sm font-medium text-foreground">{t('editor.visibility')}</span>
-                      <span className={`text-[11px] text-muted-foreground bg-accent px-2 py-0.5 rounded-md ${isRTL ? 'mr-auto' : 'ml-auto'}`}>{t('home.private')}</span>
                     </div>
                   </motion.div>
                 </>
@@ -534,20 +513,23 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </button>
 
           {/* GitHub */}
-          <button
+          <motion.button
             onClick={() => setShowGitHubPush(true)}
-            className="p-2 rounded-xl hover:bg-accent/80 transition-all duration-200 text-muted-foreground hover:text-foreground"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-border/60 bg-secondary/60 hover:bg-secondary text-foreground text-sm font-semibold transition-all duration-200 shadow-sm"
             title="Push to GitHub"
           >
             <img src={githubLogo} alt="GitHub" className="w-4 h-4 dark:invert" />
-          </button>
+            <span className="hidden lg:inline">GitHub</span>
+          </motion.button>
 
           {/* Publish */}
           <motion.button
             onClick={() => setShowVercelDialog(true)}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            className={`flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-all duration-200 shadow-md shadow-primary/20 ${isRTL ? 'flex-row-reverse' : ''}`}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            className={`flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 shadow-md shadow-primary/20 ${isRTL ? 'flex-row-reverse' : ''}`}
           >
             <Rocket className="w-3.5 h-3.5" />
             {t('editor.publish')}
@@ -590,56 +572,29 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     transition={{ duration: 0.15 }}
                     className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-full mt-2 w-64 bg-card border border-border/60 rounded-2xl shadow-xl shadow-black/10 overflow-hidden z-[9999]`}
                   >
-                    <div className="p-1.5">
-                      <button
-                        onClick={() => {
-                          setShowUserMenu(false);
-                          navigate('/settings');
-                        }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                          <Settings2 className="w-3.5 h-3.5 text-muted-foreground" />
+                    {/* User Info Header */}
+                    <div className="px-4 pt-4 pb-3 border-b border-border/40">
+                      <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center text-sm font-bold text-primary-foreground overflow-hidden ring-2 ring-primary/20">
+                          {user?.avatarUrl ? (
+                            <img src={user.avatarUrl} alt="" className="w-full h-full object-cover rounded-xl" />
+                          ) : (
+                            user?.email?.[0].toUpperCase()
+                          )}
                         </div>
-                        <span className="font-medium">{t('common.settings')}</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowUserMenu(false);
-                          navigate('/docs');
-                        }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                          <BookOpen className="w-3.5 h-3.5 text-muted-foreground" />
+                        <div className={`min-w-0 ${isRTL ? 'text-right' : ''}`}>
+                          <p className="text-sm font-semibold text-foreground truncate">{user?.displayName || user?.email}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{user?.email}</p>
                         </div>
-                        <span className="font-medium">{t('nav.docs')}</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowUserMenu(false);
-                          navigate('/pricing');
-                        }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                          <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
-                        </div>
-                        <span className="font-medium">{t('nav.pricing')}</span>
-                      </button>
+                      </div>
                     </div>
 
                     {/* Credits */}
                     {userPlan && (
-                      <div className="mx-3 border-t border-border/60" />
-                    )}
-                    {userPlan && (
-                      <div className="px-4 py-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                              <Coins className="w-3.5 h-3.5 text-yellow-500" />
-                            </div>
+                      <div className="px-4 py-3 border-b border-border/40 bg-accent/30">
+                        <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                          <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                            <Coins className="w-3.5 h-3.5 text-yellow-500" />
                             <span className="text-xs font-semibold text-foreground">Credits</span>
                           </div>
                           <span className="text-xs font-bold text-yellow-500">
@@ -654,36 +609,58 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                             }}
                           />
                         </div>
-                        <div className="flex items-center justify-between mt-1.5 text-[11px] text-muted-foreground">
+                        <div className={`flex items-center justify-between mt-1.5 text-[11px] text-muted-foreground ${isRTL ? 'flex-row-reverse' : ''}`}>
                           <span>Daily: {getRemainingCredits().daily.toFixed(1)}</span>
                           <span>Monthly: {getRemainingCredits().monthly.toFixed(1)}</span>
                         </div>
                       </div>
                     )}
 
-                    <div className="mx-3 border-t border-border/60" />
                     <div className="p-1.5">
+                      <button
+                        onClick={() => { setShowUserMenu(false); navigate('/settings'); }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Settings2 className="w-3.5 h-3.5 text-primary" />
+                        </div>
+                        <span className="font-medium">{t('common.settings')}</span>
+                      </button>
+                      <button
+                        onClick={() => { setShowUserMenu(false); navigate('/docs'); }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                          <BookOpen className="w-3.5 h-3.5 text-muted-foreground" />
+                        </div>
+                        <span className="font-medium">{t('nav.docs')}</span>
+                      </button>
+                      <button
+                        onClick={() => { setShowUserMenu(false); navigate('/pricing'); }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                          <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
+                        </div>
+                        <span className="font-medium">{t('nav.pricing')}</span>
+                      </button>
+
+                      <div className="my-1 mx-3 border-t border-border/40" />
+
                       {/* Theme */}
                       <button
                         onClick={() => toggleTheme()}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
                       >
                         <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                          {theme === 'dark' ? (
-                            <Moon className="w-3.5 h-3.5 text-muted-foreground" />
-                          ) : theme === 'light' ? (
-                            <Sun className="w-3.5 h-3.5 text-muted-foreground" />
-                          ) : (
-                            <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
-                          )}
+                          {theme === 'dark' ? <Moon className="w-3.5 h-3.5 text-muted-foreground" /> : theme === 'light' ? <Sun className="w-3.5 h-3.5 text-muted-foreground" /> : <Monitor className="w-3.5 h-3.5 text-muted-foreground" />}
                         </div>
                         <span className="font-medium">{t('common.theme')}</span>
                         <span className={`text-[11px] text-muted-foreground bg-accent px-2 py-0.5 rounded-md capitalize ${isRTL ? 'mr-auto' : 'ml-auto'}`}>{theme}</span>
                       </button>
 
-                      <div className="my-1 mx-3 border-t border-border/60" />
+                      <div className="my-1 mx-3 border-t border-border/40" />
 
-                      {/* Sign out */}
                       <button
                         onClick={() => signOut()}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-destructive/10 rounded-xl transition-all duration-200 text-sm text-destructive ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
