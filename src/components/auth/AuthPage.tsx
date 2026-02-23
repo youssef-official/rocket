@@ -75,10 +75,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
             <button className="px-4 py-2 text-white/80 hover:text-white transition-colors text-sm">
               Careers
             </button>
-            <button className="px-4 py-2 text-white/80 hover:text-white transition-colors text-sm flex items-center gap-1">
-              Resources
-              <ArrowRight className="w-3 h-3 rotate-90" />
-            </button>
+            <a href="/blog/ai-for-all" className="px-4 py-2 text-white/80 hover:text-white transition-colors text-sm flex items-center gap-1">
+              AI for All
+            </a>
           </nav>
 
           <div className="w-24" /> {/* Spacer for balance */}

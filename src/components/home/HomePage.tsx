@@ -212,9 +212,8 @@ export const HomePage: React.FC<HomePageProps> = ({
               <a href="/docs" className="px-4 py-2 text-white/80 hover:text-white transition-colors text-sm">
                 {t('nav.docs')}
               </a>
-              <a href="/pricing" className={`px-4 py-2 text-white/80 hover:text-white transition-colors text-sm flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                {t('nav.resources')}
-                <ArrowRight className={`w-3 h-3 ${isRTL ? 'rotate-180' : 'rotate-90'}`} />
+              <a href="/blog/ai-for-all" className={`px-4 py-2 text-white/80 hover:text-white transition-colors text-sm flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                AI for All
               </a>
             </nav>
           )}
