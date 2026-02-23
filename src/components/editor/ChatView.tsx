@@ -8,6 +8,7 @@ import type { ProjectVersion } from '@/hooks/useVersions';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import { toast } from '@/hooks/use-toast';
+import { VersionCardNew } from '@/components/editor/VersionCardNew';
 
 interface FileActivity {
   name: string;
@@ -517,55 +518,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
     }
   };
 
-  // Render Version Card for a specific message
-  const renderVersionCard = (version: ProjectVersion, isActive: boolean, isLatest: boolean = false) => {
-    return (
-      <div className="relative group">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
-          onClick={() => onSelectVersion?.(version)}
-          className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all cursor-pointer ${isActive
-            ? 'bg-primary/20 border-2 border-primary shadow-lg shadow-primary/20'
-            : 'bg-secondary border border-border hover:border-foreground/20'
-            }`}
-        >
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
-            }`}>
-            <Bookmark className="w-4 h-4" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
-              {version.name || `${t('chat.version')} ${version.versionNumber}`}
-            </p>
-            <p className={`text-xs mt-0.5 ${isActive ? 'text-primary/70' : 'text-muted-foreground'}`}>
-              {t('chat.version')} {version.versionNumber}{isActive && ` • ${t('chat.active')}`}
-            </p>
-          </div>
-
-          {/* Rollback button - only for non-latest versions */}
-          {!isLatest && onRollback && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setRollbackVersionId(version.versionNumber);
-              }}
-              className="p-2 rounded-lg bg-destructive/10 text-destructive opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20"
-              title={t('chat.rollback')}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-              </svg>
-            </button>
-          )}
-        </motion.div>
-      </div>
-    );
-  };
-
   // Streaming summary component
   const StreamingSummary: React.FC<{ text: string; isNew?: boolean }> = ({ text, isNew = false }) => {
     const [displayedLength, setDisplayedLength] = useState(isNew ? 0 : text.length);
@@ -629,35 +581,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Success message + Version card for completed generation
-  const renderCompletionBlock = (version?: ProjectVersion, isActive?: boolean, isLatest?: boolean) => {
-    const isLatestVersion = versions.length > 0 && version?.versionNumber === Math.max(...versions.map(v => v.versionNumber));
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mt-4 space-y-3"
-      >
-        {/* Success message - only for latest version */}
-        {isLatest && (
-          <div className="flex items-center gap-2 py-2">
-            <span className="text-sm text-foreground font-medium">{t('chat.readyMessage')}</span>
-          </div>
-        )}
-
-        {/* Version Card - Blue for current, gray for past */}
-        {version && renderVersionCard(version, isActive || false, isLatestVersion)}
-      </motion.div>
-    );
-  };
-
   // Render Suggestions - Horizontal layout, max 3
   const renderSuggestions = () => {
     if (suggestions.length === 0 || isGenerating) return null;
-
     const displaySuggestions = suggestions.slice(0, 3);
-
     return (
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -686,38 +613,24 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const getMessagesWithVersions = (): { msg: ChatMessage; version?: ProjectVersion; isLastAssistant: boolean; msgIndex: number }[] => {
     const result: { msg: ChatMessage; version?: ProjectVersion; isLastAssistant: boolean; msgIndex: number }[] = [];
     const lastAssistantIndex = messages.reduce((last, msg, i) => msg.role === 'assistant' ? i : last, -1);
-
-    // Sort versions by versionNumber ascending for mapping
     const sortedVersions = [...versions].sort((a, b) => a.versionNumber - b.versionNumber);
-
-    // Match versions to assistant messages by timestamp proximity
-    // Each version is assigned to the closest assistant message that came before it
     const versionAssignments = new Map<number, ProjectVersion>();
-    
     const assistantMessages = messages
       .map((msg, idx) => ({ msg, idx }))
       .filter(({ msg }) => msg.role === 'assistant');
 
-    // Map versions to assistant messages
-    // Each version should be assigned to the assistant message that triggered its creation
-    // We match by finding the assistant message whose creation time is closest to (and before) the version creation time
     for (const version of sortedVersions) {
       const versionTime = new Date(version.createdAt).getTime();
       let bestMatchIdx: number | null = null;
       let minDiff = Infinity;
-
       for (const { msg, idx } of assistantMessages) {
         const msgTime = msg.createdAt ? new Date(msg.createdAt).getTime() : 0;
         const diff = versionTime - msgTime;
-        
-        // Version must be created AFTER the message (or within a very small overlap)
-        // We use a small buffer (5000ms) for clock drift or DB lag
         if (diff >= -5000 && diff < minDiff) {
           minDiff = diff;
           bestMatchIdx = idx;
         }
       }
-
       if (bestMatchIdx !== null) {
         versionAssignments.set(bestMatchIdx, version);
       }
@@ -733,18 +646,17 @@ export const ChatView: React.FC<ChatViewProps> = ({
         result.push({ msg, version: undefined, isLastAssistant: false, msgIndex });
       }
     });
-
     return result;
   };
 
   const messagesWithVersions = getMessagesWithVersions();
+  const maxVersionNumber = versions.length > 0 ? Math.max(...versions.map(v => v.versionNumber)) : 0;
 
   return (
     <div className="relative w-full h-full flex flex-col overflow-hidden bg-card">
       {/* Messages Area */}
       <div ref={containerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-6 min-h-0">
         {showEmptyState ? (
-          // Empty State
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="mb-6 opacity-40">
               <VivoraLogo size="md" showText={false} className="justify-center" />
@@ -755,22 +667,15 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <>
             {messagesWithVersions.map(({ msg, version, isLastAssistant, msgIndex }) => {
               const isUser = msg.role === 'user';
-
               const prevMsg = msgIndex > 0 ? messages[msgIndex - 1] : null;
               const showHeader = !prevMsg || prevMsg.role !== msg.role;
-
               const cleanedContent = !isUser ? cleanAIMessage(msg.content) : null;
               const hasContent = isUser || (cleanedContent && cleanedContent.length > 0);
 
-              // Extract plan from this message
-              const messagePlan = !isUser ? extractBuildingPlan(msg.content) : [];
-
-              // Get activities for this version from stored data
               const versionActivities: FileActivity[] = version?.actionsTaken
                 ? (version.actionsTaken as unknown as FileActivity[])
                 : (msg.actionsTaken ? (msg.actionsTaken as unknown as FileActivity[]) : []);
 
-              // Check if this version is the currently active one
               const isActiveVersion = currentVersion === version?.versionNumber ||
                 (!currentVersion && version?.versionNumber === versions[0]?.versionNumber);
 
@@ -781,12 +686,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       {msg.imageUrl && (
                         <div className="mb-2 flex flex-wrap gap-2">
                           {msg.imageUrl.split(',').map((url, i) => (
-                            <img
-                              key={i}
-                              src={url}
-                              alt={`Attached ${i + 1}`}
-                              className="max-w-full max-h-48 rounded-lg object-cover"
-                            />
+                            <img key={i} src={url} alt={`Attached ${i + 1}`} className="max-w-full max-h-48 rounded-lg object-cover" />
                           ))}
                         </div>
                       )}
@@ -808,8 +708,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           </div>
                         )}
 
-
-
                         {/* Show current generation state only for last message */}
                         {isLastAssistant && (
                           <>
@@ -824,19 +722,30 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           renderSummaryBlock(generationPhase.summary, [], true)
                         )}
 
-                        {/* Show stored activities for completed versions - always visible */}
-                        {versionActivities.length > 0 && (
-                          renderFileActivityPanelForMessage(msg.id, versionActivities, false)
-                        )}
-
-                        {/* Summary block - after activities, before version card */}
+                        {/* Summary block - before version card */}
                         {!isGenerating && versionActivities.length > 0 && (
                           renderSummaryBlock(extractSummaryFromMessage(msg.content), versionActivities)
                         )}
 
-                        {/* Show version card for message */}
+                        {/* New version card with Details/Preview tabs - replaces old version card + activity log */}
                         {version && (
-                          renderCompletionBlock(version, isActiveVersion, isLastAssistant)
+                          <div className="mt-4">
+                            <VersionCardNew
+                              version={version}
+                              isActive={isActiveVersion}
+                              activities={versionActivities}
+                              onSelectVersion={onSelectVersion}
+                              onRollback={(vn) => setRollbackVersionId(vn)}
+                              isLatestVersion={version.versionNumber === maxVersionNumber}
+                            />
+                          </div>
+                        )}
+
+                        {/* Ready message for latest */}
+                        {isLastAssistant && !isGenerating && version && (
+                          <div className="flex items-center gap-2 py-2 mt-2">
+                            <span className="text-sm text-foreground font-medium">{t('chat.readyMessage')}</span>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -854,7 +763,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   </div>
                   <div className="space-y-4">
                     {renderThinkingIndicator()}
-                    {/* Plan section removed to avoid duplication */}
                     {renderStatusMessage()}
                     {fileActivities.length > 0 && renderFileActivityPanelForMessage('live', fileActivities, true)}
                   </div>
@@ -864,7 +772,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </>
         )}
       </div>
-
       {/* Input Area - Matching test.tsx exactly */}
       <div
         className={`shrink-0 p-4 pt-2 pb-[env(safe-area-inset-bottom,24px)] md:pb-4 border-t bg-card border-border transition-colors ${isDragging ? 'bg-primary/5' : ''}`}
