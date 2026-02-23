@@ -319,7 +319,7 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
     // Preferred: parse <FILE> blocks (doesn't require JSON escaping)
     const fileBlocks = parseFileBlocks(response);
     if (fileBlocks && (fileBlocks.fileList.length > 0 || fileBlocks.deletedFiles.length > 0 || fileBlocks.actionsTaken.length > 0)) {
-      console.log('[parseAIResponse] Parsed <FILE> blocks:', fileBlocks.fileList, 'Deleted:', fileBlocks.deletedFiles, 'Actions:', fileBlocks.actionsTaken.length, 'Summary:', !!fileBlocks.summary);
+      // Parsed file blocks successfully
       return { files: fileBlocks.files, fileList: fileBlocks.fileList, deletedFiles: fileBlocks.deletedFiles, actionsTaken: fileBlocks.actionsTaken, summary: fileBlocks.summary };
     }
 
@@ -421,7 +421,7 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
       }));
     }
 
-    console.log('[parseAIResponse] Successfully parsed files:', fileList);
+    // Successfully parsed files
     return { files, fileList, actionsTaken };
     
   } catch (e) {

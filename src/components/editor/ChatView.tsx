@@ -57,6 +57,7 @@ interface ChatViewProps {
   onSelectVersion?: (version: ProjectVersion) => void;
   onRollback?: (versionNumber: number) => Promise<void>;
   onShowDetails?: (version: ProjectVersion, activities: FileActivity[]) => void;
+  waitingForTest?: boolean;
 }
 
 // Get file icon based on extension
@@ -193,6 +194,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onSelectVersion,
   onRollback,
   onShowDetails,
+  waitingForTest = false,
 }) => {
   const { t } = useLanguage();
   const { userPlan } = useUserPlan();
@@ -760,11 +762,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           </div>
                         )}
 
-                        {/* Summary after version card */}
-                        {isLastAssistant && !isGenerating && generationPhase?.phase === 'complete' && generationPhase?.summary && versionActivities.length === 0 && (
+                        {/* Summary after version card - delay until test completes */}
+                        {isLastAssistant && !isGenerating && !waitingForTest && generationPhase?.phase === 'complete' && generationPhase?.summary && versionActivities.length === 0 && (
                           renderSummaryBlock(generationPhase.summary, [], true)
                         )}
-                        {!isGenerating && versionActivities.length > 0 && (
+                        {!isGenerating && !waitingForTest && versionActivities.length > 0 && (
                           renderSummaryBlock(extractSummaryFromMessage(msg.content), versionActivities)
                         )}
 
