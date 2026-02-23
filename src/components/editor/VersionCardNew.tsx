@@ -72,36 +72,44 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
-            className="px-4 py-3 bg-secondary/60"
           >
-            {currentActivity && CurrentIcon ? (
-              <div className="flex items-center gap-3">
-                <motion.div
-                  key={currentActivity.name}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex items-center gap-3 flex-1 min-w-0"
-                >
-                  <CurrentIcon className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span className="text-xs font-medium text-primary">
-                    {t(`action.${currentActivity.action}`)}
-                  </span>
-                  <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary truncate">
-                    {currentActivity.name}
-                  </span>
-                </motion.div>
-                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground ml-auto flex-shrink-0" />
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Loader2 className="w-4 h-4 animate-spin text-primary flex-shrink-0" />
-                <span className="text-xs text-muted-foreground">Generating...</span>
-              </div>
-            )}
-            {liveStatus && (
-              <p className="text-xs text-muted-foreground mt-1.5 truncate">{liveStatus}</p>
-            )}
+            <div className="px-4 py-3 bg-secondary/60">
+              {currentActivity && CurrentIcon ? (
+                <div className="flex items-center gap-3">
+                  <motion.div
+                    key={currentActivity.name}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-3 flex-1 min-w-0"
+                  >
+                    <CurrentIcon className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs font-medium text-primary">
+                      {t(`action.${currentActivity.action}`)}
+                    </span>
+                    <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary truncate">
+                      {currentActivity.name}
+                    </span>
+                  </motion.div>
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground ml-auto flex-shrink-0" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Loader2 className="w-4 h-4 animate-spin text-primary flex-shrink-0" />
+                  <span className="text-xs text-muted-foreground">Generating...</span>
+                </div>
+              )}
+              {liveStatus && (
+                <p className="text-xs text-muted-foreground mt-1.5 truncate">{liveStatus}</p>
+              )}
+            </div>
+            {/* Details button during live */}
+            <button
+              onClick={() => onShowDetails?.(version, activities)}
+              className="w-full text-xs font-medium py-2 text-center transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/40 border-t border-border"
+            >
+              Details
+            </button>
           </motion.div>
         ) : (
           /* ── Completed state ── */
