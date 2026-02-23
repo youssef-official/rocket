@@ -101,21 +101,23 @@ export const GitHubPushDialog: React.FC<GitHubPushDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 overflow-hidden rounded-2xl">
-        <div className="px-6 pt-6 pb-4 border-b border-border/60 bg-gradient-to-b from-secondary/80 to-transparent">
+      <DialogContent className="sm:max-w-lg p-0 overflow-hidden rounded-2xl border-border/40 shadow-2xl">
+        <div className="px-6 pt-6 pb-4 border-b border-border/40" style={{ background: 'linear-gradient(180deg, hsl(var(--foreground) / 0.04) 0%, transparent 100%)' }}>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2.5 text-lg">
-              <div className="w-9 h-9 rounded-xl bg-foreground/10 flex items-center justify-center">
+            <DialogTitle className="flex items-center gap-3 text-lg font-bold">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, hsl(var(--foreground) / 0.1), hsl(var(--foreground) / 0.03))', border: '1px solid hsl(var(--foreground) / 0.1)' }}>
                 <img src={githubLogo} alt="GitHub" className="w-5 h-5 dark:invert" />
               </div>
-              {step === 'success' ? '🎉 Pushed to GitHub' : isUpdate ? 'Update GitHub Repository' : 'Push to GitHub'}
+              <div>
+                <span>{step === 'success' ? '🎉 Pushed!' : isUpdate ? 'Update Repository' : 'Push to GitHub'}</span>
+                <p className="text-xs font-normal text-muted-foreground mt-0.5">
+                  {step === 'input' && (isUpdate ? 'Push latest changes to your repository' : 'Create a new repository and push your code')}
+                  {step === 'pushing' && 'Pushing your code...'}
+                  {step === 'success' && 'Your code is on GitHub!'}
+                  {step === 'error' && 'Something went wrong'}
+                </p>
+              </div>
             </DialogTitle>
-            <DialogDescription className="mt-1.5">
-              {step === 'input' && (isUpdate ? 'Push latest changes to your repository' : 'Create a new repository and push your code')}
-              {step === 'pushing' && 'Pushing your code to GitHub...'}
-              {step === 'success' && 'Your code is on GitHub!'}
-              {step === 'error' && 'Something went wrong'}
-            </DialogDescription>
           </DialogHeader>
         </div>
 
@@ -137,20 +139,20 @@ export const GitHubPushDialog: React.FC<GitHubPushDialogProps> = ({
 
           {step === 'input' && integrations?.github_connected && (
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Repository name</Label>
-                <div className="flex items-center gap-2 p-3 bg-secondary/60 rounded-xl border border-border/60">
-                  <img src={githubLogo} alt="GitHub" className="w-4 h-4 dark:invert flex-shrink-0" />
-                  <span className="text-sm text-muted-foreground">{integrations.github_username}/</span>
+              <div className="space-y-2.5">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Repository name</Label>
+                <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border/60 bg-secondary/40 focus-within:border-primary/40 focus-within:bg-secondary/60 transition-all duration-200" style={{ boxShadow: 'inset 0 1px 2px hsl(var(--foreground) / 0.03)' }}>
+                  <img src={githubLogo} alt="GitHub" className="w-4 h-4 dark:invert flex-shrink-0 opacity-60" />
+                  <span className="text-sm text-muted-foreground font-mono">{integrations.github_username}/</span>
                   <Input
                     value={repoName}
                     onChange={(e) => setRepoName(e.target.value)}
                     placeholder="my-project"
-                    className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0 shadow-none"
+                    className="border-0 bg-transparent p-0 h-auto text-sm font-medium focus-visible:ring-0 shadow-none"
                   />
                 </div>
               </div>
-              <Button onClick={handlePush} disabled={!repoName.trim()} className="w-full gap-2 rounded-xl h-11 text-sm font-semibold shadow-sm">
+              <Button onClick={handlePush} disabled={!repoName.trim()} className="w-full gap-2.5 rounded-xl h-12 text-sm font-bold shadow-md hover:shadow-lg transition-all duration-200">
                 <GitBranch className="w-4 h-4" />
                 {isUpdate ? 'Update Repository' : 'Create & Push'}
               </Button>

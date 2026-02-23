@@ -1,8 +1,59 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Editor from '@monaco-editor/react';
-import { ChevronRight, ChevronDown, File, Folder, FileCode, FileJson, FileText, Loader2, CheckCircle2 } from 'lucide-react';
+import Editor, { type Monaco } from '@monaco-editor/react';
+import { ChevronRight, ChevronDown, File, Folder, FileCode, FileJson, FileText, Loader2, CheckCircle2, Hash, Image, Settings2 } from 'lucide-react';
 import type { ProjectFile } from '@/types';
+
+// GitHub Dark inspired Monaco theme
+const defineGitHubDarkTheme = (monaco: Monaco) => {
+  monaco.editor.defineTheme('github-dark-custom', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'comment', foreground: '6a737d', fontStyle: 'italic' },
+      { token: 'keyword', foreground: 'f97583' },
+      { token: 'string', foreground: '9ecbff' },
+      { token: 'number', foreground: '79b8ff' },
+      { token: 'regexp', foreground: 'ffab70' },
+      { token: 'type', foreground: '79b8ff' },
+      { token: 'class', foreground: 'b392f0' },
+      { token: 'function', foreground: 'b392f0' },
+      { token: 'variable', foreground: 'e1e4e8' },
+      { token: 'variable.predefined', foreground: '79b8ff' },
+      { token: 'constant', foreground: '79b8ff' },
+      { token: 'tag', foreground: '85e89d' },
+      { token: 'attribute.name', foreground: 'b392f0' },
+      { token: 'attribute.value', foreground: '9ecbff' },
+      { token: 'delimiter', foreground: 'e1e4e8' },
+      { token: 'delimiter.bracket', foreground: 'e1e4e8' },
+      { token: 'operator', foreground: 'f97583' },
+      { token: 'identifier', foreground: 'e1e4e8' },
+      { token: 'meta.tag', foreground: '85e89d' },
+    ],
+    colors: {
+      'editor.background': '#0d1117',
+      'editor.foreground': '#e1e4e8',
+      'editor.lineHighlightBackground': '#161b2233',
+      'editor.selectionBackground': '#3392FF44',
+      'editor.inactiveSelectionBackground': '#3392FF22',
+      'editorCursor.foreground': '#79b8ff',
+      'editorLineNumber.foreground': '#484f58',
+      'editorLineNumber.activeForeground': '#e1e4e8',
+      'editor.selectionHighlightBackground': '#3392FF22',
+      'editorIndentGuide.background': '#21262d',
+      'editorIndentGuide.activeBackground': '#30363d',
+      'editorBracketMatch.background': '#3392FF33',
+      'editorBracketMatch.border': '#3392FF55',
+      'scrollbar.shadow': '#00000000',
+      'editorOverviewRuler.border': '#00000000',
+      'editor.wordHighlightBackground': '#3392FF22',
+      'editorGutter.background': '#0d1117',
+      'minimap.background': '#0d1117',
+      'editorWidget.background': '#161b22',
+      'editorWidget.border': '#30363d',
+    },
+  });
+};
 
 interface CodeViewProps {
   files: Record<string, ProjectFile>;
@@ -147,6 +198,9 @@ export const CodeView: React.FC<CodeViewProps> = ({
     if (name.endsWith('.tsx') || name.endsWith('.ts')) return FileCode;
     if (name.endsWith('.json')) return FileJson;
     if (name.endsWith('.md') || name.endsWith('.txt')) return FileText;
+    if (name.endsWith('.css') || name.endsWith('.scss')) return Hash;
+    if (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.svg')) return Image;
+    if (name.endsWith('.toml') || name.endsWith('.env')) return Settings2;
     return File;
   };
 
@@ -225,16 +279,16 @@ export const CodeView: React.FC<CodeViewProps> = ({
           <div key={fullPath}>
             <button
               onClick={() => toggleFolder(fullPath)}
-              className="file-tree-item w-full"
+              className="w-full flex items-center gap-2 py-1.5 px-3 text-left transition-colors duration-100 hover:bg-[#161b22]"
               style={{ paddingLeft: `${depth * 12 + 12}px` }}
             >
               {isExpanded ? (
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                <ChevronDown className="w-3.5 h-3.5" style={{ color: '#484f58' }} />
               ) : (
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <ChevronRight className="w-3.5 h-3.5" style={{ color: '#484f58' }} />
               )}
-              <Folder className={`w-4 h-4 ${isExpanded ? 'text-primary' : 'text-muted-foreground'}`} />
-              <span className="text-sm truncate">{name}</span>
+              <Folder className="w-3.5 h-3.5" style={{ color: isExpanded ? '#58a6ff' : '#8b949e' }} />
+              <span className="text-[13px] truncate" style={{ color: '#e1e4e8' }}>{name}</span>
             </button>
             <AnimatePresence>
               {isExpanded && (
@@ -257,26 +311,29 @@ export const CodeView: React.FC<CodeViewProps> = ({
           initial={isNew ? { opacity: 0, x: -10 } : false}
           animate={{ opacity: 1, x: 0 }}
           onClick={() => onSelectFile((data as any).path)}
-          className={`file-tree-item w-full ${isSelected ? 'active' : ''}`}
-          style={{ paddingLeft: `${depth * 12 + 28}px` }}
+          className="w-full flex items-center gap-2 py-1.5 px-3 text-left transition-colors duration-100"
+          style={{
+            paddingLeft: `${depth * 12 + 28}px`,
+            background: isSelected ? '#161b22' : 'transparent',
+            borderLeft: isSelected ? '2px solid #58a6ff' : '2px solid transparent',
+          }}
+          onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = '#161b2288'; }}
+          onMouseLeave={(e) => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
         >
-          <FileIcon className={`w-4 h-4 ${
-            isNew && !complete ? 'text-yellow-500' : 
-            isNew ? 'text-green-500' : 
-            isSelected ? 'text-primary' : 'text-muted-foreground'
-          }`} />
-          <span className="text-sm truncate flex-1">{name}</span>
+          <FileIcon className="w-3.5 h-3.5" style={{
+            color: isNew && !complete ? '#d29922' :
+              isNew ? '#3fb950' :
+              isSelected ? '#58a6ff' : '#8b949e'
+          }} />
+          <span className="text-[13px] truncate flex-1" style={{ color: isSelected ? '#e1e4e8' : '#c9d1d9' }}>{name}</span>
           
           {isNew && !complete && (
-            <Loader2 className="w-3 h-3 animate-spin text-yellow-500 ml-1" />
+            <Loader2 className="w-3 h-3 animate-spin" style={{ color: '#d29922' }} />
           )}
           
           {isNew && complete && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-            >
-              <CheckCircle2 className="w-3 h-3 text-green-500 ml-1" />
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+              <CheckCircle2 className="w-3 h-3" style={{ color: '#3fb950' }} />
             </motion.div>
           )}
         </motion.button>
@@ -293,20 +350,20 @@ export const CodeView: React.FC<CodeViewProps> = ({
   const fileName = selectedFile?.split('/').pop() || '';
 
   return (
-    <div className="flex h-full bg-background">
+    <div className="flex h-full" style={{ background: '#0d1117' }}>
       {/* File Tree */}
-      <div className="w-64 border-r border-border flex flex-col">
-        <div className="p-3 border-b border-border flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            Files
+      <div className="w-64 flex flex-col" style={{ background: '#010409', borderRight: '1px solid #21262d' }}>
+        <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #21262d' }}>
+          <h3 className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#8b949e' }}>
+            Explorer
           </h3>
           {isGenerating && (
-            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: '#79b8ff' }} />
           )}
         </div>
-        <div className="flex-1 overflow-y-auto py-2">
+        <div className="flex-1 overflow-y-auto py-1.5 no-scrollbar">
           {allFiles.size === 0 ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
+            <div className="p-4 text-center text-xs" style={{ color: '#484f58' }}>
               No files generated yet
             </div>
           ) : (
@@ -319,17 +376,17 @@ export const CodeView: React.FC<CodeViewProps> = ({
       <div className="flex-1 flex flex-col">
         {selectedFile && displayContent ? (
           <>
-            <div className="px-4 py-2 border-b border-border flex items-center gap-2 bg-secondary/30">
-              <File className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{selectedFile}</span>
+            <div className="px-4 py-2 flex items-center gap-2" style={{ background: '#161b22', borderBottom: '1px solid #21262d' }}>
+              <File className="w-3.5 h-3.5" style={{ color: '#8b949e' }} />
+              <span className="text-xs font-medium" style={{ color: '#e1e4e8', fontFamily: "'SF Mono', 'Fira Code', monospace" }}>{selectedFile}</span>
               {currentFileData?.isNew && !currentFileData?.complete && (
-                <span className="text-xs text-yellow-500 flex items-center gap-1 ml-auto">
+                <span className="text-[10px] flex items-center gap-1 ml-auto font-medium" style={{ color: '#d29922' }}>
                   <Loader2 className="w-3 h-3 animate-spin" />
                   Generating...
                 </span>
               )}
               {currentFileData?.isNew && currentFileData?.complete && (
-                <span className="text-xs text-green-500 flex items-center gap-1 ml-auto">
+                <span className="text-[10px] flex items-center gap-1 ml-auto font-medium" style={{ color: '#3fb950' }}>
                   <CheckCircle2 className="w-3 h-3" />
                   New
                 </span>
@@ -345,22 +402,38 @@ export const CodeView: React.FC<CodeViewProps> = ({
                     onUpdateFile(selectedFile, value || '');
                   }
                 }}
-                theme="vs-dark"
+                theme="github-dark-custom"
                 options={{
                   minimap: { enabled: false },
                   fontSize: 13,
-                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                  fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', 'Droid Sans Mono', 'Source Code Pro', monospace",
+                  fontLigatures: true,
                   lineNumbers: 'on',
                   roundedSelection: true,
                   scrollBeyondLastLine: false,
                   wordWrap: 'on',
-                  padding: { top: 16 },
-                  renderLineHighlight: 'gutter',
-                  cursorBlinking: 'smooth',
+                  padding: { top: 16, bottom: 16 },
+                  renderLineHighlight: 'line',
+                  cursorBlinking: 'phase',
+                  cursorSmoothCaretAnimation: 'on',
+                  cursorWidth: 2,
+                  smoothScrolling: true,
+                  bracketPairColorization: { enabled: true },
+                  guides: { bracketPairs: true, indentation: true },
                   readOnly: currentFileData?.isNew && !currentFileData?.complete,
+                  lineHeight: 22,
+                  letterSpacing: 0.3,
+                  renderWhitespace: 'none',
+                  overviewRulerBorder: false,
+                  hideCursorInOverviewRuler: true,
+                  scrollbar: {
+                    verticalScrollbarSize: 6,
+                    horizontalScrollbarSize: 6,
+                    verticalSliderSize: 6,
+                  },
                 }}
                 beforeMount={(monaco) => {
-                  // Disable all TypeScript/JavaScript diagnostics to prevent false red squiggly lines
+                  defineGitHubDarkTheme(monaco);
                   monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
                     noSemanticValidation: true,
                     noSyntaxValidation: false,
@@ -373,19 +446,19 @@ export const CodeView: React.FC<CodeViewProps> = ({
                   });
                 }}
                 loading={
-                  <div className="flex items-center justify-center h-full">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <div className="flex items-center justify-center h-full" style={{ background: '#0d1117' }}>
+                    <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#79b8ff' }} />
                   </div>
                 }
               />
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center" style={{ background: '#0d1117' }}>
             <div className="text-center">
-              <FileCode className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-              <p className="text-muted-foreground">
-                {isGenerating ? 'Generating files...' : 'Select a file to view and edit'}
+              <FileCode className="w-10 h-10 mx-auto mb-3" style={{ color: '#30363d' }} />
+              <p className="text-sm" style={{ color: '#484f58' }}>
+                {isGenerating ? 'Generating files...' : 'Select a file to view'}
               </p>
             </div>
           </div>

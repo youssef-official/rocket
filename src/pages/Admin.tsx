@@ -129,16 +129,16 @@ export const AdminPanel: React.FC = () => {
 
     .vivora-root {
       display: flex; height: 100vh;
-      background: #0f1117;
-      color: #e0e0e0;
+      background: #0a0c10;
+      color: #e6edf3;
       font-family: 'Geist', sans-serif;
       overflow: hidden;
     }
 
     /* SIDEBAR - dark */
     .vivora-sidebar {
-      width: 260px; background: #13151d;
-      border-right: 1px solid rgba(255,255,255,0.06);
+      width: 260px; background: #010409;
+      border-right: 1px solid #21262d;
       display: flex; flex-direction: column;
       height: 100vh; overflow-y: auto;
       flex-shrink: 0;
@@ -174,10 +174,10 @@ export const AdminPanel: React.FC = () => {
     }
     .vivora-nav-item:hover { background: rgba(255,255,255,0.05); color: #e0e0e0; }
     .vivora-nav-item.active {
-      background: rgba(125,211,252,0.12); color: #7dd3fc;
+      background: rgba(56,139,253,0.12); color: #58a6ff;
     }
     .vivora-nav-item.active .vivora-nav-count {
-      color: #7dd3fc; background: rgba(125,211,252,0.15);
+      color: #58a6ff; background: rgba(56,139,253,0.15);
     }
 
     .vivora-nav-count {
@@ -204,7 +204,7 @@ export const AdminPanel: React.FC = () => {
 
     .vivora-main-inner {
       flex: 1; overflow-y: auto; padding: 24px 28px;
-      background: #181a24;
+      background: #0d1117;
       border-radius: 20px 0 0 0;
       margin: 0;
     }
@@ -214,8 +214,8 @@ export const AdminPanel: React.FC = () => {
       padding: 16px 28px;
       display: flex; align-items: flex-start; justify-content: space-between;
       flex-shrink: 0; gap: 16px;
-      background: #13151d;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      background: #010409;
+      border-bottom: 1px solid #21262d;
     }
     .vivora-welcome { font-size: 12px; color: #546e7a; margin-bottom: 2px; }
     .vivora-page-title { font-size: 22px; font-weight: 700; color: #e8eaed; letter-spacing: -0.5px; }
@@ -263,26 +263,28 @@ export const AdminPanel: React.FC = () => {
     /* STAT CARDS */
     .vivora-stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
     .vivora-stat-card {
-      background: #1e2030; border-radius: 14px;
-      padding: 18px; border: 1px solid rgba(255,255,255,0.05);
+      background: #161b22; border-radius: 14px;
+      padding: 18px; border: 1px solid #21262d;
       display: flex; align-items: flex-start; gap: 12px;
+      transition: border-color 0.2s;
     }
+    .vivora-stat-card:hover { border-color: #30363d; }
     .vivora-stat-icon {
       width: 40px; height: 40px; border-radius: 10px;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .vivora-stat-icon.purple { background: rgba(167,139,250,0.15); color: #a78bfa; }
-    .vivora-stat-icon.pink { background: rgba(244,114,182,0.15); color: #f472b6; }
-    .vivora-stat-icon.orange { background: rgba(251,146,60,0.15); color: #fb923c; }
-    .vivora-stat-icon.teal { background: rgba(125,211,252,0.15); color: #7dd3fc; }
+    .vivora-stat-icon.purple { background: rgba(130,80,223,0.15); color: #a371f7; }
+    .vivora-stat-icon.pink { background: rgba(219,55,99,0.15); color: '#db3763'; }
+    .vivora-stat-icon.orange { background: rgba(210,153,34,0.15); color: #d29922; }
+    .vivora-stat-icon.teal { background: rgba(56,139,253,0.15); color: #58a6ff; }
     .vivora-stat-label { font-size: 10px; font-weight: 600; color: #546e7a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
     .vivora-stat-value { font-size: 20px; font-weight: 700; color: #e8eaed; }
 
     /* DASH GRID */
     .vivora-dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
     .vivora-dash-card {
-      background: #1e2030; border-radius: 14px;
-      padding: 20px; border: 1px solid rgba(255,255,255,0.05);
+      background: #161b22; border-radius: 14px;
+      padding: 20px; border: 1px solid #21262d;
     }
     .vivora-dash-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
     .vivora-dash-card-title { font-size: 14px; font-weight: 600; color: #e0e0e0; }
@@ -321,7 +323,7 @@ export const AdminPanel: React.FC = () => {
       transition: all 0.15s ease;
     }
     .vivora-tab-btn:hover { background: rgba(255,255,255,0.05); color: #e0e0e0; }
-    .vivora-tab-btn.active { background: rgba(125,211,252,0.1); color: #7dd3fc; }
+    .vivora-tab-btn.active { background: rgba(56,139,253,0.12); color: #58a6ff; border-color: rgba(56,139,253,0.3); }
 
     .vivora-dropdown-btn {
       display: flex; align-items: center; gap: 6px;
@@ -355,15 +357,15 @@ export const AdminPanel: React.FC = () => {
       font-family: 'Geist', sans-serif;
       transition: all 0.15s ease;
     }
-    .vivora-btn-primary { background: #7dd3fc; color: #0f1117; }
-    .vivora-btn-primary:hover:not(:disabled) { background: #38bdf8; }
+    .vivora-btn-primary { background: #388bfd; color: #fff; }
+    .vivora-btn-primary:hover:not(:disabled) { background: #58a6ff; }
     .vivora-btn-secondary { background: rgba(255,255,255,0.06); color: #e0e0e0; border: 1px solid rgba(255,255,255,0.1); }
     .vivora-btn-secondary:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
     .vivora-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* TABLE */
     .vivora-table-card {
-      background: #1e2030; border: 1px solid rgba(255,255,255,0.05);
+      background: #161b22; border: 1px solid #21262d;
       border-radius: 14px; overflow: hidden;
     }
     .vivora-table { width: 100%; border-collapse: collapse; }
@@ -400,7 +402,7 @@ export const AdminPanel: React.FC = () => {
     /* FORMS */
     .vivora-form-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
     .vivora-form-card {
-      background: #1e2030; border: 1px solid rgba(255,255,255,0.05);
+      background: #161b22; border: 1px solid #21262d;
       border-radius: 14px; padding: 20px;
     }
     .vivora-form-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
