@@ -146,7 +146,7 @@ const Blog: React.FC = () => {
                         className="group block rounded-2xl overflow-hidden bg-card border border-border/40 hover:border-border transition-all hover:shadow-lg"
                       >
                         {post.cover_image ? (
-                          <div className="aspect-[16/10] overflow-hidden">
+                          <div className="aspect-[2/1] overflow-hidden">
                             <img
                               src={post.cover_image}
                               alt={post.title}
@@ -154,7 +154,7 @@ const Blog: React.FC = () => {
                             />
                           </div>
                         ) : (
-                          <div className="aspect-[16/10] bg-gradient-to-br from-primary/30 via-accent/30 to-secondary/30" />
+                          <div className="aspect-[2/1] bg-gradient-to-br from-primary/30 via-accent/30 to-secondary/30" />
                         )}
                         <div className="p-5">
                           <span className="text-xs text-muted-foreground">{post.category}</span>
