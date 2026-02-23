@@ -112,6 +112,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [showVercelDialog, setShowVercelDialog] = useState(false);
   const [showGitHubPush, setShowGitHubPush] = useState(false);
   const [gitHubRepoName, setGitHubRepoName] = useState('');
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
   // connectedRepoUrl removed
   const [deployedUrl, setDeployedUrl] = useState<string | null>(null);
   const isResizing = useRef(false);
@@ -442,33 +444,21 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     <button
                       onClick={() => {
                         setShowProjectMenu(false);
-                        onViewDashboard?.();
+                        // Scroll to version selector in the chat panel
+                        const versionEl = document.getElementById('version-selector-panel');
+                        if (versionEl) {
+                          versionEl.scrollIntoView({ behavior: 'smooth' });
+                        }
                       }}
                       className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
                     >
-                      <FolderOpen className="w-4 h-4 text-muted-foreground" />
-                      <span>{t('editor.openRecent')}</span>
-                      <ChevronDown className={`w-3 h-3 text-muted-foreground ${isRTL ? 'mr-auto rotate-90' : 'ml-auto -rotate-90'}`} />
-                    </button>
-                    <button
-                      onClick={() => setShowProjectMenu(false)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                    >
                       <Clock className="w-4 h-4 text-muted-foreground" />
                       <span>{t('editor.versionHistory')}</span>
-                      <ChevronDown className={`w-3 h-3 text-muted-foreground ${isRTL ? 'mr-auto rotate-90' : 'ml-auto -rotate-90'}`} />
                     </button>
                     <button
                       onClick={() => {
                         setShowProjectMenu(false);
-                        const newName = prompt(isRTL ? 'أدخل اسم المشروع الجديد:' : 'Enter new project name:', displayProjectName);
-                        if (newName && newName.trim()) {
-                          onUpdateProject({ name: newName.trim(), generatedName: newName.trim() });
-                          // Update in database
-                          if (project?.id) {
-                            supabase.from('projects').update({ name: newName.trim(), generated_name: newName.trim() }).eq('id', project.id).then(() => {});
-                          }
-                        }
+                        setShowRenameDialog(true);
                       }}
                       className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
                     >
@@ -595,21 +585,30 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-full mt-2 w-56 bg-card border border-border rounded-lg shadow-xl overflow-hidden z-[9999]`}
                   >
                     <button
-                      onClick={() => setShowUserMenu(false)}
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate('/settings');
+                      }}
                       className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
                     >
                       <Settings className="w-4 h-4 text-muted-foreground" />
                       <span>{t('common.settings')}</span>
                     </button>
                     <button
-                      onClick={() => setShowUserMenu(false)}
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate('/docs');
+                      }}
                       className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
                     >
                       <HelpCircle className="w-4 h-4 text-muted-foreground" />
                       <span>{t('nav.docs')}</span>
                     </button>
                     <button
-                      onClick={() => setShowUserMenu(false)}
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        navigate('/pricing');
+                      }}
                       className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
                     >
                       <CreditCard className="w-4 h-4 text-muted-foreground" />
@@ -845,6 +844,64 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         projectId={project?.id || null}
         existingRepoUrl={project?.githubRepoUrl || null}
       />
+
+      {/* Rename Dialog */}
+      <AnimatePresence>
+        {showRenameDialog && (
+          <>
+            <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={() => setShowRenameDialog(false)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 flex items-center justify-center z-[9999] pointer-events-none"
+            >
+              <div className="bg-card border border-border rounded-xl shadow-2xl p-6 w-full max-w-md pointer-events-auto">
+                <h2 className="text-lg font-bold text-foreground mb-1">{t('editor.rename')}</h2>
+                <p className="text-sm text-muted-foreground mb-4">{isRTL ? 'أدخل اسم جديد للمشروع' : 'Enter a new name for your project'}</p>
+                <input
+                  autoFocus
+                  type="text"
+                  defaultValue={displayProjectName}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const name = renameValue.trim() || displayProjectName;
+                      onUpdateProject({ name, generatedName: name });
+                      if (project?.id) {
+                        supabase.from('projects').update({ name, generated_name: name }).eq('id', project.id).then(() => {});
+                      }
+                      setShowRenameDialog(false);
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+                />
+                <div className={`flex gap-2 justify-end ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <button
+                    onClick={() => setShowRenameDialog(false)}
+                    className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-colors"
+                  >
+                    {isRTL ? 'إلغاء' : 'Cancel'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const name = renameValue.trim() || displayProjectName;
+                      onUpdateProject({ name, generatedName: name });
+                      if (project?.id) {
+                        supabase.from('projects').update({ name, generated_name: name }).eq('id', project.id).then(() => {});
+                      }
+                      setShowRenameDialog(false);
+                    }}
+                    className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+                  >
+                    {isRTL ? 'حفظ' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
