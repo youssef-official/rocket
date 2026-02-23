@@ -1,6 +1,6 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Package, FileCode, Pencil, Sparkles, Eye, Trash2, Image as ImageIcon, FileOutput, X, Code2, FileType, File, FileJson, Clock, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Package, FileCode, ChevronDown, CheckCircle2, AlertTriangle, Loader2, Terminal, Play } from 'lucide-react';
 import type { ProjectVersion } from '@/hooks/useVersions';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -15,225 +15,302 @@ interface DetailsPanelProps {
   activities: FileActivity[];
   onClose: () => void;
   isGenerating?: boolean;
+  onAutoFix?: (errorLog: string) => void;
+  previewUrl?: string | null;
+  isFirstVersion?: boolean;
+  onTestComplete?: (passed: boolean) => void;
 }
+
+// Custom SVG icons matching the reference design
+const ReadIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
+    <path d="M8 2.25A3.75 3.75 0 0 0 4.25 6v12A3.75 3.75 0 0 0 8 21.75h8A3.75 3.75 0 0 0 19.75 18V8.53a.75.75 0 0 0-.22-.53l-6-6a.75.75 0 0 0-.53-.22zm5.75 1.5v2.5A2.25 2.25 0 0 0 16 8.25h1.19l-3.44-3.44zM5.75 6A2.25 2.25 0 0 1 8 3.75h4.25V6A3.75 3.75 0 0 0 16 9.75h2.25V18A2.25 2.25 0 0 1 16 20.25H8A2.25 2.25 0 0 1 5.75 18z" />
+  </svg>
+);
+
+const EditedIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
+    <path d="M17.47 14.47a2.871 2.871 0 0 1 4.06 4.06l-4 4a.75.75 0 0 1-.53.22h-3a.75.75 0 0 1-.75-.75v-3c0-.199.08-.39.22-.53zM4.25 18V6A3.75 3.75 0 0 1 8 2.25h5c.199 0 .39.08.53.22l6 6c.14.14.22.331.22.53v2a.75.75 0 0 1-1.5 0V9.75H16A3.75 3.75 0 0 1 12.25 6V3.75H8A2.25 2.25 0 0 0 5.75 6v12A2.25 2.25 0 0 0 8 20.25h2a.75.75 0 0 1 0 1.5H8A3.75 3.75 0 0 1 4.25 18m16.22-2.47a1.37 1.37 0 0 0-1.94 0l-3.78 3.78v1.94h1.94l3.78-3.78a1.37 1.37 0 0 0 0-1.94M13.75 6A2.25 2.25 0 0 0 16 8.25h1.19l-3.44-3.44z" />
+  </svg>
+);
+
+const CreatedIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
+    <path d="M8 2.25A3.75 3.75 0 0 0 4.25 6v12A3.75 3.75 0 0 0 8 21.75h8A3.75 3.75 0 0 0 19.75 18v-7a.75.75 0 0 0-1.5 0v7A2.25 2.25 0 0 1 16 20.25H8A2.25 2.25 0 0 1 5.75 18V6A2.25 2.25 0 0 1 8 3.75h4.25V6A3.75 3.75 0 0 0 16 9.75h2.25v.5a.75.75 0 0 0 1.5 0V8.53a.75.75 0 0 0-.22-.53l-6-6a.75.75 0 0 0-.53-.22zm5.75 1.5v2.5A2.25 2.25 0 0 0 16 8.25h1.19l-3.44-3.44z" />
+  </svg>
+);
+
+const DeletedIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
+    <path d="M10 2.25a.75.75 0 0 0 0 1.5h4a.75.75 0 0 0 0-1.5zM5.25 5a.75.75 0 0 1 .75-.75h12a.75.75 0 0 1 0 1.5h-.25l-.8 11.2A3.75 3.75 0 0 1 13.16 20.5h-2.32a3.75 3.75 0 0 1-3.74-3.55L6.3 5.75H6A.75.75 0 0 1 5.25 5m2.56.75.79 11.1a2.25 2.25 0 0 0 2.24 2.13h2.32a2.25 2.25 0 0 0 2.24-2.13l.79-11.1z" />
+  </svg>
+);
+
+const AnalyzedIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
+    <path d="M4.25 6A3.75 3.75 0 0 1 8 2.25h8A3.75 3.75 0 0 1 19.75 6v12A3.75 3.75 0 0 1 16 21.75H8A3.75 3.75 0 0 1 4.25 18zM8 3.75A2.25 2.25 0 0 0 5.75 6v12A2.25 2.25 0 0 0 8 20.25h8A2.25 2.25 0 0 0 18.25 18V6A2.25 2.25 0 0 0 16 3.75zm1 5a1 1 0 1 1 2 0 1 1 0 0 1-2 0m-1.47 5.22a.75.75 0 0 1 1.06 0L10 15.38l2.22-2.22a.75.75 0 0 1 .56-.16h.01a.75.75 0 0 1 .52.23l2.44 2.69a.75.75 0 1 1-1.11 1.01L12.5 14.64l-2.22 2.23a.75.75 0 0 1-1.06 0l-1.94-1.94a.75.75 0 0 1 0-1.06z" />
+  </svg>
+);
 
 const getActionConfig = (action: string) => {
   switch (action) {
-    case 'edited':
-      return { label: 'Modified', color: 'text-blue-400', bg: 'bg-blue-500/10', borderColor: 'border-blue-500/20', Icon: Pencil };
-    case 'created':
-      return { label: 'Created', color: 'text-emerald-400', bg: 'bg-emerald-500/10', borderColor: 'border-emerald-500/20', Icon: Sparkles };
-    case 'read':
-      return { label: 'Read', color: 'text-muted-foreground', bg: 'bg-secondary', borderColor: 'border-border', Icon: Eye };
-    case 'deleted':
-      return { label: 'Deleted', color: 'text-red-400', bg: 'bg-red-500/10', borderColor: 'border-red-500/20', Icon: Trash2 };
-    case 'analyzed_image':
-      return { label: 'Analyzed', color: 'text-purple-400', bg: 'bg-purple-500/10', borderColor: 'border-purple-500/20', Icon: ImageIcon };
-    default:
-      return { label: action, color: 'text-muted-foreground', bg: 'bg-secondary', borderColor: 'border-border', Icon: FileOutput };
+    case 'edited': return { label: 'Edited', color: 'text-amber-500', Icon: EditedIcon };
+    case 'created': return { label: 'Created', color: 'text-muted-foreground', Icon: CreatedIcon };
+    case 'read': return { label: 'Read', color: 'text-muted-foreground/80', Icon: ReadIcon };
+    case 'deleted': return { label: 'Deleted', color: 'text-red-400', Icon: DeletedIcon };
+    case 'analyzed_image': return { label: 'Analyzed', color: 'text-purple-400', Icon: AnalyzedIcon };
+    default: return { label: action, color: 'text-muted-foreground', Icon: ReadIcon };
   }
 };
 
-const getFileIcon = (filename: string) => {
-  const ext = filename.split('.').pop()?.toLowerCase();
-  switch (ext) {
-    case 'tsx':
-    case 'ts':
-      return <Code2 className="w-3.5 h-3.5 text-blue-400" />;
-    case 'jsx':
-    case 'js':
-      return <FileCode className="w-3.5 h-3.5 text-yellow-400" />;
-    case 'css':
-      return <FileType className="w-3.5 h-3.5 text-purple-400" />;
-    case 'html':
-      return <File className="w-3.5 h-3.5 text-orange-400" />;
-    case 'json':
-      return <FileJson className="w-3.5 h-3.5 text-green-400" />;
-    default:
-      return <File className="w-3.5 h-3.5 text-muted-foreground" />;
-  }
-};
+type LogTestState = 'idle' | 'running' | 'pass' | 'fail';
 
-const getFileDir = (filepath: string) => {
-  const parts = filepath.split('/');
-  if (parts.length <= 1) return '';
-  return parts.slice(0, -1).join('/') + '/';
-};
-
-const getFileName = (filepath: string) => {
-  return filepath.split('/').pop() || filepath;
-};
-
-const formatTime = (dateStr: string) => {
-  const d = new Date(dateStr);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
-
-export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities, onClose, isGenerating }) => {
+export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities, onClose, isGenerating, onAutoFix, previewUrl, isFirstVersion, onTestComplete }) => {
   const { t } = useLanguage();
-
-  const modifiedFiles = activities.filter(a => a.action === 'edited');
-  const createdFiles = activities.filter(a => a.action === 'created');
-  const deletedFiles = activities.filter(a => a.action === 'deleted');
-  const readFiles = activities.filter(a => a.action === 'read');
-  const analyzedFiles = activities.filter(a => a.action === 'analyzed_image');
-
-  const sections = [
-    { label: 'Created', files: createdFiles, action: 'created' },
-    { label: 'Modified', files: modifiedFiles, action: 'edited' },
-    { label: 'Analyzed', files: analyzedFiles, action: 'analyzed_image' },
-    { label: 'Deleted', files: deletedFiles, action: 'deleted' },
-    { label: 'Read', files: readFiles, action: 'read' },
-  ].filter(s => s.files.length > 0);
+  const [logTestState, setLogTestState] = useState<LogTestState>('idle');
+  const [logErrors, setLogErrors] = useState<string[]>([]);
+  const prevIsGenerating = useRef(isGenerating);
 
   const changeCount = activities.filter(a => a.action !== 'read').length;
+  const modifiedFiles = activities.filter(a => a.action === 'edited');
+  const createdFiles = activities.filter(a => a.action === 'created');
+  const readFiles = activities.filter(a => a.action === 'read');
+  const otherFiles = activities.filter(a => !['edited', 'created', 'read'].includes(a.action));
+  const groupedActivities = [...modifiedFiles, ...createdFiles, ...otherFiles, ...readFiles];
+
+  // Signal test complete immediately when generation finishes (no more screenshot blocking)
+  useEffect(() => {
+    const wasGenerating = prevIsGenerating.current;
+    const nowDone = !isGenerating;
+    prevIsGenerating.current = isGenerating;
+
+    if (wasGenerating && nowDone && activities.length > 0) {
+      onTestComplete?.(true);
+    }
+
+    if (isGenerating) {
+      setLogTestState('idle');
+      setLogErrors([]);
+    }
+  }, [isGenerating, activities.length]);
+
+  // Run log test - check preview iframe console for errors
+  const runLogTest = () => {
+    setLogTestState('running');
+    setLogErrors([]);
+
+    // Look for the preview iframe
+    const iframe = document.querySelector('iframe[src*="preview"]') as HTMLIFrameElement 
+      || document.querySelector('iframe') as HTMLIFrameElement;
+
+    if (!iframe) {
+      setLogTestState('fail');
+      setLogErrors(['Could not find preview iframe']);
+      return;
+    }
+
+    // Listen for error messages from the iframe via postMessage
+    const errors: string[] = [];
+    const timeout = setTimeout(() => {
+      if (errors.length > 0) {
+        setLogTestState('fail');
+        setLogErrors(errors);
+        if (onAutoFix) {
+          onAutoFix(`[AUTO-FIX] Console errors detected in preview:\n\n${errors.join('\n')}`);
+        }
+      } else {
+        setLogTestState('pass');
+      }
+    }, 3000);
+
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'preview-error' || event.data?.type === 'console-error') {
+        errors.push(event.data.message || event.data.error || JSON.stringify(event.data));
+      }
+    };
+
+    window.addEventListener('message', handler);
+
+    // Also try to check via fetch if preview is accessible
+    if (previewUrl) {
+      fetch(previewUrl, { mode: 'no-cors' }).catch(() => {
+        errors.push('Preview URL is not accessible');
+      });
+    }
+
+    // Cleanup after test
+    setTimeout(() => {
+      window.removeEventListener('message', handler);
+      clearTimeout(timeout);
+    }, 3500);
+  };
+
+  const getLogTestUI = () => {
+    switch (logTestState) {
+      case 'running':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-4 mt-3 p-3.5 rounded-xl bg-primary/5 border border-primary/20"
+          >
+            <div className="flex items-center gap-3">
+              <Terminal className="w-5 h-5 text-primary" />
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold text-foreground">Running Log Test...</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Checking preview console for errors</p>
+              </div>
+              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+            </div>
+          </motion.div>
+        );
+
+      case 'pass':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-4 mt-3 p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20"
+          >
+            <div className="flex items-center gap-3">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+              >
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+              </motion.div>
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold text-foreground">No Errors Found ✅</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Console logs are clean</p>
+              </div>
+            </div>
+          </motion.div>
+        );
+
+      case 'fail':
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-4 mt-3 space-y-2"
+          >
+            <div className="p-3.5 rounded-xl bg-red-500/5 border border-red-500/20">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                <div className="flex-1">
+                  <p className="text-[13px] font-semibold text-foreground">Errors Detected</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{logErrors.length} error{logErrors.length > 1 ? 's' : ''} found in console</p>
+                </div>
+              </div>
+              {logErrors.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-red-500/10 space-y-1">
+                  {logErrors.slice(0, 5).map((err, i) => (
+                    <p key={i} className="text-[10px] font-mono text-red-400/80 truncate">
+                      • {err}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-card">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3.5 flex-shrink-0 border-b border-border bg-card">
+      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 border-b border-border bg-card">
         <button
           onClick={onClose}
-          className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+          className="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors bg-secondary text-muted-foreground hover:bg-accent hover:text-foreground border border-border"
         >
-          <ArrowLeft className="w-4 h-4" />
+          Close
         </button>
-
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-foreground truncate">
-            {version.name || `Version ${version.versionNumber}`}
-          </p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <Clock className="w-3 h-3 text-muted-foreground" />
-            <span className="text-[11px] text-muted-foreground">{formatTime(version.createdAt)}</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          {changeCount > 0 && (
-            <span className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-primary/10 text-primary tabular-nums">
-              {changeCount} {changeCount === 1 ? 'change' : 'changes'}
-            </span>
-          )}
-        </div>
+        <span className="text-sm font-semibold text-foreground">Details</span>
+        <span className="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-primary/10 text-primary border border-primary/20">
+          Changes
+        </span>
       </div>
 
-      {/* Stats Bar */}
-      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/50 bg-card/50">
-        {[
-          { count: createdFiles.length, label: 'New', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-          { count: modifiedFiles.length, label: 'Mod', color: 'text-blue-400', bg: 'bg-blue-500/10' },
-          { count: deletedFiles.length, label: 'Del', color: 'text-red-400', bg: 'bg-red-500/10' },
-          { count: readFiles.length, label: 'Read', color: 'text-muted-foreground', bg: 'bg-secondary' },
-        ].filter(s => s.count > 0).map((stat, i) => (
-          <div key={i} className="flex items-center gap-1.5">
-            <span className={`w-5 h-5 rounded-md ${stat.bg} flex items-center justify-center text-[10px] font-bold ${stat.color} tabular-nums`}>
-              {stat.count}
-            </span>
-            <span className="text-[11px] text-muted-foreground font-medium">{stat.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* File Sections */}
-      <div className="flex-1 overflow-y-auto no-scrollbar">
-        {sections.length > 0 ? (
-          <div className="py-2">
-            {sections.map((section, sectionIdx) => {
-              const config = getActionConfig(section.action);
+      {/* File Activities List */}
+      <div className="flex-1 overflow-y-auto pt-2 pb-4 no-scrollbar">
+        {groupedActivities.length > 0 ? (
+          <div className="divide-y divide-border/40">
+            {groupedActivities.map((file, i) => {
+              const config = getActionConfig(file.action);
+              const showChevron = file.action === 'edited' || file.action === 'created';
 
               return (
-                <div key={section.action} className={sectionIdx > 0 ? 'mt-1' : ''}>
-                  {/* Section Header */}
-                  <div className="flex items-center gap-2.5 px-4 py-2">
-                    <div className={`w-5 h-5 rounded-md ${config.bg} flex items-center justify-center`}>
-                      <config.Icon className={`w-3 h-3 ${config.color}`} />
-                    </div>
-                    <span className={`text-[11px] font-bold uppercase tracking-wider ${config.color}`}>
-                      {config.label}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground/60 font-medium">
-                      ({section.files.length})
-                    </span>
-                    <div className="flex-1 h-px bg-border/30" />
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.02, duration: 0.15 }}
+                  className="flex items-center gap-3 px-5 py-3.5 transition-colors cursor-default group hover:bg-secondary/40"
+                >
+                  <div className={`${config.color}`}>
+                    <config.Icon />
                   </div>
-
-                  {/* Files */}
-                  <div className="px-2">
-                    {section.files.map((file, i) => {
-                      const dir = getFileDir(file.name);
-                      const name = getFileName(file.name);
-
-                      return (
-                        <motion.div
-                          key={file.name}
-                          initial={{ opacity: 0, x: -6 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.02, duration: 0.15 }}
-                          className={`flex items-center gap-2.5 px-3 py-2 mx-1 rounded-lg transition-colors cursor-default hover:bg-secondary/60 group ${
-                            file.status === 'editing' ? 'bg-primary/5' : ''
-                          }`}
-                        >
-                          {/* File type icon */}
-                          <div className="w-6 h-6 rounded-md bg-secondary/80 flex items-center justify-center flex-shrink-0">
-                            {getFileIcon(file.name)}
-                          </div>
-
-                          {/* File path */}
-                          <div className="flex-1 min-w-0 flex items-baseline gap-0">
-                            {dir && (
-                              <span className="text-[11px] text-muted-foreground/50 font-mono truncate">
-                                {dir}
-                              </span>
-                            )}
-                            <span className={`text-[12px] font-mono font-medium truncate ${
-                              file.status === 'editing' ? 'text-primary' : 'text-foreground/80'
-                            }`}>
-                              {name}
-                            </span>
-                          </div>
-
-                          {/* Extension badge */}
-                          <span className="text-[9px] font-mono text-muted-foreground/40 uppercase tracking-wider flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {name.split('.').pop()}
-                          </span>
-
-                          {/* Live editing indicator */}
-                          {file.status === 'editing' && (
-                            <motion.div
-                              animate={{ opacity: [0.4, 1, 0.4] }}
-                              transition={{ duration: 1.5, repeat: Infinity }}
-                              className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"
-                            />
-                          )}
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </div>
+                  <span className={`text-[13px] font-medium min-w-[56px] ${config.color}`}>
+                    {config.label}
+                  </span>
+                  <span className="text-[12px] font-mono px-2 py-0.5 rounded bg-secondary/80 text-foreground/70 truncate">
+                    {file.name}
+                  </span>
+                  {showChevron && (
+                    <ChevronDown className="w-4 h-4 ml-auto text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors flex-shrink-0" />
+                  )}
+                </motion.div>
               );
             })}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 bg-secondary border border-border">
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-secondary border border-border">
               <FileCode className="w-5 h-5 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium text-muted-foreground">No file activity</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Changes will appear here during generation</p>
+            <p className="text-sm font-medium text-muted-foreground">No details available</p>
+          </div>
+        )}
+
+        {/* Run Test Button */}
+        {!isGenerating && activities.length > 0 && (
+          <div className="px-4 mt-3">
+            <button
+              onClick={runLogTest}
+              disabled={logTestState === 'running'}
+              className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl text-sm font-medium transition-all bg-secondary hover:bg-accent border border-border hover:border-primary/20 text-foreground disabled:opacity-50"
+            >
+              {logTestState === 'running' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Terminal className="w-4 h-4 text-primary" />
+              )}
+              <span>{logTestState === 'running' ? 'Testing...' : 'Run test'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Log Test Result UI */}
+        <AnimatePresence mode="wait">
+          {logTestState !== 'idle' && getLogTestUI()}
+        </AnimatePresence>
+
+        {/* Footer Summary */}
+        {activities.length > 0 && (
+          <div className="flex items-center gap-3 mt-2 pt-3 px-5 border-t border-border">
+            <Package className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-[11px] font-mono text-muted-foreground">
+              v{version.versionNumber} • {changeCount} changes • {activities.length} total
+            </span>
           </div>
         )}
       </div>
-
-      {/* Footer */}
-      {activities.length > 0 && (
-        <div className="flex items-center gap-3 px-4 py-3 border-t border-border bg-card">
-          <Package className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="text-[11px] font-mono text-muted-foreground">
-            v{version.versionNumber} · {changeCount} changes · {activities.length} files total
-          </span>
-        </div>
-      )}
     </div>
   );
 };
