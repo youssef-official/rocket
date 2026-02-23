@@ -578,6 +578,9 @@ export default defineConfig({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               src={previewUrl}
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-popups-to-escape-sandbox allow-downloads"
+              allow="cross-origin-isolated; clipboard-write"
+              referrerPolicy="no-referrer"
               className={`bg-background shadow-xl ${viewMode === 'mobile'
                 ? 'w-[375px] h-[667px] rounded-xl border-4 border-border'
                 : 'w-full h-full border-none'
