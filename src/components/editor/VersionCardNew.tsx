@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Bookmark, Loader2 } from 'lucide-react';
+import { Bookmark, Loader2, Pencil, FileOutput, Eye, Trash2, Image as ImageIcon, ChevronRight } from 'lucide-react';
 import type { ProjectVersion } from '@/hooks/useVersions';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -19,7 +19,19 @@ interface VersionCardNewProps {
   onShowDetails?: (version: ProjectVersion, activities: FileActivity[]) => void;
   isLatestVersion: boolean;
   isLive?: boolean;
+  liveStatus?: string;
 }
+
+const getActionIcon = (action: string) => {
+  switch (action) {
+    case 'edited': return Pencil;
+    case 'created': return FileOutput;
+    case 'read': return Eye;
+    case 'deleted': return Trash2;
+    case 'analyzed_image': return ImageIcon;
+    default: return FileOutput;
+  }
+};
 
 export const VersionCardNew: React.FC<VersionCardNewProps> = ({
   version,
@@ -30,8 +42,16 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
   onShowDetails,
   isLatestVersion,
   isLive = false,
+  liveStatus,
 }) => {
   const { t } = useLanguage();
+
+  // Find the current (last editing) file activity during live generation
+  const currentActivity = isLive
+    ? [...activities].reverse().find(a => a.status === 'editing') || activities[activities.length - 1]
+    : null;
+
+  const CurrentIcon = currentActivity ? getActionIcon(currentActivity.action) : null;
 
   return (
     <motion.div
@@ -43,54 +63,82 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
           : 'border-border'
       }`}
     >
-      {/* Header: Title + Bookmark + Rollback */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-secondary/60">
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-          isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
-        }`}>
-          <Bookmark className="w-3.5 h-3.5" />
+      {isLive ? (
+        /* ── Live generation state ── */
+        <div className="px-4 py-3 bg-secondary/60">
+          {currentActivity && CurrentIcon ? (
+            <div className="flex items-center gap-3">
+              <CurrentIcon className="w-4 h-4 text-primary flex-shrink-0" />
+              <span className="text-xs font-medium text-primary">
+                {t(`action.${currentActivity.action}`)}
+              </span>
+              <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary truncate">
+                {currentActivity.name}
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground ml-auto flex-shrink-0" />
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-4 h-4 animate-spin text-primary flex-shrink-0" />
+              <span className="text-xs text-muted-foreground">Generating...</span>
+            </div>
+          )}
+          {liveStatus && (
+            <p className="text-xs text-muted-foreground mt-1.5 truncate">{liveStatus}</p>
+          )}
         </div>
-        <p className="text-sm font-medium text-foreground truncate flex-1">
-          {version.name || `${t('chat.version')} ${version.versionNumber}`}
-          {isLive && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary ml-2 inline" />}
-        </p>
-        {/* Rollback arrow */}
-        {!isLatestVersion && onRollback && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRollback(version.versionNumber);
-            }}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-            title={t('chat.rollback')}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-            </svg>
-          </button>
-        )}
-      </div>
+      ) : (
+        /* ── Completed state ── */
+        <>
+          {/* Header: Title + Bookmark + Rollback */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-secondary/60">
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+              isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+            }`}>
+              <Bookmark className="w-3.5 h-3.5" />
+            </div>
+            <p className="text-sm font-medium text-foreground truncate flex-1">
+              {version.name || `${t('chat.version')} ${version.versionNumber}`}
+            </p>
+            {/* Rollback arrow */}
+            {!isLatestVersion && onRollback && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRollback(version.versionNumber);
+                }}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                title={t('chat.rollback')}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+              </button>
+            )}
+          </div>
 
-      {/* Tab buttons: Details / Preview */}
-      <div className="flex border-t border-border">
-        <button
-          onClick={() => onShowDetails?.(version, activities)}
-          className="flex-1 text-xs font-medium py-2.5 text-center transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-        >
-          Details
-        </button>
-        <button
-          onClick={() => onSelectVersion?.(version)}
-          className={`flex-1 text-xs font-medium py-2.5 text-center transition-colors ${
-            isActive
-              ? 'bg-primary text-primary-foreground'
-              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
-          }`}
-        >
-          Preview
-        </button>
-      </div>
+          {/* Tab buttons: Details / Preview */}
+          <div className="flex border-t border-border">
+            <button
+              onClick={() => onShowDetails?.(version, activities)}
+              className="flex-1 text-xs font-medium py-2.5 text-center transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+            >
+              Details
+            </button>
+            <button
+              onClick={() => onSelectVersion?.(version)}
+              className={`flex-1 text-xs font-medium py-2.5 text-center transition-colors ${
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
+              }`}
+            >
+              Preview
+            </button>
+          </div>
+        </>
+      )}
     </motion.div>
   );
 };

@@ -733,6 +733,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                                   activities={fileActivities}
                                   isLatestVersion={true}
                                   isLive={true}
+                                  liveStatus={generationPhase?.status || statusMessage}
                                 />
                               </div>
                             )}
@@ -801,6 +802,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         activities={fileActivities}
                         isLatestVersion={true}
                         isLive={true}
+                        liveStatus={generationPhase?.status || statusMessage}
                       />
                     )}
                   </div>
