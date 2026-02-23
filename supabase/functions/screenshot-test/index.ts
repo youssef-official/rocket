@@ -52,17 +52,15 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a QA engineer reviewing a web app screenshot. Analyze the screenshot for visual issues:
-- Broken layouts, overlapping elements
-- Missing content or blank areas that shouldn't be blank  
-- Text overflow or truncation issues
-- Obvious UI bugs or rendering problems
-- Elements that look broken or misaligned
+            content: `You are a basic QA checker. ONLY check these two things:
+1. Did the website load successfully? (not a blank/white page, not an error page)
+2. Are there visible UI elements like buttons, text, or navigation?
 
-If everything looks good, respond with: {"status": "pass", "message": "All looks good"}
-If there are issues, respond with: {"status": "fail", "issues": ["issue1", "issue2"], "fix_prompt": "detailed instructions to fix"}
+If the site loaded and has visible elements: {"status": "pass", "message": "Site loaded successfully"}
+If the site is blank, shows an error, or has no visible elements: {"status": "fail", "issues": ["description of what's wrong"], "fix_prompt": "The site failed to load properly. Check for build errors or missing components."}
 
-RESPOND ONLY WITH JSON. No markdown, no explanation.`
+Do NOT analyze design, colors, layout quality, or styling. Only check if it loaded and has content.
+RESPOND ONLY WITH JSON.`
           },
           {
             role: "user",

@@ -19,6 +19,8 @@ interface DetailsPanelProps {
   isGenerating?: boolean;
   onAutoFix?: (errorLog: string) => void;
   previewUrl?: string | null;
+  isFirstVersion?: boolean;
+  onTestComplete?: (passed: boolean) => void;
 }
 
 // Custom SVG icons matching the reference design
@@ -63,7 +65,7 @@ const getActionConfig = (action: string) => {
   }
 };
 
-export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities, onClose, isGenerating, onAutoFix, previewUrl }) => {
+export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities, onClose, isGenerating, onAutoFix, previewUrl, isFirstVersion, onTestComplete }) => {
   const { t } = useLanguage();
   const [testPhase, setTestPhase] = useState<TestPhase>('idle');
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
@@ -85,7 +87,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
     const nowDone = !isGenerating;
     prevIsGenerating.current = isGenerating;
 
-    if (wasGenerating && nowDone && activities.length > 0 && !hasTestedRef.current) {
+    if (wasGenerating && nowDone && activities.length > 0 && !hasTestedRef.current && isFirstVersion) {
       hasTestedRef.current = true;
       setTestPhase('waiting');
       setScreenshotUrl(null);
@@ -95,6 +97,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
       testTimeoutRef.current = setTimeout(() => {
         setTestPhase('capturing');
       }, 8000);
+    }
+
+    // If not first version, signal test complete immediately
+    if (wasGenerating && nowDone && activities.length > 0 && !isFirstVersion) {
+      onTestComplete?.(true);
     }
 
     if (isGenerating) {
@@ -144,12 +151,16 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
           if (onAutoFix) {
             onAutoFix(`[AUTO-FIX] Visual test detected issues in the preview:\n\n${data.analysis.issues?.join('\n') || ''}\n\n${data.analysis.fix_prompt}`);
           }
+          // Don't signal test complete yet - the fix will trigger another generation cycle
         } else {
           setTestPhase('success');
+          onTestComplete?.(true);
         }
       } catch (e) {
         console.error('Screenshot test error:', e);
         setTestPhase('error');
+        // Test failed critically - signal to save version anyway
+        onTestComplete?.(true);
       }
     };
 
