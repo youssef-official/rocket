@@ -1,7 +1,9 @@
 import modal
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import time
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 
 # Define the Modal App
 app = modal.App("rocket-preview")
@@ -18,14 +20,34 @@ image = (
     .add_local_file("server.py", "/root/server.py")
 )
 
+
+# Middleware to allow iframe embedding
+class IframeMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        # Remove restrictive headers
+        response.headers.pop("X-Frame-Options", None)
+        response.headers.pop("Content-Security-Policy", None)
+        # Allow embedding from any origin
+        response.headers["X-Frame-Options"] = "ALLOWALL"
+        response.headers["Content-Security-Policy"] = "frame-ancestors *"
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
+
+
 # Web Endpoint to spawn sandboxes
-@app.function(image=image, timeout=300)
+@app.function(image=image, timeout=600)
 @modal.asgi_app()
 def create_sandbox():
     from fastapi import FastAPI
     from fastapi.middleware.cors import CORSMiddleware
 
     web_app = FastAPI()
+
+    # Add iframe-friendly headers
+    web_app.add_middleware(IframeMiddleware)
 
     web_app.add_middleware(
         CORSMiddleware,
@@ -37,28 +59,28 @@ def create_sandbox():
 
     @web_app.post("/")
     def create():
-        # Create a Sandbox running our server.py
-        # We expose port 8000 (API) and 5173 (Vite Preview)
+        # Create a Sandbox with proper permissions
         sandbox = modal.Sandbox.create(
             "python", "/root/server.py",
             image=image,
             encrypted_ports=[8000, 5173],
-            timeout=300  # 5 minutes
+            timeout=600,  # 10 minutes
         )
-        
+
         print(f"Sandbox created: {sandbox.object_id}")
-        
+
         tunnels = sandbox.tunnels()
         api_url = tunnels[8000].url
         preview_url = tunnels[5173].url
-        
+
         return {
             "sandbox_id": sandbox.object_id,
             "api_url": api_url,
-            "preview_url": preview_url
+            "preview_url": preview_url,
         }
 
-    return web_app
+    @web_app.get("/health")
+    def health():
+        return {"status": "ok"}
 
-# We also need a way to keep the app alive? 
-# No, web_endpoint spawns on demand.
+    return web_app
