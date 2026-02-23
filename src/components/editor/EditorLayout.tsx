@@ -786,6 +786,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 onRollback={handleRollback}
                 onShowDetails={handleShowDetails}
                 waitingForTest={waitingForTest}
+                projectFiles={project?.files || {}}
               />
             </div>
 
@@ -860,6 +861,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               onRollback={handleRollback}
               onShowDetails={handleShowDetails}
               waitingForTest={waitingForTest}
+              projectFiles={project?.files || {}}
             />
             )}
 
