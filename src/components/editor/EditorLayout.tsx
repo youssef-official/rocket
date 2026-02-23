@@ -546,10 +546,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <img src={githubLogo} alt="GitHub" className="w-4 h-4 dark:invert" />
           </button>
 
-          {/* Share Button */}
-          <button className={`flex items-center gap-2 px-4 py-1.5 bg-secondary border border-border rounded-lg text-sm font-bold text-foreground hover:bg-accent transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}>
-            {t('editor.share')}
-          </button>
 
           {/* Publish Button */}
           <button
