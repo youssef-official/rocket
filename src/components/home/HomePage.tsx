@@ -193,7 +193,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* Header */}
       <header className="relative z-[100] px-4 md:px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex items-center justify-between relative">
           {/* Logo Section - Right in AR, Left in EN */}
           <div className={`flex items-center gap-2 ${isRTL ? 'order-3' : 'order-1'}`}>
             <VivoraLogo
@@ -205,7 +205,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* Nav - Center - hidden when logged in */}
           {!user && (
-            <nav className={`hidden md:flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-full px-2 py-1 order-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <nav className={`hidden md:flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-full px-2 py-1 absolute left-1/2 -translate-x-1/2 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <a href="/pricing" className="px-4 py-2 text-white/80 hover:text-white transition-colors text-sm">
                 {t('nav.pricing')}
               </a>
