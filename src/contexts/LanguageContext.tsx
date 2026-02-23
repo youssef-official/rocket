@@ -185,6 +185,8 @@ export const translations: Translations = {
   'chat.uploadFile': { en: 'Upload File', zh: '上传文件', ja: 'ファイルをアップロード', fr: 'Télécharger un fichier' },
   'chat.cancel': { en: 'Cancel', zh: '取消', ja: 'キャンセル', fr: 'Annuler' },
   'chat.takeScreenshot': { en: 'Take Screenshot', zh: '截屏', ja: 'スクリーンショットを撮る', fr: 'Prendre une capture d\'écran' },
+  'chat.addReference': { en: 'Add Reference', zh: '添加引用', ja: '参照を追加', fr: 'Ajouter une référence' },
+  'chat.referenceFile': { en: 'Reference a file', zh: '引用文件', ja: 'ファイルを参照', fr: 'Référencer un fichier' },
 
   // Models
   'models.selectModel': { en: 'Select AI Model', zh: '选择AI模型', ja: 'AIモデルを選択', fr: 'Sélectionner le modèle IA' },

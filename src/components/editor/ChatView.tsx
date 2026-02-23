@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp, Monitor } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp, Monitor, AtSign } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
@@ -58,6 +58,7 @@ interface ChatViewProps {
   onRollback?: (versionNumber: number) => Promise<void>;
   onShowDetails?: (version: ProjectVersion, activities: FileActivity[]) => void;
   waitingForTest?: boolean;
+  projectFiles?: Record<string, { content: string }>;
 }
 
 // Get file icon based on extension
@@ -181,6 +182,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onRollback,
   onShowDetails,
   waitingForTest = false,
+  projectFiles = {},
 }) => {
   const { t } = useLanguage();
   const { userPlan } = useUserPlan();
@@ -193,6 +195,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [rollbackVersionId, setRollbackVersionId] = useState<number | null>(null);
   const [isRollingBack, setIsRollingBack] = useState(false);
+  const [showAtMenu, setShowAtMenu] = useState(false);
+  const [atFilter, setAtFilter] = useState('');
+  const [referencedFiles, setReferencedFiles] = useState<string[]>([]);
+  const [atMenuIndex, setAtMenuIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -260,6 +266,46 @@ export const ChatView: React.FC<ChatViewProps> = ({
     }
   }, [input]);
 
+  // Get filtered project files for @ menu
+  const allFileNames = Object.keys(projectFiles);
+  const filteredFiles = atFilter
+    ? allFileNames.filter(f => f.toLowerCase().includes(atFilter.toLowerCase())).slice(0, 10)
+    : allFileNames.slice(0, 10);
+
+  const handleAtSelect = (fileName: string) => {
+    // Replace @query with @filename in input
+    const atIndex = input.lastIndexOf('@');
+    if (atIndex !== -1) {
+      const before = input.slice(0, atIndex);
+      setInput(before + `@${fileName} `);
+    }
+    if (!referencedFiles.includes(fileName)) {
+      setReferencedFiles(prev => [...prev, fileName]);
+    }
+    setShowAtMenu(false);
+    setAtFilter('');
+    setAtMenuIndex(0);
+    textareaRef.current?.focus();
+  };
+
+  const handleInputChange = (value: string) => {
+    setInput(value);
+    // Detect @ trigger
+    const atIndex = value.lastIndexOf('@');
+    if (atIndex !== -1) {
+      const afterAt = value.slice(atIndex + 1);
+      // Only show menu if @ is at start or preceded by space, and no space in the query
+      const charBefore = atIndex > 0 ? value[atIndex - 1] : ' ';
+      if ((charBefore === ' ' || charBefore === '\n' || atIndex === 0) && !afterAt.includes(' ')) {
+        setAtFilter(afterAt);
+        setShowAtMenu(true);
+        setAtMenuIndex(0);
+        return;
+      }
+    }
+    setShowAtMenu(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim() && !isGenerating) {
@@ -271,15 +317,49 @@ export const ChatView: React.FC<ChatViewProps> = ({
         imageUrls = urls.filter((url): url is string => url !== null);
       }
 
-      onSendMessage(input.trim(), isChatMode, imageUrls.length > 0 ? imageUrls.join(',') : undefined);
+      // Build message with referenced file contents
+      let finalMessage = input.trim();
+      if (referencedFiles.length > 0) {
+        const refContents = referencedFiles
+          .filter(f => projectFiles[f])
+          .map(f => `--- @${f} ---\n${projectFiles[f].content}`)
+          .join('\n\n');
+        if (refContents) {
+          finalMessage = `${finalMessage}\n\n[Referenced Files]\n${refContents}`;
+        }
+      }
+
+      onSendMessage(finalMessage, isChatMode, imageUrls.length > 0 ? imageUrls.join(',') : undefined);
 
       setInput('');
       setUploadedImages([]);
+      setReferencedFiles([]);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (showAtMenu && filteredFiles.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setAtMenuIndex(prev => (prev + 1) % filteredFiles.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setAtMenuIndex(prev => (prev - 1 + filteredFiles.length) % filteredFiles.length);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        handleAtSelect(filteredFiles[atMenuIndex]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setShowAtMenu(false);
+        return;
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -919,42 +999,20 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={async () => {
-                        if (!isPaidPlan) {
-                          toast({ title: t('common.upgradeRequired') || 'Upgrade Required', description: 'Screenshot capture is available on paid plans only.', variant: 'destructive' });
-                          setShowPlusMenu(false);
-                          return;
-                        }
+                      onClick={() => {
                         setShowPlusMenu(false);
-                        try {
-                          const stream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'browser' } as any });
-                          const video = document.createElement('video');
-                          video.srcObject = stream;
-                          await video.play();
-                          await new Promise(r => setTimeout(r, 300));
-                          const canvas = document.createElement('canvas');
-                          canvas.width = video.videoWidth;
-                          canvas.height = video.videoHeight;
-                          canvas.getContext('2d')!.drawImage(video, 0, 0);
-                          stream.getTracks().forEach(t => t.stop());
-                          canvas.toBlob((blob) => {
-                            if (blob) {
-                              const file = new globalThis.File([blob], `screenshot-${Date.now()}.png`, { type: 'image/png' });
-                              const preview = URL.createObjectURL(blob);
-                              setUploadedImages(prev => [...prev, { file, preview }]);
-                            }
-                          }, 'image/png');
-                        } catch (err) {
-                          console.log('Screenshot cancelled or failed', err);
-                        }
+                        // Insert @ at cursor
+                        setInput(prev => prev + '@');
+                        setShowAtMenu(true);
+                        setAtFilter('');
+                        setTimeout(() => textareaRef.current?.focus(), 50);
                       }}
                       className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left border-t border-border/50 group/item"
                     >
-                      <div className="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                        {isPaidPlan ? <Monitor className="w-4 h-4 text-cyan-500" /> : <Lock className="w-4 h-4 text-muted-foreground" />}
+                      <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                        <AtSign className="w-4 h-4 text-orange-500" />
                       </div>
-                      <span className="text-sm text-foreground/80 group-hover/item:text-foreground">{t('chat.takeScreenshot')}</span>
-                      {!isPaidPlan && <span className="text-[10px] font-semibold text-amber-500 ml-auto px-1.5 py-0.5 rounded-md bg-amber-500/10">PRO</span>}
+                      <span className="text-sm text-foreground/80 group-hover/item:text-foreground">{t('chat.addReference')}</span>
                     </button>
                     <button
                       type="button"
@@ -991,11 +1049,57 @@ export const ChatView: React.FC<ChatViewProps> = ({
               />
             </div>
 
+            {/* Referenced Files Badges */}
+            {referencedFiles.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 px-3 pt-2">
+                {referencedFiles.map((f, i) => (
+                  <span key={i} className="flex items-center gap-1 text-[11px] font-mono bg-primary/10 text-primary px-2 py-0.5 rounded-lg border border-primary/20">
+                    @{f.split('/').pop()}
+                    <button onClick={() => setReferencedFiles(prev => prev.filter((_, idx) => idx !== i))} className="hover:text-destructive">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* @ Mention Dropdown */}
+            <AnimatePresence>
+              {showAtMenu && filteredFiles.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.12 }}
+                  className="absolute bottom-full left-0 mb-1 w-72 max-h-60 overflow-y-auto bg-card rounded-xl border border-border shadow-xl z-50"
+                >
+                  <div className="px-3 py-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide border-b border-border">
+                    {t('chat.referenceFile')}
+                  </div>
+                  {filteredFiles.map((fileName, i) => {
+                    const shortName = fileName.split('/').pop() || fileName;
+                    const dir = fileName.includes('/') ? fileName.slice(0, fileName.lastIndexOf('/')) : '';
+                    return (
+                      <button
+                        key={fileName}
+                        onClick={() => handleAtSelect(fileName)}
+                        className={`flex items-center gap-2.5 w-full px-3 py-2 text-left transition-colors ${i === atMenuIndex ? 'bg-accent' : 'hover:bg-accent/60'}`}
+                      >
+                        {getFileIcon(fileName)}
+                        <span className="text-sm text-foreground truncate">{shortName}</span>
+                        {dir && <span className="text-[10px] text-muted-foreground ml-auto truncate max-w-[80px]">{dir}</span>}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Text Input */}
             <textarea
               ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => handleInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={isChatMode ? t('chat.planPlaceholder') : t('chat.placeholder')}
               disabled={isGenerating}
