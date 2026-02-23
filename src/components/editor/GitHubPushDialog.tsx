@@ -78,7 +78,6 @@ export const GitHubPushDialog: React.FC<GitHubPushDialogProps> = ({
         setRepoUrl(result.repo_url);
         setStep('success');
 
-        // Save repo URL to project
         if (projectId) {
           await supabase.from('projects').update({ github_repo_url: result.repo_url }).eq('id', projectId);
         }
@@ -102,14 +101,16 @@ export const GitHubPushDialog: React.FC<GitHubPushDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
-        <div className="px-6 pt-6 pb-4 border-b border-border">
+      <DialogContent className="sm:max-w-lg p-0 overflow-hidden rounded-2xl">
+        <div className="px-6 pt-6 pb-4 border-b border-border/60 bg-gradient-to-b from-secondary/80 to-transparent">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <img src={githubLogo} alt="GitHub" className="w-5 h-5 dark:invert" />
+            <DialogTitle className="flex items-center gap-2.5 text-lg">
+              <div className="w-9 h-9 rounded-xl bg-foreground/10 flex items-center justify-center">
+                <img src={githubLogo} alt="GitHub" className="w-5 h-5 dark:invert" />
+              </div>
               {step === 'success' ? '🎉 Pushed to GitHub' : isUpdate ? 'Update GitHub Repository' : 'Push to GitHub'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="mt-1.5">
               {step === 'input' && (isUpdate ? 'Push latest changes to your repository' : 'Create a new repository and push your code')}
               {step === 'pushing' && 'Pushing your code to GitHub...'}
               {step === 'success' && 'Your code is on GitHub!'}
@@ -119,28 +120,26 @@ export const GitHubPushDialog: React.FC<GitHubPushDialogProps> = ({
         </div>
 
         <div className="px-6 pb-6 pt-4 space-y-4">
-          {/* Not connected */}
           {step === 'input' && !integrations?.github_connected && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
                 <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-foreground">GitHub not connected</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Add your GitHub token in Settings → Integrations</p>
                 </div>
               </div>
-              <Button onClick={() => onOpenChange(false)} variant="outline" className="w-full gap-2">
+              <Button onClick={() => onOpenChange(false)} variant="outline" className="w-full gap-2 rounded-xl">
                 Go to Settings to connect GitHub
               </Button>
             </div>
           )}
 
-          {/* Input step - connected */}
           {step === 'input' && integrations?.github_connected && (
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Repository name</Label>
-                <div className="flex items-center gap-2 p-3 bg-secondary rounded-lg border border-border">
+                <div className="flex items-center gap-2 p-3 bg-secondary/60 rounded-xl border border-border/60">
                   <img src={githubLogo} alt="GitHub" className="w-4 h-4 dark:invert flex-shrink-0" />
                   <span className="text-sm text-muted-foreground">{integrations.github_username}/</span>
                   <Input
@@ -151,16 +150,15 @@ export const GitHubPushDialog: React.FC<GitHubPushDialogProps> = ({
                   />
                 </div>
               </div>
-              <Button onClick={handlePush} disabled={!repoName.trim()} className="w-full gap-2">
+              <Button onClick={handlePush} disabled={!repoName.trim()} className="w-full gap-2 rounded-xl h-11 text-sm font-semibold shadow-sm">
                 <GitBranch className="w-4 h-4" />
                 {isUpdate ? 'Update Repository' : 'Create & Push'}
               </Button>
             </div>
           )}
 
-          {/* Pushing */}
           {step === 'pushing' && (
-            <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+            <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
               <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-foreground">Pushing to GitHub...</p>
@@ -169,49 +167,49 @@ export const GitHubPushDialog: React.FC<GitHubPushDialogProps> = ({
             </div>
           )}
 
-          {/* Success */}
           {step === 'success' && repoUrl && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                <Check className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">Code pushed successfully! 🎉</p>
+              <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <Check className="w-4 h-4 text-emerald-500" />
                 </div>
+                <p className="text-sm font-medium text-foreground">Code pushed successfully! 🎉</p>
               </div>
               <div
-                className="flex items-center gap-3 p-4 bg-secondary rounded-lg border border-border cursor-pointer hover:bg-accent transition-colors"
+                className="flex items-center gap-3 p-4 bg-secondary/60 rounded-xl border border-border/60 cursor-pointer hover:bg-accent transition-colors group"
                 onClick={() => window.open(repoUrl, '_blank')}
               >
                 <img src={githubLogo} alt="GitHub" className="w-5 h-5 dark:invert flex-shrink-0" />
                 <span className="text-sm font-medium truncate flex-1">{repoUrl}</span>
                 <div className="flex items-center gap-1">
-                  <button onClick={(e) => { e.stopPropagation(); handleCopyUrl(); }} className="p-1.5 rounded hover:bg-background transition-colors">
+                  <button onClick={(e) => { e.stopPropagation(); handleCopyUrl(); }} className="p-1.5 rounded-lg hover:bg-background transition-colors">
                     <Copy className="w-3.5 h-3.5 text-muted-foreground" />
                   </button>
-                  <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                  <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button onClick={() => { setStep('input'); }} variant="outline" className="flex-1" size="sm">
+                <Button onClick={() => setStep('input')} variant="outline" className="flex-1 rounded-xl" size="sm">
                   <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                   Push Again
                 </Button>
-                <Button onClick={() => onOpenChange(false)} className="flex-1" size="sm">Done</Button>
+                <Button onClick={() => onOpenChange(false)} className="flex-1 rounded-xl" size="sm">Done</Button>
               </div>
             </div>
           )}
 
-          {/* Error */}
           {step === 'error' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <X className="w-5 h-5 text-destructive flex-shrink-0" />
+              <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-destructive/20 flex items-center justify-center flex-shrink-0">
+                  <X className="w-4 h-4 text-destructive" />
+                </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">Push failed</p>
                   {errorMessage && <p className="text-xs text-muted-foreground mt-0.5">{errorMessage}</p>}
                 </div>
               </div>
-              <Button onClick={() => setStep('input')} variant="outline" className="w-full" size="sm">
+              <Button onClick={() => setStep('input')} variant="outline" className="w-full rounded-xl" size="sm">
                 <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                 Try Again
               </Button>
