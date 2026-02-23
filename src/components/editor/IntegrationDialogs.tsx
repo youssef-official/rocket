@@ -205,21 +205,23 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 overflow-hidden rounded-2xl">
-        <div className="px-6 pt-6 pb-4 border-b border-border/60 bg-gradient-to-b from-primary/5 to-transparent">
+      <DialogContent className="sm:max-w-lg p-0 overflow-hidden rounded-2xl border-border/40 shadow-2xl">
+        <div className="px-6 pt-6 pb-4 border-b border-border/40" style={{ background: 'linear-gradient(180deg, hsl(var(--primary) / 0.06) 0%, transparent 100%)' }}>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2.5 text-lg">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Upload className="w-4 h-4 text-primary" />
+            <DialogTitle className="flex items-center gap-3 text-lg font-bold">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--primary) / 0.05))', border: '1px solid hsl(var(--primary) / 0.2)' }}>
+                <Upload className="w-4.5 h-4.5 text-primary" />
               </div>
-              {step === 'success' ? '🎉 Published Successfully' : isUpdate ? 'Update Changes' : 'Publish Project'}
+              <div>
+                <span>{step === 'success' ? '🎉 Published!' : isUpdate ? 'Update Changes' : 'Publish Project'}</span>
+                <p className="text-xs font-normal text-muted-foreground mt-0.5">
+                  {step === 'input' && (isUpdate ? 'Push latest changes to Vercel' : 'Deploy your project to Vercel')}
+                  {step === 'deploying' && 'Building and deploying...'}
+                  {step === 'success' && 'Your app is live and ready!'}
+                  {step === 'error' && 'Something went wrong'}
+                </p>
+              </div>
             </DialogTitle>
-            <DialogDescription className="mt-1.5">
-              {step === 'input' && (isUpdate ? 'Push your latest changes to Vercel' : 'Deploy your project to Vercel')}
-              {step === 'deploying' && 'Building and deploying your project...'}
-              {step === 'success' && 'Your app is live and ready!'}
-              {step === 'error' && 'Something went wrong during deployment'}
-            </DialogDescription>
           </DialogHeader>
         </div>
 
@@ -257,23 +259,23 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
                   </div>
                 </div>
               )}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Website address</Label>
-                <div className="flex items-center gap-2 p-3 bg-secondary/60 rounded-xl border border-border/60">
-                  <img src={vercelLogo} alt="Vercel" className="w-4 h-4 dark:invert flex-shrink-0" />
+              <div className="space-y-2.5">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Website address</Label>
+                <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border/60 bg-secondary/40 focus-within:border-primary/40 focus-within:bg-secondary/60 transition-all duration-200" style={{ boxShadow: 'inset 0 1px 2px hsl(var(--foreground) / 0.03)' }}>
+                  <img src={vercelLogo} alt="Vercel" className="w-4 h-4 dark:invert flex-shrink-0 opacity-60" />
                   <Input
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
                     placeholder="my-project"
-                    className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0 shadow-none"
+                    className="border-0 bg-transparent p-0 h-auto text-sm font-medium focus-visible:ring-0 shadow-none"
                   />
-                  <span className="text-xs text-muted-foreground flex-shrink-0">.vercel.app</span>
+                  <span className="text-[11px] font-mono text-muted-foreground/70 flex-shrink-0 px-2 py-0.5 rounded-md bg-muted/50">.vercel.app</span>
                 </div>
               </div>
               <Button
                 onClick={handleVercelDeploy}
                 disabled={!customName.trim() || !integrations?.vercel_connected}
-                className="w-full rounded-xl h-11 text-sm font-semibold gap-2 shadow-md shadow-primary/20"
+                className="w-full rounded-xl h-12 text-sm font-bold gap-2.5 shadow-lg shadow-primary/25 bg-gradient-to-r from-primary to-primary/85 hover:shadow-xl hover:shadow-primary/30 transition-all duration-200"
               >
                 <img src={vercelLogo} alt="" className="w-4 h-4 dark:invert" />
                 {isUpdate ? 'Update Changes' : 'Deploy to Vercel'}
@@ -367,17 +369,21 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
 
 // ─── Deploy Logs Sub-Component ────────────────────────────────────────────────
 const DeployLogs: React.FC<{ logs: DeployLog[]; logsEndRef: React.RefObject<HTMLDivElement> }> = ({ logs, logsEndRef }) => (
-  <div className="bg-zinc-950 rounded-xl p-3 max-h-44 overflow-y-auto font-mono text-xs space-y-1 border border-border/40">
-    {logs.length === 0 && <div className="text-zinc-500">Waiting for logs...</div>}
+  <div className="rounded-xl p-3.5 max-h-48 overflow-y-auto font-mono text-xs space-y-1.5 no-scrollbar" style={{ background: '#0d1117', border: '1px solid #21262d' }}>
+    <div className="flex items-center gap-2 pb-2 mb-2" style={{ borderBottom: '1px solid #21262d' }}>
+      <Terminal className="w-3 h-3" style={{ color: '#8b949e' }} />
+      <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#8b949e' }}>Deploy Output</span>
+    </div>
+    {logs.length === 0 && <div style={{ color: '#484f58' }}>Waiting for logs...</div>}
     {logs.map((log, i) => (
-      <div key={i} className="flex items-start gap-2">
-        <span className="text-zinc-500 flex-shrink-0">{log.time}</span>
-        <span className={
-          log.type === 'error' ? 'text-red-400' :
-          log.type === 'success' ? 'text-emerald-400' :
-          log.type === 'warning' ? 'text-amber-400' :
-          'text-zinc-300'
-        }>{log.message}</span>
+      <div key={i} className="flex items-start gap-2.5">
+        <span className="flex-shrink-0 tabular-nums" style={{ color: '#484f58' }}>{log.time}</span>
+        <span style={{ color:
+          log.type === 'error' ? '#f85149' :
+          log.type === 'success' ? '#3fb950' :
+          log.type === 'warning' ? '#d29922' :
+          '#c9d1d9'
+        }}>{log.message}</span>
       </div>
     ))}
     <div ref={logsEndRef} />
