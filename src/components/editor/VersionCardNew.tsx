@@ -104,12 +104,14 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
               )}
             </div>
             {/* Details button during live */}
-            <button
-              onClick={() => onShowDetails?.(version, activities)}
-              className="w-full text-xs font-medium py-2 text-center transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/40 border-t border-border"
-            >
-              Details
-            </button>
+            <div className="px-3 py-2.5 border-t border-border">
+              <button
+                onClick={() => onShowDetails?.(version, activities)}
+                className="w-full text-xs font-medium py-2 text-center rounded-lg transition-colors text-muted-foreground hover:text-foreground hover:bg-accent border border-border/60"
+              >
+                Details
+              </button>
+            </div>
           </motion.div>
         ) : (
           /* ── Completed state ── */
@@ -157,20 +159,20 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.3 }}
-              className="flex border-t border-border"
+              className="flex gap-2 px-3 py-2.5 border-t border-border"
             >
               <button
                 onClick={() => onShowDetails?.(version, activities)}
-                className="flex-1 text-xs font-medium py-2.5 text-center transition-colors text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                className="flex-1 text-xs font-medium py-2 text-center rounded-lg transition-colors text-muted-foreground hover:text-foreground hover:bg-accent border border-border/60"
               >
                 Details
               </button>
               <button
                 onClick={() => onSelectVersion?.(version)}
-                className={`flex-1 text-xs font-medium py-2.5 text-center transition-colors ${
+                className={`flex-1 text-xs font-medium py-2 text-center rounded-lg transition-colors ${
                   isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent border border-border/60'
                 }`}
               >
                 Preview

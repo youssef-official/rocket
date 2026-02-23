@@ -109,7 +109,7 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
 
   useEffect(() => {
     if (open) {
-      setStep(isUpdate ? 'input' : 'input');
+      setStep('input');
       setProductionUrl(existingVercelUrl || null);
       setLogs([]);
       setShowLogs(false);
@@ -165,7 +165,6 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
           setProductionUrl(finalUrl);
           setStep('success');
           onDeployed?.(finalUrl);
-          // Save vercel_url to project
           if (projectId) {
             await supabase.from('projects').update({ vercel_url: finalUrl }).eq('id', projectId);
           }
@@ -206,14 +205,16 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
-        <div className="px-6 pt-6 pb-4 border-b border-border">
+      <DialogContent className="sm:max-w-lg p-0 overflow-hidden rounded-2xl">
+        <div className="px-6 pt-6 pb-4 border-b border-border/60 bg-gradient-to-b from-primary/5 to-transparent">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <Upload className="w-5 h-5 text-primary" />
+            <DialogTitle className="flex items-center gap-2.5 text-lg">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Upload className="w-4 h-4 text-primary" />
+              </div>
               {step === 'success' ? '🎉 Published Successfully' : isUpdate ? 'Update Changes' : 'Publish Project'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="mt-1.5">
               {step === 'input' && (isUpdate ? 'Push your latest changes to Vercel' : 'Deploy your project to Vercel')}
               {step === 'deploying' && 'Building and deploying your project...'}
               {step === 'success' && 'Your app is live and ready!'}
@@ -224,23 +225,22 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
 
         <div className="px-6 pb-6 pt-4 space-y-4">
           {showPricing && (
-            <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
               <Coins className="w-5 h-5 text-amber-500 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-foreground">No credits remaining</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Upgrade your plan to publish projects</p>
-                <Button size="sm" className="mt-2" onClick={() => { onOpenChange(false); window.dispatchEvent(new CustomEvent('open-upgrade-modal')); }}>
+                <Button size="sm" className="mt-2 rounded-lg" onClick={() => { onOpenChange(false); window.dispatchEvent(new CustomEvent('open-upgrade-modal')); }}>
                   View Plans
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Step: Input - Vercel Only */}
           {step === 'input' && !showPricing && (
             <div className="space-y-4">
               {isUpdate && existingVercelUrl && (
-                <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                   <Globe className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">Currently deployed</p>
@@ -249,7 +249,7 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
                 </div>
               )}
               {!integrations?.vercel_connected && (
-                <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
                   <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-foreground">{t('integrations.vercelNotConnected')}</p>
@@ -259,7 +259,7 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
               )}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Website address</Label>
-                <div className="flex items-center gap-2 p-3 bg-secondary rounded-lg border border-border">
+                <div className="flex items-center gap-2 p-3 bg-secondary/60 rounded-xl border border-border/60">
                   <img src={vercelLogo} alt="Vercel" className="w-4 h-4 dark:invert flex-shrink-0" />
                   <Input
                     value={customName}
@@ -273,18 +273,18 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
               <Button
                 onClick={handleVercelDeploy}
                 disabled={!customName.trim() || !integrations?.vercel_connected}
-                className="w-full"
+                className="w-full rounded-xl h-11 text-sm font-semibold gap-2 shadow-md shadow-primary/20"
               >
-                <img src={vercelLogo} alt="" className="w-4 h-4 mr-1.5 dark:invert" />
+                <img src={vercelLogo} alt="" className="w-4 h-4 dark:invert" />
                 {isUpdate ? 'Update Changes' : 'Deploy to Vercel'}
+                <ArrowRight className="w-4 h-4 ml-auto" />
               </Button>
             </div>
           )}
 
-          {/* Step: Deploying */}
           {step === 'deploying' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+              <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
                 <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-foreground">Building on Vercel...</p>
@@ -295,27 +295,28 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
             </div>
           )}
 
-          {/* Step: Success */}
           {step === 'success' && productionUrl && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                <Check className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+              <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <Check className="w-4 h-4 text-emerald-500" />
+                </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">Your app is live! 🎉</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">via Vercel</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Deployed via Vercel</p>
                 </div>
               </div>
               <div
-                className="flex items-center gap-3 p-4 bg-secondary rounded-lg border border-border cursor-pointer hover:bg-accent transition-colors"
+                className="flex items-center gap-3 p-4 bg-secondary/60 rounded-xl border border-border/60 cursor-pointer hover:bg-accent transition-colors group"
                 onClick={() => window.open(productionUrl, '_blank')}
               >
                 <Globe className="w-5 h-5 text-primary flex-shrink-0" />
                 <span className="text-sm font-medium truncate flex-1">{productionUrl}</span>
                 <div className="flex items-center gap-1">
-                  <button onClick={(e) => { e.stopPropagation(); handleCopyUrl(); }} className="p-1.5 rounded hover:bg-background transition-colors">
+                  <button onClick={(e) => { e.stopPropagation(); handleCopyUrl(); }} className="p-1.5 rounded-lg hover:bg-background transition-colors">
                     <Copy className="w-3.5 h-3.5 text-muted-foreground" />
                   </button>
-                  <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                  <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
               </div>
               <button onClick={() => setShowLogs(!showLogs)} className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
@@ -324,20 +325,21 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
               </button>
               {showLogs && <DeployLogs logs={logs} logsEndRef={logsEndRef} />}
               <div className="flex gap-2">
-                <Button onClick={() => { setStep('input'); setLogs([]); setProductionUrl(null); }} variant="outline" className="flex-1" size="sm">
+                <Button onClick={() => { setStep('input'); setLogs([]); setProductionUrl(null); }} variant="outline" className="flex-1 rounded-xl" size="sm">
                   <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                   Redeploy
                 </Button>
-                <Button onClick={() => onOpenChange(false)} className="flex-1" size="sm">Done</Button>
+                <Button onClick={() => onOpenChange(false)} className="flex-1 rounded-xl" size="sm">Done</Button>
               </div>
             </div>
           )}
 
-          {/* Step: Error */}
           {step === 'error' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-                <X className="w-5 h-5 text-destructive flex-shrink-0" />
+              <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
+                <div className="w-8 h-8 rounded-full bg-destructive/20 flex items-center justify-center flex-shrink-0">
+                  <X className="w-4 h-4 text-destructive" />
+                </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">Deployment failed</p>
                   {errorMessage && <p className="text-xs text-muted-foreground mt-0.5">{errorMessage}</p>}
@@ -345,12 +347,12 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
               </div>
               <DeployLogs logs={logs} logsEndRef={logsEndRef} />
               <div className="flex gap-2">
-                <Button onClick={() => setStep('input')} variant="outline" className="flex-1" size="sm">
+                <Button onClick={() => setStep('input')} variant="outline" className="flex-1 rounded-xl" size="sm">
                   <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                   Try Again
                 </Button>
                 {onSendErrorToChat && (
-                  <Button onClick={handleSendErrorToChat} variant="destructive" className="flex-1" size="sm">
+                  <Button onClick={handleSendErrorToChat} variant="destructive" className="flex-1 rounded-xl" size="sm">
                     Send to AI for Fix
                   </Button>
                 )}
@@ -365,7 +367,7 @@ export const VercelDeployDialog: React.FC<PublishDialogProps> = ({
 
 // ─── Deploy Logs Sub-Component ────────────────────────────────────────────────
 const DeployLogs: React.FC<{ logs: DeployLog[]; logsEndRef: React.RefObject<HTMLDivElement> }> = ({ logs, logsEndRef }) => (
-  <div className="bg-zinc-950 rounded-lg p-3 max-h-44 overflow-y-auto font-mono text-xs space-y-1 border border-border">
+  <div className="bg-zinc-950 rounded-xl p-3 max-h-44 overflow-y-auto font-mono text-xs space-y-1 border border-border/40">
     {logs.length === 0 && <div className="text-zinc-500">Waiting for logs...</div>}
     {logs.map((log, i) => (
       <div key={i} className="flex items-start gap-2">
