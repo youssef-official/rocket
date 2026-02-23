@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Send, FolderOpen, Paperclip, Lock, Globe, User, Bell, HelpCircle, Book, X, Image as ImageIcon, ChevronDown, Zap, Crown, Sparkles } from 'lucide-react';
+import { ArrowRight, Send, Paperclip, Lock, Globe, X, Image as ImageIcon, ChevronDown, Sparkles, BookOpen, CircleHelp, LogIn, Wand2, ArrowUpRight, Plus } from 'lucide-react';
 import { UserMenuDropdown } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -200,34 +200,35 @@ export const HomePage: React.FC<HomePageProps> = ({
               size={isRTL ? 'sm' : 'md'}
               className={isRTL ? 'mr-1 origin-right scale-95' : ''}
             />
-            <span className="bg-white/20 text-white px-2 py-0.5 rounded-full hidden sm:inline text-xs">{isRTL ? 'تجريبي' : 'BETA'}</span>
+            <span className="bg-white/20 text-white px-2.5 py-0.5 rounded-full hidden sm:inline text-[10px] font-semibold tracking-widest uppercase">{isRTL ? 'تجريبي' : 'BETA'}</span>
           </div>
 
           {/* Nav - Center - hidden when logged in */}
           {!user && (
-            <nav className={`hidden md:flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-full px-2 py-1 absolute left-1/2 -translate-x-1/2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <a href="/pricing" className="px-4 py-2 text-white/80 hover:text-white transition-colors text-sm">
+            <nav className={`hidden md:flex items-center gap-0.5 bg-white/[0.08] backdrop-blur-xl rounded-full px-1.5 py-1 absolute left-1/2 -translate-x-1/2 border border-white/[0.08] ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <a href="/pricing" className="px-4 py-2 text-white/70 hover:text-white hover:bg-white/[0.08] rounded-full transition-all duration-200 text-sm font-medium">
                 {t('nav.pricing')}
               </a>
-              <a href="/docs" className="px-4 py-2 text-white/80 hover:text-white transition-colors text-sm">
+              <a href="/docs" className="px-4 py-2 text-white/70 hover:text-white hover:bg-white/[0.08] rounded-full transition-all duration-200 text-sm font-medium">
                 {t('nav.docs')}
               </a>
-              <a href="/blog/ai-for-all" className={`px-4 py-2 text-white/80 hover:text-white transition-colors text-sm flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <a href="/blog/ai-for-all" className={`px-4 py-2 text-white/70 hover:text-white hover:bg-white/[0.08] rounded-full transition-all duration-200 text-sm font-medium flex items-center gap-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <Wand2 className="w-3.5 h-3.5" />
                 AI for All
               </a>
             </nav>
           )}
 
-          {/* Actions Section - Left in AR, Right in EN */}
+          {/* Actions Section */}
           <div className={`flex items-center gap-2 md:gap-3 ${isRTL ? 'order-1' : 'order-3'}`}>
             {user ? (
               <>
-                <div className={`flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full p-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <a href="/docs" className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors">
-                    <Book className="w-5 h-5 text-white/80" />
+                <div className={`flex items-center gap-1 bg-white/[0.08] backdrop-blur-xl rounded-full p-1 border border-white/[0.08] ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <a href="/docs" className="hidden md:flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full transition-all duration-200" title="Docs">
+                    <BookOpen className="w-[18px] h-[18px] text-white/70" />
                   </a>
-                  <a href="/faq" className="hidden md:block p-2 hover:bg-white/10 rounded-full transition-colors">
-                    <HelpCircle className="w-5 h-5 text-white/80" />
+                  <a href="/faq" className="hidden md:flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full transition-all duration-200" title="Help">
+                    <CircleHelp className="w-[18px] h-[18px] text-white/70" />
                   </a>
                   <NotificationInbox />
                 </div>
@@ -240,12 +241,15 @@ export const HomePage: React.FC<HomePageProps> = ({
                 />
               </>
             ) : (
-              <button
+              <motion.button
                 onClick={() => window.location.href = '/login'}
-                className="px-4 md:px-5 py-2 md:py-2.5 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/20 transition-colors text-sm md:text-base"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-white/[0.12] backdrop-blur-xl border border-white/[0.15] rounded-full text-white hover:bg-white/[0.18] transition-all duration-200 text-sm font-medium shadow-lg shadow-black/10"
               >
+                <LogIn className="w-4 h-4" />
                 {t('common.signIn')}
-              </button>
+              </motion.button>
             )}
           </div>
         </div>
@@ -258,12 +262,12 @@ export const HomePage: React.FC<HomePageProps> = ({
           href="/new-vibe-tool"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 md:mb-8 cursor-pointer"
+          className="mb-6 md:mb-8 cursor-pointer group"
         >
-          <div className={`flex items-center gap-2 px-3 md:px-4 py-2 bg-white/10 backdrop-blur-md rounded-full hover:bg-white/15 transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <span className="px-2 py-0.5 bg-pink-500 text-white text-xs font-medium rounded-full">{t('home.newBadge')}</span>
-            <span className="text-white text-xs md:text-sm">{t('home.mobileAnnouncement')}</span>
-            <ArrowRight className={`w-4 h-4 text-white ${isRTL ? 'rotate-180' : ''}`} />
+          <div className={`flex items-center gap-2 px-4 md:px-5 py-2.5 bg-white/[0.08] backdrop-blur-xl rounded-full hover:bg-white/[0.12] transition-all duration-300 border border-white/[0.1] shadow-lg shadow-black/5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <span className="px-2.5 py-0.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">{t('home.newBadge')}</span>
+            <span className="text-white/90 text-xs md:text-sm font-medium">{t('home.mobileAnnouncement')}</span>
+            <ArrowUpRight className={`w-3.5 h-3.5 text-white/60 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200 ${isRTL ? 'rotate-180' : ''}`} />
           </div>
         </motion.a>
 
@@ -353,40 +357,41 @@ export const HomePage: React.FC<HomePageProps> = ({
                 rows={3}
               />
 
-              <div className={`flex items-center justify-between px-3 md:px-6 py-3 md:py-4 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`flex items-center gap-1 md:gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex items-center justify-between px-3 md:px-6 py-3 md:py-4 border-t border-gray-100/80 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className={`flex items-center gap-0.5 md:gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 md:p-2.5 hover:bg-gray-100 rounded-xl transition-all duration-200 group"
+                    title="Attach file"
                   >
-                    <Paperclip className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+                    <Paperclip className="w-[18px] h-[18px] text-gray-400 group-hover:text-gray-600 transition-colors" />
                   </button>
                   <button
                     type="button"
-                    className={`hidden md:flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+                    className={`hidden md:flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-xl transition-all duration-200 group ${isRTL ? 'flex-row-reverse' : ''}`}
                   >
-                    <span className="text-pink-500">🎨</span>
-                    <span className="text-sm text-gray-600">{t('home.import')}</span>
+                    <Wand2 className="w-[18px] h-[18px] text-pink-400 group-hover:text-pink-500 transition-colors" />
+                    <span className="text-sm text-gray-500 group-hover:text-gray-700 font-medium transition-colors">{t('home.import')}</span>
                   </button>
                 </div>
 
-                <div className={`flex items-center gap-1.5 md:gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className={`flex items-center gap-1.5 md:gap-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   {/* Character Count */}
-                  <span className={`text-[10px] md:text-xs ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                  <span className={`text-[10px] md:text-xs font-mono tabular-nums ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-destructive font-bold' : 'text-gray-400'}`}>
                     {prompt.length}/{MAX_PROMPT_LENGTH}
                   </span>
 
-                  {/* Visibility Toggle - Public/Private */}
+                  {/* Visibility Toggle */}
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setShowVisibilityMenu(!showVisibilityMenu)}
-                      className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors text-xs md:text-sm ${isRTL ? 'flex-row-reverse' : ''}`}
+                      className={`flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 md:py-2 text-gray-500 hover:bg-gray-100 rounded-xl transition-all duration-200 text-xs md:text-sm font-medium ${isRTL ? 'flex-row-reverse' : ''}`}
                     >
                       {isPublic ? <Globe className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <Lock className="w-3.5 h-3.5 md:w-4 md:h-4" />}
                       <span className="hidden sm:inline">{isPublic ? t('home.public') : t('home.private')}</span>
-                      <ChevronDown className="w-3 h-3" />
+                      <ChevronDown className="w-3 h-3 text-gray-400" />
                     </button>
 
                     <AnimatePresence>
@@ -397,10 +402,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                             onClick={() => setShowVisibilityMenu(false)}
                           />
                           <motion.div
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 5 }}
-                            className={`absolute bottom-full ${isRTL ? 'left-0' : 'right-0'} mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50`}
+                            initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className={`absolute bottom-full ${isRTL ? 'left-0' : 'right-0'} mb-2 w-52 bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-200/80 overflow-hidden z-50`}
                           >
                             <button
                               type="button"
@@ -408,12 +414,14 @@ export const HomePage: React.FC<HomePageProps> = ({
                                 setIsPublic(true);
                                 setShowVisibilityMenu(false);
                               }}
-                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${isPublic ? 'bg-pink-50' : ''}`}
+                              className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-all duration-200 ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${isPublic ? 'bg-primary/5' : ''}`}
                             >
-                              <Globe className={`w-4 h-4 ${isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isPublic ? 'bg-primary/10' : 'bg-gray-100'}`}>
+                                <Globe className={`w-4 h-4 ${isPublic ? 'text-primary' : 'text-gray-400'}`} />
+                              </div>
                               <div className={isRTL ? 'text-right' : ''}>
-                                <p className={`text-sm font-medium ${isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.public')}</p>
-                                <p className="text-xs text-gray-500">{t('home.publicDesc')}</p>
+                                <p className={`text-sm font-semibold ${isPublic ? 'text-primary' : 'text-gray-700'}`}>{t('home.public')}</p>
+                                <p className="text-[11px] text-gray-500">{t('home.publicDesc')}</p>
                               </div>
                             </button>
                             <button
@@ -422,12 +430,14 @@ export const HomePage: React.FC<HomePageProps> = ({
                                 setIsPublic(false);
                                 setShowVisibilityMenu(false);
                               }}
-                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${!isPublic ? 'bg-pink-50' : ''}`}
+                              className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-all duration-200 ${isRTL ? 'flex-row-reverse text-right' : 'text-left'} ${!isPublic ? 'bg-primary/5' : ''}`}
                             >
-                              <Lock className={`w-4 h-4 ${!isPublic ? 'text-pink-500' : 'text-gray-400'}`} />
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${!isPublic ? 'bg-primary/10' : 'bg-gray-100'}`}>
+                                <Lock className={`w-4 h-4 ${!isPublic ? 'text-primary' : 'text-gray-400'}`} />
+                              </div>
                               <div className={isRTL ? 'text-right' : ''}>
-                                <p className={`text-sm font-medium ${!isPublic ? 'text-pink-600' : 'text-gray-700'}`}>{t('home.private')}</p>
-                                <p className="text-xs text-gray-500">{t('home.privateDesc')}</p>
+                                <p className={`text-sm font-semibold ${!isPublic ? 'text-primary' : 'text-gray-700'}`}>{t('home.private')}</p>
+                                <p className="text-[11px] text-gray-500">{t('home.privateDesc')}</p>
                               </div>
                             </button>
                           </motion.div>
@@ -438,12 +448,14 @@ export const HomePage: React.FC<HomePageProps> = ({
 
                   <motion.button
                     type="submit"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
                     disabled={!prompt.trim() || isSubmitting}
-                    className="w-8 h-8 md:w-10 md:h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 flex-shrink-0"
+                    className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-40 flex-shrink-0 shadow-lg ${
+                      prompt.trim() ? 'bg-primary hover:bg-primary/90 shadow-primary/25' : 'bg-gray-200 hover:bg-gray-300 shadow-none'
+                    }`}
                   >
-                    <Send className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+                    <ArrowRight className={`w-4 h-4 md:w-[18px] md:h-[18px] ${prompt.trim() ? 'text-primary-foreground' : 'text-gray-500'}`} />
                   </motion.button>
                 </div>
               </div>
