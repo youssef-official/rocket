@@ -63,6 +63,8 @@ serve(async (req) => {
 1. Did the website load successfully? (not a blank/white page, not an error page)
 2. Are there visible UI elements like buttons, text, or navigation?
 
+IMPORTANT: Ignore any watermarks, badges, or "Built by" labels (e.g. "Built by Vivora", "Powered by X"). These are normal and NOT errors.
+
 If the site loaded and has visible elements: {"status": "pass", "message": "Site loaded successfully"}
 If the site is blank, shows an error, or has no visible elements: {"status": "fail", "issues": ["description of what's wrong"], "fix_prompt": "The site failed to load properly. Check for build errors or missing components."}
 
@@ -72,7 +74,7 @@ RESPOND ONLY WITH JSON.`
           {
             role: "user",
             content: [
-              { type: "text", text: "Analyze this web app screenshot for any visual bugs or layout issues:" },
+              { type: "text", text: "Check if this website loaded successfully:" },
               { type: "image_url", image_url: { url: dataUrl } }
             ]
           }
