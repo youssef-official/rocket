@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Package, FileCode, ChevronDown, CheckCircle2, AlertTriangle, Loader2, Terminal, Play } from 'lucide-react';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Package, FileCode, ChevronDown } from 'lucide-react';
 import type { ProjectVersion } from '@/hooks/useVersions';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -15,10 +15,6 @@ interface DetailsPanelProps {
   activities: FileActivity[];
   onClose: () => void;
   isGenerating?: boolean;
-  onAutoFix?: (errorLog: string) => void;
-  previewUrl?: string | null;
-  isFirstVersion?: boolean;
-  onTestComplete?: (passed: boolean) => void;
 }
 
 // Custom SVG icons matching the reference design
@@ -63,13 +59,8 @@ const getActionConfig = (action: string) => {
   }
 };
 
-type LogTestState = 'idle' | 'running' | 'pass' | 'fail';
-
-export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities, onClose, isGenerating, onAutoFix, previewUrl, isFirstVersion, onTestComplete }) => {
+export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities, onClose, isGenerating }) => {
   const { t } = useLanguage();
-  const [logTestState, setLogTestState] = useState<LogTestState>('idle');
-  const [logErrors, setLogErrors] = useState<string[]>([]);
-  const prevIsGenerating = useRef(isGenerating);
 
   const changeCount = activities.filter(a => a.action !== 'read').length;
   const modifiedFiles = activities.filter(a => a.action === 'edited');
@@ -78,148 +69,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
   const otherFiles = activities.filter(a => !['edited', 'created', 'read'].includes(a.action));
   const groupedActivities = [...modifiedFiles, ...createdFiles, ...otherFiles, ...readFiles];
 
-  // Signal test complete immediately when generation finishes (no more screenshot blocking)
-  useEffect(() => {
-    const wasGenerating = prevIsGenerating.current;
-    const nowDone = !isGenerating;
-    prevIsGenerating.current = isGenerating;
 
-    if (wasGenerating && nowDone && activities.length > 0) {
-      onTestComplete?.(true);
-    }
 
-    if (isGenerating) {
-      setLogTestState('idle');
-      setLogErrors([]);
-    }
-  }, [isGenerating, activities.length]);
-
-  // Run log test - check preview iframe console for errors
-  const runLogTest = () => {
-    setLogTestState('running');
-    setLogErrors([]);
-
-    // Look for the preview iframe
-    const iframe = document.querySelector('iframe[src*="preview"]') as HTMLIFrameElement 
-      || document.querySelector('iframe') as HTMLIFrameElement;
-
-    if (!iframe) {
-      setLogTestState('fail');
-      setLogErrors(['Could not find preview iframe']);
-      return;
-    }
-
-    // Listen for error messages from the iframe via postMessage
-    const errors: string[] = [];
-    const timeout = setTimeout(() => {
-      if (errors.length > 0) {
-        setLogTestState('fail');
-        setLogErrors(errors);
-        if (onAutoFix) {
-          onAutoFix(`[AUTO-FIX] Console errors detected in preview:\n\n${errors.join('\n')}`);
-        }
-      } else {
-        setLogTestState('pass');
-      }
-    }, 3000);
-
-    const handler = (event: MessageEvent) => {
-      if (event.data?.type === 'preview-error' || event.data?.type === 'console-error') {
-        errors.push(event.data.message || event.data.error || JSON.stringify(event.data));
-      }
-    };
-
-    window.addEventListener('message', handler);
-
-    // Also try to check via fetch if preview is accessible
-    if (previewUrl) {
-      fetch(previewUrl, { mode: 'no-cors' }).catch(() => {
-        errors.push('Preview URL is not accessible');
-      });
-    }
-
-    // Cleanup after test
-    setTimeout(() => {
-      window.removeEventListener('message', handler);
-      clearTimeout(timeout);
-    }, 3500);
-  };
-
-  const getLogTestUI = () => {
-    switch (logTestState) {
-      case 'running':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-4 mt-3 p-3.5 rounded-xl bg-primary/5 border border-primary/20"
-          >
-            <div className="flex items-center gap-3">
-              <Terminal className="w-5 h-5 text-primary" />
-              <div className="flex-1">
-                <p className="text-[13px] font-semibold text-foreground">Running Log Test...</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Checking preview console for errors</p>
-              </div>
-              <Loader2 className="w-4 h-4 text-primary animate-spin" />
-            </div>
-          </motion.div>
-        );
-
-      case 'pass':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-4 mt-3 p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20"
-          >
-            <div className="flex items-center gap-3">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-              >
-                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-              </motion.div>
-              <div className="flex-1">
-                <p className="text-[13px] font-semibold text-foreground">No Errors Found ✅</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Console logs are clean</p>
-              </div>
-            </div>
-          </motion.div>
-        );
-
-      case 'fail':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-4 mt-3 space-y-2"
-          >
-            <div className="p-3.5 rounded-xl bg-red-500/5 border border-red-500/20">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-500" />
-                <div className="flex-1">
-                  <p className="text-[13px] font-semibold text-foreground">Errors Detected</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{logErrors.length} error{logErrors.length > 1 ? 's' : ''} found in console</p>
-                </div>
-              </div>
-              {logErrors.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-red-500/10 space-y-1">
-                  {logErrors.slice(0, 5).map((err, i) => (
-                    <p key={i} className="text-[10px] font-mono text-red-400/80 truncate">
-                      • {err}
-                    </p>
-                  ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        );
-
-      default:
-        return null;
-    }
-  };
 
   return (
     <div className="h-full flex flex-col bg-card">
@@ -277,29 +128,6 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
             <p className="text-sm font-medium text-muted-foreground">No details available</p>
           </div>
         )}
-
-        {/* Run Test Button */}
-        {!isGenerating && activities.length > 0 && (
-          <div className="px-4 mt-3">
-            <button
-              onClick={runLogTest}
-              disabled={logTestState === 'running'}
-              className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl text-sm font-medium transition-all bg-secondary hover:bg-accent border border-border hover:border-primary/20 text-foreground disabled:opacity-50"
-            >
-              {logTestState === 'running' ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Terminal className="w-4 h-4 text-primary" />
-              )}
-              <span>{logTestState === 'running' ? 'Testing...' : 'Run test'}</span>
-            </button>
-          </div>
-        )}
-
-        {/* Log Test Result UI */}
-        <AnimatePresence mode="wait">
-          {logTestState !== 'idle' && getLogTestUI()}
-        </AnimatePresence>
 
         {/* Footer Summary */}
         {activities.length > 0 && (
