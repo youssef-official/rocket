@@ -269,7 +269,7 @@ const ProjectEditorRoute = () => {
 
           let explanation = '';
           try {
-            explanation = await generateExplanation(prompt, localProject.projectType);
+            explanation = await generateExplanation(prompt, localProject.projectType, language);
           } catch (e) {
             explanation = "I'll create something amazing for you!";
           }
@@ -535,7 +535,9 @@ const ProjectEditorRoute = () => {
                 if (isCancelled.current) return;
                 setStatusMessage(status);
               },
-            }
+            },
+            undefined,
+            language
           );
         } catch (error) {
           if (isCancelled.current) return;
@@ -694,7 +696,7 @@ const ProjectEditorRoute = () => {
 
       let explanation = '';
       try {
-        explanation = await generateExplanation(content, localProject.projectType);
+        explanation = await generateExplanation(content, localProject.projectType, language);
       } catch (e) {
         explanation = "I'll make those changes for you!";
       }
@@ -973,7 +975,8 @@ const ProjectEditorRoute = () => {
             setStatusMessage(status);
           },
         },
-        existingFilesList.join(', ')
+        existingFilesList.join(', '),
+        language
       );
     } catch (error) {
       if (isCancelled.current) return;

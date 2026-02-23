@@ -39,7 +39,8 @@ export async function callingDirectAI(
     mode: 'code' | 'status' | 'explanation' | 'project-name' | 'suggestions' | 'chat' | 'version-name',
     messages: any[],
     signal?: AbortSignal,
-    userPlan?: string
+    userPlan?: string,
+    userLanguage?: string
 ): Promise<Response> {
     const supabaseUrl = getSupabaseUrl();
     const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -74,7 +75,8 @@ export async function callingDirectAI(
         body: JSON.stringify({ 
             mode, 
             messages: formattedMessages,
-            userPlan: userPlan || 'spark'
+            userPlan: userPlan || 'spark',
+            userLanguage: userLanguage || 'en'
         }),
         signal
     });

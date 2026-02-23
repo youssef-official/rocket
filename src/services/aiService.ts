@@ -605,11 +605,12 @@ export async function generateChatResponse(
 // Generate explanation only (for chat display)
 export async function generateExplanation(
   prompt: string,
-  projectType: 'vite' | 'html'
+  projectType: 'vite' | 'html',
+  userLanguage?: string
 ): Promise<string> {
   try {
     const msgs = [{ role: 'user', content: prompt }];
-    const response = await callingDirectAI('explanation', msgs);
+    const response = await callingDirectAI('explanation', msgs, undefined, undefined, userLanguage);
 
     if (!response.ok) throw new Error(`Status ${response.status}`);
 
@@ -634,7 +635,8 @@ export async function streamAICodeGeneration(
     onStatusUpdate?: (status: string) => void;
     signal?: AbortSignal;
   },
-  existingFiles?: string
+  existingFiles?: string,
+  userLanguage?: string
 ) {
   try {
     let finalMessages = [...messages];
@@ -654,7 +656,7 @@ EXISTING PROJECT FILES: [${existingFiles}]
       }
     }
 
-    const response = await callingDirectAI('code', finalMessages, options.signal);
+    const response = await callingDirectAI('code', finalMessages, options.signal, undefined, userLanguage);
 
     if (!response.ok) {
       throw new Error(`AI request failed: ${response.status}`);
