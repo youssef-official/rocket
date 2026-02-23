@@ -56,6 +56,7 @@ interface ChatViewProps {
   versions?: ProjectVersion[];
   onSelectVersion?: (version: ProjectVersion) => void;
   onRollback?: (versionNumber: number) => Promise<void>;
+  onShowDetails?: (version: ProjectVersion, activities: FileActivity[]) => void;
 }
 
 // Get file icon based on extension
@@ -186,7 +187,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
   suggestions = [],
   versions = [],
   onSelectVersion,
-  onRollback
+  onRollback,
+  onShowDetails,
 }) => {
   const { t } = useLanguage();
   const { userPlan } = useUserPlan();
@@ -746,6 +748,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                               activities={versionActivities}
                               onSelectVersion={onSelectVersion}
                               onRollback={(vn) => setRollbackVersionId(vn)}
+                              onShowDetails={onShowDetails}
                               isLatestVersion={version.versionNumber === maxVersionNumber}
                             />
                           </div>
