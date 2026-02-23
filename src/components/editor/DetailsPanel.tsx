@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, FileCode, ChevronDown, CheckCircle2, AlertTriangle, Loader2, Monitor, Search, Wrench, Camera, Eye } from 'lucide-react';
+import { Package, FileCode, ChevronDown, CheckCircle2, AlertTriangle, Loader2, Terminal, Play } from 'lucide-react';
 import type { ProjectVersion } from '@/hooks/useVersions';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -9,8 +9,6 @@ interface FileActivity {
   status: 'editing' | 'done';
   action: 'read' | 'edited' | 'created' | 'analyzed_image' | 'deleted';
 }
-
-type TestPhase = 'idle' | 'waiting' | 'capturing' | 'analyzing' | 'fixing' | 'success' | 'error';
 
 interface DetailsPanelProps {
   version: ProjectVersion;
@@ -65,14 +63,13 @@ const getActionConfig = (action: string) => {
   }
 };
 
+type LogTestState = 'idle' | 'running' | 'pass' | 'fail';
+
 export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities, onClose, isGenerating, onAutoFix, previewUrl, isFirstVersion, onTestComplete }) => {
   const { t } = useLanguage();
-  const [testPhase, setTestPhase] = useState<TestPhase>('idle');
-  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [logTestState, setLogTestState] = useState<LogTestState>('idle');
+  const [logErrors, setLogErrors] = useState<string[]>([]);
   const prevIsGenerating = useRef(isGenerating);
-  const testTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasTestedRef = useRef(false);
 
   const changeCount = activities.filter(a => a.action !== 'read').length;
   const modifiedFiles = activities.filter(a => a.action === 'edited');
@@ -81,102 +78,76 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
   const otherFiles = activities.filter(a => !['edited', 'created', 'read'].includes(a.action));
   const groupedActivities = [...modifiedFiles, ...createdFiles, ...otherFiles, ...readFiles];
 
-  // When generation finishes, start screenshot testing
+  // Signal test complete immediately when generation finishes (no more screenshot blocking)
   useEffect(() => {
     const wasGenerating = prevIsGenerating.current;
     const nowDone = !isGenerating;
     prevIsGenerating.current = isGenerating;
 
-    if (wasGenerating && nowDone && activities.length > 0 && !hasTestedRef.current && isFirstVersion) {
-      hasTestedRef.current = true;
-      setTestPhase('waiting');
-      setScreenshotUrl(null);
-      setAnalysisResult(null);
-      
-      // Wait 8s for preview to fully load before capturing
-      testTimeoutRef.current = setTimeout(() => {
-        setTestPhase('capturing');
-      }, 8000);
-    }
-
-    // If not first version, signal test complete immediately
-    if (wasGenerating && nowDone && activities.length > 0 && !isFirstVersion) {
+    if (wasGenerating && nowDone && activities.length > 0) {
       onTestComplete?.(true);
     }
 
     if (isGenerating) {
-      hasTestedRef.current = false;
-      setTestPhase('idle');
-      setScreenshotUrl(null);
-      setAnalysisResult(null);
+      setLogTestState('idle');
+      setLogErrors([]);
     }
   }, [isGenerating, activities.length]);
 
-  // Capture screenshot and analyze when in capturing phase
-  useEffect(() => {
-    if (testPhase !== 'capturing' || !previewUrl) return;
+  // Run log test - check preview iframe console for errors
+  const runLogTest = () => {
+    setLogTestState('running');
+    setLogErrors([]);
 
-    const captureAndAnalyze = async () => {
-      try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    // Look for the preview iframe
+    const iframe = document.querySelector('iframe[src*="preview"]') as HTMLIFrameElement 
+      || document.querySelector('iframe') as HTMLIFrameElement;
 
-        const response = await fetch(`${supabaseUrl}/functions/v1/screenshot-test`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${anonKey}`,
-          },
-          body: JSON.stringify({ preview_url: previewUrl }),
-        });
+    if (!iframe) {
+      setLogTestState('fail');
+      setLogErrors(['Could not find preview iframe']);
+      return;
+    }
 
-        if (!response.ok) {
-          console.error('Screenshot test failed:', response.status);
-          setTestPhase('error');
-          return;
+    // Listen for error messages from the iframe via postMessage
+    const errors: string[] = [];
+    const timeout = setTimeout(() => {
+      if (errors.length > 0) {
+        setLogTestState('fail');
+        setLogErrors(errors);
+        if (onAutoFix) {
+          onAutoFix(`[AUTO-FIX] Console errors detected in preview:\n\n${errors.join('\n')}`);
         }
+      } else {
+        setLogTestState('pass');
+      }
+    }, 3000);
 
-        const data = await response.json();
-        
-        if (data.screenshot) {
-          setScreenshotUrl(data.screenshot);
-        }
-
-        setTestPhase('analyzing');
-        setAnalysisResult(data.analysis);
-
-        // Check analysis result
-        if (data.analysis?.status === 'fail' && data.analysis?.fix_prompt) {
-          setTestPhase('fixing');
-          if (onAutoFix) {
-            onAutoFix(`[AUTO-FIX] Visual test detected issues in the preview:\n\n${data.analysis.issues?.join('\n') || ''}\n\n${data.analysis.fix_prompt}`);
-          }
-          // Don't signal test complete yet - the fix will trigger another generation cycle
-        } else {
-          setTestPhase('success');
-          onTestComplete?.(true);
-        }
-      } catch (e) {
-        console.error('Screenshot test error:', e);
-        setTestPhase('error');
-        // Test failed critically - signal to save version anyway
-        onTestComplete?.(true);
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'preview-error' || event.data?.type === 'console-error') {
+        errors.push(event.data.message || event.data.error || JSON.stringify(event.data));
       }
     };
 
-    captureAndAnalyze();
-  }, [testPhase, previewUrl, onAutoFix]);
+    window.addEventListener('message', handler);
 
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      if (testTimeoutRef.current) clearTimeout(testTimeoutRef.current);
-    };
-  }, []);
+    // Also try to check via fetch if preview is accessible
+    if (previewUrl) {
+      fetch(previewUrl, { mode: 'no-cors' }).catch(() => {
+        errors.push('Preview URL is not accessible');
+      });
+    }
 
-  const getTestPhaseUI = () => {
-    switch (testPhase) {
-      case 'waiting':
+    // Cleanup after test
+    setTimeout(() => {
+      window.removeEventListener('message', handler);
+      clearTimeout(timeout);
+    }, 3500);
+  };
+
+  const getLogTestUI = () => {
+    switch (logTestState) {
+      case 'running':
         return (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -184,160 +155,63 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
             className="mx-4 mt-3 p-3.5 rounded-xl bg-primary/5 border border-primary/20"
           >
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <Monitor className="w-5 h-5 text-primary" />
-                <motion.div
-                  className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary"
-                  animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
-                  transition={{ duration: 1.2, repeat: Infinity }}
-                />
-              </div>
+              <Terminal className="w-5 h-5 text-primary" />
               <div className="flex-1">
-                <p className="text-[13px] font-semibold text-foreground">Preparing Tests...</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Waiting for preview to load</p>
+                <p className="text-[13px] font-semibold text-foreground">Running Log Test...</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Checking preview console for errors</p>
               </div>
               <Loader2 className="w-4 h-4 text-primary animate-spin" />
             </div>
           </motion.div>
         );
 
-      case 'capturing':
+      case 'pass':
         return (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mx-4 mt-3 p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/20"
+            className="mx-4 mt-3 p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20"
           >
             <div className="flex items-center gap-3">
               <motion.div
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 1, repeat: Infinity }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
               >
-                <Camera className="w-5 h-5 text-blue-500" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               </motion.div>
               <div className="flex-1">
-                <p className="text-[13px] font-semibold text-foreground">Capturing Screenshot...</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Taking a snapshot of the preview</p>
+                <p className="text-[13px] font-semibold text-foreground">No Errors Found ✅</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Console logs are clean</p>
               </div>
-              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
             </div>
           </motion.div>
         );
 
-      case 'analyzing':
+      case 'fail':
         return (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mx-4 mt-3 space-y-3"
+            className="mx-4 mt-3 space-y-2"
           >
-            <div className="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/20">
+            <div className="p-3.5 rounded-xl bg-red-500/5 border border-red-500/20">
               <div className="flex items-center gap-3">
-                <motion.div
-                  animate={{ rotate: [0, 360] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                >
-                  <Eye className="w-5 h-5 text-purple-500" />
-                </motion.div>
+                <AlertTriangle className="w-5 h-5 text-red-500" />
                 <div className="flex-1">
-                  <p className="text-[13px] font-semibold text-foreground">AI Analyzing...</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Checking for visual issues</p>
+                  <p className="text-[13px] font-semibold text-foreground">Errors Detected</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{logErrors.length} error{logErrors.length > 1 ? 's' : ''} found in console</p>
                 </div>
-                <Loader2 className="w-4 h-4 text-purple-500 animate-spin" />
               </div>
-            </div>
-            {screenshotUrl && (
-              <div className="rounded-xl overflow-hidden border border-border">
-                <img src={screenshotUrl} alt="Preview screenshot" className="w-full h-auto" />
-              </div>
-            )}
-          </motion.div>
-        );
-
-      case 'fixing':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-4 mt-3 space-y-3"
-          >
-            <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20">
-              <div className="flex items-center gap-3">
-                <motion.div
-                  animate={{ rotate: [0, -15, 15, -15, 0] }}
-                  transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 1 }}
-                >
-                  <Wrench className="w-5 h-5 text-amber-500" />
-                </motion.div>
-                <div className="flex-1">
-                  <p className="text-[13px] font-semibold text-foreground">Fixing Issues...</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {analysisResult?.issues?.length || 0} issue{(analysisResult?.issues?.length || 0) > 1 ? 's' : ''} found — auto-fixing
-                  </p>
-                </div>
-                <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />
-              </div>
-              {analysisResult?.issues && (
-                <div className="mt-2 pt-2 border-t border-amber-500/10">
-                  {analysisResult.issues.slice(0, 3).map((issue: string, i: number) => (
-                    <p key={i} className="text-[10px] font-mono text-amber-400/80 truncate mt-1">
-                      • {issue}
+              {logErrors.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-red-500/10 space-y-1">
+                  {logErrors.slice(0, 5).map((err, i) => (
+                    <p key={i} className="text-[10px] font-mono text-red-400/80 truncate">
+                      • {err}
                     </p>
                   ))}
                 </div>
               )}
-            </div>
-            {screenshotUrl && (
-              <div className="rounded-xl overflow-hidden border border-border">
-                <img src={screenshotUrl} alt="Preview screenshot" className="w-full h-auto" />
-              </div>
-            )}
-          </motion.div>
-        );
-
-      case 'success':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-4 mt-3 space-y-3"
-          >
-            <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-              <div className="flex items-center gap-3">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-                >
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                </motion.div>
-                <div className="flex-1">
-                  <p className="text-[13px] font-semibold text-foreground">All Tests Passed ✅</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">No visual issues detected</p>
-                </div>
-              </div>
-            </div>
-            {screenshotUrl && (
-              <div className="rounded-xl overflow-hidden border border-border">
-                <img src={screenshotUrl} alt="Preview screenshot" className="w-full h-auto" />
-              </div>
-            )}
-          </motion.div>
-        );
-
-      case 'error':
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-4 mt-3 p-3.5 rounded-xl bg-red-500/5 border border-red-500/20"
-          >
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-              <div className="flex-1">
-                <p className="text-[13px] font-semibold text-foreground">Test Failed</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Could not capture or analyze the preview</p>
-              </div>
             </div>
           </motion.div>
         );
@@ -404,9 +278,27 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
           </div>
         )}
 
-        {/* Auto-Test Phase UI */}
+        {/* Run Test Button */}
+        {!isGenerating && activities.length > 0 && (
+          <div className="px-4 mt-3">
+            <button
+              onClick={runLogTest}
+              disabled={logTestState === 'running'}
+              className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl text-sm font-medium transition-all bg-secondary hover:bg-accent border border-border hover:border-primary/20 text-foreground disabled:opacity-50"
+            >
+              {logTestState === 'running' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Terminal className="w-4 h-4 text-primary" />
+              )}
+              <span>{logTestState === 'running' ? 'Testing...' : 'Run test'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Log Test Result UI */}
         <AnimatePresence mode="wait">
-          {testPhase !== 'idle' && getTestPhaseUI()}
+          {logTestState !== 'idle' && getLogTestUI()}
         </AnimatePresence>
 
         {/* Footer Summary */}

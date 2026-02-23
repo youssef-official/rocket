@@ -167,14 +167,29 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         const isFirstVersion = versions.length === 0;
 
         if (isFirstVersion) {
-          // For first version, wait for test to complete before saving
-          setWaitingForTest(true);
-          pendingVersionRef.current = {
-            files: { ...project.files },
-            messages: [...messages],
-            activities: lastFileActivitiesRef.current.length > 0 ? [...lastFileActivitiesRef.current] : [],
+          // Save version immediately (no more screenshot test blocking)
+          const createFirstVersion = async () => {
+            const versionNumber = 1;
+            const projectDescription = project.description || project.name || '';
+            const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
+
+            const versionName = await generateVersionName(
+              projectDescription,
+              lastUserMessage,
+              versionNumber
+            );
+
+            await createVersion(
+              project.files,
+              messages,
+              versionName,
+              lastFileActivitiesRef.current.length > 0 ? lastFileActivitiesRef.current : undefined
+            );
+            setCurrentVersionNumber(null);
+            versionCreatedForSession.current = true;
           };
-          versionCreatedForSession.current = true;
+
+          createFirstVersion();
         } else {
           // For subsequent versions, save immediately (no test)
           const createVersionWithAIName = async () => {
