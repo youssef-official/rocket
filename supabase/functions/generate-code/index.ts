@@ -461,7 +461,8 @@ Rules for actions:
 📝 SUMMARY (MANDATORY - Describe what you did)
 ═══════════════════════════════════════════════════════════════════════════════
 After all <FILE> blocks, include a <SUMMARY> block describing what you built/changed.
-Write in the SAME language as the user's message (if Arabic → Arabic, if English → English, etc.).
+Write the summary in the language specified by the USER_LANGUAGE parameter (e.g. if USER_LANGUAGE=ar → Arabic, if USER_LANGUAGE=en → English, if USER_LANGUAGE=fr → French).
+If no USER_LANGUAGE is specified, default to the same language as the user's message.
 Use a natural, conversational tone. Do NOT use ✅ emoji or checkmarks.
 Start with a brief intro like "تم إنشاء المشروع" or "Project created" then describe the changes as a simple numbered list.
 Focus on WHAT was built/changed and key features. 3-6 items for new projects, 1-4 for edits.
@@ -529,7 +530,7 @@ If the user says "logo" / "لوجو" / "شعار" and provides an image:
 // Credit calculation is now done by file count, not AI
 const CREDIT_PROMPT = `Return: {"credits":1,"reason":"default","estimated_files":5,"complexity":"medium"}`;
 
-const EXPLANATION_PROMPT = `IMPORTANT: Reply in the SAME language the user wrote their message in. If Arabic, reply in Arabic. If English, reply in English. If French, reply in French. NEVER reply in a different language.
+const EXPLANATION_PROMPT = `IMPORTANT: Reply in the language specified by USER_LANGUAGE parameter. If USER_LANGUAGE=ar, reply in Arabic. If USER_LANGUAGE=en, reply in English. If USER_LANGUAGE=fr, reply in French. If no USER_LANGUAGE is set, reply in the SAME language the user wrote their message in.
 
 You are a senior developer explaining what you built/changed. Be concise and natural — like a real programmer talking to a colleague.
 
@@ -640,7 +641,7 @@ serve(async (req) => {
   }
 
   try {
-    const { mode, messages, userPlan } = await req.json();
+    const { mode, messages, userPlan, userLanguage } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
@@ -661,6 +662,8 @@ serve(async (req) => {
             finalMessages[lastUserMsgIndex].content,
 
             `
+
+USER_LANGUAGE=${userLanguage || 'en'}
 
 ⚠️ CRITICAL REQUIREMENTS:
 1. OUTPUT ONLY <FILE> blocks (no JSON, no markdown, no explanations)
@@ -719,6 +722,21 @@ serve(async (req) => {
 - Extract layout, hierarchy, colors, spacing, typography, and components
 - Recreate/fix the design based on what is visible in the image
 - If user asks to solve issues in the screenshot, identify the likely root cause and fix it in code`,
+          ),
+        };
+      }
+    }
+
+    // Inject language into explanation mode
+    if (mode === "explanation" && userLanguage && messages.length > 0) {
+      const lastIdx = messages.findLastIndex((m: any) => m.role === "user");
+      if (lastIdx >= 0) {
+        finalMessages = [...messages];
+        finalMessages[lastIdx] = {
+          ...finalMessages[lastIdx],
+          content: appendTextToMessageContent(
+            finalMessages[lastIdx].content,
+            `\n\nIMPORTANT: Reply in ${userLanguage === 'ar' ? 'Arabic' : userLanguage === 'fr' ? 'French' : userLanguage === 'es' ? 'Spanish' : 'English'}.`
           ),
         };
       }
