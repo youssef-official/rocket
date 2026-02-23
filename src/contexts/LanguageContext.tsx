@@ -28,6 +28,7 @@ export const translations: Translations = {
   'action.edited': { en: 'Editing', zh: '编辑', ja: '編集', fr: 'Modification' },
   'action.created': { en: 'Creating', zh: '创建', ja: '作成', fr: 'Création' },
   'action.analyzed_image': { en: 'Analyzing Image', zh: '分析图像', ja: '画像を分析', fr: 'Analyse de l\'image' },
+  'action.deleted': { en: 'Deleting', zh: '删除', ja: '削除', fr: 'Suppression' },
 
   // Navigation
   'nav.pricing': { en: 'Pricing', zh: '定价', ja: '料金', fr: 'Tarifs' },
@@ -179,6 +180,10 @@ export const translations: Translations = {
   'chat.analyzingImages': { en: 'Analyzing attached images...', zh: '正在分析附件图片...', ja: '添付画像を分析中...', fr: 'Analyse des images jointes...' },
   'chat.generatingLogo': { en: 'Generating logo image...', zh: '正在生成标志图片...', ja: 'ロゴ画像を生成中...', fr: 'Génération de l\'image du logo...' },
   'chat.copyingLogo': { en: 'Copying generated image to public folder...', zh: '正在将生成的图片复制到公共文件夹...', ja: '生成した画像をpublicフォルダにコピー中...', fr: 'Copie de l\'image générée dans le dossier public...' },
+  'chat.details': { en: 'Details', zh: '详情', ja: '詳細', fr: 'Détails' },
+  'chat.preview': { en: 'Preview', zh: '预览', ja: 'プレビュー', fr: 'Aperçu' },
+  'chat.uploadFile': { en: 'Upload File', zh: '上传文件', ja: 'ファイルをアップロード', fr: 'Télécharger un fichier' },
+  'chat.cancel': { en: 'Cancel', zh: '取消', ja: 'キャンセル', fr: 'Annuler' },
 
   // Models
   'models.selectModel': { en: 'Select AI Model', zh: '选择AI模型', ja: 'AIモデルを選択', fr: 'Sélectionner le modèle IA' },
