@@ -128,6 +128,10 @@ const cleanAIMessage = (content: string): string => {
   cleaned = cleaned.replace(/###?\s*\*?\*?What I will build.*?\*?\*?:?\s*/gi, '');
   // Remove "Generating..." text
   cleaned = cleaned.replace(/\*\*.*?Generating.*?\*\*/gi, '');
+  // Remove "Done! Generated/modified X files in background" messages and file lists
+  cleaned = cleaned.replace(/Done!?\s*Generated\/modified\s*\d+\s*files?\s*(in background)?\.?\s*/gi, '');
+  cleaned = cleaned.replace(/^-\s*(src\/|index\.html|public\/).+$/gm, '');
+  cleaned = cleaned.replace(/\.\.\.\s*and\s*\d+\s*more\s*files?/gi, '');
 
   // Filter out technical lines
   cleaned = cleaned.split('\n').filter(line => {
@@ -718,7 +722,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                             {/* Live generation: show VersionCardNew with live activities */}
                             {isGenerating && fileActivities.length > 0 && (
                               <div className="mt-4">
-                                <VersionCardNew
+                              <VersionCardNew
                                   version={{
                                     id: 'live',
                                     projectId: '',
@@ -731,6 +735,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                                   }}
                                   isActive={true}
                                   activities={fileActivities}
+                                  onShowDetails={onShowDetails}
                                   isLatestVersion={true}
                                   isLive={true}
                                   liveStatus={generationPhase?.status || statusMessage}
@@ -800,6 +805,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         }}
                         isActive={true}
                         activities={fileActivities}
+                        onShowDetails={onShowDetails}
                         isLatestVersion={true}
                         isLive={true}
                         liveStatus={generationPhase?.status || statusMessage}
