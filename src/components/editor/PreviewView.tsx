@@ -498,11 +498,11 @@ export default defineConfig({
   // Show loading placeholder
   if (isLoading || (sandboxId && !isSandboxReady)) {
     return (
-      <div className="flex flex-col h-full bg-background">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card">
+      <div className="flex flex-col h-full w-full bg-background">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card shrink-0">
           <div className="text-sm font-mono text-muted-foreground">{sandboxStatus}</div>
         </div>
-        <div className="flex-1">
+        <div className="flex-1 min-h-0">
           <LoadingPlaceholder status={sandboxStatus} />
         </div>
       </div>
@@ -511,9 +511,9 @@ export default defineConfig({
 
   // Preview Frame
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full w-full bg-background">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-2">
 
           <button
@@ -565,7 +565,7 @@ export default defineConfig({
       </div>
 
       {/* Preview Frame */}
-      <div className="flex-1 overflow-hidden bg-muted relative">
+      <div className="flex-1 min-h-0 overflow-hidden bg-muted relative">
         {!previewUrl || !isSandboxReady ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <LoadingPlaceholder status={sandboxStatus} />
