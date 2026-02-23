@@ -509,7 +509,32 @@ const ProjectEditorRoute = () => {
     // Get the selected model from sessionStorage
     const savedModelId = sessionStorage.getItem(`project_model_${localProject.id}`) || 'rok-fast';
 
-    // Add user message and AWAIT it to ensure it's saved in the database
+    // For build mode, check credits BEFORE saving message
+    if (!isChatOnly && user) {
+      const { checkCreditsAvailable } = await import('@/services/creditService');
+      const hasCredits = await checkCreditsAvailable(user.id);
+      if (!hasCredits) {
+        const { toast } = await import('sonner');
+        toast.error(t('credits.noCredits'));
+        return;
+      }
+
+      // Reserve credits to prevent concurrent requests from double-spending
+      try {
+        const { deductCredits } = await import('@/services/creditService');
+        const reservation = await deductCredits(user.id, localProject.id, 'Credit reservation (pending)', 0.5);
+        if (!reservation.success) {
+          const { toast } = await import('sonner');
+          toast.error(t('credits.noCredits'));
+          return;
+        }
+        queryClient.invalidateQueries({ queryKey: ['userPlan'] });
+      } catch (e) {
+        console.error('Credit reservation failed:', e);
+      }
+    }
+
+    // Credits verified (or chat mode) - NOW save the message
     await addMessage('user', content, imageUrl);
 
     // If chat-only mode, just respond conversationally without code generation
@@ -540,17 +565,6 @@ const ProjectEditorRoute = () => {
       setIsGenerating(false);
       setStatusMessage('');
       return;
-    }
-
-    // Build mode - check credits BEFORE generating
-    if (user) {
-      const { checkCreditsAvailable } = await import('@/services/creditService');
-      const hasCredits = await checkCreditsAvailable(user.id);
-      if (!hasCredits) {
-        const { toast } = await import('sonner');
-        toast.error(t('credits.noCredits'));
-        return;
-      }
     }
 
     setIsChatMode(false);
@@ -777,12 +791,15 @@ const ProjectEditorRoute = () => {
               setLocalProject(prev => prev ? { ...prev, files: mergedFiles } : null);
             }
 
-            // Deduct credits AFTER generation based on file count
+            // Deduct remaining credits AFTER generation (0.5 already reserved)
             if (user) {
               try {
                 const { calculateCreditsByFileCount } = await import('@/services/directAiService');
-                const creditsToDeduct = calculateCreditsByFileCount(fileList.length, false);
-                await deductPointsAfterGeneration(user.id, localProject.id, `Edit: ${fileList.length} files`, creditsToDeduct);
+                const totalCredits = calculateCreditsByFileCount(fileList.length, false);
+                const remaining = Math.max(0, totalCredits - 0.5); // subtract reservation
+                if (remaining > 0) {
+                  await deductPointsAfterGeneration(user.id, localProject.id, `Edit: ${fileList.length} files`, remaining);
+                }
                 queryClient.invalidateQueries({ queryKey: ['userPlan'] });
               } catch (e) {
                 console.error('Credit deduction failed:', e);

@@ -266,18 +266,18 @@ export const ChatView: React.FC<ChatViewProps> = ({
     }
   }, [input]);
 
-  // Get filtered project files for @ menu
+  // Get filtered project files for @ menu - show ALL files
   const allFileNames = Object.keys(projectFiles);
   const filteredFiles = atFilter
-    ? allFileNames.filter(f => f.toLowerCase().includes(atFilter.toLowerCase())).slice(0, 10)
-    : allFileNames.slice(0, 10);
+    ? allFileNames.filter(f => f.toLowerCase().includes(atFilter.toLowerCase())).slice(0, 20)
+    : allFileNames.slice(0, 20);
 
   const handleAtSelect = (fileName: string) => {
-    // Replace @query with @filename in input
+    // Replace @query with just removing the @query from input (file goes to badges only)
     const atIndex = input.lastIndexOf('@');
     if (atIndex !== -1) {
       const before = input.slice(0, atIndex);
-      setInput(before + `@${fileName} `);
+      setInput(before);
     }
     if (!referencedFiles.includes(fileName)) {
       setReferencedFiles(prev => [...prev, fileName]);
@@ -317,16 +317,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
         imageUrls = urls.filter((url): url is string => url !== null);
       }
 
-      // Build message with referenced file contents
+      // Build message with referenced file paths (contents will be read by the model)
       let finalMessage = input.trim();
       if (referencedFiles.length > 0) {
-        const refContents = referencedFiles
-          .filter(f => projectFiles[f])
-          .map(f => `--- @${f} ---\n${projectFiles[f].content}`)
-          .join('\n\n');
-        if (refContents) {
-          finalMessage = `${finalMessage}\n\n[Referenced Files]\n${refContents}`;
-        }
+        const refPaths = referencedFiles.map(f => `@${f}`).join(' ');
+        finalMessage = `${finalMessage}\n\n[Referenced Files: ${refPaths}]\n\nPlease read and consider the following files before making changes:\n${referencedFiles.filter(f => projectFiles[f]).map(f => `--- @${f} ---\n${projectFiles[f].content}`).join('\n\n')}`;
       }
 
       onSendMessage(finalMessage, isChatMode, imageUrls.length > 0 ? imageUrls.join(',') : undefined);
@@ -1051,11 +1046,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
             {/* Referenced Files Badges */}
             {referencedFiles.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 px-3 pt-2">
+              <div className="flex flex-wrap gap-1.5 w-full px-3 pt-2">
                 {referencedFiles.map((f, i) => (
                   <span key={i} className="flex items-center gap-1 text-[11px] font-mono bg-primary/10 text-primary px-2 py-0.5 rounded-lg border border-primary/20">
-                    @{f.split('/').pop()}
-                    <button onClick={() => setReferencedFiles(prev => prev.filter((_, idx) => idx !== i))} className="hover:text-destructive">
+                    @{f}
+                    <button type="button" onClick={() => setReferencedFiles(prev => prev.filter((_, idx) => idx !== i))} className="hover:text-destructive">
                       <X className="w-3 h-3" />
                     </button>
                   </span>
