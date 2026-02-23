@@ -14,7 +14,9 @@ import { SettingsModal } from '@/components/shared/SettingsModal';
 import { NotificationInbox } from '@/components/shared/NotificationInbox';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import { toast } from '@/hooks/use-toast';
+import { useThemePreference } from '@/hooks/useThemePreference';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
+import lightHeroBg from '@/assets/light-hero-bg.jpg';
 
 interface Project {
   id: string;
@@ -51,8 +53,13 @@ export const HomePage: React.FC<HomePageProps> = ({
 }) => {
   const { user, signOut } = useAuth();
   const { t, isRTL, language } = useLanguage();
+  const { theme } = useThemePreference();
   const { userPlan, shouldShowUpgradeBanner, canUsePrivateProjects, getRemainingCredits } = useUserPlan();
   const isPaidPlan = userPlan?.plan && userPlan.plan !== 'spark';
+
+  // Determine if dark mode is active
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const heroBg = isDark ? spaceHeroBg : lightHeroBg;
 
   const [prompt, setPrompt] = useState('');
   const [selectedFramework, setSelectedFramework] = useState('React');
@@ -182,14 +189,14 @@ export const HomePage: React.FC<HomePageProps> = ({
       className="min-h-screen relative overflow-hidden"
       dir={isRTL ? 'rtl' : 'ltr'}
       style={{
-        backgroundImage: `url(${spaceHeroBg})`,
+        backgroundImage: `url(${heroBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed'
       }}
     >
       {/* Dark overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50" />
+      <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-b from-black/30 via-transparent to-black/50' : 'bg-gradient-to-b from-white/10 via-transparent to-white/30'}`} />
 
       {/* Header */}
       <header className="relative z-[100] px-4 md:px-6 py-4">
