@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bookmark, Loader2, Pencil, FileOutput, Eye, Trash2, Image as ImageIcon, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Bookmark, Loader2, Pencil, FileOutput, Eye, Trash2, Image as ImageIcon, ChevronRight, CheckCircle2, Sparkles, Package, RotateCcw } from 'lucide-react';
 import type { ProjectVersion } from '@/hooks/useVersions';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -22,14 +22,14 @@ interface VersionCardNewProps {
   liveStatus?: string;
 }
 
-const getActionIcon = (action: string) => {
+const getActionMeta = (action: string) => {
   switch (action) {
-    case 'edited': return Pencil;
-    case 'created': return FileOutput;
-    case 'read': return Eye;
-    case 'deleted': return Trash2;
-    case 'analyzed_image': return ImageIcon;
-    default: return FileOutput;
+    case 'edited': return { Icon: Pencil, color: 'text-blue-400', bg: 'bg-blue-500/10' };
+    case 'created': return { Icon: Sparkles, color: 'text-emerald-400', bg: 'bg-emerald-500/10' };
+    case 'read': return { Icon: Eye, color: 'text-muted-foreground', bg: 'bg-secondary' };
+    case 'deleted': return { Icon: Trash2, color: 'text-red-400', bg: 'bg-red-500/10' };
+    case 'analyzed_image': return { Icon: ImageIcon, color: 'text-purple-400', bg: 'bg-purple-500/10' };
+    default: return { Icon: FileOutput, color: 'text-muted-foreground', bg: 'bg-secondary' };
   }
 };
 
@@ -46,21 +46,26 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  // Find the current (last editing) file activity during live generation
   const currentActivity = isLive
     ? [...activities].reverse().find(a => a.status === 'editing') || activities[activities.length - 1]
     : null;
 
-  const CurrentIcon = currentActivity ? getActionIcon(currentActivity.action) : null;
+  const actionMeta = currentActivity ? getActionMeta(currentActivity.action) : null;
+  const CurrentIcon = actionMeta?.Icon || null;
+
+  // Count activities by type for the completed card
+  const editCount = activities.filter(a => a.action === 'edited').length;
+  const createCount = activities.filter(a => a.action === 'created').length;
+  const totalChanges = editCount + createCount;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-xl border overflow-hidden transition-all ${
+      className={`rounded-2xl border overflow-hidden transition-all ${
         isActive
-          ? 'border-primary/40 shadow-lg shadow-primary/10'
-          : 'border-border'
+          ? 'border-primary/30 shadow-lg shadow-primary/5'
+          : 'border-border hover:border-border/80'
       }`}
     >
       <AnimatePresence mode="wait">
@@ -73,43 +78,54 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="px-4 py-3 bg-secondary/60">
-              {currentActivity && CurrentIcon ? (
+            <div className="px-4 py-3.5 bg-secondary/40">
+              {currentActivity && CurrentIcon && actionMeta ? (
                 <div className="flex items-center gap-3">
                   <motion.div
                     key={currentActivity.name}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="flex items-center gap-3 flex-1 min-w-0"
+                    className="flex items-center gap-2.5 flex-1 min-w-0"
                   >
-                    <CurrentIcon className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span className="text-xs font-medium text-primary">
-                      {t(`action.${currentActivity.action}`)}
-                    </span>
-                    <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary truncate">
-                      {currentActivity.name}
-                    </span>
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${actionMeta.bg}`}>
+                      <CurrentIcon className={`w-3.5 h-3.5 ${actionMeta.color}`} />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-semibold text-foreground/80 uppercase tracking-wide">
+                        {t(`action.${currentActivity.action}`)}
+                      </span>
+                      <span className="text-xs font-mono text-muted-foreground truncate">
+                        {currentActivity.name}
+                      </span>
+                    </div>
                   </motion.div>
-                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground ml-auto flex-shrink-0" />
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-[10px] font-medium text-muted-foreground tabular-nums">
+                      {activities.filter(a => a.status === 'done').length}/{activities.length}
+                    </span>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <Loader2 className="w-4 h-4 animate-spin text-primary flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground">Generating...</span>
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                  </div>
+                  <span className="text-xs text-muted-foreground font-medium">Generating...</span>
                 </div>
               )}
               {liveStatus && (
-                <p className="text-xs text-muted-foreground mt-1.5 truncate">{liveStatus}</p>
+                <p className="text-[11px] text-muted-foreground/70 mt-2 truncate pl-10">{liveStatus}</p>
               )}
             </div>
             {/* Details button during live */}
-            <div className="px-3 py-2.5 border-t border-border">
+            <div className="px-3 py-2.5 border-t border-border/50">
               <button
                 onClick={() => onShowDetails?.(version, activities)}
-                className="w-full text-xs font-medium py-2 text-center rounded-lg transition-colors text-muted-foreground hover:text-foreground hover:bg-accent border border-border/60"
+                className="w-full text-xs font-medium py-2 text-center rounded-xl transition-all text-muted-foreground hover:text-foreground hover:bg-accent/80 border border-border/50 hover:border-border"
               >
-                Details
+                {t('chat.details') || 'Details'}
               </button>
             </div>
           </motion.div>
@@ -121,61 +137,70 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
           >
-            {/* Header: Title + Bookmark + Rollback */}
-            <div className="flex items-center gap-3 px-4 py-3 bg-secondary/60">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-4 py-3.5 bg-secondary/30">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.1, type: 'spring', stiffness: 300, damping: 20 }}
-                className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  isActive ? 'bg-primary/15 text-primary' : 'bg-secondary text-muted-foreground'
                 }`}
               >
-                <Bookmark className="w-3.5 h-3.5" />
+                {isLatestVersion ? (
+                  <CheckCircle2 className="w-4 h-4" />
+                ) : (
+                  <Bookmark className="w-4 h-4" />
+                )}
               </motion.div>
-              <p className="text-sm font-medium text-foreground truncate flex-1">
-                {version.name || `${t('chat.version')} ${version.versionNumber}`}
-              </p>
-              {/* Rollback arrow */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {version.name || `${t('chat.version')} ${version.versionNumber}`}
+                </p>
+                {totalChanges > 0 && (
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {totalChanges} {totalChanges === 1 ? 'change' : 'changes'}
+                    {createCount > 0 && ` · ${createCount} new`}
+                  </p>
+                )}
+              </div>
+              {/* Rollback */}
               {!isLatestVersion && onRollback && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onRollback(version.versionNumber);
                   }}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
                   title={t('chat.rollback')}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                    <path d="M3 3v5h5" />
-                  </svg>
+                  <RotateCcw className="w-4 h-4" />
                 </button>
               )}
             </div>
 
-            {/* Tab buttons: Details / Preview */}
+            {/* Action buttons */}
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.3 }}
-              className="flex gap-2 px-3 py-2.5 border-t border-border"
+              className="flex gap-2 px-3 py-2.5 border-t border-border/50"
             >
               <button
                 onClick={() => onShowDetails?.(version, activities)}
-                className="flex-1 text-xs font-medium py-2 text-center rounded-lg transition-colors text-muted-foreground hover:text-foreground hover:bg-accent border border-border/60"
+                className="flex-1 text-xs font-medium py-2.5 text-center rounded-xl transition-all text-muted-foreground hover:text-foreground hover:bg-accent/80 border border-border/50 hover:border-border"
               >
-                Details
+                {t('chat.details') || 'Details'}
               </button>
               <button
                 onClick={() => onSelectVersion?.(version)}
-                className={`flex-1 text-xs font-medium py-2 text-center rounded-lg transition-colors ${
+                className={`flex-1 text-xs font-medium py-2.5 text-center rounded-xl transition-all ${
                   isActive
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent border border-border/60'
+                    ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/80 border border-border/50 hover:border-border'
                 }`}
               >
-                Preview
+                {t('chat.preview') || 'Preview'}
               </button>
             </motion.div>
           </motion.div>
