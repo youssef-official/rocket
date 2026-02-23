@@ -424,13 +424,13 @@ export default defineConfig({
       setSandboxStatus(`${reason}, restarting...`);
     };
 
-    // Check if preview URL is reachable
+    // Check if preview URL is reachable every 1 second
     const checkIframe = () => {
       fetch(previewUrl, { method: 'HEAD', mode: 'no-cors' }).catch(() => {
         restartSandbox("Preview unreachable");
       });
     };
-    const timer = setTimeout(checkIframe, 10000);
+    const intervalId = setInterval(checkIframe, 1000);
 
     // Listen for iframe errors (ERR_CONNECTION_CLOSED, etc.)
     const iframeEl = document.querySelector('iframe[data-preview]') as HTMLIFrameElement | null;
@@ -449,7 +449,7 @@ export default defineConfig({
     window.addEventListener('error', handleWindowError);
 
     return () => {
-      clearTimeout(timer);
+      clearInterval(intervalId);
       iframeEl?.removeEventListener('error', handleIframeError);
       window.removeEventListener('error', handleWindowError);
     };

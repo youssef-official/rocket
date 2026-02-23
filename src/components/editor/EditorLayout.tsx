@@ -761,11 +761,11 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               {currentView === 'database' && !showVisualEdit && (
                 <DatabasePanel projectId={project?.id || null} onSendMessage={onSendMessage} />
               )}
-              {/* Details Tab */}
+              {/* Details Tab - use live fileActivities during generation */}
               {currentView === 'details' && !showVisualEdit && detailsVersion && (
                 <DetailsPanel
                   version={detailsVersion.version}
-                  activities={detailsVersion.activities}
+                  activities={isGenerating ? fileActivities : detailsVersion.activities}
                   onClose={() => setCurrentView('preview')}
                 />
               )}
