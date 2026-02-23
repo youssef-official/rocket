@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Code2, Eye, LogOut, Settings, HelpCircle, CreditCard, Moon, Sun,
-  ChevronDown, Download, Home, ArrowLeft, Clock, Pencil, Eye as EyeIcon,
-  FolderOpen, Upload, Coins, Database, GitBranch
+  Code2, Eye, LogOut, Moon, Sun, ChevronDown, Download, Clock, Pencil,
+  Eye as EyeIcon, Upload, Coins, Database, GitBranch, Settings2,
+  BookOpen, CreditCard, CircleHelp, Rocket, Monitor, FileArchive,
+  Shield
 } from 'lucide-react';
 import githubLogo from '@/assets/logos/github.svg';
 import { ChatView } from './ChatView';
@@ -402,11 +403,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   return (
     <div className="h-screen flex flex-col bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header - Bolt Style */}
-      <header className={`h-14 flex items-center justify-between px-4 bg-card ${isRTL ? 'flex-row-reverse' : ''}`}>
+      <header className={`h-14 flex items-center justify-between px-3 md:px-4 bg-card border-b border-border/60 ${isRTL ? 'flex-row-reverse' : ''}`}>
         {/* Left Section */}
-        <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          {/* Logo - Clickable to go home */}
-          <button onClick={handleLogoClick} className="hover:opacity-80 transition-opacity">
+        <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <button onClick={handleLogoClick} className="hover:opacity-80 transition-all duration-200 hover:scale-105">
             <VivoraLogo
               size="sm"
               showText={false}
@@ -414,18 +414,18 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             />
           </button>
 
-          <div className="h-6 w-px bg-border" />
+          <div className="h-5 w-px bg-border/60" />
 
-          {/* Project Name - Dropdown */}
+          {/* Project Name Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowProjectMenu(!showProjectMenu)}
-              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-accent transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-accent/80 transition-all duration-200 group"
             >
-              <span className="text-base font-bold text-foreground truncate max-w-[280px]">
+              <span className="text-sm font-semibold text-foreground truncate max-w-[200px] md:max-w-[280px]">
                 {displayProjectName}
               </span>
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
             </button>
 
             <AnimatePresence>
@@ -436,50 +436,58 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     onClick={() => setShowProjectMenu(false)}
                   />
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className={`absolute ${isRTL ? 'right-0' : 'left-0'} top-full mt-2 w-56 bg-card border border-border rounded-lg shadow-xl overflow-hidden z-[9999]`}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className={`absolute ${isRTL ? 'right-0' : 'left-0'} top-full mt-2 w-60 bg-card border border-border/60 rounded-2xl shadow-xl shadow-black/10 overflow-hidden z-[9999]`}
                   >
-                    <button
-                      onClick={() => {
-                        setShowProjectMenu(false);
-                        // Scroll to version selector in the chat panel
-                        const versionEl = document.getElementById('version-selector-panel');
-                        if (versionEl) {
-                          versionEl.scrollIntoView({ behavior: 'smooth' });
-                        }
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                    >
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span>{t('editor.versionHistory')}</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowProjectMenu(false);
-                        setShowRenameDialog(true);
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                    >
-                      <Pencil className="w-4 h-4 text-muted-foreground" />
-                      <span>{t('editor.rename')}</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleDownload();
-                        setShowProjectMenu(false);
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                    >
-                      <Download className="w-4 h-4 text-muted-foreground" />
-                      <span>{t('editor.export')}</span>
-                      <ChevronDown className={`w-3 h-3 text-muted-foreground ${isRTL ? 'mr-auto rotate-90' : 'ml-auto -rotate-90'}`} />
-                    </button>
-                    <div className={`flex items-center gap-3 px-4 py-3 border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}>
-                      <EyeIcon className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-foreground">{t('editor.visibility')}</span>
-                      <span className={`text-xs text-muted-foreground ${isRTL ? 'mr-auto' : 'ml-auto'}`}>{t('home.private')}</span>
+                    <div className="p-1.5">
+                      <button
+                        onClick={() => {
+                          setShowProjectMenu(false);
+                          const versionEl = document.getElementById('version-selector-panel');
+                          if (versionEl) versionEl.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Clock className="w-3.5 h-3.5 text-primary" />
+                        </div>
+                        <span className="font-medium">{t('editor.versionHistory')}</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowProjectMenu(false);
+                          setShowRenameDialog(true);
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                          <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                        </div>
+                        <span className="font-medium">{t('editor.rename')}</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleDownload();
+                          setShowProjectMenu(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                          <FileArchive className="w-3.5 h-3.5 text-muted-foreground" />
+                        </div>
+                        <span className="font-medium">{t('editor.export')}</span>
+                      </button>
+                    </div>
+                    <div className="mx-3 border-t border-border/60" />
+                    <div className={`flex items-center gap-3 px-4.5 py-3 ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}>
+                      <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                        <Shield className="w-3.5 h-3.5 text-muted-foreground" />
+                      </div>
+                      <span className="text-sm font-medium text-foreground">{t('editor.visibility')}</span>
+                      <span className={`text-[11px] text-muted-foreground bg-accent px-2 py-0.5 rounded-md ${isRTL ? 'mr-auto' : 'ml-auto'}`}>{t('home.private')}</span>
                     </div>
                   </motion.div>
                 </>
@@ -489,24 +497,24 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         </div>
 
         {/* Center - View Toggle */}
-        <div className={`hidden md:flex items-center bg-secondary rounded-full p-1 border border-border absolute left-1/2 transform -translate-x-1/2`}>
+        <div className={`hidden md:flex items-center bg-secondary/80 rounded-xl p-0.5 border border-border/40 absolute left-1/2 transform -translate-x-1/2`}>
           <button
             onClick={() => setCurrentView('preview')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${currentView === 'preview' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'preview' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
           >
             <Eye className="w-3.5 h-3.5" />
             <span>{t('editor.preview')}</span>
           </button>
           <button
             onClick={() => setCurrentView('code')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${currentView === 'code' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'code' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
           >
             <Code2 className="w-3.5 h-3.5" />
             <span>{t('editor.code')}</span>
           </button>
           <button
             onClick={() => setCurrentView('database')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${currentView === 'database' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'database' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
           >
             <Database className="w-3.5 h-3.5" />
             <span>DB</span>
@@ -514,56 +522,53 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         </div>
 
         {/* Right Section */}
-        <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          {/* Credits Display Removed as requested */}
-
-          {/* Download ZIP */}
+        <div className={`flex items-center gap-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          {/* Download */}
           <button
             onClick={handleDownload}
             disabled={!project || Object.keys(project.files).length === 0}
-            className="p-2 rounded-lg hover:bg-accent transition-colors disabled:opacity-50 text-muted-foreground hover:text-foreground"
+            className="p-2 rounded-xl hover:bg-accent/80 transition-all duration-200 disabled:opacity-40 text-muted-foreground hover:text-foreground"
             title={t('editor.download')}
           >
             <Download className="w-4 h-4" />
           </button>
 
-          {/* GitHub Push Button */}
+          {/* GitHub */}
           <button
             onClick={() => setShowGitHubPush(true)}
-            className="p-2 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+            className="p-2 rounded-xl hover:bg-accent/80 transition-all duration-200 text-muted-foreground hover:text-foreground"
             title="Push to GitHub"
           >
             <img src={githubLogo} alt="GitHub" className="w-4 h-4 dark:invert" />
           </button>
 
-
-          {/* Publish Button */}
-          <button
+          {/* Publish */}
+          <motion.button
             onClick={() => setShowVercelDialog(true)}
-            className={`flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            className={`flex items-center gap-2 px-4 py-1.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-all duration-200 shadow-md shadow-primary/20 ${isRTL ? 'flex-row-reverse' : ''}`}
           >
-            <Upload className="w-4 h-4" />
+            <Rocket className="w-3.5 h-3.5" />
             {t('editor.publish')}
-          </button>
+          </motion.button>
 
           {/* User Menu */}
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-sm font-bold text-black overflow-hidden"
+              className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center text-sm font-bold text-primary-foreground overflow-hidden ring-2 ring-border/40 hover:ring-primary/30 transition-all duration-200"
             >
               {user?.avatarUrl ? (
                 <img 
                   src={user.avatarUrl} 
                   alt="" 
-                  className="w-full h-full object-cover rounded-full" 
+                  className="w-full h-full object-cover rounded-xl" 
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
                     const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerText = user?.email?.[0].toUpperCase() || 'U';
-                    }
+                    if (parent) parent.innerText = user?.email?.[0].toUpperCase() || 'U';
                   }}
                 />
               ) : (
@@ -579,91 +584,116 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     onClick={() => setShowUserMenu(false)}
                   />
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-full mt-2 w-56 bg-card border border-border rounded-lg shadow-xl overflow-hidden z-[9999]`}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-full mt-2 w-64 bg-card border border-border/60 rounded-2xl shadow-xl shadow-black/10 overflow-hidden z-[9999]`}
                   >
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        navigate('/settings');
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                    >
-                      <Settings className="w-4 h-4 text-muted-foreground" />
-                      <span>{t('common.settings')}</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        navigate('/docs');
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                    >
-                      <HelpCircle className="w-4 h-4 text-muted-foreground" />
-                      <span>{t('nav.docs')}</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        navigate('/pricing');
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                    >
-                      <CreditCard className="w-4 h-4 text-muted-foreground" />
-                      <span>{t('nav.pricing')}</span>
-                    </button>
-                    {/* Credits Display */}
+                    <div className="p-1.5">
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          navigate('/settings');
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                          <Settings2 className="w-3.5 h-3.5 text-muted-foreground" />
+                        </div>
+                        <span className="font-medium">{t('common.settings')}</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          navigate('/docs');
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                          <BookOpen className="w-3.5 h-3.5 text-muted-foreground" />
+                        </div>
+                        <span className="font-medium">{t('nav.docs')}</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          navigate('/pricing');
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                          <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
+                        </div>
+                        <span className="font-medium">{t('nav.pricing')}</span>
+                      </button>
+                    </div>
+
+                    {/* Credits */}
                     {userPlan && (
-                      <div className="px-4 py-3 border-t border-border">
+                      <div className="mx-3 border-t border-border/60" />
+                    )}
+                    {userPlan && (
+                      <div className="px-4 py-3">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <Coins className="w-4 h-4 text-yellow-500" />
-                            <span className="text-sm font-medium text-foreground">Credits</span>
+                            <div className="w-6 h-6 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                              <Coins className="w-3.5 h-3.5 text-yellow-500" />
+                            </div>
+                            <span className="text-xs font-semibold text-foreground">Credits</span>
                           </div>
-                          <span className="text-sm font-bold text-yellow-500">
+                          <span className="text-xs font-bold text-yellow-500">
                             {getRemainingCredits().total.toFixed(1)}
                           </span>
                         </div>
-                        <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                        <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 transition-all duration-300"
+                            className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full transition-all duration-500"
                             style={{
                               width: `${Math.min(100, (getRemainingCredits().total / (userPlan.dailyCredits + PLAN_CONFIG[userPlan.plan].monthlyCredits || 5)) * 100)}%`
                             }}
                           />
                         </div>
-                        <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
+                        <div className="flex items-center justify-between mt-1.5 text-[11px] text-muted-foreground">
                           <span>Daily: {getRemainingCredits().daily.toFixed(1)}</span>
                           <span>Monthly: {getRemainingCredits().monthly.toFixed(1)}</span>
                         </div>
                       </div>
                     )}
-                    {/* Theme Toggle */}
-                    <button
-                      onClick={() => {
-                        toggleTheme();
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-sm text-foreground border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                    >
-                      {theme === 'dark' ? (
-                        <Moon className="w-4 h-4 text-muted-foreground" />
-                      ) : theme === 'light' ? (
-                        <Sun className="w-4 h-4 text-muted-foreground" />
-                      ) : (
-                        <Settings className="w-4 h-4 text-muted-foreground" />
-                      )}
-                      <span>{t('common.theme')}</span>
-                      <span className={`text-xs text-muted-foreground capitalize ${isRTL ? 'mr-auto' : 'ml-auto'}`}>{theme}</span>
-                    </button>
-                    <button
-                      onClick={() => signOut()}
-                      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-destructive/10 text-destructive transition-colors border-t border-border ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>{t('common.signOut')}</span>
-                    </button>
+
+                    <div className="mx-3 border-t border-border/60" />
+                    <div className="p-1.5">
+                      {/* Theme */}
+                      <button
+                        onClick={() => toggleTheme()}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                          {theme === 'dark' ? (
+                            <Moon className="w-3.5 h-3.5 text-muted-foreground" />
+                          ) : theme === 'light' ? (
+                            <Sun className="w-3.5 h-3.5 text-muted-foreground" />
+                          ) : (
+                            <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <span className="font-medium">{t('common.theme')}</span>
+                        <span className={`text-[11px] text-muted-foreground bg-accent px-2 py-0.5 rounded-md capitalize ${isRTL ? 'mr-auto' : 'ml-auto'}`}>{theme}</span>
+                      </button>
+
+                      <div className="my-1 mx-3 border-t border-border/60" />
+
+                      {/* Sign out */}
+                      <button
+                        onClick={() => signOut()}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-destructive/10 rounded-xl transition-all duration-200 text-sm text-destructive ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
+                          <LogOut className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="font-medium">{t('common.signOut')}</span>
+                      </button>
+                    </div>
                   </motion.div>
                 </>
               )}
@@ -849,14 +879,14 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       <AnimatePresence>
         {showRenameDialog && (
           <>
-            <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={() => setShowRenameDialog(false)} />
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]" onClick={() => setShowRenameDialog(false)} />
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className="fixed inset-0 flex items-center justify-center z-[9999] pointer-events-none"
             >
-              <div className="bg-card border border-border rounded-xl shadow-2xl p-6 w-full max-w-md pointer-events-auto">
+              <div className="bg-card border border-border/60 rounded-2xl shadow-2xl shadow-black/20 p-6 w-full max-w-md pointer-events-auto">
                 <h2 className="text-lg font-bold text-foreground mb-1">{t('editor.rename')}</h2>
                 <p className="text-sm text-muted-foreground mb-4">{isRTL ? 'أدخل اسم جديد للمشروع' : 'Enter a new name for your project'}</p>
                 <input
@@ -874,12 +904,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                       setShowRenameDialog(false);
                     }
                   }}
-                  className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+                  className="w-full px-4 py-2.5 bg-secondary/80 border border-border/60 rounded-xl text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 mb-4 transition-all duration-200"
                 />
                 <div className={`flex gap-2 justify-end ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <button
                     onClick={() => setShowRenameDialog(false)}
-                    className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-colors"
+                    className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-xl hover:bg-accent/80 transition-all duration-200 font-medium"
                   >
                     {isRTL ? 'إلغاء' : 'Cancel'}
                   </button>
@@ -892,7 +922,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                       }
                       setShowRenameDialog(false);
                     }}
-                    className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+                    className="px-5 py-2 text-sm bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all duration-200 font-semibold shadow-md shadow-primary/20"
                   >
                     {isRTL ? 'حفظ' : 'Save'}
                   </button>
