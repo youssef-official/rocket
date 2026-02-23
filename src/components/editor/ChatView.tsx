@@ -935,7 +935,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
         <form onSubmit={handleSubmit}>
           {/* Input Container */}
-          <div className="max-w-3xl mx-auto rounded-2xl border shadow-sm flex items-end p-1.5 transition-all bg-secondary/80 border-border focus-within:border-primary/30 focus-within:shadow-md focus-within:shadow-primary/5">
+          <div className="max-w-3xl mx-auto rounded-2xl border shadow-sm flex items-end flex-wrap p-1.5 transition-all bg-secondary/80 border-border focus-within:border-primary/30 focus-within:shadow-md focus-within:shadow-primary/5 relative">
             {/* Plus Button */}
             <div className="relative">
               <button
@@ -1065,18 +1065,18 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
             {/* @ Mention Dropdown */}
             <AnimatePresence>
-              {showAtMenu && filteredFiles.length > 0 && (
+              {showAtMenu && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 8 }}
                   transition={{ duration: 0.12 }}
-                  className="absolute bottom-full left-0 mb-1 w-72 max-h-60 overflow-y-auto bg-card rounded-xl border border-border shadow-xl z-50"
+                  className="absolute bottom-full left-2 right-2 mb-1 max-h-64 overflow-y-auto bg-card rounded-xl border border-border shadow-xl z-[60]"
                 >
                   <div className="px-3 py-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide border-b border-border">
                     {t('chat.referenceFile')}
                   </div>
-                  {filteredFiles.map((fileName, i) => {
+                  {filteredFiles.length > 0 ? filteredFiles.map((fileName, i) => {
                     const shortName = fileName.split('/').pop() || fileName;
                     const dir = fileName.includes('/') ? fileName.slice(0, fileName.lastIndexOf('/')) : '';
                     return (
@@ -1087,10 +1087,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       >
                         {getFileIcon(fileName)}
                         <span className="text-sm text-foreground truncate">{shortName}</span>
-                        {dir && <span className="text-[10px] text-muted-foreground ml-auto truncate max-w-[80px]">{dir}</span>}
+                        {dir && <span className="text-[10px] text-muted-foreground ml-auto truncate max-w-[120px]">{dir}</span>}
                       </button>
                     );
-                  })}
+                  }) : (
+                    <div className="px-3 py-4 text-sm text-muted-foreground text-center">
+                      No files found
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
