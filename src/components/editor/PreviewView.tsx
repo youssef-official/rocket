@@ -5,11 +5,10 @@ import type { ProjectFile } from '@/types';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { toast } from 'sonner';
 
-// URL of your deployed Modal Function. 
-// For local dev, you might use something like:
-// "https://<your-username>--rocket-preview-create-sandbox-dev.modal.run"
-// TODO: Replace this with the actual URL or an environment variable
-const MODAL_CREATE_URL = import.meta.env.VITE_MODAL_API_URL || "";
+// Use the edge function proxy to avoid CORS issues with Modal
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
+const MODAL_PROXY_URL = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/modal-proxy` : "";
 
 interface PreviewViewProps {
   files: Record<string, ProjectFile>;
@@ -287,15 +286,19 @@ export default defineConfig({
       // Don't create if already exists or invalid URL
       if (sandboxId) return;
 
-      if (!MODAL_CREATE_URL) {
-        setSandboxStatus("Please configure MODAL_CREATE_URL in PreviewView.tsx or .env");
+      if (!MODAL_PROXY_URL) {
+        setSandboxStatus("Backend proxy not configured");
         return;
       }
 
       try {
         setSandboxStatus("Booting Modal Sandbox...");
-        const response = await fetch(MODAL_CREATE_URL, {
+        const response = await fetch(MODAL_PROXY_URL, {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+          },
         });
 
         if (!response.ok) throw new Error('Failed to create sandbox');
