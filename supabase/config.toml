@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.screenshot-test]
 verify_jwt = false
+
+[functions.modal-proxy]
+verify_jwt = false
