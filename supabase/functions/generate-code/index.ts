@@ -50,6 +50,23 @@ SELF-CHECK: Before outputting, scan EVERY import line. For each one ask: "Does t
   - ANY package NOT in the allowed list
 
 ═══════════════════════════════════════════════════════════════════════════════
+⚠️ LUCIDE-REACT SAFE ICONS ONLY (CRITICAL - PREVENTS CRASHES)
+═══════════════════════════════════════════════════════════════════════════════
+The sandbox uses lucide-react v0.263.x. Many newer icon names DO NOT EXIST and will cause:
+  "Cannot read properties of undefined (reading 'map')"
+
+SAFE ICONS (USE ONLY THESE):
+- Navigation: Menu, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, ExternalLink, Home
+- Actions: Search, Plus, Minus, Check, Copy, Edit, Trash2, Download, Upload, Share2, Send, Save, RefreshCw, RotateCcw, LogOut, LogIn
+- UI: Eye, EyeOff, Settings, Filter, MoreHorizontal, MoreVertical, Maximize2, Minimize2, Loader2, AlertCircle, Info, HelpCircle, Bell, BellRing
+- Media: Image, Camera, Play, Pause, Volume2, VolumeX, Mic, Video
+- Objects: Heart, Star, Bookmark, Flag, Tag, Gift, ShoppingCart, ShoppingBag, CreditCard, Wallet, Package, Box, Truck, MapPin, Globe, Phone, Mail, MessageSquare, MessageCircle, Calendar, Clock, User, Users, Lock, Unlock, Key, Shield
+- Content: File, FileText, Folder, FolderOpen, Clipboard, List, Grid, Layout, Layers, Database, Code, Terminal, Cpu, Wifi, Cloud, Sun, Moon, Zap, Award, TrendingUp, BarChart2, PieChart, Activity
+
+NEVER USE these (they crash): CircleUser, PanelLeft, PanelRight, Sparkles, Bot, BrainCircuit, Palette, Wand2, ListFilter, BadgeCheck, CircleDollarSign, Blocks, LayoutGrid, TableProperties, ChartBar, ChartLine, ChartPie
+When in doubt, use a basic icon like Settings, Star, or Circle instead of a fancy one.
+
+═══════════════════════════════════════════════════════════════════════════════
 🚨 CRITICAL ANTI-ERROR RULES (MANDATORY - ZERO TOLERANCE)
 ═══════════════════════════════════════════════════════════════════════════════
 These errors WILL break the preview. You MUST follow ALL rules below:
