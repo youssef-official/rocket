@@ -44,7 +44,7 @@ export const FAQ: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col">
       <SEOHead
         title="FAQ — Vivora X Frequently Asked Questions"
         description="Find answers to common questions about Vivora X vibe coding platform. Learn about deployment, GitHub integration, and more."
@@ -52,26 +52,36 @@ export const FAQ: React.FC = () => {
         canonical="https://vivorax.online/faq"
       />
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 px-6 py-4 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <a href="/" className="flex items-center gap-3">
-            <VivoraLogo size="md" />
-            <div className="h-5 w-px bg-border" />
-            <span className="text-foreground/70 font-medium text-sm">FAQ</span>
-          </a>
-          <a 
-            href="/"
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </a>
-        </div>
-      </header>
+      <div
+        className="flex-1 relative"
+        style={{
+          backgroundImage: `url(${spaceHeroBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+        }}
+      >
+        <div className="absolute inset-0 bg-black/70" />
 
-      <main className="flex-1">
-        <div className="max-w-3xl mx-auto px-6 py-20">
+        {/* Header */}
+        <header className="relative z-10 px-6 py-4 border-b border-white/10">
+          <div className="max-w-5xl mx-auto flex items-center justify-between">
+            <a href="/" className="flex items-center gap-3">
+              <VivoraLogo size="md" />
+              <span className="text-white/60">|</span>
+              <span className="text-white font-medium text-sm">FAQ</span>
+            </a>
+            <a 
+              href="/"
+              className="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </a>
+          </div>
+        </header>
+
+        <div className="relative z-10 max-w-3xl mx-auto px-6 py-20">
           {/* Hero */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -79,14 +89,14 @@ export const FAQ: React.FC = () => {
             transition={{ duration: 0.5 }}
             className="text-center mb-16"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-              <HelpCircle className="w-4 h-4" />
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-white text-sm font-medium mb-6">
+              <HelpCircle className="w-4 h-4 text-pink-400" />
               Help Center
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 tracking-tight">
-              Frequently Asked Questions
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+              Got <span className="text-pink-400">Questions?</span>
             </h1>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+            <p className="text-white/70 text-lg max-w-xl mx-auto">
               Everything you need to know about Vivora X.
             </p>
           </motion.div>
@@ -106,8 +116,8 @@ export const FAQ: React.FC = () => {
                   <div
                     className={`rounded-2xl border transition-all duration-200 ${
                       isOpen
-                        ? 'border-primary/30 bg-primary/5 shadow-lg shadow-primary/5'
-                        : 'border-border bg-card hover:border-primary/20 hover:shadow-md'
+                        ? 'border-pink-500/30 bg-white/10 shadow-lg shadow-pink-500/10'
+                        : 'border-white/10 bg-white/5 backdrop-blur-xl hover:bg-white/10 hover:border-white/20'
                     }`}
                   >
                     <button
@@ -115,18 +125,18 @@ export const FAQ: React.FC = () => {
                       className="w-full flex items-center gap-4 p-5 text-left"
                     >
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
-                        isOpen ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                        isOpen ? 'bg-pink-500 text-white' : 'bg-white/10 text-white/60'
                       }`}>
                         <Icon className="w-5 h-5" />
                       </div>
-                      <span className="flex-1 font-semibold text-foreground">
+                      <span className="flex-1 font-semibold text-white">
                         {item.question}
                       </span>
                       <motion.div
                         animate={{ rotate: isOpen ? 180 : 0 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                        <ChevronDown className="w-5 h-5 text-white/50" />
                       </motion.div>
                     </button>
 
@@ -140,7 +150,7 @@ export const FAQ: React.FC = () => {
                           className="overflow-hidden"
                         >
                           <div className="px-5 pb-5 pl-[4.75rem]">
-                            <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                            <p className="text-white/70 leading-relaxed whitespace-pre-line">
                               {item.answer}
                             </p>
                           </div>
@@ -160,21 +170,20 @@ export const FAQ: React.FC = () => {
             transition={{ delay: 0.5 }}
             className="mt-20"
           >
-            <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-10 text-center">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-pink-500/20 to-purple-500/20 backdrop-blur-xl p-10 text-center">
               <div className="relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
-                  <Mail className="w-7 h-7 text-primary" />
+                <div className="w-14 h-14 rounded-2xl bg-pink-500/20 flex items-center justify-center mx-auto mb-5">
+                  <Mail className="w-7 h-7 text-pink-400" />
                 </div>
-                <h2 className="text-2xl font-bold text-foreground mb-3">
+                <h2 className="text-2xl font-bold text-white mb-3">
                   Still have questions?
                 </h2>
-                <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+                <p className="text-white/70 mb-8 max-w-md mx-auto">
                   Our support team is happy to help you with anything.
                 </p>
                 <a
                   href="mailto:support@vivorax.online"
-                  className="inline-flex items-center gap-2 px-7 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-full transition-colors"
+                  className="inline-flex items-center gap-2 px-7 py-3 bg-pink-500 hover:bg-pink-600 text-white font-medium rounded-full transition-colors"
                 >
                   <Mail className="w-4 h-4" />
                   Contact Support
@@ -183,7 +192,7 @@ export const FAQ: React.FC = () => {
             </div>
           </motion.div>
         </div>
-      </main>
+      </div>
 
       <Footer />
     </div>
