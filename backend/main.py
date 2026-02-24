@@ -21,26 +21,32 @@ image = (
     .add_local_file("server.py", "/root/server.py")
 )
 
-# Middleware to allow iframe embedding and handle CORS preflights
-class IframeMiddleware(BaseHTTPMiddleware):
+# Definitive CORS and Iframe Middleware
+class ForceCORSAndIframeMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        # Handle Preflight (OPTIONS) requests immediately with status 204
         if request.method == "OPTIONS":
             response = Response(status_code=204)
-        else:
-            response = await call_next(request)
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            return response
+            
+        # Proceed with actual request
+        response = await call_next(request)
         
-        # Remove restrictive headers to allow iframe embedding
+        # Inject CORS headers into the response
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        
+        # Inject Iframe embedding headers
         response.headers.pop("X-Frame-Options", None)
         response.headers.pop("Content-Security-Policy", None)
-        
-        # Explicitly allow embedding from any origin
         response.headers["X-Frame-Options"] = "ALLOWALL"
         response.headers["Content-Security-Policy"] = "frame-ancestors *"
-        
-        # Ensure CORS headers are present for the response
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "*"
-        response.headers["Access-Control-Allow-Headers"] = "*"
         
         return response
 
@@ -53,22 +59,21 @@ def create_sandbox():
 
     web_app = FastAPI()
 
-    # Add standard CORS middleware
+    # Add the custom middleware as the FIRST one to catch all requests and preflights
+    web_app.add_middleware(ForceCORSAndIframeMiddleware)
+
+    # Standard FastAPI CORS middleware as backup
     web_app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_credentials=False,
+        allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
-    # Add our custom IframeMiddleware to allow embedding
-    web_app.add_middleware(IframeMiddleware)
-
     @web_app.post("/")
     def create():
-        # Create a Sandbox running our server.py
-        # We expose port 8000 (API) and 5173 (Vite Preview)
+        # Create a Sandbox running our server.py with 5-minute timeout
         sandbox = modal.Sandbox.create(
             "python", "/root/server.py",
             image=image,
