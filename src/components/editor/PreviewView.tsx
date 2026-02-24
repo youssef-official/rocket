@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
 const MODAL_PROXY_URL = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/modal-proxy` : "";
+const CUSTOM_PREVIEW_DOMAIN = "vivorax.online";
 
 interface PreviewViewProps {
   files: Record<string, ProjectFile>;
@@ -555,7 +556,9 @@ export default defineConfig({
             {sandboxId ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 mr-0.5 animate-pulse"></span>
-                <span className="hidden sm:inline">Live Preview</span>
+                <span className="hidden sm:inline truncate max-w-[240px]" title={previewUrl || ''}>
+                  {projectId ? `${projectId.substring(0, 8)}...${CUSTOM_PREVIEW_DOMAIN}` : 'Live Preview'}
+                </span>
                 <span className="sm:hidden">Live</span>
               </>
             ) : (
