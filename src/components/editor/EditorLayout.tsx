@@ -520,6 +520,18 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                       </button>
                       <button
                         onClick={() => {
+                          setShowProjectMenu(false);
+                          window.location.href = `/projects/${project?.id}/settings`;
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+                          <Settings2 className="w-3.5 h-3.5 text-muted-foreground" />
+                        </div>
+                        <span className="font-medium">Project Settings</span>
+                      </button>
+                      <button
+                        onClick={() => {
                           handleDownload();
                           setShowProjectMenu(false);
                         }}
