@@ -446,7 +446,18 @@ export default defineConfig({
       if (elapsed < 20000) return; // 20s grace period after ready
 
       fetch(previewUrl, { method: 'HEAD', mode: 'no-cors' })
-        .then(() => { consecutiveFailsRef.current = 0; })
+        .then((res) => {
+          // 520 = origin server error (sandbox expired/crashed)
+          if (res.status === 520 || res.status === 502 || res.status === 503) {
+            consecutiveFailsRef.current += 1;
+            if (consecutiveFailsRef.current >= 2) {
+              consecutiveFailsRef.current = 0;
+              restartSandbox("Sandbox expired");
+            }
+          } else {
+            consecutiveFailsRef.current = 0;
+          }
+        })
         .catch(() => {
           consecutiveFailsRef.current += 1;
           if (consecutiveFailsRef.current >= 3) {
