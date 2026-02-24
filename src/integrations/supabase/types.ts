@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_model_config: {
+        Row: {
+          api_key_secret_name: string
+          created_at: string
+          created_by: string | null
+          display_name: string
+          gateway_url: string
+          id: string
+          is_active: boolean
+          model_id: string
+          provider: string
+          target_plan: string
+          updated_at: string
+        }
+        Insert: {
+          api_key_secret_name?: string
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          gateway_url?: string
+          id?: string
+          is_active?: boolean
+          model_id?: string
+          provider?: string
+          target_plan?: string
+          updated_at?: string
+        }
+        Update: {
+          api_key_secret_name?: string
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          gateway_url?: string
+          id?: string
+          is_active?: boolean
+          model_id?: string
+          provider?: string
+          target_plan?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       blog_categories: {
         Row: {
           created_at: string
