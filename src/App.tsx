@@ -1111,16 +1111,27 @@ const AppContent = () => {
     // Upload image and store URL in sessionStorage for initial generation
     if (imageFile) {
       try {
-        const fileName = `${Date.now()}-${imageFile.name}`;
-        const { data, error } = await supabase.storage
-          .from('chat-images')
-          .upload(fileName, imageFile);
+        const formData = new FormData();
+        formData.append('file', imageFile);
 
-        if (!error) {
-          const { data: urlData } = supabase.storage
-            .from('chat-images')
-            .getPublicUrl(fileName);
-          sessionStorage.setItem(`project_image_${newProject.id}`, urlData.publicUrl);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-image`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: formData,
+          }
+        );
+
+        if (res.ok) {
+          const result = await res.json();
+          sessionStorage.setItem(`project_image_${newProject.id}`, result.url);
         }
       } catch (e) {
         console.error('Failed to upload image:', e);

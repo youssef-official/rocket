@@ -283,29 +283,37 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     setCurrentView('details');
   }, []);
 
-  // Handle image upload to Supabase storage
+  // Handle image upload to Cloudflare R2 via edge function
   const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
     try {
-      const fileName = `${Date.now()}-${file.name}`;
-      const bucket = file.type.startsWith('image/') ? 'chat-images' : 'chat-images';
-      
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, file);
+      const formData = new FormData();
+      formData.append('file', file);
 
-      if (error) {
-        console.error('Error uploading file:', error);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-image`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: formData,
+        }
+      );
+
+      if (!res.ok) {
+        console.error('Error uploading file:', await res.text());
         return null;
       }
 
-      const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(fileName);
+      const result = await res.json();
+      const publicUrl = result.url;
 
       // For non-image files, prefix with file type info so the AI knows what it is
-      const publicUrl = urlData.publicUrl;
       if (!file.type.startsWith('image/')) {
-        // Return URL with metadata prefix for context
         const ext = file.name.split('.').pop()?.toLowerCase() || '';
         return `[FILE:${ext}:${file.name}]${publicUrl}`;
       }
