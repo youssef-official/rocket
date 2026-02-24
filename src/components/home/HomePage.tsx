@@ -29,7 +29,7 @@ interface Project {
 }
 
 interface HomePageProps {
-  onStartBuilding: (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageFile?: File) => void;
+  onStartBuilding: (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageFiles?: File[]) => void;
   onViewDashboard?: () => void;
   onOpenProject?: (id: string) => void;
   onDeleteProject?: (id: string) => void;
@@ -70,10 +70,12 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
   const [showVisibilityMenu, setShowVisibilityMenu] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState<{
+  const [uploadedImages, setUploadedImages] = useState<{
     file: File;
     preview: string;
-  } | null>(null);
+    uploading: boolean;
+    url?: string;
+  }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -136,34 +138,40 @@ export const HomePage: React.FC<HomePageProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    // Block image upload for free plan
     if (!isPaidPlan) {
       toast({ title: 'Upgrade Required', description: 'Image upload is available on paid plans only.', variant: 'destructive' });
       return;
     }
-    const files = e.dataTransfer.files;
-    if (files && files[0] && files[0].type.startsWith('image/')) {
-      const file = files[0];
-      const preview = URL.createObjectURL(file);
-      setUploadedImage({ file, preview });
-    }
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')).slice(0, 5 - uploadedImages.length);
+    if (files.length === 0) return;
+    const newEntries = files.map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+      uploading: false,
+    }));
+    setUploadedImages(prev => [...prev, ...newEntries]);
   };
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isPaidPlan) {
       toast({ title: 'Upgrade Required', description: 'Image upload is available on paid plans only.', variant: 'destructive' });
       return;
     }
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      const preview = URL.createObjectURL(file);
-      setUploadedImage({ file, preview });
-    }
+    const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/')).slice(0, 5 - uploadedImages.length);
+    if (files.length === 0) return;
+    const newEntries = files.map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+      uploading: false,
+    }));
+    setUploadedImages(prev => [...prev, ...newEntries]);
   };
-  const removeUploadedImage = () => {
-    if (uploadedImage) {
-      URL.revokeObjectURL(uploadedImage.preview);
-      setUploadedImage(null);
-    }
+  const removeUploadedImage = (index: number) => {
+    setUploadedImages(prev => {
+      const updated = [...prev];
+      URL.revokeObjectURL(updated[index].preview);
+      updated.splice(index, 1);
+      return updated;
+    });
   };
 
   const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -180,7 +188,8 @@ export const HomePage: React.FC<HomePageProps> = ({
     if (prompt.trim() && !isSubmitting) {
       setIsSubmitting(true);
       const projectType = selectedFramework === 'React' || selectedFramework === 'Next.js' ? 'vite' : 'html';
-      onStartBuilding(prompt, projectType, undefined, uploadedImage?.file);
+      const files = uploadedImages.map(img => img.file);
+      onStartBuilding(prompt, projectType, undefined, files.length > 0 ? files : undefined);
     }
   };
 
@@ -330,27 +339,27 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
               )}
 
-              {/* Uploaded Image Preview */}
-              {uploadedImage && (
+              {/* Uploaded Images Preview */}
+              {uploadedImages.length > 0 && (
                 <div className={`px-4 pt-4 ${isRTL ? 'text-right' : ''}`}>
-                  <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <div className="relative">
-                      <img
-                        src={uploadedImage.preview}
-                        alt="Uploaded"
-                        className="w-16 h-16 object-cover rounded-lg border border-gray-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={removeUploadedImage}
-                        className={`absolute -top-2 ${isRTL ? '-left-2' : '-right-2'} w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors`}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <span className="text-sm text-gray-500 truncate max-w-[200px]">
-                      {uploadedImage.file.name}
-                    </span>
+                  <div className={`flex flex-wrap items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    {uploadedImages.map((img, index) => (
+                      <div key={index} className="relative group/upload">
+                        <img
+                          src={img.preview}
+                          alt={`Upload ${index + 1}`}
+                          className="w-16 h-16 object-cover rounded-lg border border-border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeUploadedImage(index)}
+                          className={`absolute -top-2 ${isRTL ? '-left-2' : '-right-2'} w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover/upload:opacity-100 transition-opacity`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    <span className="text-[10px] text-muted-foreground self-end mb-1">{uploadedImages.length}/5</span>
                   </div>
                 </div>
               )}
