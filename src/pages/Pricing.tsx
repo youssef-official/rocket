@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, X, Zap, Star, Crown, Rocket, ArrowLeft, Globe } from 'lucide-react';
+import { Check, X, Zap, Crown, Rocket, ArrowLeft, Globe } from 'lucide-react';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,10 +10,9 @@ import { SEOHead } from '@/components/shared/SEOHead';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 const plans: { key: PlanType; icon: React.ReactNode; color: string; emoji: string; popular?: boolean }[] = [
-  { key: 'spark',   icon: <Zap className="w-5 h-5" />,    color: 'gray',   emoji: '🆓' },
-  { key: 'builder', icon: <Star className="w-5 h-5" />,   color: 'blue',   emoji: '🔨' },
-  { key: 'creator', icon: <Crown className="w-5 h-5" />,  color: 'purple', emoji: '⚡', popular: true },
-  { key: 'scale',   icon: <Rocket className="w-5 h-5" />, color: 'orange', emoji: '🚀' }
+  { key: 'free',     icon: <Zap className="w-5 h-5" />,    color: 'gray',   emoji: '🆓' },
+  { key: 'pro',      icon: <Crown className="w-5 h-5" />,  color: 'purple', emoji: '⚡', popular: true },
+  { key: 'business', icon: <Rocket className="w-5 h-5" />, color: 'orange', emoji: '🚀' }
 ];
 
 export const Pricing: React.FC = () => {
@@ -32,7 +31,7 @@ export const Pricing: React.FC = () => {
     >
       <SEOHead
         title="Pricing — Vivora X Plans & Credits"
-        description="Choose your Vivora X plan. Free, Builder, Creator, or Scale — get daily & monthly credits, ZIP export, private projects, and deploy to Vercel. Start vibe coding today."
+        description="Choose your Vivora X plan. Free, Pro, or Business — get daily & monthly credits, ZIP export, private projects, and deploy to Vercel. Start vibe coding today."
         keywords="vivora x pricing, vibe coding plans, vivorax credits, AI web builder pricing, free AI coding tool, web app builder plans"
         canonical="https://vivorax.online/pricing"
       />
@@ -52,7 +51,7 @@ export const Pricing: React.FC = () => {
       </header>
 
       <main className="relative z-10 px-4 py-12">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           {/* Hero */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
@@ -62,7 +61,7 @@ export const Pricing: React.FC = () => {
           </motion.div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
             {plans.map(({ key, icon, color, emoji, popular }, index) => {
               const config = PLAN_CONFIG[key];
               return (
@@ -84,7 +83,6 @@ export const Pricing: React.FC = () => {
                     <div className="flex items-center gap-3 mb-3">
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
                         color === 'gray' ? 'bg-gray-500/20 text-gray-400' :
-                        color === 'blue' ? 'bg-blue-500/20 text-blue-400' :
                         color === 'purple' ? 'bg-purple-500/20 text-purple-400' :
                         'bg-orange-500/20 text-orange-400'
                       }`}>
@@ -130,9 +128,9 @@ export const Pricing: React.FC = () => {
                       ))}
                     </ul>
 
-                    {key !== 'spark' && user ? (
+                    {key !== 'free' && user ? (
                       <PayPalButton plan={key} onSuccess={() => window.location.reload()} className="!rounded-xl" />
-                    ) : key !== 'spark' ? (
+                    ) : key !== 'free' ? (
                       <a href="/login" className="w-full py-2.5 rounded-xl font-medium transition-colors bg-white/10 hover:bg-white/20 text-white block text-center text-sm">
                         {t('auth.goToLogin')}
                       </a>
@@ -164,13 +162,13 @@ export const Pricing: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {[
-                    { label: 'Price', vals: ['$0', '$9/mo', '$15/mo', '$22/mo'] },
-                    { label: 'Daily Credits', vals: ['5', '5', '5', '5'] },
-                    { label: 'Monthly Credits', vals: ['—', '+40', '+50', '+70'] },
-                    { label: 'Vercel Deploy', vals: ['✅', '✅', '✅', '✅'] },
-                    { label: 'ZIP Export', vals: ['❌', '✅', '✅', '✅'] },
-                    { label: 'Private Projects', vals: ['❌', '❌', '✅', '✅'] },
-                    { label: 'Priority Access', vals: ['❌', '❌', '❌', '✅'] },
+                    { label: 'Price', vals: ['$0', '$15/mo', '$29/mo'] },
+                    { label: 'Daily Credits', vals: ['3', '5', '10'] },
+                    { label: 'Monthly Credits', vals: ['—', '+150', '+400'] },
+                    { label: 'Vercel Deploy', vals: ['✅', '✅', '✅'] },
+                    { label: 'ZIP Export', vals: ['❌', '✅', '✅'] },
+                    { label: 'Private Projects', vals: ['❌', '✅', '✅'] },
+                    { label: 'Priority Access', vals: ['❌', '❌', '✅'] },
                   ].map((row, i) => (
                     <tr key={row.label} className={i % 2 === 0 ? '' : 'bg-white/3'}>
                       <td className="text-white/70 px-5 py-3.5 text-sm font-medium">{row.label}</td>
@@ -209,7 +207,7 @@ export const Pricing: React.FC = () => {
             <div className="grid md:grid-cols-3 gap-5 text-left max-w-4xl mx-auto">
               {[
                 { q: 'How are credits used?', a: 'Each AI generation uses credits based on file count (0.5–3 credits). Simple edits cost less.' },
-                { q: 'When do credits reset?', a: 'Daily credits (5/day) reset at UTC midnight. Monthly credits are granted on subscription renewal.' },
+                { q: 'When do credits reset?', a: 'Daily credits reset at UTC midnight. Monthly credits are granted on subscription renewal.' },
                 { q: 'Can I cancel anytime?', a: 'Yes! If you cancel, you keep your plan until the end of the billing cycle, then revert to Free.' },
               ].map((faq) => (
                 <div key={faq.q} className="bg-white/5 rounded-xl p-5 border border-white/10">

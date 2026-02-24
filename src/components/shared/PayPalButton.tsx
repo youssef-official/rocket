@@ -21,7 +21,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ plan, onSuccess, dis
   const config = PLAN_CONFIG[plan];
 
   const handlePayment = async () => {
-    if (!user || disabled || plan === 'spark') return;
+    if (!user || disabled || plan === 'free') return;
 
     setLoading(true);
     setStatus('creating');
@@ -81,7 +81,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ plan, onSuccess, dis
     }
   };
 
-  if (plan === 'spark') return null;
+  if (plan === 'free') return null;
 
   return (
     <button

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Zap, Star, Crown, Rocket } from 'lucide-react';
+import { X, Check, Zap, Crown, Rocket } from 'lucide-react';
 import { useUserPlan, PLAN_CONFIG, type PlanType } from '@/hooks/useUserPlan';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { PayPalButton } from '@/components/shared/PayPalButton';
@@ -20,23 +20,24 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
   const { t, isRTL } = useLanguage();
 
   const plans: { key: PlanType; icon: React.ReactNode; color: string; popular?: boolean }[] = [
-    { key: 'spark', icon: <Zap className="w-5 h-5" />, color: 'gray' },
-    { key: 'builder', icon: <Star className="w-5 h-5" />, color: 'blue' },
-    { key: 'creator', icon: <Crown className="w-5 h-5" />, color: 'purple', popular: true },
-    { key: 'scale', icon: <Rocket className="w-5 h-5" />, color: 'orange' }
+    { key: 'free', icon: <Zap className="w-5 h-5" />, color: 'gray' },
+    { key: 'pro', icon: <Crown className="w-5 h-5" />, color: 'purple', popular: true },
+    { key: 'business', icon: <Rocket className="w-5 h-5" />, color: 'orange' }
   ];
 
   const getFeaturesList = (planKey: PlanType) => {
     const config = PLAN_CONFIG[planKey];
     const features: { text: string; included: boolean }[] = [];
 
-    if (planKey === 'spark') {
+    if (planKey === 'free') {
       features.push({ text: `${config.dailyCredits} Credits / day`, included: true });
     } else {
       features.push({ text: `${config.dailyCredits} Credits / day + ${config.monthlyCredits} / month`, included: true });
     }
 
     features.push({ text: 'ZIP Export', included: config.features.zipExport });
+    features.push({ text: 'Private Projects', included: config.features.privateProjects });
+    features.push({ text: 'Priority Access', included: config.features.priorityAccess });
 
     return features;
   };
@@ -56,7 +57,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl"
+            className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl"
           >
             {/* Header */}
             <div className={`flex items-center justify-between p-6 border-b border-border ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -77,7 +78,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
             </div>
 
             {/* Plans Grid */}
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               {plans.map(({ key, icon, color, popular }) => {
                 const config = PLAN_CONFIG[key];
                 const isCurrentPlan = userPlan?.plan === key;
@@ -104,7 +105,6 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
                     <div className={`flex items-center gap-3 mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                         color === 'gray' ? 'bg-gray-500/20 text-gray-400' :
-                        color === 'blue' ? 'bg-blue-500/20 text-blue-400' :
                         color === 'purple' ? 'bg-purple-500/20 text-purple-400' :
                         'bg-orange-500/20 text-orange-400'
                       }`}>
@@ -139,21 +139,21 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
                     </ul>
 
                     <button
-                      disabled={isCurrentPlan || key === 'spark'}
+                      disabled={isCurrentPlan || key === 'free'}
                       className={`w-full py-2.5 rounded-lg font-medium transition-colors ${
                         isCurrentPlan
                           ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                          : key === 'spark'
+                          : key === 'free'
                             ? 'bg-secondary text-foreground'
                             : popular || isHighlighted
                               ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                               : 'bg-secondary text-foreground hover:bg-accent'
                       }`}
                     >
-                      {isCurrentPlan ? t('upgrade.currentPlan') : key === 'spark' ? 'Free' : t('upgrade.selectPlan')}
+                      {isCurrentPlan ? t('upgrade.currentPlan') : key === 'free' ? 'Free' : t('upgrade.selectPlan')}
                     </button>
 
-                    {key !== 'spark' && !isCurrentPlan && (
+                    {key !== 'free' && !isCurrentPlan && (
                       <PayPalButton
                         plan={key}
                         onSuccess={() => { onClose(); window.location.reload(); }}
@@ -172,7 +172,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
                 <p className="text-muted-foreground text-sm mb-4">
                   Each successful generation costs 1 credit. Daily credits reset at UTC midnight.
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {Object.entries(PLAN_CONFIG).map(([key, config]) => (
                     <div key={key} className="bg-background/50 rounded-lg p-3 border border-border/50 text-center">
                       <div className="text-yellow-400 font-bold text-lg">{config.dailyCredits}/day</div>

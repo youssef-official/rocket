@@ -34,7 +34,7 @@ export async function checkCreditsAvailable(userId: string): Promise<boolean> {
     const dailyCredits = toNumber(userPlan.daily_credits);
     const usedToday = toNumber(userPlan.credits_used_today);
     const totalUsed = toNumber(userPlan.total_credits_used);
-    const plan = (userPlan.plan as PlanType) || 'spark';
+    const plan = (userPlan.plan as PlanType) || 'free';
     const monthlyMax = PLAN_CONFIG[plan]?.monthlyCredits ?? 0;
 
     const dailyRemaining = Math.max(0, dailyCredits - usedToday);
@@ -75,9 +75,9 @@ export async function deductCredits(
         .from('user_plans')
         .insert([{
           user_id: userId,
-          plan: 'spark',
-          daily_credits: 5,
-          max_daily_credits: 5,
+          plan: 'free',
+          daily_credits: 3,
+          max_daily_credits: 3,
           credits_used_today: 0,
           total_credits_used: 0,
           monthly_credits: 0,
@@ -100,7 +100,7 @@ export async function deductCredits(
     const dailyCredits = toNumber(userPlan.daily_credits);
     const usedToday = toNumber(userPlan.credits_used_today);
     const totalUsed = toNumber(userPlan.total_credits_used);
-    const plan = (userPlan.plan as PlanType) || 'spark';
+    const plan = (userPlan.plan as PlanType) || 'free';
     const monthlyMax = PLAN_CONFIG[plan]?.monthlyCredits ?? 0;
 
     const dailyRemaining = Math.max(0, dailyCredits - usedToday);

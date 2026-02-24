@@ -14,10 +14,9 @@ const features = [
 ];
 
 const plans = [
-  { name: 'Spark', price: 'Free', daily: '5/day', monthly: '—', color: 'from-gray-400 to-gray-500' },
-  { name: 'Builder', price: '$9/mo', daily: '5/day', monthly: '+40/mo', color: 'from-blue-400 to-blue-600' },
-  { name: 'Creator', price: '$15/mo', daily: '5/day', monthly: '+50/mo', color: 'from-pink-400 to-pink-600', popular: true },
-  { name: 'Scale', price: '$22/mo', daily: '5/day', monthly: '+70/mo', color: 'from-purple-400 to-purple-600' },
+  { name: 'Free', price: 'Free', daily: '3/day', monthly: '—', color: 'from-gray-400 to-gray-500' },
+  { name: 'Pro', price: '$15/mo', daily: '5/day', monthly: '+150/mo', color: 'from-pink-400 to-pink-600', popular: true },
+  { name: 'Business', price: '$29/mo', daily: '10/day', monthly: '+400/mo', color: 'from-purple-400 to-purple-600' },
 ];
 
 const whyDifferent = [
@@ -116,7 +115,7 @@ export const NewVibeTool: React.FC = () => {
             Simple <span className="text-pink-400">Pricing</span>
           </motion.h2>
           <p className="text-white/60 text-center mb-12 max-w-xl mx-auto">Start free. Upgrade when you need more power. No hidden fees, no surprises.</p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-3 gap-6">
             {plans.map((plan, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className={`bg-white/5 backdrop-blur-md border rounded-2xl p-6 relative ${plan.popular ? 'border-pink-500/50 ring-1 ring-pink-500/30' : 'border-white/10'}`}>
                 {plan.popular && (
