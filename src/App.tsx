@@ -1238,6 +1238,7 @@ import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import AboutUs from "@/pages/AboutUs";
 // AdminPanel already imported at the top
+import ProjectSettings from "@/pages/ProjectSettings";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -1252,6 +1253,7 @@ const App = () => (
               <Route path="/login" element={<AuthPage onSuccess={() => window.location.href = '/'} />} />
               <Route path="/dashboard" element={<DashboardRoute />} />
               <Route path="/projects/:id" element={<ProjectEditorRoute />} />
+              <Route path="/projects/:id/settings" element={<ProjectSettings />} />
               <Route path="/view/:projectId" element={<ProjectView />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/docs" element={<Docs />} />
