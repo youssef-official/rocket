@@ -278,8 +278,8 @@ export const HomePage: React.FC<HomePageProps> = ({
           {/* Logo Section - Right in AR, Left in EN */}
           <div className={`flex items-center gap-2 ${isRTL ? 'order-3' : 'order-1'}`}>
             <VivoraLogo
-              size={isRTL ? 'sm' : 'md'}
-              className={isRTL ? 'mr-1 origin-right scale-95' : ''}
+              size="sm"
+              className="scale-90 origin-left"
             />
             <span className="bg-white/20 text-white px-2.5 py-0.5 rounded-full hidden sm:inline text-[10px] font-semibold tracking-widest uppercase">{isRTL ? 'تجريبي' : 'BETA'}</span>
           </div>
