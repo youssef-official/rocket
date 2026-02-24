@@ -1,9 +1,6 @@
 import modal
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
 import time
 
 # Define the Modal App
@@ -18,37 +15,8 @@ image = (
     .pip_install("fastapi", "uvicorn")
     .run_commands("npm install -g vite")
     .run_commands("mkdir -p /app")
-    .add_local_file("server.py", "/root/server.py")
+    .add_local_file("/home/ubuntu/rocket/backend/server.py", "/root/server.py")
 )
-
-# Definitive CORS and Iframe Middleware
-class ForceCORSAndIframeMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        # Handle Preflight (OPTIONS) requests immediately with status 204
-        if request.method == "OPTIONS":
-            response = Response(status_code=204)
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-            response.headers["Access-Control-Allow-Headers"] = "*"
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            return response
-            
-        # Proceed with actual request
-        response = await call_next(request)
-        
-        # Inject CORS headers into the response
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        
-        # Inject Iframe embedding headers
-        response.headers.pop("X-Frame-Options", None)
-        response.headers.pop("Content-Security-Policy", None)
-        response.headers["X-Frame-Options"] = "ALLOWALL"
-        response.headers["Content-Security-Policy"] = "frame-ancestors *"
-        
-        return response
 
 # Web Endpoint to spawn sandboxes
 @app.function(image=image, timeout=300)
@@ -59,21 +27,18 @@ def create_sandbox():
 
     web_app = FastAPI()
 
-    # Add the custom middleware as the FIRST one to catch all requests and preflights
-    web_app.add_middleware(ForceCORSAndIframeMiddleware)
-
-    # Standard FastAPI CORS middleware as backup
     web_app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_credentials=True,
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
     @web_app.post("/")
     def create():
-        # Create a Sandbox running our server.py with 5-minute timeout
+        # Create a Sandbox running our server.py
+        # We expose port 8000 (API) and 5173 (Vite Preview)
         sandbox = modal.Sandbox.create(
             "python", "/root/server.py",
             image=image,
