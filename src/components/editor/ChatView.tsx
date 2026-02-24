@@ -186,7 +186,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 }) => {
   const { t } = useLanguage();
   const { userPlan } = useUserPlan();
-  const isPaidPlan = userPlan?.plan && userPlan.plan !== 'spark';
+  const isPaidPlan = userPlan?.plan && userPlan.plan !== 'free';
   const [input, setInput] = useState('');
   const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({});
   const [isChatMode, setIsChatMode] = useState(false);

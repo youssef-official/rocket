@@ -1,6 +1,6 @@
 // Shared plan configuration (single source of truth)
 
-export type PlanType = 'spark' | 'builder' | 'creator' | 'scale';
+export type PlanType = 'free' | 'pro' | 'business';
 
 export const PLAN_CONFIG: Record<
   PlanType,
@@ -16,10 +16,10 @@ export const PLAN_CONFIG: Record<
     };
   }
 > = {
-  spark: {
+  free: {
     name: 'Free',
     price: 0,
-    dailyCredits: 5,
+    dailyCredits: 3,
     monthlyCredits: 0,
     features: {
       zipExport: false,
@@ -27,33 +27,22 @@ export const PLAN_CONFIG: Record<
       priorityAccess: false,
     },
   },
-  builder: {
-    name: 'Builder',
-    price: 9,
-    dailyCredits: 5,
-    monthlyCredits: 40,
-    features: {
-      zipExport: true,
-      privateProjects: false,
-      priorityAccess: false,
-    },
-  },
-  creator: {
-    name: 'Creator',
+  pro: {
+    name: 'Pro',
     price: 15,
     dailyCredits: 5,
-    monthlyCredits: 50,
+    monthlyCredits: 150,
     features: {
       zipExport: true,
       privateProjects: true,
       priorityAccess: false,
     },
   },
-  scale: {
-    name: 'Scale',
-    price: 22,
-    dailyCredits: 5,
-    monthlyCredits: 70,
+  business: {
+    name: 'Business',
+    price: 29,
+    dailyCredits: 10,
+    monthlyCredits: 400,
     features: {
       zipExport: true,
       privateProjects: true,

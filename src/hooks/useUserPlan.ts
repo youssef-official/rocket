@@ -51,9 +51,9 @@ export function useUserPlan() {
             .from('user_plans')
             .insert([{
               user_id: user.id,
-              plan: 'spark',
-              daily_credits: 5,
-              max_daily_credits: 5,
+              plan: 'free',
+              daily_credits: 3,
+              max_daily_credits: 3,
               credits_used_today: 0,
               total_credits_used: 0,
               monthly_credits: 0,
@@ -131,7 +131,7 @@ export function useUserPlan() {
   // Check if user can use private projects
   const canUsePrivateProjects = useCallback(() => {
     if (!userPlan) return false;
-    return userPlan.plan === 'creator' || userPlan.plan === 'scale';
+    return userPlan.plan === 'pro' || userPlan.plan === 'business';
   }, [userPlan]);
 
   // Check if user can export ZIP

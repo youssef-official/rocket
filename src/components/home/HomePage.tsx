@@ -55,7 +55,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   const { t, isRTL, language } = useLanguage();
   const { theme } = useThemePreference();
   const { userPlan, shouldShowUpgradeBanner, canUsePrivateProjects, getRemainingCredits } = useUserPlan();
-  const isPaidPlan = userPlan?.plan && userPlan.plan !== 'spark';
+  const isPaidPlan = userPlan?.plan && userPlan.plan !== 'free';
 
   // Determine if dark mode is active
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);

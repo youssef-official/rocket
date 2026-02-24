@@ -75,7 +75,7 @@ export async function callingDirectAI(
         body: JSON.stringify({ 
             mode, 
             messages: formattedMessages,
-            userPlan: userPlan || 'spark',
+            userPlan: userPlan || 'free',
             userLanguage: userLanguage || 'en'
         }),
         signal

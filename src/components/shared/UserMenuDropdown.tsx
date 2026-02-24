@@ -85,7 +85,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
   };
 
   const remainingCredits = getRemainingCredits();
-  const planConfig = userPlan ? PLAN_CONFIG[userPlan.plan] : PLAN_CONFIG.spark;
+  const planConfig = userPlan ? PLAN_CONFIG[userPlan.plan] : PLAN_CONFIG.free;
   const totalCredits = (userPlan?.dailyCredits || 5) + planConfig.monthlyCredits;
   const usedCredits = totalCredits - remainingCredits.total;
   const usagePercent = totalCredits > 0 ? (usedCredits / totalCredits) * 100 : 0;
@@ -192,7 +192,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
 
             <div className="p-1.5">
               {/* Upgrade for Spark */}
-              {userPlan?.plan === 'spark' && !showBanner && onUpgradeClick && (
+              {userPlan?.plan === 'free' && !showBanner && onUpgradeClick && (
                 <button
                   type="button"
                   onClick={(e) => {
