@@ -846,7 +846,7 @@ USER_LANGUAGE=${userLanguage || 'en'}
 
     console.log(`[generate-code] Mode: ${mode}, Messages: ${messages.length}, userPlan: "${userPlan}"`);
 
-    // Determine max tokens and model based on mode
+    // Determine max tokens based on mode
     const maxTokens =
       mode === "code"
         ? 100000
@@ -863,12 +863,42 @@ USER_LANGUAGE=${userLanguage || 'en'}
     // Use non-streaming for credit mode (need JSON response)
     const shouldStream = mode !== "credit";
 
-    // All plans use the same model
-    const model = "google/gemini-3-flash";
+    // ═══════════════════════════════════════════════════════════════════
+    // DYNAMIC MODEL CONFIG FROM DATABASE
+    // ═══════════════════════════════════════════════════════════════════
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-    const VERCEL_AI_KEY = Deno.env.get("VERCEL_AI_API_KEY") || LOVABLE_API_KEY;
-    const gatewayUrl = "https://ai-gateway.vercel.sh/v1/chat/completions";
-    const authToken = VERCEL_AI_KEY;
+    let model = "google/gemini-3-flash";
+    let gatewayUrl = "https://ai-gateway.vercel.sh/v1/chat/completions";
+    let apiKeySecretName = "VERCEL_AI_API_KEY";
+
+    try {
+      // Fetch active model config for the user's plan
+      const configRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/ai_model_config?is_active=eq.true&or=(target_plan.eq.${userPlan || 'free'},target_plan.eq.all)&order=target_plan.desc&limit=1`,
+        {
+          headers: {
+            "apikey": SUPABASE_SERVICE_ROLE_KEY,
+            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+        }
+      );
+      if (configRes.ok) {
+        const configs = await configRes.json();
+        if (configs && configs.length > 0) {
+          const cfg = configs[0];
+          model = cfg.model_id;
+          gatewayUrl = cfg.gateway_url;
+          apiKeySecretName = cfg.api_key_secret_name;
+          console.log(`[generate-code] Using dynamic model: ${model} (provider: ${cfg.provider}, plan: ${cfg.target_plan})`);
+        }
+      }
+    } catch (cfgErr) {
+      console.warn("[generate-code] Failed to fetch model config, using defaults:", cfgErr);
+    }
+
+    const authToken = Deno.env.get(apiKeySecretName) || Deno.env.get("VERCEL_AI_API_KEY") || LOVABLE_API_KEY;
 
     const response = await fetch(gatewayUrl, {
       method: "POST",
