@@ -802,6 +802,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 <PreviewView
                   files={project?.files || {}}
                   projectType={project?.projectType || 'vite'}
+                  projectId={project?.id}
                   isLoading={isGenerating && !isChatMode}
                   onPreviewError={(errorLog) => {
                     onSendMessage(`[AUTO-FIX] The preview has console errors. Please fix them:\n\n${errorLog}`, false);
@@ -869,6 +870,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               <PreviewView
                 files={project?.files || {}}
                 projectType={project?.projectType || 'vite'}
+                projectId={project?.id}
                 isLoading={isGenerating && !isChatMode}
                 onPreviewError={(errorLog) => {
                   onSendMessage(`[AUTO-FIX] The preview has console errors. Please fix them:\n\n${errorLog}`, false);

@@ -18,13 +18,15 @@ export default {
     if (parts.length < 3) {
       return new Response("Invalid subdomain", { status: 400 });
     }
-    const sandboxId = parts[0];
+    const subdomain = parts[0];
 
-    if (sandboxId === "www" || sandboxId === "") {
+    if (subdomain === "www" || subdomain === "") {
       return new Response("Not a preview subdomain", { status: 404 });
     }
 
-    const lookupUrl = `${env.SUPABASE_URL}/rest/v1/sandbox_mappings?sandbox_id=ilike.${encodeURIComponent(sandboxId)}&select=preview_url`;
+    // Lookup by subdomain (which is now project_id or sandbox_id)
+    // Use ilike for case-insensitive matching
+    const lookupUrl = `${env.SUPABASE_URL}/rest/v1/sandbox_mappings?sandbox_id=ilike.${encodeURIComponent(subdomain)}&select=preview_url,api_url`;
 
     const lookupRes = await fetch(lookupUrl, {
       headers: {
@@ -39,12 +41,13 @@ export default {
 
     const mappings = await lookupRes.json();
     if (!mappings.length) {
-      return new Response(`Sandbox "${sandboxId}" not found`, { status: 404 });
+      return new Response(`Sandbox "${subdomain}" not found`, { status: 404 });
     }
 
     const targetBase = mappings[0].preview_url;
     const targetUrl = targetBase + url.pathname + url.search;
 
+    // WebSocket upgrade for HMR
     if (request.headers.get("Upgrade") === "websocket") {
       return fetch(targetUrl, { headers: request.headers });
     }

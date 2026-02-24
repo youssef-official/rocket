@@ -14,6 +14,7 @@ const CUSTOM_PREVIEW_DOMAIN = "vivorax.online";
 interface PreviewViewProps {
   files: Record<string, ProjectFile>;
   projectType: 'vite' | 'html';
+  projectId?: string;
   isLoading?: boolean;
   onPreviewError?: (errorLog: string) => void;
   onPreviewUrlChange?: (url: string | null) => void;
@@ -115,7 +116,7 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
   );
 };
 
-export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, isLoading, onPreviewError, onPreviewUrlChange }) => {
+export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, projectId, isLoading, onPreviewError, onPreviewUrlChange }) => {
   const [viewMode, setViewMode] = React.useState<'desktop' | 'mobile'>('desktop');
   const [sandboxId, setSandboxId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -300,6 +301,7 @@ export default defineConfig({
             'Content-Type': 'application/json',
             'apikey': SUPABASE_ANON_KEY,
           },
+          body: JSON.stringify({ project_id: projectId || '' }),
         });
 
         if (!response.ok) throw new Error('Failed to create sandbox');
@@ -324,7 +326,7 @@ export default defineConfig({
     if (Object.keys(files).length > 0) {
       createSandbox();
     }
-  }, [sandboxId, files, projectType]);
+  }, [sandboxId, files, projectType, projectId]);
 
   // Sync Files Logic - with better change detection
   useEffect(() => {
@@ -550,15 +552,18 @@ export default defineConfig({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="text-xs text-muted-foreground mr-2 font-mono flex items-center">
+          <div className="text-xs text-muted-foreground mr-2 font-mono flex items-center gap-2">
             {sandboxId ? (
               <>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
-                Live Preview
+                <span className="w-2 h-2 rounded-full bg-emerald-500 mr-0.5 animate-pulse"></span>
+                <span className="hidden sm:inline truncate max-w-[200px]" title={previewUrl || ''}>
+                  {projectId ? `${projectId.substring(0, 8)}...${CUSTOM_PREVIEW_DOMAIN}` : 'Live Preview'}
+                </span>
+                <span className="sm:hidden">Live</span>
               </>
             ) : (
               <>
-                <span className="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>
+                <span className="w-2 h-2 rounded-full bg-amber-500 mr-0.5"></span>
                 Starting...
               </>
             )}

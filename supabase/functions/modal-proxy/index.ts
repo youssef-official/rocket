@@ -24,6 +24,15 @@ serve(async (req) => {
       );
     }
 
+    // Parse request body for project_id
+    let projectId = "";
+    try {
+      const body = await req.json();
+      projectId = body.project_id || "";
+    } catch {
+      // No body or invalid JSON - projectId stays empty
+    }
+
     // Forward the POST to Modal's create-sandbox endpoint
     console.log("Fetching Modal URL:", MODAL_URL);
     const response = await fetch(MODAL_URL, {
@@ -46,6 +55,9 @@ serve(async (req) => {
     const modalData = JSON.parse(data);
     const { sandbox_id, api_url, preview_url } = modalData;
 
+    // Use project_id as the subdomain key if provided, otherwise fall back to sandbox_id
+    const subdomainKey = projectId || sandbox_id;
+
     // Save mapping to Supabase using service role
     try {
       const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
@@ -54,20 +66,23 @@ serve(async (req) => {
       if (supabaseUrl && supabaseKey) {
         const supabase = createClient(supabaseUrl, supabaseKey);
         
+        // Upsert using the subdomain key (project_id or sandbox_id)
+        // This ensures reconnections update the same row
         await supabase.from("sandbox_mappings").upsert({
-          sandbox_id,
+          sandbox_id: subdomainKey.toLowerCase(),
           preview_url,
           api_url,
+          project_id: projectId || null,
         }, { onConflict: "sandbox_id" });
         
-        console.log("Saved sandbox mapping:", sandbox_id);
+        console.log("Saved sandbox mapping:", subdomainKey, "-> preview:", preview_url);
       }
     } catch (dbError) {
       console.error("Failed to save sandbox mapping (non-fatal):", dbError);
     }
 
-    // Return response with custom domain URL (lowercase for DNS compatibility)
-    const customPreviewUrl = `https://${sandbox_id.toLowerCase()}.${CUSTOM_PREVIEW_DOMAIN}`;
+    // Return response with custom domain URL using the stable subdomain
+    const customPreviewUrl = `https://${subdomainKey.toLowerCase()}.${CUSTOM_PREVIEW_DOMAIN}`;
     
     const enrichedResponse = {
       ...modalData,
