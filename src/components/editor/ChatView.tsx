@@ -1101,7 +1101,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               onChange={(e) => handleInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={isChatMode ? t('chat.planPlaceholder') : t('chat.placeholder')}
-              disabled={isGenerating}
+              disabled={false}
               className="flex-1 bg-transparent resize-none max-h-32 py-2.5 px-3 text-[15px] outline-none text-foreground placeholder-muted-foreground/60"
               rows={1}
               style={{ minHeight: '40px' }}
