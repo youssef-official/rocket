@@ -176,15 +176,57 @@ export const Docs: React.FC = () => {
           title: 'Available Plans',
           description: 'Choose the plan that fits your needs:',
           steps: [
-            'Spark (Free) — 3 daily credits, perfect for testing and learning',
-            'Builder ($9/mo) — 40 daily credits, for indie developers',
-            'Creator ($15/mo) — 50 daily credits + private projects',
-            'Scale ($22/mo) — 70 daily credits + priority access',
+            'Free ($0) — 3 daily credits, public projects only, no ZIP export',
+            'Pro ($15/mo) — 5 daily + 150 monthly credits, ZIP export, private projects',
+            'Business ($29/mo) — 10 daily + 400 monthly credits, ZIP export, private projects, priority access',
           ],
         },
         {
-          title: 'Daily Credit Reset',
-          description: 'Daily credits reset automatically at UTC midnight. When you visit the site the next day, your credits are refreshed instantly.',
+          title: 'Daily & Monthly Credits',
+          description: 'Daily credits reset automatically at UTC midnight. Monthly credits are added when your subscription renews. Daily credits are consumed first, then monthly credits.',
+        },
+      ],
+    },
+    {
+      id: 'github',
+      title: 'GitHub Publishing',
+      icon: GitBranch,
+      content: [
+        {
+          title: 'Push to GitHub',
+          description: 'Connect your GitHub account and push your Vivora X projects directly to any repository. Each version can be committed as a new update.',
+        },
+        {
+          title: 'How to Connect GitHub',
+          description: 'Follow these steps to set up GitHub integration:',
+          steps: [
+            'Go to Settings from the top menu',
+            'Navigate to the GitHub section',
+            'Enter your GitHub Personal Access Token (PAT)',
+            'Click Connect — your username will appear once connected',
+          ],
+        },
+        {
+          title: 'Publishing a Project',
+          description: 'Once connected, you can push any project:',
+          steps: [
+            'Open your project in the editor',
+            'Click the GitHub icon in the header toolbar',
+            'Choose to create a new repository or push to an existing one',
+            'Enter the repository name and click Push',
+            'A README is auto-generated with your project details',
+            'Subsequent pushes update the same repo with new commits',
+          ],
+        },
+        {
+          title: 'Tips',
+          description: 'Keep in mind:',
+          steps: [
+            'Your GitHub repo link is saved per project for easy re-pushing',
+            'The "Update Changes" button appears after the first push for quick updates',
+            'You can push after rolling back to a previous version',
+            'Your PAT needs the "repo" scope for full access',
+          ],
         },
       ],
     },
