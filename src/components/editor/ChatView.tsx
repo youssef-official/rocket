@@ -165,6 +165,13 @@ const getActionIcon = (action: string) => {
   }
 };
 
+const normalizePublicImageUrl = (url: string): string => {
+  const trimmed = (url || '').trim();
+  if (!trimmed) return '';
+  if (/^(https?:\/\/|data:|blob:)/i.test(trimmed)) return trimmed;
+  return `https://${trimmed.replace(/^\/+/, '')}`;
+};
+
 export const ChatView: React.FC<ChatViewProps> = ({
   messages,
   onSendMessage,
@@ -259,11 +266,18 @@ export const ChatView: React.FC<ChatViewProps> = ({
     for (const entry of newFiles) {
       if (onImageUpload) {
         onImageUpload(entry.file).then(url => {
+          const normalizedUrl = normalizePublicImageUrl(url || '');
+          if (!normalizedUrl) {
+            setUploadedImages(prev => prev.filter(img => img.file !== entry.file));
+            toast({ title: 'Upload failed', description: 'Could not upload file. Please try again.', variant: 'destructive' });
+            return;
+          }
           setUploadedImages(prev => prev.map(img => 
-            img.file === entry.file ? { ...img, uploading: false, url: url || undefined } : img
+            img.file === entry.file ? { ...img, uploading: false, url: normalizedUrl } : img
           ));
         }).catch(() => {
           setUploadedImages(prev => prev.filter(img => img.file !== entry.file));
+          toast({ title: 'Upload failed', description: 'Could not upload file. Please try again.', variant: 'destructive' });
         });
       }
     }
@@ -335,7 +349,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       if (stillUploading) return;
 
       const imageUrls = uploadedImages
-        .map(img => img.url)
+        .map(img => normalizePublicImageUrl(img.url || ''))
         .filter((url): url is string => !!url);
 
       // Build message with referenced file paths (contents will be read by the model)
@@ -409,11 +423,18 @@ export const ChatView: React.FC<ChatViewProps> = ({
     for (const entry of newFiles) {
       if (onImageUpload) {
         onImageUpload(entry.file).then(url => {
+          const normalizedUrl = normalizePublicImageUrl(url || '');
+          if (!normalizedUrl) {
+            setUploadedImages(prev => prev.filter(img => img.file !== entry.file));
+            toast({ title: 'Upload failed', description: 'Could not upload file. Please try again.', variant: 'destructive' });
+            return;
+          }
           setUploadedImages(prev => prev.map(img => 
-            img.file === entry.file ? { ...img, uploading: false, url: url || undefined } : img
+            img.file === entry.file ? { ...img, uploading: false, url: normalizedUrl } : img
           ));
         }).catch(() => {
           setUploadedImages(prev => prev.filter(img => img.file !== entry.file));
+          toast({ title: 'Upload failed', description: 'Could not upload file. Please try again.', variant: 'destructive' });
         });
       }
     }
@@ -785,9 +806,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-br-md shadow-sm text-[15px] break-words whitespace-pre-wrap overflow-hidden bg-primary text-primary-foreground ml-auto">
                       {msg.imageUrl && (
                         <div className="mb-2 flex flex-wrap gap-2">
-                          {msg.imageUrl.split(',').map((url, i) => (
-                            <img key={i} src={url} alt={`Attached ${i + 1}`} className="max-w-full max-h-48 rounded-lg object-cover ring-1 ring-white/20" />
-                          ))}
+                          {msg.imageUrl
+                            .split(',')
+                            .map(url => normalizePublicImageUrl(url))
+                            .filter(Boolean)
+                            .map((url, i) => (
+                              <img key={i} src={url} alt={`Attached ${i + 1}`} className="max-w-full max-h-48 rounded-lg object-cover ring-1 ring-white/20" />
+                            ))}
                         </div>
                       )}
                       {msg.content}
@@ -1181,10 +1206,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
             ) : (
               <motion.button
                 type="submit"
-                disabled={!input.trim()}
+                disabled={!input.trim() || uploadedImages.some(img => img.uploading)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mb-0.5 mr-0.5 transition-all ${input.trim()
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mb-0.5 mr-0.5 transition-all ${input.trim() && !uploadedImages.some(img => img.uploading)
                   ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30'
                   : 'bg-muted text-muted-foreground'
                   }`}
