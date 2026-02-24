@@ -20,51 +20,61 @@ image = (
     .add_local_file("server.py", "/root/server.py")
 )
 
-
-# Middleware to allow iframe embedding
-class IframeMiddleware(BaseHTTPMiddleware):
+# Definitive CORS and Iframe Middleware
+class CORSAndIframeMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        # Handle Preflight (OPTIONS) requests immediately
+        if request.method == "OPTIONS":
+            response = Response(status_code=204)
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            return response
+            
+        # Proceed with actual request
         response = await call_next(request)
-        # Remove restrictive headers
+        
+        # Inject CORS headers into the response
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        
+        # Inject Iframe embedding headers
         response.headers.pop("X-Frame-Options", None)
         response.headers.pop("Content-Security-Policy", None)
-        # Allow embedding from any origin
         response.headers["X-Frame-Options"] = "ALLOWALL"
         response.headers["Content-Security-Policy"] = "frame-ancestors *"
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "*"
-        response.headers["Access-Control-Allow-Headers"] = "*"
+        
         return response
 
-
 # Web Endpoint to spawn sandboxes
-@app.function(image=image, timeout=600)
+@app.function(image=image, timeout=480)
 @modal.asgi_app()
 def create_sandbox():
-    from fastapi import FastAPI
-    from fastapi.middleware.cors import CORSMiddleware
-
     web_app = FastAPI()
 
-    # Add iframe-friendly headers
-    web_app.add_middleware(IframeMiddleware)
+    # Add the custom middleware as the FIRST one to catch all requests
+    web_app.add_middleware(CORSAndIframeMiddleware)
 
+    # Standard FastAPI CORS middleware as backup
     web_app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_credentials=False,
+        allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
     @web_app.post("/")
-    def create():
-        # Create a Sandbox with proper permissions
+    async def create():
+        # Create a Sandbox with 8-minute timeout
         sandbox = modal.Sandbox.create(
             "python", "/root/server.py",
             image=image,
             encrypted_ports=[8000, 5173],
-            timeout=600,  # 10 minutes
+            timeout=480,  # 8 minutes
         )
 
         print(f"Sandbox created: {sandbox.object_id}")
@@ -80,7 +90,7 @@ def create_sandbox():
         }
 
     @web_app.get("/health")
-    def health():
+    async def health():
         return {"status": "ok"}
 
     return web_app
