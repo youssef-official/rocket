@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Send, Paperclip, Lock, Globe, X, Image as ImageIcon, ChevronDown, Sparkles, BookOpen, CircleHelp, LogIn, Wand2, ArrowUpRight, Plus } from 'lucide-react';
 import { UserMenuDropdown } from '@/components/shared/UserMenuDropdown';
@@ -17,6 +17,7 @@ import { toast } from '@/hooks/use-toast';
 import { useThemePreference } from '@/hooks/useThemePreference';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 import lightHeroBg from '@/assets/light-hero-bg.jpg';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Project {
   id: string;
@@ -29,7 +30,7 @@ interface Project {
 }
 
 interface HomePageProps {
-  onStartBuilding: (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageFiles?: File[]) => void;
+  onStartBuilding: (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageUrls?: string[]) => void;
   onViewDashboard?: () => void;
   onOpenProject?: (id: string) => void;
   onDeleteProject?: (id: string) => void;
@@ -61,7 +62,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const heroBg = isDark ? spaceHeroBg : lightHeroBg;
 
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState(() => localStorage.getItem('vivora_home_prompt') || '');
   const [selectedFramework, setSelectedFramework] = useState('React');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -77,6 +78,11 @@ export const HomePage: React.FC<HomePageProps> = ({
     url?: string;
   }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Persist prompt to localStorage
+  useEffect(() => {
+    localStorage.setItem('vivora_home_prompt', prompt);
+  }, [prompt]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Typing animation words based on language
@@ -134,6 +140,52 @@ export const HomePage: React.FC<HomePageProps> = ({
     e.preventDefault();
     e.stopPropagation();
   };
+  const uploadFileToR2 = useCallback(async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-image`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: formData,
+        }
+      );
+      if (res.ok) {
+        const result = await res.json();
+        return result.url as string;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const uploadImmediately = useCallback((files: File[]) => {
+    const newEntries = files.map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+      uploading: true,
+    }));
+    setUploadedImages(prev => [...prev, ...newEntries]);
+
+    for (const entry of newEntries) {
+      uploadFileToR2(entry.file).then(url => {
+        setUploadedImages(prev => prev.map(img =>
+          img.file === entry.file ? { ...img, uploading: false, url: url || undefined } : img
+        ));
+      }).catch(() => {
+        setUploadedImages(prev => prev.filter(img => img.file !== entry.file));
+      });
+    }
+  }, [uploadFileToR2]);
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -144,12 +196,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')).slice(0, 5 - uploadedImages.length);
     if (files.length === 0) return;
-    const newEntries = files.map(file => ({
-      file,
-      preview: URL.createObjectURL(file),
-      uploading: false,
-    }));
-    setUploadedImages(prev => [...prev, ...newEntries]);
+    uploadImmediately(files);
   };
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isPaidPlan) {
@@ -158,12 +205,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
     const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/')).slice(0, 5 - uploadedImages.length);
     if (files.length === 0) return;
-    const newEntries = files.map(file => ({
-      file,
-      preview: URL.createObjectURL(file),
-      uploading: false,
-    }));
-    setUploadedImages(prev => [...prev, ...newEntries]);
+    uploadImmediately(files);
   };
   const removeUploadedImage = (index: number) => {
     setUploadedImages(prev => {
@@ -185,11 +227,13 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (prompt.trim() && !isSubmitting) {
+    const stillUploading = uploadedImages.some(img => img.uploading);
+    if (prompt.trim() && !isSubmitting && !stillUploading) {
       setIsSubmitting(true);
       const projectType = selectedFramework === 'React' || selectedFramework === 'Next.js' ? 'vite' : 'html';
-      const files = uploadedImages.map(img => img.file);
-      onStartBuilding(prompt, projectType, undefined, files.length > 0 ? files : undefined);
+      const urls = uploadedImages.map(img => img.url).filter((u): u is string => !!u);
+      localStorage.removeItem('vivora_home_prompt');
+      onStartBuilding(prompt, projectType, undefined, urls.length > 0 ? urls : undefined);
     }
   };
 
@@ -345,11 +389,18 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <div className={`flex flex-wrap items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     {uploadedImages.map((img, index) => (
                       <div key={index} className="relative group/upload">
-                        <img
-                          src={img.preview}
-                          alt={`Upload ${index + 1}`}
-                          className="w-16 h-16 object-cover rounded-lg border border-border"
-                        />
+                        <div className="relative w-16 h-16">
+                          <img
+                            src={img.preview}
+                            alt={`Upload ${index + 1}`}
+                            className={`w-16 h-16 object-cover rounded-lg border border-border transition-opacity ${img.uploading ? 'opacity-50' : ''}`}
+                          />
+                          {img.uploading && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            </div>
+                          )}
+                        </div>
                         <button
                           type="button"
                           onClick={() => removeUploadedImage(index)}

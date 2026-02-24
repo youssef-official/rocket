@@ -187,7 +187,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const { t } = useLanguage();
   const { userPlan } = useUserPlan();
   const isPaidPlan = userPlan?.plan && userPlan.plan !== 'free';
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(() => localStorage.getItem('vivora_chat_input') || '');
   const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({});
   const [isChatMode, setIsChatMode] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<{ file: File; preview: string; uploading: boolean; url?: string }[]>([]);
@@ -269,6 +269,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
     }
   };
 
+  // Persist chat input to localStorage
+  useEffect(() => {
+    localStorage.setItem('vivora_chat_input', input);
+  }, [input]);
+
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
@@ -343,6 +348,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       onSendMessage(finalMessage, isChatMode, imageUrls.length > 0 ? imageUrls.join(',') : undefined);
 
       setInput('');
+      localStorage.removeItem('vivora_chat_input');
       setUploadedImages([]);
       setReferencedFiles([]);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
