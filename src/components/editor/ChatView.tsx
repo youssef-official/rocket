@@ -811,7 +811,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                             .map(url => normalizePublicImageUrl(url))
                             .filter(Boolean)
                             .map((url, i) => (
-                              <img key={i} src={url} alt={`Attached ${i + 1}`} className="max-w-full max-h-48 rounded-lg object-cover ring-1 ring-white/20" />
+                              <img key={i} src={url} alt={`Attached ${i + 1}`} className="max-w-full max-h-64 rounded-lg object-contain ring-1 ring-white/20" />
                             ))}
                         </div>
                       )}

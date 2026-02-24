@@ -139,14 +139,14 @@ export async function deductCredits(
 
     const { error: transactionError } = await supabase
       .from('credit_transactions')
-      .insert([{
+      .upsert([{
         user_id: userId,
         project_id: projectId || null,
         credits_used: toDeduct,
         model_used: 'google/gemini-3-flash-preview',
         work_type: 'code_generation',
         description: workDescription
-      }]);
+      }], { onConflict: 'id' });
 
     if (transactionError) {
       console.error('[creditService] Failed to record transaction:', transactionError);
