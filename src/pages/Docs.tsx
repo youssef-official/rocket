@@ -93,7 +93,7 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'Upload Images for Design Reference',
-          description: 'Vivora X can analyze uploaded images (screenshots, mockups, designs) and recreate them as functional code. Simply attach an image to your prompt and describe what you want.',
+          description: 'Vivora X supports multimodal analysis — upload up to 5 images per prompt (screenshots, mockups, designs) and the AI recreates them as functional code. Images are stored on Cloudflare R2 with CDN delivery.',
         },
         {
           title: 'How Image Analysis Works',
@@ -112,7 +112,8 @@ export const Docs: React.FC = () => {
             'Use clear, high-resolution screenshots',
             'Crop to the specific section you want recreated',
             'Add a text prompt describing any modifications you want',
-            'Upload one image at a time for best accuracy',
+            'Upload up to 5 images at once for multi-reference analysis',
+            'Click on any image in chat for full preview with Download & Copy options',
           ],
         },
       ],

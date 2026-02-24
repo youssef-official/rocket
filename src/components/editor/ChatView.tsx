@@ -156,11 +156,11 @@ const extractBuildingPlan = (content: string): string[] => {
 // Action icon mapping with better visual distinction
 const getActionIcon = (action: string) => {
   switch (action) {
-    case 'edited': return { Icon: Pencil, color: 'text-blue-400' };
-    case 'created': return { Icon: Sparkles, color: 'text-emerald-400' };
+    case 'edited': return { Icon: Pencil, color: 'text-muted-foreground' };
+    case 'created': return { Icon: Sparkles, color: 'text-muted-foreground' };
     case 'read': return { Icon: Eye, color: 'text-muted-foreground' };
-    case 'deleted': return { Icon: Trash2, color: 'text-red-400' };
-    case 'analyzed_image': return { Icon: ImageIcon, color: 'text-purple-400' };
+    case 'deleted': return { Icon: Trash2, color: 'text-muted-foreground' };
+    case 'analyzed_image': return { Icon: ImageIcon, color: 'text-muted-foreground' };
     default: return { Icon: FileOutput, color: 'text-muted-foreground' };
   }
 };
