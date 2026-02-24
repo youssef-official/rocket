@@ -1300,18 +1300,43 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   <p className="text-xs">Image</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <a
-                    href={previewImage}
-                    download="image.png"
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        const res = await fetch(previewImage!);
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'image.png';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      } catch {
+                        // fallback: open in new tab
+                        window.open(previewImage!, '_blank');
+                      }
+                    }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm transition-colors"
-                    onClick={(e) => e.stopPropagation()}
                   >
                     <Download className="w-4 h-4" /> Download
-                  </a>
+                  </button>
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(previewImage);
-                      toast({ title: 'Link copied!' });
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(previewImage!);
+                        const blob = await res.blob();
+                        await navigator.clipboard.write([
+                          new ClipboardItem({ [blob.type]: blob })
+                        ]);
+                        toast({ title: 'Image copied!' });
+                      } catch {
+                        // fallback: copy link
+                        await navigator.clipboard.writeText(previewImage!);
+                        toast({ title: 'Link copied!' });
+                      }
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm transition-colors"
                   >
