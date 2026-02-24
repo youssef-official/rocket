@@ -55,7 +55,7 @@
 | **Vercel Deployment** | One-click deploy to Vercel |
 | **Multi-language UI** | Arabic, English, French, Spanish, German, Japanese, Korean, Chinese |
 | **Credit System** | Daily + monthly credits with plan-based limits |
-| **PayPal Billing** | Upgrade plans (Spark → Builder → Creator → Scale) |
+| **PayPal Billing** | Upgrade plans (Free → Pro → Business) |
 | **Admin Panel** | User management, model config, blog, notifications |
 | **Blog System** | Category-based blog with markdown content |
 | **Dark/Light Theme** | System-aware theming with manual override |
@@ -85,7 +85,6 @@
 │   │   ├── directAiService.ts     # Direct AI API calls + credits
 │   │   ├── creditService.ts       # Credit management
 │   │   ├── paypalService.ts       # PayPal integration
-│   │   ├── vercelService.ts       # Vercel API
 │   │   ├── versionNameService.ts  # AI-generated version names
 │   │   └── visualEditService.ts   # Visual edit parsing
 │   ├── pages/                     # Route pages
@@ -95,8 +94,7 @@
 │
 ├── supabase/
 │   ├── config.toml                # Supabase project config
-│   ├── migrations/
-│   │   └── full.sql               # Complete database schema (all tables + RLS)
+│   ├── migrations/                # Incremental SQL migrations
 │   └── functions/
 │       ├── admin-data/            # Admin dashboard data endpoint
 │       ├── background-generate/   # Background code generation jobs
@@ -108,8 +106,8 @@
 │       ├── vercel-deploy/         # Vercel deployment API
 │       └── visual-edits/          # AI-powered visual code edits
 │
-├── public/                        # Static assets
-└── backend/                       # Legacy Python backend (unused)
+├── full.sql                       # Complete DB schema (single file)
+└── public/                        # Static assets
 ```
 
 ---
@@ -141,7 +139,7 @@
 
 ### Enums
 
-- `plan_type`: spark, builder, creator, scale, free, pro, business
+- `plan_type`: free, pro, business (+ legacy: spark, builder, creator, scale)
 - `app_role`: admin, moderator, user
 
 ---
@@ -152,7 +150,6 @@
 - Users can only access their own data (projects, messages, plans)
 - Admin operations gated by `has_role()` function
 - Service role used only in edge functions for cross-user operations
-- OAuth tokens stored per-user in `user_integrations`
 
 ---
 
@@ -202,10 +199,10 @@ VITE_SUPABASE_PROJECT_ID=<project-id>
 Run the full schema on a fresh Supabase project:
 
 ```bash
-psql <DATABASE_URL> -f supabase/migrations/full.sql
+psql <DATABASE_URL> -f full.sql
 ```
 
-Or apply via Supabase CLI:
+Or apply incremental migrations via Supabase CLI:
 
 ```bash
 supabase db push
@@ -213,17 +210,14 @@ supabase db push
 
 ### 4. Required Secrets (Edge Functions)
 
-Configure these in your Supabase project dashboard → Edge Functions → Secrets:
+Configure these in your Supabase project → Edge Functions → Secrets:
 
 | Secret | Used By |
 |--------|---------|
 | `VERCEL_AI_API_KEY` | generate-code, background-generate |
 | `OPENROUTER_API_KEY` | visual-edits |
 | `MODAL_API_URL` | modal-proxy |
-| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | github-push |
-| `VERCEL_CLIENT_ID` / `VERCEL_CLIENT_SECRET` | vercel-deploy |
-| `PAYPAL_CLIENT_ID` / `PAYPAL_SECRET` | paypal-* |
-| `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_ZONE_ID` | (legacy deploy) |
+| `PAYPAL_CLIENT_ID` / `PAYPAL_SECRET` | paypal-create-order, paypal-capture-order |
 
 ### 5. Run Development Server
 
@@ -239,14 +233,23 @@ App runs at `http://localhost:5173`
 
 ## 📊 Credit System
 
-| Plan | Daily Credits | Monthly Credits |
-|------|--------------|-----------------|
-| Spark (Free) | 5 | 0 |
-| Builder | 15 | 100 |
-| Creator | 30 | 300 |
-| Scale | 60 | 1000 |
+| Plan | Price | Daily Credits | Monthly Credits |
+|------|-------|--------------|-----------------|
+| **Free** | $0 | 3 | 0 |
+| **Pro** | $15/mo | 5 | 150 |
+| **Business** | $29/mo | 10 | 400 |
 
-Credits reset daily at UTC midnight. First project generation costs 2 credits; edits cost 1 credit per generation.
+### Features by Plan
+
+| Feature | Free | Pro | Business |
+|---------|------|-----|----------|
+| Image Upload | ❌ | ✅ | ✅ |
+| ZIP Export | ❌ | ✅ | ✅ |
+| Private Projects | ❌ | ✅ | ✅ |
+| Priority Access | ❌ | ❌ | ✅ |
+| Vercel Deploy | ✅ | ✅ | ✅ |
+
+Credits reset daily at UTC midnight. First project generation costs 2 credits; edits cost 0.5–3 credits based on file count.
 
 ---
 

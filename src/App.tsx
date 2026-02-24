@@ -1227,15 +1227,12 @@ import { Pricing } from "@/pages/Pricing";
 import { Docs } from "@/pages/Docs";
 import Settings from "@/pages/Settings";
 import { ProjectView } from "@/pages/ProjectView";
-import { OAuthConsent } from "@/pages/OAuthConsent";
-import { VercelOAuthCallback } from "@/pages/VercelCallback";
 import FAQ from "@/pages/FAQ";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import { NewVibeTool } from "@/pages/NewVibeTool";
 import AiForAll from "@/pages/AiForAll";
 import SupabaseConnect from "@/pages/SupabaseConnect";
-import GitHubCallback from "@/pages/GitHubCallback";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import AboutUs from "@/pages/AboutUs";
@@ -1263,9 +1260,6 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/new-vibe-tool" element={<NewVibeTool />} />
-              <Route path="/oauth/consent" element={<OAuthConsent />} />
-              <Route path="/oauth/vercel/callback" element={<VercelOAuthCallback />} />
-              <Route path="/oauth/github/callback" element={<GitHubCallback />} />
               <Route path="/ai-for-all" element={<Navigate to="/blog/ai-for-all" replace />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
