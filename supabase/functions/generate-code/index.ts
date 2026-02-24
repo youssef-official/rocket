@@ -874,9 +874,10 @@ USER_LANGUAGE=${userLanguage || 'en'}
     let apiKeySecretName = "VERCEL_AI_API_KEY";
 
     try {
-      // Fetch active model config for the user's plan
+      // Fetch ALL active model configs matching this user's plan OR 'all'
+      const effectivePlan = userPlan || 'free';
       const configRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/ai_model_config?is_active=eq.true&or=(target_plan.eq.${userPlan || 'free'},target_plan.eq.all)&order=target_plan.desc&limit=1`,
+        `${SUPABASE_URL}/rest/v1/ai_model_config?is_active=eq.true&or=(target_plan.eq.${effectivePlan},target_plan.eq.all)`,
         {
           headers: {
             "apikey": SUPABASE_SERVICE_ROLE_KEY,
@@ -887,11 +888,13 @@ USER_LANGUAGE=${userLanguage || 'en'}
       if (configRes.ok) {
         const configs = await configRes.json();
         if (configs && configs.length > 0) {
-          const cfg = configs[0];
+          // Prefer specific plan match over 'all' fallback
+          const specificMatch = configs.find((c: any) => c.target_plan === effectivePlan);
+          const cfg = specificMatch || configs[0];
           model = cfg.model_id;
           gatewayUrl = cfg.gateway_url;
           apiKeySecretName = cfg.api_key_secret_name;
-          console.log(`[generate-code] Using dynamic model: ${model} (provider: ${cfg.provider}, plan: ${cfg.target_plan})`);
+          console.log(`[generate-code] Using model: ${model} (provider: ${cfg.provider}, target: ${cfg.target_plan}, userPlan: ${effectivePlan})`);
         }
       }
     } catch (cfgErr) {
