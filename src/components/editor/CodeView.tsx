@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Editor, { type Monaco } from '@monaco-editor/react';
-import { ChevronRight, ChevronDown, File, Folder, FileCode, FileJson, FileText, Loader2, CheckCircle2, Hash, Image, Settings2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, File, Folder, FileCode, FileJson, FileText, Loader2, CheckCircle2, Hash, Image, Settings2, Lock } from 'lucide-react';
 import type { ProjectFile } from '@/types';
+import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
 
 // GitHub Dark inspired Monaco theme
 const defineGitHubDarkTheme = (monaco: Monaco) => {
@@ -126,6 +127,8 @@ export const CodeView: React.FC<CodeViewProps> = ({
   streamingContent = '',
   isGenerating = false,
 }) => {
+  const { userPlan } = useUserPlan();
+  const canEditCode = userPlan ? PLAN_CONFIG[userPlan.plan].features.codeEditing : false;
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['src']));
 
   // Parse streaming files
@@ -392,13 +395,13 @@ export const CodeView: React.FC<CodeViewProps> = ({
                 </span>
               )}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 relative">
               <Editor
                 height="100%"
                 language={getLanguage(fileName)}
                 value={displayContent}
                 onChange={(value) => {
-                  if (currentFile) {
+                  if (currentFile && canEditCode) {
                     onUpdateFile(selectedFile, value || '');
                   }
                 }}
@@ -420,7 +423,7 @@ export const CodeView: React.FC<CodeViewProps> = ({
                   smoothScrolling: true,
                   bracketPairColorization: { enabled: true },
                   guides: { bracketPairs: true, indentation: true },
-                  readOnly: currentFileData?.isNew && !currentFileData?.complete,
+                  readOnly: !canEditCode || (currentFileData?.isNew && !currentFileData?.complete),
                   lineHeight: 22,
                   letterSpacing: 0.3,
                   renderWhitespace: 'none',
@@ -452,6 +455,14 @@ export const CodeView: React.FC<CodeViewProps> = ({
                 }
               />
             </div>
+            {!canEditCode && (
+              <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 flex items-end justify-center pointer-events-none">
+                <div className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 text-white/80 text-sm">
+                  <Lock className="w-4 h-4 text-yellow-400" />
+                  <span>Code editing requires <a href="/pricing" className="text-purple-400 hover:underline font-semibold">Pro or Business</a> plan</span>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center" style={{ background: '#0d1117' }}>
