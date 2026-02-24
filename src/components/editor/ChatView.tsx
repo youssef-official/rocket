@@ -190,7 +190,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [input, setInput] = useState('');
   const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({});
   const [isChatMode, setIsChatMode] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState<{ file: File; preview: string }[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<{ file: File; preview: string; uploading: boolean; url?: string }[]>([]);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [rollbackVersionId, setRollbackVersionId] = useState<number | null>(null);
@@ -245,12 +245,28 @@ export const ChatView: React.FC<ChatViewProps> = ({
       f.name.endsWith('.ttf') || f.name.endsWith('.otf') || f.name.endsWith('.woff') || f.name.endsWith('.woff2')
     ).slice(0, 5 - uploadedImages.length);
 
+    if (supportedFiles.length === 0) return;
+
     const newFiles = supportedFiles.map(file => ({
       file,
-      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
+      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : '',
+      uploading: true,
     }));
 
     setUploadedImages(prev => [...prev, ...newFiles]);
+
+    // Upload each file immediately
+    for (const entry of newFiles) {
+      if (onImageUpload) {
+        onImageUpload(entry.file).then(url => {
+          setUploadedImages(prev => prev.map(img => 
+            img.file === entry.file ? { ...img, uploading: false, url: url || undefined } : img
+          ));
+        }).catch(() => {
+          setUploadedImages(prev => prev.filter(img => img.file !== entry.file));
+        });
+      }
+    }
   };
 
   useEffect(() => {
@@ -309,13 +325,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim() && !isGenerating) {
-      let imageUrls: string[] = [];
+      // Check if any images are still uploading
+      const stillUploading = uploadedImages.some(img => img.uploading);
+      if (stillUploading) return;
 
-      if (uploadedImages.length > 0 && onImageUpload) {
-        const uploadPromises = uploadedImages.map(img => onImageUpload(img.file));
-        const urls = await Promise.all(uploadPromises);
-        imageUrls = urls.filter((url): url is string => url !== null);
-      }
+      const imageUrls = uploadedImages
+        .map(img => img.url)
+        .filter((url): url is string => !!url);
 
       // Build message with referenced file paths (contents will be read by the model)
       let finalMessage = input.trim();
@@ -376,11 +392,25 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
     const newFiles = supportedFiles.map(file => ({
       file,
-      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
+      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : '',
+      uploading: true,
     }));
 
     setUploadedImages(prev => [...prev, ...newFiles]);
     setShowPlusMenu(false);
+
+    // Upload each file immediately
+    for (const entry of newFiles) {
+      if (onImageUpload) {
+        onImageUpload(entry.file).then(url => {
+          setUploadedImages(prev => prev.map(img => 
+            img.file === entry.file ? { ...img, uploading: false, url: url || undefined } : img
+          ));
+        }).catch(() => {
+          setUploadedImages(prev => prev.filter(img => img.file !== entry.file));
+        });
+      }
+    }
   };
 
   const removeUploadedImage = (index: number) => {
@@ -905,15 +935,27 @@ export const ChatView: React.FC<ChatViewProps> = ({
             {uploadedImages.map((img, index) => (
               <div key={index} className="relative group/upload">
                 {img.file.type.startsWith('image/') ? (
-                  <img
-                    src={img.preview}
-                    alt={`Upload preview ${index + 1}`}
-                    className="h-16 w-16 object-cover rounded-xl border border-border shadow-sm"
-                  />
+                  <div className="relative h-16 w-16">
+                    <img
+                      src={img.preview}
+                      alt={`Upload preview ${index + 1}`}
+                      className={`h-16 w-16 object-cover rounded-xl border border-border shadow-sm transition-opacity ${img.uploading ? 'opacity-50' : ''}`}
+                    />
+                    {img.uploading && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <div className="h-16 w-auto min-w-[64px] px-3 flex flex-col items-center justify-center rounded-xl border border-border bg-secondary shadow-sm">
+                  <div className={`relative h-16 w-auto min-w-[64px] px-3 flex flex-col items-center justify-center rounded-xl border border-border bg-secondary shadow-sm ${img.uploading ? 'opacity-50' : ''}`}>
                     <File className="w-5 h-5 text-muted-foreground mb-1" />
                     <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">{img.file.name}</span>
+                    {img.uploading && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
                   </div>
                 )}
                 <button
@@ -925,6 +967,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 </button>
               </div>
             ))}
+            <span className="text-[10px] text-muted-foreground self-end mb-1">{uploadedImages.length}/5</span>
           </div>
         )}
 
