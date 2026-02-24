@@ -30,14 +30,14 @@
 │  │  generate-code · modal-proxy         │           │
 │  │  github-push · vercel-deploy         │           │
 │  │  visual-edits · background-generate  │           │
-│  │  admin-data · paypal-*               │           │
+│  │  admin-data · paypal-* · upload-image│           │
 │  └──────────────────────────────────────┘           │
 └────────────────────┬────────────────────────────────┘
                      │
 ┌────────────────────▼────────────────────────────────┐
 │           External Services                          │
 │  Modal (Sandbox) · GitHub · Vercel · PayPal         │
-│  AI Gateway (Gemini/OpenRouter)                      │
+│  AI Gateway (Gemini/OpenRouter) · Cloudflare R2     │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -48,17 +48,25 @@
 | Feature | Description |
 |---------|-------------|
 | **AI Code Generation** | Stream code from AI models (Gemini, OpenRouter) with real-time file detection |
+| **Multimodal Image Analysis** | Upload up to 5 images per prompt for design reference & analysis |
 | **Live Preview** | Sandbox-based preview via Modal containers |
 | **Visual Editor** | Click-to-edit UI elements, AI applies CSS/content changes |
-| **Version History** | Save/restore project versions with diff tracking |
+| **Version History** | Save/restore project versions with diff tracking & AI-generated names |
 | **GitHub Integration** | Push projects directly to GitHub repos |
 | **Vercel Deployment** | One-click deploy to Vercel |
-| **Multi-language UI** | Arabic, English, French, Spanish, German, Japanese, Korean, Chinese |
+| **Cloudflare Deployment** | Deploy to Cloudflare Pages with custom subdomains |
+| **Multi-language UI** | Arabic, English, French, Spanish, German, Japanese, Korean, Chinese (full RTL) |
 | **Credit System** | Daily + monthly credits with plan-based limits |
 | **PayPal Billing** | Upgrade plans (Free → Pro → Business) |
-| **Admin Panel** | User management, model config, blog, notifications |
+| **Admin Panel** | User management, AI model config, blog CMS, notifications |
 | **Blog System** | Category-based blog with markdown content |
-| **Dark/Light Theme** | System-aware theming with manual override |
+| **Dark/Light Theme** | System-aware theming with manual override (3-way cycle) |
+| **Image Upload to R2** | Chat images stored on Cloudflare R2 with CDN delivery |
+| **Image Preview Modal** | Click images in chat for full preview with Download & Copy |
+| **Background Generation** | Queue-based code generation for long-running jobs |
+| **File References** | @mention project files in chat for targeted edits |
+| **Notification Inbox** | Plan-targeted in-app notifications with read tracking |
+| **Templates** | Curated project templates for instant project generation |
 
 ---
 
@@ -74,11 +82,11 @@
 │   │   ├── dashboard/             # Projects dashboard
 │   │   ├── editor/                # Code editor, chat, preview, versions
 │   │   ├── home/                  # Landing page sections
-│   │   ├── shared/                # Reusable components (footer, modals, etc.)
+│   │   ├── shared/                # Reusable components (footer, modals, logo, etc.)
 │   │   └── ui/                    # shadcn/ui primitives
 │   ├── contexts/
 │   │   ├── AuthContext.tsx         # Auth state management
-│   │   └── LanguageContext.tsx     # i18n translations
+│   │   └── LanguageContext.tsx     # i18n translations (8 languages + RTL)
 │   ├── hooks/                     # Custom React hooks
 │   ├── services/
 │   │   ├── aiService.ts           # AI streaming + response parsing
@@ -103,36 +111,37 @@
 │       ├── modal-proxy/           # Modal sandbox provisioning
 │       ├── paypal-capture-order/  # PayPal order capture + plan upgrade
 │       ├── paypal-create-order/   # PayPal order creation
+│       ├── upload-image/          # Image upload to Cloudflare R2
 │       ├── vercel-deploy/         # Vercel deployment API
 │       └── visual-edits/          # AI-powered visual code edits
 │
 ├── full.sql                       # Complete DB schema (single file)
-└── public/                        # Static assets
+└── public/                        # Static assets (branding.js, sounds, videos)
 ```
 
 ---
 
 ## 🗃️ Database Schema
 
-### Tables
+### Tables (18 total)
 
 | Table | Purpose |
 |-------|---------|
 | `profiles` | User profiles (display name, avatar, email) |
 | `projects` | User projects with files (JSONB), metadata, deploy URLs |
-| `project_versions` | Version history snapshots |
-| `chat_messages` | Chat messages per project |
-| `user_plans` | Subscription plans + credit tracking |
-| `credit_transactions` | Credit usage log |
-| `user_integrations` | GitHub/Vercel tokens |
-| `user_roles` | Admin/moderator/user roles |
+| `project_versions` | Version history snapshots with chat messages |
+| `chat_messages` | Chat messages per project (with image URLs) |
+| `user_plans` | Subscription plans + daily/monthly credit tracking |
+| `credit_transactions` | Credit usage log per generation |
+| `user_integrations` | GitHub/Vercel tokens & connection status |
+| `user_roles` | Admin/moderator/user role assignments |
 | `generation_jobs` | Background AI generation queue |
-| `sandbox_mappings` | Modal sandbox URL mappings |
-| `blog_posts` | Blog articles |
-| `blog_categories` | Blog categories |
-| `inbox_notifications` | System notifications |
-| `user_notification_reads` | Read status tracking |
-| `templates` | Project templates |
+| `sandbox_mappings` | Modal sandbox URL mappings (auto-expire) |
+| `blog_posts` | Blog articles with publish workflow |
+| `blog_categories` | Blog categories with ordering |
+| `inbox_notifications` | System notifications (plan-targeted) |
+| `user_notification_reads` | Read status tracking per user |
+| `templates` | Project templates with categories |
 | `ai_model_config` | AI model configuration per plan |
 | `oauth_pkce_store` | Temporary PKCE state for OAuth flows |
 | `vivora_deployments` | Cloudflare Pages deployments |
@@ -146,10 +155,11 @@
 
 ## 🔐 Security
 
-- **Row Level Security (RLS)** enabled on all tables
+- **Row Level Security (RLS)** enabled on all 18 tables
 - Users can only access their own data (projects, messages, plans)
 - Admin operations gated by `has_role()` function
 - Service role used only in edge functions for cross-user operations
+- Image uploads secured via JWT authentication
 
 ---
 
@@ -164,6 +174,7 @@
 | `github-push` | POST | JWT | GitHub OAuth flow + file push |
 | `vercel-deploy` | POST | JWT | Vercel project deployment |
 | `admin-data` | GET | JWT+Admin | Fetch admin dashboard data |
+| `upload-image` | POST | JWT | Upload images to Cloudflare R2 |
 | `paypal-create-order` | POST | JWT | Create PayPal checkout order |
 | `paypal-capture-order` | POST | JWT | Capture PayPal payment + upgrade plan |
 
@@ -217,6 +228,10 @@ Configure these in your Supabase project → Edge Functions → Secrets:
 | `VERCEL_AI_API_KEY` | generate-code, background-generate |
 | `OPENROUTER_API_KEY` | visual-edits |
 | `MODAL_API_URL` | modal-proxy |
+| `R2_ACCESS_KEY_ID` | upload-image |
+| `R2_SECRET_ACCESS_KEY` | upload-image |
+| `R2_ENDPOINT` | upload-image |
+| `R2_PUBLIC_URL` | upload-image |
 | `PAYPAL_CLIENT_ID` / `PAYPAL_SECRET` | paypal-create-order, paypal-capture-order |
 
 ### 5. Run Development Server
@@ -248,6 +263,7 @@ App runs at `http://localhost:5173`
 | Private Projects | ❌ | ✅ | ✅ |
 | Priority Access | ❌ | ❌ | ✅ |
 | Vercel Deploy | ✅ | ✅ | ✅ |
+| File References (@) | ✅ | ✅ | ✅ |
 
 Credits reset daily at UTC midnight. First project generation costs 2 credits; edits cost 0.5–3 credits based on file count.
 
@@ -264,8 +280,9 @@ Credits reset daily at UTC midnight. First project generation costs 2 credits; e
 | AI | Gemini (via Vercel AI Gateway), OpenRouter |
 | Code Editor | Monaco Editor |
 | Sandbox | Modal (containerized preview) |
+| Image Storage | Cloudflare R2 + CDN |
 | Payments | PayPal |
-| Deployment | Vercel, GitHub |
+| Deployment | Vercel, GitHub, Cloudflare Pages |
 
 ---
 
