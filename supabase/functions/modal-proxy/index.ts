@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +9,7 @@ const corsHeaders = {
 };
 
 const MODAL_URL = Deno.env.get("MODAL_API_URL") || "";
+const CUSTOM_PREVIEW_DOMAIN = "vivorax.online";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -15,8 +17,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log("MODAL_URL value:", MODAL_URL ? `${MODAL_URL.substring(0, 30)}...` : "EMPTY");
-    
     if (!MODAL_URL) {
       return new Response(
         JSON.stringify({ error: "MODAL_API_URL not configured" }),
@@ -35,12 +35,49 @@ serve(async (req) => {
     const data = await response.text();
     console.log("Modal response body:", data.substring(0, 500));
 
-    return new Response(data, {
+    if (!response.ok) {
+      return new Response(data, {
+        status: response.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Parse the Modal response
+    const modalData = JSON.parse(data);
+    const { sandbox_id, api_url, preview_url } = modalData;
+
+    // Save mapping to Supabase using service role
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      
+      if (supabaseUrl && supabaseKey) {
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        await supabase.from("sandbox_mappings").upsert({
+          sandbox_id,
+          preview_url,
+          api_url,
+        }, { onConflict: "sandbox_id" });
+        
+        console.log("Saved sandbox mapping:", sandbox_id);
+      }
+    } catch (dbError) {
+      console.error("Failed to save sandbox mapping (non-fatal):", dbError);
+    }
+
+    // Return response with custom domain URL
+    const customPreviewUrl = `https://${sandbox_id}.${CUSTOM_PREVIEW_DOMAIN}`;
+    
+    const enrichedResponse = {
+      ...modalData,
+      preview_url, // Keep original for fallback
+      custom_preview_url: customPreviewUrl,
+    };
+
+    return new Response(JSON.stringify(enrichedResponse), {
       status: response.status,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": response.headers.get("content-type") || "application/json",
-      },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Modal proxy error:", error);
