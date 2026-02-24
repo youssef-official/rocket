@@ -75,6 +75,8 @@ export const Pricing: React.FC = () => {
               const config = PLAN_CONFIG[key];
               const features = [
                 { label: 'Image Upload', v: key !== 'free', icon: key !== 'free' ? Image : ImageOff },
+                { label: 'Code Editing', v: config.features.codeEditing },
+                { label: 'Watermark Removal', v: config.features.watermarkRemoval },
                 { label: 'ZIP Export', v: config.features.zipExport },
                 { label: 'Private Projects', v: config.features.privateProjects },
                 { label: 'Priority Access', v: config.features.priorityAccess },
@@ -215,6 +217,8 @@ export const Pricing: React.FC = () => {
                     { label: 'Daily Credits', vals: ['3', '5', '10'] },
                     { label: 'Monthly Credits', vals: ['—', '+150', '+400'] },
                     { label: 'Image Upload', vals: ['no', 'yes', 'yes'] },
+                    { label: 'Code Editing', vals: ['no', 'yes', 'yes'] },
+                    { label: 'Watermark Removal', vals: ['no', 'yes', 'yes'] },
                     { label: 'Vercel Deploy', vals: ['yes', 'yes', 'yes'] },
                     { label: 'ZIP Export', vals: ['no', 'yes', 'yes'] },
                     { label: 'Private Projects', vals: ['no', 'yes', 'yes'] },

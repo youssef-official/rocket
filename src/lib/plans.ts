@@ -13,6 +13,8 @@ export const PLAN_CONFIG: Record<
       zipExport: boolean;
       privateProjects: boolean;
       priorityAccess: boolean;
+      watermarkRemoval: boolean;
+      codeEditing: boolean;
     };
   }
 > = {
@@ -25,6 +27,8 @@ export const PLAN_CONFIG: Record<
       zipExport: false,
       privateProjects: false,
       priorityAccess: false,
+      watermarkRemoval: false,
+      codeEditing: false,
     },
   },
   pro: {
@@ -36,6 +40,8 @@ export const PLAN_CONFIG: Record<
       zipExport: true,
       privateProjects: true,
       priorityAccess: false,
+      watermarkRemoval: true,
+      codeEditing: true,
     },
   },
   business: {
@@ -47,6 +53,8 @@ export const PLAN_CONFIG: Record<
       zipExport: true,
       privateProjects: true,
       priorityAccess: true,
+      watermarkRemoval: true,
+      codeEditing: true,
     },
   },
 };
