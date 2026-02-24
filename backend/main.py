@@ -1,6 +1,9 @@
 import modal
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 import time
 
 # Define the Modal App
@@ -18,6 +21,29 @@ image = (
     .add_local_file("server.py", "/root/server.py")
 )
 
+# Middleware to allow iframe embedding and handle CORS preflights
+class IframeMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.method == "OPTIONS":
+            response = Response(status_code=204)
+        else:
+            response = await call_next(request)
+        
+        # Remove restrictive headers to allow iframe embedding
+        response.headers.pop("X-Frame-Options", None)
+        response.headers.pop("Content-Security-Policy", None)
+        
+        # Explicitly allow embedding from any origin
+        response.headers["X-Frame-Options"] = "ALLOWALL"
+        response.headers["Content-Security-Policy"] = "frame-ancestors *"
+        
+        # Ensure CORS headers are present for the response
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        
+        return response
+
 # Web Endpoint to spawn sandboxes
 @app.function(image=image, timeout=300)
 @modal.asgi_app()
@@ -27,6 +53,7 @@ def create_sandbox():
 
     web_app = FastAPI()
 
+    # Add standard CORS middleware
     web_app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -34,6 +61,9 @@ def create_sandbox():
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Add our custom IframeMiddleware to allow embedding
+    web_app.add_middleware(IframeMiddleware)
 
     @web_app.post("/")
     def create():
