@@ -45,8 +45,8 @@ export default {
       return new Response('Not a preview subdomain', { status: 404 });
     }
 
-    // Look up the Modal preview URL from Supabase
-    const lookupUrl = `${env.SUPABASE_URL}/rest/v1/sandbox_mappings?sandbox_id=eq.${encodeURIComponent(sandboxId)}&select=preview_url`;
+    // Use case-insensitive lookup since DNS lowercases the subdomain
+    const lookupUrl = `${env.SUPABASE_URL}/rest/v1/sandbox_mappings?sandbox_id=ilike.${encodeURIComponent(sandboxId)}&select=preview_url`;
     
     const lookupRes = await fetch(lookupUrl, {
       headers: {

@@ -66,8 +66,8 @@ serve(async (req) => {
       console.error("Failed to save sandbox mapping (non-fatal):", dbError);
     }
 
-    // Return response with custom domain URL
-    const customPreviewUrl = `https://${sandbox_id}.${CUSTOM_PREVIEW_DOMAIN}`;
+    // Return response with custom domain URL (lowercase for DNS compatibility)
+    const customPreviewUrl = `https://${sandbox_id.toLowerCase()}.${CUSTOM_PREVIEW_DOMAIN}`;
     
     const enrichedResponse = {
       ...modalData,
