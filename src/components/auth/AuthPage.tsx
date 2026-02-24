@@ -4,7 +4,7 @@ import { Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
 import { lovable } from '@/integrations/lovable/index';
-import authVideo from '@/assets/vivora-auth-video.mp4';
+const authVideo = '/videos/vivora-auth-video.mp4';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 interface AuthPageProps {
