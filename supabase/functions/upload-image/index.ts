@@ -80,8 +80,12 @@ serve(async (req) => {
       })
     );
 
-    // Build public URL
-    const publicUrl = `${R2_PUBLIC_URL.replace(/\/$/, "")}/${fileName}`;
+    // Build public URL - ensure protocol prefix
+    let baseUrl = R2_PUBLIC_URL.replace(/\/$/, "");
+    if (!/^https?:\/\//i.test(baseUrl)) {
+      baseUrl = `https://${baseUrl}`;
+    }
+    const publicUrl = `${baseUrl}/${fileName}`;
 
     return new Response(
       JSON.stringify({ url: publicUrl, fileName }),
