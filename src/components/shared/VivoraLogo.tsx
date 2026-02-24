@@ -141,7 +141,7 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(
           <span
             className={`
               flex items-center gap-1
-              font-bold text-white
+              font-bold text-foreground
               ${textSizeClasses[size]}
               
               ${isRTL ? 'flex-row-reverse' : ''}
