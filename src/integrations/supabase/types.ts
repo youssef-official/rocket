@@ -458,6 +458,39 @@ export type Database = {
         }
         Relationships: []
       }
+      sandbox_mappings: {
+        Row: {
+          api_url: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          preview_url: string
+          project_id: string | null
+          sandbox_id: string
+          user_id: string | null
+        }
+        Insert: {
+          api_url: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          preview_url: string
+          project_id?: string | null
+          sandbox_id: string
+          user_id?: string | null
+        }
+        Update: {
+          api_url?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          preview_url?: string
+          project_id?: string | null
+          sandbox_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       templates: {
         Row: {
           category: string | null
