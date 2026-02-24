@@ -140,6 +140,13 @@ export const HomePage: React.FC<HomePageProps> = ({
     e.preventDefault();
     e.stopPropagation();
   };
+  const normalizePublicImageUrl = useCallback((url: string): string => {
+    const trimmed = (url || '').trim();
+    if (!trimmed) return '';
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed.replace(/^\/+/, '')}`;
+  }, []);
+
   const uploadFileToR2 = useCallback(async (file: File) => {
     try {
       const formData = new FormData();
@@ -159,13 +166,13 @@ export const HomePage: React.FC<HomePageProps> = ({
       );
       if (res.ok) {
         const result = await res.json();
-        return result.url as string;
+        return normalizePublicImageUrl(result.url || '');
       }
       return null;
     } catch {
       return null;
     }
-  }, []);
+  }, [normalizePublicImageUrl]);
 
   const uploadImmediately = useCallback((files: File[]) => {
     const newEntries = files.map(file => ({
@@ -177,11 +184,17 @@ export const HomePage: React.FC<HomePageProps> = ({
 
     for (const entry of newEntries) {
       uploadFileToR2(entry.file).then(url => {
+        if (!url) {
+          setUploadedImages(prev => prev.filter(img => img.file !== entry.file));
+          toast({ title: 'Upload failed', description: 'Could not upload image. Please try again.', variant: 'destructive' });
+          return;
+        }
         setUploadedImages(prev => prev.map(img =>
-          img.file === entry.file ? { ...img, uploading: false, url: url || undefined } : img
+          img.file === entry.file ? { ...img, uploading: false, url } : img
         ));
       }).catch(() => {
         setUploadedImages(prev => prev.filter(img => img.file !== entry.file));
+        toast({ title: 'Upload failed', description: 'Could not upload image. Please try again.', variant: 'destructive' });
       });
     }
   }, [uploadFileToR2]);
@@ -229,9 +242,17 @@ export const HomePage: React.FC<HomePageProps> = ({
     e.preventDefault();
     const stillUploading = uploadedImages.some(img => img.uploading);
     if (prompt.trim() && !isSubmitting && !stillUploading) {
-      setIsSubmitting(true);
       const projectType = selectedFramework === 'React' || selectedFramework === 'Next.js' ? 'vite' : 'html';
-      const urls = uploadedImages.map(img => img.url).filter((u): u is string => !!u);
+      const urls = uploadedImages
+        .map(img => normalizePublicImageUrl(img.url || ''))
+        .filter((u): u is string => !!u);
+
+      if (uploadedImages.length > 0 && urls.length === 0) {
+        toast({ title: 'Upload failed', description: 'Please re-upload your image.', variant: 'destructive' });
+        return;
+      }
+
+      setIsSubmitting(true);
       localStorage.removeItem('vivora_home_prompt');
       onStartBuilding(prompt, projectType, undefined, urls.length > 0 ? urls : undefined);
     }

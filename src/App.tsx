@@ -34,6 +34,13 @@ import { toast } from "@/hooks/use-toast";
 
 const queryClient = new QueryClient();
 
+const normalizePublicImageUrl = (url: string): string => {
+  const trimmed = (url || '').trim();
+  if (!trimmed) return '';
+  if (/^(https?:\/\/|data:|blob:)/i.test(trimmed)) return trimmed;
+  return `https://${trimmed.replace(/^\/+/, '')}`;
+};
+
 interface FileActivity {
   name: string;
   status: 'editing' | 'done';
@@ -502,7 +509,9 @@ const ProjectEditorRoute = () => {
   const handleSendMessage = useCallback(async (content: string, isChatOnly: boolean = false, imageUrl?: string) => {
     if (!localProject) return;
 
-    const imageUrls = imageUrl ? imageUrl.split(',').filter(Boolean) : [];
+    const imageUrls = imageUrl
+      ? imageUrl.split(',').map((u) => normalizePublicImageUrl(u)).filter(Boolean)
+      : [];
 
     isCancelled.current = false;
 
@@ -686,7 +695,7 @@ const ProjectEditorRoute = () => {
         ...messages.map(m => ({
           role: m.role as 'user' | 'assistant',
           content: m.content,
-          imageUrls: m.imageUrl ? m.imageUrl.split(',').filter(Boolean) : undefined
+          imageUrls: m.imageUrl ? m.imageUrl.split(',').map((u) => normalizePublicImageUrl(u)).filter(Boolean) : undefined
         })),
         {
           role: 'user' as const,
@@ -1110,7 +1119,13 @@ const AppContent = () => {
 
     // Store pre-uploaded image URLs in sessionStorage for initial generation
     if (imageUrls && imageUrls.length > 0) {
-      sessionStorage.setItem(`project_image_${newProject.id}`, imageUrls.join(','));
+      const normalizedImageUrls = imageUrls
+        .map((u) => normalizePublicImageUrl(u))
+        .filter(Boolean);
+
+      if (normalizedImageUrls.length > 0) {
+        sessionStorage.setItem(`project_image_${newProject.id}`, normalizedImageUrls.join(','));
+      }
     }
 
     // Navigate to project page
