@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
 const MODAL_PROXY_URL = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/modal-proxy` : "";
+const CUSTOM_PREVIEW_DOMAIN = "vivorax.online";
 
 interface PreviewViewProps {
   files: Record<string, ProjectFile>;
@@ -304,12 +305,14 @@ export default defineConfig({
         if (!response.ok) throw new Error('Failed to create sandbox');
 
         const data = await response.json();
-        const { sandbox_id, api_url, preview_url } = data;
+        const { sandbox_id, api_url, preview_url, custom_preview_url } = data;
 
         setSandboxId(sandbox_id);
         setApiUrl(api_url);
-        setPreviewUrl(preview_url);
-        onPreviewUrlChange?.(preview_url);
+        // Use custom domain if available, fallback to Modal URL
+        const finalPreviewUrl = custom_preview_url || preview_url;
+        setPreviewUrl(finalPreviewUrl);
+        onPreviewUrlChange?.(finalPreviewUrl);
         setSandboxStatus("Sandbox created. Initializing...");
       } catch (error) {
         console.error("Error creating sandbox:", error);
