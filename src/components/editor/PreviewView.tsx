@@ -9,12 +9,10 @@ import { toast } from 'sonner';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
 const MODAL_PROXY_URL = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/modal-proxy` : "";
-const CUSTOM_PREVIEW_DOMAIN = "vivorax.online";
 
 interface PreviewViewProps {
   files: Record<string, ProjectFile>;
   projectType: 'vite' | 'html';
-  projectId?: string;
   isLoading?: boolean;
   onPreviewError?: (errorLog: string) => void;
   onPreviewUrlChange?: (url: string | null) => void;
@@ -116,7 +114,7 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
   );
 };
 
-export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, projectId, isLoading, onPreviewError, onPreviewUrlChange }) => {
+export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, isLoading, onPreviewError, onPreviewUrlChange }) => {
   const [viewMode, setViewMode] = React.useState<'desktop' | 'mobile'>('desktop');
   const [sandboxId, setSandboxId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -301,20 +299,17 @@ export default defineConfig({
             'Content-Type': 'application/json',
             'apikey': SUPABASE_ANON_KEY,
           },
-          body: JSON.stringify({ project_id: projectId || '' }),
         });
 
         if (!response.ok) throw new Error('Failed to create sandbox');
 
         const data = await response.json();
-        const { sandbox_id, api_url, preview_url, custom_preview_url } = data;
+        const { sandbox_id, api_url, preview_url } = data;
 
         setSandboxId(sandbox_id);
         setApiUrl(api_url);
-        // Use custom domain if available, fallback to Modal URL
-        const finalPreviewUrl = custom_preview_url || preview_url;
-        setPreviewUrl(finalPreviewUrl);
-        onPreviewUrlChange?.(finalPreviewUrl);
+        setPreviewUrl(preview_url);
+        onPreviewUrlChange?.(preview_url);
         setSandboxStatus("Sandbox created. Initializing...");
       } catch (error) {
         console.error("Error creating sandbox:", error);
@@ -326,7 +321,7 @@ export default defineConfig({
     if (Object.keys(files).length > 0) {
       createSandbox();
     }
-  }, [sandboxId, files, projectType, projectId]);
+  }, [sandboxId, files, projectType]);
 
   // Sync Files Logic - with better change detection
   useEffect(() => {
@@ -448,18 +443,7 @@ export default defineConfig({
       if (elapsed < 20000) return; // 20s grace period after ready
 
       fetch(previewUrl, { method: 'HEAD', mode: 'no-cors' })
-        .then((res) => {
-          // 520 = origin server error (sandbox expired/crashed)
-          if (res.status === 520 || res.status === 502 || res.status === 503) {
-            consecutiveFailsRef.current += 1;
-            if (consecutiveFailsRef.current >= 2) {
-              consecutiveFailsRef.current = 0;
-              restartSandbox("Sandbox expired");
-            }
-          } else {
-            consecutiveFailsRef.current = 0;
-          }
-        })
+        .then(() => { consecutiveFailsRef.current = 0; })
         .catch(() => {
           consecutiveFailsRef.current += 1;
           if (consecutiveFailsRef.current >= 3) {
@@ -552,18 +536,15 @@ export default defineConfig({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="text-xs text-muted-foreground mr-2 font-mono flex items-center gap-2">
+          <div className="text-xs text-muted-foreground mr-2 font-mono flex items-center">
             {sandboxId ? (
               <>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 mr-0.5 animate-pulse"></span>
-                <span className="hidden sm:inline truncate max-w-[240px]" title={previewUrl || ''}>
-                  {projectId ? `${projectId.substring(0, 8)}...${CUSTOM_PREVIEW_DOMAIN}` : 'Live Preview'}
-                </span>
-                <span className="sm:hidden">Live</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                Live Preview
               </>
             ) : (
               <>
-                <span className="w-2 h-2 rounded-full bg-amber-500 mr-0.5"></span>
+                <span className="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>
                 Starting...
               </>
             )}
