@@ -1,104 +1,76 @@
-# 🚀 Vivora Preview Proxy — Nginx + Node.js Setup Guide
+# 🚀 Vivora Preview Proxy — Render Deployment Guide
 
 ## Architecture
 ```
-User Browser → *.vivorax.online → Nginx (SSL + routing) → Node.js Proxy (port 3456) → Modal Sandbox
+Browser → {project-id}.vivorax.online → Render (SSL) → Node.js Proxy → Modal Sandbox
 ```
 
-## Quick Setup (Ubuntu/Debian VPS)
+## Deploy to Render
 
-### 1. DNS Setup
-Add a **wildcard A record** at your domain registrar:
+### 1. Create Web Service on Render
+1. Go to [render.com](https://render.com) → **New** → **Web Service**
+2. Connect your GitHub repo (or use "Deploy from Git")
+3. Settings:
+   - **Name**: `vivora-preview-proxy`
+   - **Runtime**: Node
+   - **Root Directory**: `nginx-proxy`
+   - **Build Command**: `npm install`
+   - **Start Command**: `node proxy-server.js`
+   - **Plan**: Starter ($7/month) or higher
+
+### 2. Add Environment Variables
+In Render dashboard → your service → **Environment**:
+
+| Key | Value |
+|-----|-------|
+| `SUPABASE_URL` | `https://jdbjdntmawjlasirmgbe.supabase.co` |
+| `SUPABASE_ANON_KEY` | Your Supabase anon key |
+| `PREVIEW_DOMAIN` | `vivorax.online` |
+
+> `PORT` is set automatically by Render.
+
+### 3. Setup Wildcard Custom Domain
+1. In Render dashboard → your service → **Settings** → **Custom Domains**
+2. Add: `*.vivorax.online`
+3. Render will give you a CNAME target (something like `xxx.onrender.com`)
+
+### 4. DNS Configuration
+At your domain registrar (Cloudflare, Namecheap, etc.):
+
 ```
-Type: A
+Type: CNAME
 Name: *
-Value: <your-server-IP>
+Value: <your-service>.onrender.com
 TTL: Auto
 ```
 
-Also add for the root domain:
-```
-Type: A
-Name: @
-Value: <your-server-IP>
-```
+> ⚠️ If using Cloudflare: set the CNAME to **DNS Only** (gray cloud),
+> because Render handles SSL. Cloudflare proxy would interfere.
 
-### 2. Install Dependencies
+### 5. Verify
 ```bash
-sudo apt update
-sudo apt install -y nginx nodejs npm certbot
-```
-
-### 3. SSL Certificate (Wildcard)
-Use Certbot with DNS challenge for wildcard:
-```bash
-sudo certbot certonly --manual --preferred-challenges dns \
-  -d "*.vivorax.online" -d "vivorax.online"
-```
-Follow the instructions to add TXT records, then:
-```bash
-sudo mkdir -p /etc/ssl/vivorax
-sudo cp /etc/letsencrypt/live/vivorax.online/fullchain.pem /etc/ssl/vivorax/
-sudo cp /etc/letsencrypt/live/vivorax.online/privkey.pem /etc/ssl/vivorax/
-```
-
-### 4. Setup Node.js Proxy
-```bash
-cd /opt
-sudo git clone <your-repo> vivora-proxy
-cd vivora-proxy/nginx-proxy
-npm install
-
-# Create .env file
-cp .env.example .env
-nano .env  # Fill in your actual values
-```
-
-### 5. Run with PM2 (Process Manager)
-```bash
-sudo npm install -g pm2
-
-# Start the proxy
-pm2 start proxy-server.js --name vivora-proxy
-pm2 save
-pm2 startup  # Auto-start on reboot
-```
-
-### 6. Setup Nginx
-```bash
-sudo cp nginx.conf /etc/nginx/sites-available/vivorax-preview
-sudo ln -s /etc/nginx/sites-available/vivorax-preview /etc/nginx/sites-enabled/
-sudo nginx -t        # Test config
-sudo systemctl reload nginx
-```
-
-### 7. Verify
-```bash
-# Test DNS
-dig +short test.vivorax.online
-
-# Test HTTPS
-curl -I https://test.vivorax.online/
+curl -I https://test.vivorax.online/health
+# Should return: {"status":"ok"}
 ```
 
 ## How It Works
-1. Browser requests `https://{project-id}.vivorax.online`
-2. DNS resolves `*.vivorax.online` to your server IP
-3. Nginx terminates SSL and forwards to Node.js on port 3456
-4. Node.js extracts the subdomain (project ID)
-5. Queries Supabase `sandbox_mappings` table for the `preview_url`
-6. Proxies the request to the Modal sandbox
-7. Strips `X-Frame-Options` headers so it works in iframes
+1. `{project-id}.vivorax.online` → DNS resolves to Render
+2. Render terminates SSL automatically
+3. Node.js extracts subdomain → queries Supabase for `preview_url`
+4. Proxies request to Modal sandbox
+5. Strips X-Frame-Options so iframe embedding works
 
 ## Auto-Reconnect
-When a sandbox expires (520 error), the frontend automatically:
+When a Modal sandbox expires (5 min), the frontend:
 1. Creates a new sandbox via `modal-proxy` edge function
-2. Updates `sandbox_mappings` with the same project ID → new preview URL
-3. The proxy picks up the new URL on next request (30s cache TTL)
-4. Same `{project-id}.vivorax.online` URL keeps working!
+2. Updates `sandbox_mappings` with same project ID → new preview URL
+3. Proxy picks up new URL on next request (30s cache)
+4. Same URL keeps working! ✅
 
 ## Troubleshooting
-- **502 Bad Gateway**: Node.js proxy not running → `pm2 status`
-- **520 Error**: Modal sandbox expired → frontend auto-reconnects
-- **SSL Error**: Certificate expired → `sudo certbot renew`
-- **404 Not Found**: No mapping in DB → check `sandbox_mappings` table
+| Issue | Fix |
+|-------|-----|
+| 502 Bad Gateway | Modal sandbox expired → frontend auto-reconnects |
+| 404 Not Found | No mapping in DB → sandbox not created yet |
+| SSL Error | Check Render custom domain SSL status |
+| Slow first request | Cache miss → 30s TTL, subsequent requests faster |
