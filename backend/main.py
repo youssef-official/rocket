@@ -1,10 +1,12 @@
 import modal
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-import time
+import os
+from pathlib import Path
 
 # Define the Modal App
 app = modal.App("rocket-preview")
+
+# Get the directory where this script lives
+SCRIPT_DIR = Path(__file__).parent
 
 # Define the image with Node.js and Python
 image = (
@@ -15,7 +17,7 @@ image = (
     .pip_install("fastapi", "uvicorn")
     .run_commands("npm install -g vite")
     .run_commands("mkdir -p /app")
-    .add_local_file("/home/ubuntu/rocket/backend/server.py", "/root/server.py")
+    .add_local_file(str(SCRIPT_DIR / "server.py"), "/root/server.py")
 )
 
 # Web Endpoint to spawn sandboxes
