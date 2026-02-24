@@ -16,6 +16,19 @@
 
 export default {
   async fetch(request, env, ctx) {
+    // Handle CORS preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, HEAD',
+          'Access-Control-Allow-Headers': '*',
+          'Access-Control-Max-Age': '86400',
+        },
+      });
+    }
+
     const url = new URL(request.url);
     const hostname = url.hostname;
     
@@ -77,14 +90,19 @@ export default {
       redirect: 'follow',
     });
 
-    // Build response, removing restrictive headers
+    // Build response, removing ALL restrictive headers
     const responseHeaders = new Headers(proxyResponse.headers);
     responseHeaders.delete('x-frame-options');
+    responseHeaders.delete('X-Frame-Options');
     responseHeaders.delete('content-security-policy');
-    // Allow embedding in iframes
-    responseHeaders.set('X-Frame-Options', 'ALLOWALL');
-    // Set CORS headers
+    responseHeaders.delete('Content-Security-Policy');
+    responseHeaders.delete('content-security-policy-report-only');
+    
+    // Set permissive CORS and framing headers
     responseHeaders.set('Access-Control-Allow-Origin', '*');
+    responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
+    responseHeaders.set('Access-Control-Allow-Headers', '*');
+    responseHeaders.set('Content-Security-Policy', 'frame-ancestors *');
 
     return new Response(proxyResponse.body, {
       status: proxyResponse.status,
