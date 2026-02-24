@@ -1081,7 +1081,7 @@ const AppContent = () => {
     });
   }, []);
 
-  const handleStartBuilding = useCallback(async (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageFile?: File) => {
+  const handleStartBuilding = useCallback(async (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageFiles?: File[]) => {
     if (!user) return;
 
     isCancelled.current = false;
@@ -1108,33 +1108,41 @@ const AppContent = () => {
       sessionStorage.setItem(`project_model_${newProject.id}`, modelId);
     }
 
-    // Upload image and store URL in sessionStorage for initial generation
-    if (imageFile) {
+    // Upload images and store URLs in sessionStorage for initial generation
+    if (imageFiles && imageFiles.length > 0) {
       try {
-        const formData = new FormData();
-        formData.append('file', imageFile);
-
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData?.session?.access_token;
 
-        const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-image`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            },
-            body: formData,
-          }
-        );
+        const uploadPromises = imageFiles.map(async (file) => {
+          const formData = new FormData();
+          formData.append('file', file);
 
-        if (res.ok) {
-          const result = await res.json();
-          sessionStorage.setItem(`project_image_${newProject.id}`, result.url);
+          const res = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-image`,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+              body: formData,
+            }
+          );
+
+          if (res.ok) {
+            const result = await res.json();
+            return result.url as string;
+          }
+          return null;
+        });
+
+        const urls = (await Promise.all(uploadPromises)).filter(Boolean);
+        if (urls.length > 0) {
+          sessionStorage.setItem(`project_image_${newProject.id}`, urls.join(','));
         }
       } catch (e) {
-        console.error('Failed to upload image:', e);
+        console.error('Failed to upload images:', e);
       }
     }
 
@@ -1164,12 +1172,12 @@ const AppContent = () => {
   }
 
   // Handle build attempt - require login if not authenticated
-  const handleBuildAttempt = async (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageFile?: File) => {
+  const handleBuildAttempt = async (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageFiles?: File[]) => {
     if (!user) {
       setShowAuth(true);
       return;
     }
-    await handleStartBuilding(prompt, projectType, modelId, imageFile);
+    await handleStartBuilding(prompt, projectType, modelId, imageFiles);
   };
 
   // Show auth page only if explicitly requested
