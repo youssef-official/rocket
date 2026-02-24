@@ -866,7 +866,7 @@ USER_LANGUAGE=${userLanguage || 'en'}
     // Determine max tokens based on mode
     const maxTokens =
       mode === "code"
-        ? 100000
+        ? 65000
         : mode === "project-name" || mode === "version-name"
           ? 100
           : mode === "suggestions"

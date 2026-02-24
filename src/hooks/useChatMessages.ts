@@ -86,7 +86,7 @@ export function useChatMessages(projectId: string | null) {
     try {
       const { error } = await supabase
         .from('chat_messages')
-        .insert({
+        .upsert({
           id: newMessage.id,
           project_id: projectId,
           user_id: user.id,
@@ -95,7 +95,7 @@ export function useChatMessages(projectId: string | null) {
           image_url: imageUrl || null,
           credits_used: creditsUsed || null,
           actions_taken: (actionsTaken || []) as any,
-        });
+        }, { onConflict: 'id' });
 
       if (error) {
         console.error('Supabase error saving message:', error);
