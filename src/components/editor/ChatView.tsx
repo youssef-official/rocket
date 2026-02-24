@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp, Monitor, AtSign } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp, Monitor, AtSign, Download, Copy } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
@@ -206,6 +206,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [atFilter, setAtFilter] = useState('');
   const [referencedFiles, setReferencedFiles] = useState<string[]>([]);
   const [atMenuIndex, setAtMenuIndex] = useState(0);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -806,12 +807,18 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-br-md shadow-sm text-[15px] break-words whitespace-pre-wrap overflow-hidden bg-primary text-primary-foreground ml-auto">
                       {msg.imageUrl && (
                         <div className="mb-2 flex flex-wrap gap-2">
-                          {msg.imageUrl
+                         {msg.imageUrl
                             .split(',')
                             .map(url => normalizePublicImageUrl(url))
                             .filter(Boolean)
                             .map((url, i) => (
-                              <img key={i} src={url} alt={`Attached ${i + 1}`} className="max-w-full max-h-64 rounded-lg object-contain ring-1 ring-white/20" />
+                              <img
+                                key={i}
+                                src={url}
+                                alt={`Attached ${i + 1}`}
+                                className="max-w-full max-h-64 rounded-lg object-contain ring-1 ring-white/20 cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => setPreviewImage(url)}
+                              />
                             ))}
                         </div>
                       )}
@@ -1268,6 +1275,66 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </motion.div>
         </div>
       )}
+
+      {/* Image Preview Modal */}
+      <AnimatePresence>
+        {previewImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            onClick={() => setPreviewImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-[90vw] max-h-[90vh] flex flex-col items-center gap-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between w-full px-2">
+                <div className="text-sm text-white/70">
+                  <p className="font-medium text-white">image.png</p>
+                  <p className="text-xs">Image</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={previewImage}
+                    download="image.png"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Download className="w-4 h-4" /> Download
+                  </a>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(previewImage);
+                      toast({ title: 'Link copied!' });
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm transition-colors"
+                  >
+                    <Copy className="w-4 h-4" /> Copy
+                  </button>
+                  <button
+                    onClick={() => setPreviewImage(null)}
+                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              {/* Image */}
+              <img
+                src={previewImage}
+                alt="Preview"
+                className="max-w-full max-h-[80vh] rounded-lg object-contain"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
