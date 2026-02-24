@@ -85,7 +85,7 @@ serve(async (req) => {
     if (!/^https?:\/\//i.test(baseUrl)) {
       baseUrl = `https://${baseUrl}`;
     }
-    const publicUrl = `${baseUrl}/${fileName}`;
+    const publicUrl = `${baseUrl}/images/${fileName}`;
 
     return new Response(
       JSON.stringify({ url: publicUrl, fileName }),
