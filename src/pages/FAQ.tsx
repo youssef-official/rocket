@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ArrowLeft, HelpCircle, Sparkles, CreditCard, Zap, Shield, Globe, GitBranch } from 'lucide-react';
+import { ChevronDown, ArrowLeft, HelpCircle, Sparkles, Zap, Shield, Globe, GitBranch, Mail } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { Footer } from '@/components/shared/Footer';
 import { SEOHead } from '@/components/shared/SEOHead';
@@ -17,11 +17,6 @@ const faqData: FAQItem[] = [
     question: "What is Vivora X?",
     answer: "Vivora X is an AI-powered web application builder that transforms your ideas into production-ready code. Simply describe what you want to build, and watch as Vivora X generates complete React applications with TypeScript and Tailwind CSS.",
     icon: Sparkles
-  },
-  {
-    question: "How do credits work?",
-    answer: "Credits are deducted AFTER each successful generation based on the number of files modified:\n\n• First version (new project): 2 credits\n• 1–2 files modified: 0.5 credits\n• 2–3 files modified: 1 credit\n• 4–5 files modified: 3 credits\n• 6+ files modified: 5 credits\n\nAll plans get 5 daily credits that reset at midnight UTC. Paid plans also receive monthly credits (Builder: 40, Creator: 50, Scale: 70). Daily credits are used first, then monthly credits. If your remaining balance is less than required, whatever you have left is deducted (partial usage allowed).",
-    icon: CreditCard
   },
   {
     question: "What can I build with Vivora X?",
@@ -42,16 +37,6 @@ const faqData: FAQItem[] = [
     question: "Can I push my code to GitHub?",
     answer: "Yes! Connect your GitHub account in the editor, then push your project to any repository. Each new version can be pushed as a new commit. Your repo link is saved per project for easy updates.",
     icon: GitBranch
-  },
-  {
-    question: "What are the plan differences?",
-    answer: "• Free (Spark): 5 daily credits, public projects only, no ZIP export\n• Builder ($9/mo): 5 daily + 40 monthly credits, ZIP export\n• Creator ($15/mo): 5 daily + 50 monthly credits, private projects, ZIP export\n• Scale ($22/mo): 5 daily + 70 monthly credits, private projects, ZIP export, priority access",
-    icon: CreditCard
-  },
-  {
-    question: "How do I get more credits?",
-    answer: "Upgrade your plan to get monthly credits on top of your daily allowance. Daily credits (5) reset every midnight UTC. Monthly credits renew when you renew your subscription. If you don't renew, you revert to the free plan.",
-    icon: CreditCard
   }
 ];
 
@@ -59,130 +44,146 @@ export const FAQ: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <SEOHead
         title="FAQ — Vivora X Frequently Asked Questions"
-        description="Find answers to common questions about Vivora X vibe coding platform. Learn about credits, plans, deployment, GitHub integration, and more."
-        keywords="vivora x faq, vibe coding questions, vivorax help, AI web builder faq, credits system, pricing plans"
+        description="Find answers to common questions about Vivora X vibe coding platform. Learn about deployment, GitHub integration, and more."
+        keywords="vivora x faq, vibe coding questions, vivorax help, AI web builder faq"
         canonical="https://vivorax.online/faq"
       />
-      <div 
-        className="flex-1 relative"
-        style={{
-          backgroundImage: `url(${spaceHeroBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-        }}
-      >
-        <div className="absolute inset-0 bg-black/70" />
 
-        <header className="relative z-10 px-6 py-4 border-b border-white/10">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <a href="/" className="flex items-center gap-2">
-              <VivoraLogo size="md" />
-              <span className="text-white/60">|</span>
-              <span className="text-white font-medium">FAQ</span>
-            </a>
-            <a 
-              href="/"
-              className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Home
-            </a>
-          </div>
-        </header>
-
-        <div className="relative z-10 max-w-4xl mx-auto px-6 py-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
+      {/* Header */}
+      <header className="sticky top-0 z-50 px-6 py-4 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <a href="/" className="flex items-center gap-3">
+            <VivoraLogo size="md" />
+            <div className="h-5 w-px bg-border" />
+            <span className="text-foreground/70 font-medium text-sm">FAQ</span>
+          </a>
+          <a 
+            href="/"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full mb-6">
-              <HelpCircle className="w-5 h-5 text-pink-400" />
-              <span className="text-white text-sm">Frequently Asked Questions</span>
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </a>
+        </div>
+      </header>
+
+      <main className="flex-1">
+        <div className="max-w-3xl mx-auto px-6 py-20">
+          {/* Hero */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+              <HelpCircle className="w-4 h-4" />
+              Help Center
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              Got <span className="text-pink-400">Questions?</span>
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 tracking-tight">
+              Frequently Asked Questions
             </h1>
-            <p className="text-white/70 text-lg max-w-2xl mx-auto">
-              Find answers to the most common questions about Vivora X.
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+              Everything you need to know about Vivora X.
             </p>
           </motion.div>
 
-          <div className="space-y-4">
-            {faqData.map((item, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden"
-              >
-                <button
-                  onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                  className="w-full flex items-center gap-4 p-6 text-left hover:bg-white/5 transition-colors"
+          {/* FAQ Items */}
+          <div className="space-y-3">
+            {faqData.map((item, index) => {
+              const isOpen = openIndex === index;
+              const Icon = item.icon;
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.08, duration: 0.4 }}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-pink-500/20 flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-6 h-6 text-pink-400" />
-                  </div>
-                  <span className="flex-1 text-lg font-medium text-white">
-                    {item.question}
-                  </span>
-                  <motion.div
-                    animate={{ rotate: openIndex === index ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
+                  <div
+                    className={`rounded-2xl border transition-all duration-200 ${
+                      isOpen
+                        ? 'border-primary/30 bg-primary/5 shadow-lg shadow-primary/5'
+                        : 'border-border bg-card hover:border-primary/20 hover:shadow-md'
+                    }`}
                   >
-                    <ChevronDown className="w-5 h-5 text-white/50" />
-                  </motion.div>
-                </button>
-                
-                <AnimatePresence>
-                  {openIndex === index && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
+                    <button
+                      onClick={() => setOpenIndex(isOpen ? null : index)}
+                      className="w-full flex items-center gap-4 p-5 text-left"
                     >
-                      <div className="px-6 pb-6 pl-24">
-                        <p className="text-white/70 leading-relaxed whitespace-pre-line">
-                          {item.answer}
-                        </p>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                        isOpen ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        <Icon className="w-5 h-5" />
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
+                      <span className="flex-1 font-semibold text-foreground">
+                        {item.question}
+                      </span>
+                      <motion.div
+                        animate={{ rotate: isOpen ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                      </motion.div>
+                    </button>
+
+                    <AnimatePresence>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-5 pb-5 pl-[4.75rem]">
+                            <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                              {item.answer}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
 
+          {/* CTA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="mt-16 text-center"
+            transition={{ delay: 0.5 }}
+            className="mt-20"
           >
-            <div className="bg-gradient-to-r from-pink-500/20 to-purple-500/20 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Still have questions?
-              </h2>
-              <p className="text-white/70 mb-6">
-                Can't find the answer you're looking for? Feel free to reach out to our support team.
-              </p>
-              <a
-                href="mailto:support@vivora-x.com"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-pink-500 hover:bg-pink-600 text-white font-medium rounded-full transition-colors"
-              >
-                Contact Support
-              </a>
+            <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-10 text-center">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
+              <div className="relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
+                  <Mail className="w-7 h-7 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground mb-3">
+                  Still have questions?
+                </h2>
+                <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+                  Our support team is happy to help you with anything.
+                </p>
+                <a
+                  href="mailto:support@vivorax.online"
+                  className="inline-flex items-center gap-2 px-7 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-full transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                  Contact Support
+                </a>
+              </div>
             </div>
           </motion.div>
         </div>
-      </div>
+      </main>
 
       <Footer />
     </div>
