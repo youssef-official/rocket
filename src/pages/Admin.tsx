@@ -9,7 +9,7 @@ import {
   BarChart2, Download, ChevronDown, Filter, Code,
   LayoutGrid, MessageCircle, Calendar, DollarSign,
   ArrowLeftRight, GraduationCap, ShoppingCart, Star, Coins,
-  FileText, PanelLeftClose, PanelLeftOpen,
+  FileText, PanelLeftClose, PanelLeftOpen, Cpu, Save, Power, PowerOff,
 } from 'lucide-react';
 import { AdminBlogEditor } from '@/components/admin/AdminBlogEditor';
 
@@ -26,8 +26,18 @@ export const AdminPanel: React.FC = () => {
   const [data, setData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<'dashboard' | 'users' | 'plans' | 'transactions' | 'projects' | 'inbox' | 'templates' | 'blog'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'users' | 'plans' | 'transactions' | 'projects' | 'inbox' | 'templates' | 'blog' | 'ai-models'>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // AI Model Config state
+  const [aiModels, setAiModels] = useState<any[]>([]);
+  const [aiProvider, setAiProvider] = useState('vercel');
+  const [aiModelId, setAiModelId] = useState('');
+  const [aiDisplayName, setAiDisplayName] = useState('');
+  const [aiGatewayUrl, setAiGatewayUrl] = useState('https://ai-gateway.vercel.sh/v1/chat/completions');
+  const [aiKeySecretName, setAiKeySecretName] = useState('VERCEL_AI_API_KEY');
+  const [aiTargetPlan, setAiTargetPlan] = useState('all');
+  const [savingModel, setSavingModel] = useState(false);
 
   const [inboxTitle, setInboxTitle] = useState('');
   const [inboxBody, setInboxBody] = useState('');
@@ -74,6 +84,7 @@ export const AdminPanel: React.FC = () => {
     fetchData();
     fetchNotifications();
     fetchTemplates();
+    fetchAiModels();
   }, [user, authLoading, navigate]);
 
   const fetchNotifications = async () => {
@@ -120,6 +131,70 @@ export const AdminPanel: React.FC = () => {
   const handleDeleteTemplate = async (id: string) => {
     await supabase.from('templates').delete().eq('id', id);
     await fetchTemplates();
+  };
+
+  // AI Models
+  const fetchAiModels = async () => {
+    const { data } = await supabase.from('ai_model_config').select('*').order('created_at', { ascending: false });
+    if (data) setAiModels(data);
+  };
+
+  const providerDefaults: Record<string, { url: string; key: string; placeholder: string }> = {
+    vercel: { url: 'https://ai-gateway.vercel.sh/v1/chat/completions', key: 'VERCEL_AI_API_KEY', placeholder: 'google/gemini-3-flash' },
+    openrouter: { url: 'https://openrouter.ai/api/v1/chat/completions', key: 'OPENROUTER_API_KEY', placeholder: 'anthropic/claude-sonnet-4' },
+    nvidia: { url: 'https://integrate.api.nvidia.com/v1/chat/completions', key: 'NVIDIA_API_KEY', placeholder: 'moonshotai/kimi-k2.5' },
+    lovable: { url: 'https://ai.gateway.lovable.dev/v1/chat/completions', key: 'LOVABLE_API_KEY', placeholder: 'google/gemini-2.5-flash' },
+  };
+
+  const handleProviderChange = (provider: string) => {
+    setAiProvider(provider);
+    const defaults = providerDefaults[provider];
+    if (defaults) {
+      setAiGatewayUrl(defaults.url);
+      setAiKeySecretName(defaults.key);
+      setAiModelId('');
+    }
+  };
+
+  const handleAddAiModel = async () => {
+    if (!aiModelId.trim() || !aiDisplayName.trim()) return;
+    setSavingModel(true);
+    await supabase.from('ai_model_config').insert({
+      provider: aiProvider,
+      model_id: aiModelId,
+      display_name: aiDisplayName,
+      gateway_url: aiGatewayUrl,
+      api_key_secret_name: aiKeySecretName,
+      target_plan: aiTargetPlan,
+      is_active: false,
+      created_by: user?.id,
+    });
+    setAiModelId(''); setAiDisplayName('');
+    await fetchAiModels();
+    setSavingModel(false);
+  };
+
+  const handleToggleAiModel = async (id: string, currentActive: boolean) => {
+    // If activating, deactivate all others with same target_plan first
+    if (!currentActive) {
+      const model = aiModels.find(m => m.id === id);
+      if (model) {
+        // Deactivate all models targeting same plan or 'all'
+        const idsToDeactivate = aiModels
+          .filter(m => m.id !== id && m.is_active && (m.target_plan === model.target_plan || m.target_plan === 'all' || model.target_plan === 'all'))
+          .map(m => m.id);
+        if (idsToDeactivate.length > 0) {
+          await supabase.from('ai_model_config').update({ is_active: false }).in('id', idsToDeactivate);
+        }
+      }
+    }
+    await supabase.from('ai_model_config').update({ is_active: !currentActive }).eq('id', id);
+    await fetchAiModels();
+  };
+
+  const handleDeleteAiModel = async (id: string) => {
+    await supabase.from('ai_model_config').delete().eq('id', id);
+    await fetchAiModels();
   };
 
   const css = `
@@ -563,11 +638,13 @@ export const AdminPanel: React.FC = () => {
     { key: 'projects'     as const, label: 'Projects',     icon: FolderOpen,  count: data.projects.length },
     { key: 'plans'        as const, label: 'Plans',       icon: CreditCard,  count: data.plans.length },
     { key: 'templates'    as const, label: 'Templates',    icon: Layers,     count: templates.length },
+    { key: 'ai-models'    as const, label: 'AI Models',    icon: Cpu,        count: aiModels.length },
   ];
 
   const pageTitles: Record<string, string> = {
     dashboard: 'Dashboard', users: 'Users', plans: 'Plans', transactions: 'Statistics',
     projects: 'Projects', inbox: 'Inbox', templates: 'Templates', blog: 'Blog Manager',
+    'ai-models': 'AI Model Configuration',
   };
 
   const displayName = (data?.users?.find((u: any) => u.id === user?.id)?.display_name) || user?.email?.split('@')[0] || 'Admin';
@@ -952,6 +1029,109 @@ export const AdminPanel: React.FC = () => {
                 BLOG
             ══════════════════════════════════════════════════════════════ */}
             {tab === 'blog' && <AdminBlogEditor />}
+
+            {/* ══════════════════════════════════════════════════════════════
+                AI MODELS
+            ══════════════════════════════════════════════════════════════ */}
+            {tab === 'ai-models' && (
+              <>
+                <div className="vivora-form-layout">
+                  <div className="vivora-form-card">
+                    <div className="vivora-form-header">
+                      <div className="vivora-form-icon"><Cpu size={16} /></div>
+                      <span className="vivora-form-title">Add AI Model</span>
+                    </div>
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">Provider</label>
+                      <select value={aiProvider} onChange={e => handleProviderChange(e.target.value)} className="vivora-field-input" style={{ cursor: 'pointer' }}>
+                        <option value="vercel">Vercel AI Gateway</option>
+                        <option value="openrouter">OpenRouter</option>
+                        <option value="nvidia">NVIDIA NIM</option>
+                        <option value="lovable">Lovable AI</option>
+                      </select>
+                    </div>
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">Model ID *</label>
+                      <input value={aiModelId} onChange={e => setAiModelId(e.target.value)} className="vivora-field-input" style={{ fontFamily: "'Geist Mono', monospace" }} placeholder={providerDefaults[aiProvider]?.placeholder || 'model/name'} />
+                    </div>
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">Display Name *</label>
+                      <input value={aiDisplayName} onChange={e => setAiDisplayName(e.target.value)} className="vivora-field-input" placeholder="e.g. Gemini 3 Flash" />
+                    </div>
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">Gateway URL</label>
+                      <input value={aiGatewayUrl} onChange={e => setAiGatewayUrl(e.target.value)} className="vivora-field-input" style={{ fontFamily: "'Geist Mono', monospace", fontSize: '11px' }} />
+                    </div>
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">API Key Secret Name</label>
+                      <input value={aiKeySecretName} onChange={e => setAiKeySecretName(e.target.value)} className="vivora-field-input" style={{ fontFamily: "'Geist Mono', monospace" }} />
+                    </div>
+                    <div className="vivora-field">
+                      <label className="vivora-field-label">Target Plan</label>
+                      <select value={aiTargetPlan} onChange={e => setAiTargetPlan(e.target.value)} className="vivora-field-input" style={{ cursor: 'pointer' }}>
+                        <option value="all">All Plans</option>
+                        <option value="free">Free Only</option>
+                        <option value="pro">Pro Only</option>
+                        <option value="business">Business Only</option>
+                      </select>
+                    </div>
+                    <button className="vivora-btn vivora-btn-primary" onClick={handleAddAiModel} disabled={!aiModelId.trim() || !aiDisplayName.trim() || savingModel} style={{ marginTop: 8 }}>
+                      <Plus size={14} /> {savingModel ? 'Saving...' : 'Add Model'}
+                    </button>
+                  </div>
+                  <div className="vivora-form-card">
+                    <h4 style={{ fontSize: 14, fontWeight: 700, color: '#e0e0e0', marginBottom: 8 }}>How it works</h4>
+                    <p style={{ fontSize: 12, color: '#78909c', lineHeight: 1.7, marginBottom: 16 }}>Configure which AI model powers code generation. Select a provider, enter the model ID, and choose which plans use this model.</p>
+                    <div style={{ background: 'rgba(56,139,253,0.08)', border: '1px solid rgba(56,139,253,0.2)', borderRadius: 10, padding: 14, marginBottom: 12 }}>
+                      <p style={{ fontSize: 11, color: '#58a6ff', fontWeight: 600, marginBottom: 4 }}>Providers</p>
+                      <ul style={{ fontSize: 11, color: '#90a4ae', lineHeight: 1.8, paddingLeft: 14, listStyle: 'disc' }}>
+                        <li><strong style={{ color: '#e0e0e0' }}>Vercel AI Gateway</strong> — Default. VERCEL_AI_API_KEY</li>
+                        <li><strong style={{ color: '#e0e0e0' }}>OpenRouter</strong> — Multi-model. OPENROUTER_API_KEY</li>
+                        <li><strong style={{ color: '#e0e0e0' }}>NVIDIA NIM</strong> — Enterprise. NVIDIA_API_KEY</li>
+                        <li><strong style={{ color: '#e0e0e0' }}>Lovable AI</strong> — Built-in. LOVABLE_API_KEY</li>
+                      </ul>
+                    </div>
+                    <div style={{ background: 'rgba(239,83,80,0.08)', border: '1px solid rgba(239,83,80,0.2)', borderRadius: 10, padding: 14 }}>
+                      <p style={{ fontSize: 11, color: '#ef5350', fontWeight: 600, marginBottom: 4 }}>Important</p>
+                      <p style={{ fontSize: 11, color: '#90a4ae', lineHeight: 1.6 }}>Only ONE model can be active per plan at a time. Activating a new model deactivates the previous one.</p>
+                    </div>
+                  </div>
+                </div>
+                {aiModels.length === 0 ? (
+                  <div className="vivora-empty">
+                    <div className="vivora-empty-icon"><Cpu size={22} /></div>
+                    <h3 className="vivora-empty-title">No models configured</h3>
+                    <p className="vivora-empty-text">Add your first AI model to start configuring code generation.</p>
+                  </div>
+                ) : (
+                  <div className="vivora-table-card">
+                    <table className="vivora-table">
+                      <thead><tr><th>Status</th><th>Provider</th><th>Model</th><th>Display Name</th><th>Plan</th><th>Key</th><th>Actions</th></tr></thead>
+                      <tbody>
+                        {aiModels.map(m => (
+                          <tr key={m.id}>
+                            <td><span className={`vivora-badge ${m.is_active ? 'badge-green' : 'badge-gray'}`}>{m.is_active ? 'Active' : 'Inactive'}</span></td>
+                            <td><span className="vivora-badge badge-blue" style={{ textTransform: 'capitalize' }}>{m.provider}</span></td>
+                            <td className="td-mono">{m.model_id}</td>
+                            <td className="td-strong">{m.display_name}</td>
+                            <td><span className="vivora-badge badge-gray" style={{ textTransform: 'capitalize' }}>{m.target_plan}</span></td>
+                            <td className="td-mono" style={{ fontSize: 10 }}>{m.api_key_secret_name}</td>
+                            <td>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <button className={`vivora-btn ${m.is_active ? 'vivora-btn-secondary' : 'vivora-btn-primary'}`} style={{ padding: '5px 10px', fontSize: 11 }} onClick={() => handleToggleAiModel(m.id, m.is_active)}>
+                                  {m.is_active ? 'Deactivate' : 'Activate'}
+                                </button>
+                                <button className="vivora-del-btn" onClick={() => handleDeleteAiModel(m.id)}><Trash2 size={12} /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
 
             {/* ══════════════════════════════════════════════════════════════
                 DATA TABLES
