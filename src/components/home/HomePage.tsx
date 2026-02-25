@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Send, Lock, Globe, X, Image as ImageIcon, ChevronDown, Sparkles, BookOpen, CircleHelp, LogIn, Wand2, ArrowUpRight, Plus, Copy, Loader2 } from 'lucide-react';
+import { ArrowRight, Send, Lock, Globe, X, Image as ImageIcon, ChevronDown, Sparkles, BookOpen, CircleHelp, LogIn, Wand2, ArrowUpRight, Plus, Copy, Loader2, Mic, MicOff, Palette } from 'lucide-react';
 import { UserMenuDropdown } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -83,6 +83,86 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [showCloneInput, setShowCloneInput] = useState(false);
   const [cloneUrl, setCloneUrl] = useState('');
   const [cloneLoading, setCloneLoading] = useState(false);
+
+  // Theme selector state
+  const [selectedTheme, setSelectedTheme] = useState<{ name: string; colors: string[] } | null>(() => {
+    const saved = sessionStorage.getItem('vivora_selected_theme');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+
+  // Voice input state
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const COLOR_THEMES = [
+    { name: 'Default', colors: ['#4F46E5', '#818CF8', '#C7D2FE'], desc: 'Indigo & Blue' },
+    { name: 'Glacier', colors: ['#0EA5E9', '#38BDF8', '#BAE6FD'], desc: 'Cool Blue' },
+    { name: 'Harvest', colors: ['#F59E0B', '#FBBF24', '#FDE68A'], desc: 'Warm Amber' },
+    { name: 'Lavender', colors: ['#A855F7', '#C084FC', '#E9D5FF'], desc: 'Purple' },
+    { name: 'Brutalist', colors: ['#1F2937', '#6B7280', '#F9FAFB'], desc: 'Mono Gray' },
+    { name: 'Obsidian', colors: ['#0F172A', '#334155', '#94A3B8'], desc: 'Dark Slate' },
+    { name: 'Orchid', colors: ['#EC4899', '#F472B6', '#FBCFE8'], desc: 'Pink' },
+    { name: 'Solar', colors: ['#EF4444', '#F97316', '#FCD34D'], desc: 'Red-Orange' },
+    { name: 'Forest', colors: ['#059669', '#34D399', '#A7F3D0'], desc: 'Green' },
+    { name: 'Coral', colors: ['#F43F5E', '#FB7185', '#FECDD3'], desc: 'Rose' },
+  ];
+
+  // Voice recognition handlers
+  const startListening = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({ title: 'Not supported', description: 'Speech recognition is not supported in this browser.', variant: 'destructive' });
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = language === 'zh' ? 'zh-CN' : language === 'ja' ? 'ja-JP' : language === 'fr' ? 'fr-FR' : 'en-US';
+
+    recognition.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setPrompt(prev => {
+        // Replace from the point we started listening
+        const base = prev;
+        if (event.results[event.resultIndex]?.isFinal) {
+          return base + transcript + ' ';
+        }
+        return base;
+      });
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [language]);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  }, []);
+
+  // Save/clear theme in sessionStorage
+  useEffect(() => {
+    if (selectedTheme) {
+      sessionStorage.setItem('vivora_selected_theme', JSON.stringify(selectedTheme));
+    } else {
+      sessionStorage.removeItem('vivora_selected_theme');
+    }
+  }, [selectedTheme]);
 
   // Persist prompt to localStorage
   useEffect(() => {
@@ -623,13 +703,90 @@ export const HomePage: React.FC<HomePageProps> = ({
                               <p className="text-[11px] text-gray-500">Scrape a website design</p>
                             </div>
                           </button>
+
+                          {/* Themes */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowPlusMenu(false);
+                              setShowThemeMenu(true);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-all duration-200 ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                              <Palette className="w-4 h-4 text-indigo-500" />
+                            </div>
+                            <div className={isRTL ? 'text-right' : ''}>
+                              <p className="text-sm font-semibold text-gray-700">Themes</p>
+                              <p className="text-[11px] text-gray-500">Choose color palette</p>
+                            </div>
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Theme picker dropdown */}
+                  <AnimatePresence>
+                    {showThemeMenu && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowThemeMenu(false)} />
+                        <motion.div
+                          initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
+                          className={`absolute bottom-full ${isRTL ? 'right-0' : 'left-0'} mb-2 w-60 bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-200/80 overflow-hidden z-50 max-h-80 overflow-y-auto`}
+                        >
+                          <div className="px-4 py-2.5 border-b border-gray-100">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Default themes</p>
+                          </div>
+                          {COLOR_THEMES.map((theme) => (
+                            <button
+                              key={theme.name}
+                              type="button"
+                              onClick={() => {
+                                if (theme.name === 'Default') {
+                                  setSelectedTheme(null);
+                                } else {
+                                  setSelectedTheme(theme);
+                                }
+                                setShowThemeMenu(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all duration-200 text-left ${
+                                (selectedTheme?.name === theme.name || (!selectedTheme && theme.name === 'Default')) ? 'bg-indigo-50' : ''
+                              }`}
+                            >
+                              <div className="flex -space-x-1.5">
+                                {theme.colors.map((c, i) => (
+                                  <div key={i} className="w-5 h-5 rounded-full border-2 border-white" style={{ backgroundColor: c }} />
+                                ))}
+                              </div>
+                              <span className="text-sm font-medium text-gray-700">{theme.name}</span>
+                            </button>
+                          ))}
                         </motion.div>
                       </>
                     )}
                   </AnimatePresence>
                 </div>
 
+                {/* Selected theme chip + voice + controls */}
                 <div className={`flex items-center gap-1.5 md:gap-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  {/* Theme chip */}
+                  {selectedTheme && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 rounded-full text-xs font-medium text-gray-600">
+                      <div className="flex -space-x-1">
+                        {selectedTheme.colors.map((c, i) => (
+                          <div key={i} className="w-3 h-3 rounded-full border border-white" style={{ backgroundColor: c }} />
+                        ))}
+                      </div>
+                      <span>{selectedTheme.name}</span>
+                      <button type="button" onClick={() => setSelectedTheme(null)} className="w-4 h-4 rounded-full bg-gray-300 hover:bg-gray-400 flex items-center justify-center transition-colors">
+                        <X className="w-2.5 h-2.5 text-gray-600" />
+                      </button>
+                    </div>
+                   )}
                   {/* Character Count */}
                   <span className={`text-[10px] md:text-xs font-mono tabular-nums ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-destructive font-bold' : 'text-gray-400'}`}>
                     {prompt.length}/{MAX_PROMPT_LENGTH}
@@ -698,6 +855,18 @@ export const HomePage: React.FC<HomePageProps> = ({
                       )}
                     </AnimatePresence>
                   </div>
+
+                  {/* Mic button */}
+                  <button
+                    type="button"
+                    onClick={isListening ? stopListening : startListening}
+                    className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 flex-shrink-0 ${
+                      isListening ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/25 animate-pulse' : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                    title={isListening ? 'Stop listening' : 'Voice input'}
+                  >
+                    {isListening ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4 text-gray-500" />}
+                  </button>
 
                   <motion.button
                     type="submit"
