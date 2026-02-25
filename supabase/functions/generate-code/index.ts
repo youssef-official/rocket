@@ -760,7 +760,7 @@ serve(async (req) => {
   }
 
   try {
-    const { mode, messages, userPlan, userLanguage } = await req.json();
+    const { mode, messages, userPlan, userLanguage, colorTheme } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
