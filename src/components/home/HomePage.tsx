@@ -292,17 +292,25 @@ export const HomePage: React.FC<HomePageProps> = ({
         return;
       }
 
-      // Append clone HTML to prompt if attached
-      let finalPrompt = prompt;
-      if (cloneAttachment) {
-        finalPrompt = `${prompt}\n\n---\n[CLONE DESIGN SOURCE - ${cloneAttachment.url}]\nHere is the source code of the website I want to clone/replicate the design of:\n\`\`\`html\n${cloneAttachment.html}\n\`\`\``;
-      }
-
+      // Store clone data in sessionStorage (not in the visible prompt)
+      // It will be retrieved by the editor and sent only to the AI model
       setIsSubmitting(true);
       localStorage.removeItem('vivora_home_prompt');
-      onStartBuilding(finalPrompt, projectType, undefined, urls.length > 0 ? urls : undefined);
+      onStartBuilding(prompt, projectType, undefined, urls.length > 0 ? urls : undefined);
     }
   };
+
+  // After onStartBuilding creates the project and navigates, store clone data
+  // We use a useEffect to detect navigation away
+  useEffect(() => {
+    if (isSubmitting && cloneAttachment) {
+      // Store for the next project that will be created
+      sessionStorage.setItem('pending_clone_data', JSON.stringify({
+        url: cloneAttachment.url,
+        html: cloneAttachment.html
+      }));
+    }
+  }, [isSubmitting, cloneAttachment]);
 
   return (
     <div

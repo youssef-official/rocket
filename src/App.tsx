@@ -167,8 +167,19 @@ const ProjectEditorRoute = () => {
           sessionStorage.removeItem(`project_image_${localProject.id}`);
         }
 
-        // Add user message and AWAIT it to ensure it's saved in the database
-        await addMessage('user', prompt, savedImageUrl || undefined);
+        // Get any clone design data from sessionStorage
+        const cloneDataRaw = sessionStorage.getItem('pending_clone_data');
+        let cloneData: { url: string; html: string } | null = null;
+        if (cloneDataRaw) {
+          sessionStorage.removeItem('pending_clone_data');
+          try { cloneData = JSON.parse(cloneDataRaw); } catch {}
+        }
+
+        // Add user message (visible) - show clone indicator but NOT the HTML
+        const visiblePrompt = cloneData
+          ? `${prompt}\n\n📎 Clone Design: ${cloneData.url}`
+          : prompt;
+        await addMessage('user', visiblePrompt, savedImageUrl || undefined);
         setIsGenerating(true);
         setStreamingContent('');
         setFileActivities([]);
@@ -270,8 +281,11 @@ const ProjectEditorRoute = () => {
 
           // Credits will be deducted AFTER generation completes (in onComplete)
 
-          // Build prompt with safety rules
-          const userPrompt = `${prompt}\n\n[STRICT RULE: Every component used MUST be imported. If you use <AnimatePresence>, you MUST add: import { motion, AnimatePresence } from "framer-motion"; at the top of the file. NO EXCEPTIONS.]`;
+          // Build prompt with safety rules + clone data (hidden from chat)
+          let userPrompt = `${prompt}\n\n[STRICT RULE: Every component used MUST be imported. If you use <AnimatePresence>, you MUST add: import { motion, AnimatePresence } from "framer-motion"; at the top of the file. NO EXCEPTIONS.]`;
+          if (cloneData) {
+            userPrompt += `\n\n---\n[CLONE DESIGN SOURCE - ${cloneData.url}]\nHere is the source code of the website I want to clone/replicate the design of:\n\`\`\`html\n${cloneData.html}\n\`\`\``;
+          }
 
           const aiMessages: any[] = [{ role: 'user', content: userPrompt }];
           if (savedImageUrl) {
