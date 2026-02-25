@@ -840,7 +840,17 @@ USER_LANGUAGE=${userLanguage || 'en'}
 - Analyze each attached image carefully before coding
 - Extract layout, hierarchy, colors, spacing, typography, and components
 - Recreate/fix the design based on what is visible in the image
-- If user asks to solve issues in the screenshot, identify the likely root cause and fix it in code`,
+- If user asks to solve issues in the screenshot, identify the likely root cause and fix it in code${
+  colorTheme ? `
+
+🎨 COLOR THEME INSTRUCTIONS (MANDATORY):
+The user selected the "${colorTheme.name}" color theme. You MUST use these colors as the PRIMARY palette:
+- Primary: ${colorTheme.colors[0]}
+- Secondary: ${colorTheme.colors[1]}  
+- Accent: ${colorTheme.colors[2]}
+Apply these colors to: buttons, headings, accents, gradients, hover states, and key UI elements.
+Derive darker/lighter shades from these base colors for backgrounds and text.` : ''
+}`,
           ),
         };
       }
