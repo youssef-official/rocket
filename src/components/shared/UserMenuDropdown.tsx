@@ -85,7 +85,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
   };
 
   const remainingCredits = getRemainingCredits();
-  const planConfig = userPlan ? PLAN_CONFIG[userPlan.plan] : PLAN_CONFIG.free;
+  const planConfig = userPlan ? (PLAN_CONFIG[userPlan.plan] || PLAN_CONFIG.free) : PLAN_CONFIG.free;
   const totalCredits = (userPlan?.dailyCredits || 5) + planConfig.monthlyCredits;
   const usedCredits = totalCredits - remainingCredits.total;
   const usagePercent = totalCredits > 0 ? (usedCredits / totalCredits) * 100 : 0;

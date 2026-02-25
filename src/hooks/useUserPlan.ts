@@ -42,10 +42,13 @@ export function useUserPlan() {
         .from('user_plans')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') {
+        throw error;
+      }
+
+      if (!data) {
           // No plan exists, create default
           const { data: newPlan, error: createError } = await supabase
             .from('user_plans')
@@ -76,10 +79,7 @@ export function useUserPlan() {
             createdAt: newPlan.created_at,
             updatedAt: newPlan.updated_at,
           });
-        } else {
-          throw error;
-        }
-      } else if (data) {
+      } else {
         setUserPlan({
           id: data.id,
           userId: data.user_id,
@@ -138,7 +138,7 @@ export function useUserPlan() {
   // Check if user can export ZIP
   const canExportZip = useCallback(() => {
     if (!userPlan) return false;
-    return PLAN_CONFIG[userPlan.plan].features.zipExport;
+    return (PLAN_CONFIG[userPlan.plan] || PLAN_CONFIG.free).features.zipExport;
   }, [userPlan]);
 
   return {

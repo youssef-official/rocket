@@ -33,7 +33,7 @@ const ProjectSettings: React.FC = () => {
     return localStorage.getItem(`project_notifications_${id}`) !== 'false';
   });
 
-  const isPaid = userPlan ? PLAN_CONFIG[userPlan.plan].features.watermarkRemoval : false;
+  const isPaid = userPlan ? (PLAN_CONFIG[userPlan.plan] || PLAN_CONFIG.free).features.watermarkRemoval : false;
 
   useEffect(() => {
     if (!id || !user) return;

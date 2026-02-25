@@ -128,7 +128,7 @@ export const CodeView: React.FC<CodeViewProps> = ({
   isGenerating = false,
 }) => {
   const { userPlan } = useUserPlan();
-  const canEditCode = userPlan ? PLAN_CONFIG[userPlan.plan].features.codeEditing : false;
+  const canEditCode = userPlan ? (PLAN_CONFIG[userPlan.plan] || PLAN_CONFIG.free).features.codeEditing : false;
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['src']));
 
   // Parse streaming files
