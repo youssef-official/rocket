@@ -110,8 +110,8 @@ export function useUserPlan() {
     if (!userPlan) return { daily: 0, monthly: 0, total: 0 };
     
     const dailyRemaining = Math.max(0, userPlan.dailyCredits - userPlan.creditsUsedToday);
-    const planConfig = PLAN_CONFIG[userPlan.plan];
-    const monthlyRemaining = Math.max(0, planConfig.monthlyCredits - userPlan.totalCreditsUsed);
+    const planConfig = PLAN_CONFIG[userPlan.plan] || PLAN_CONFIG.free;
+    const monthlyRemaining = Math.max(0, (planConfig.monthlyCredits ?? 0) - userPlan.totalCreditsUsed);
     
     return {
       daily: dailyRemaining,
@@ -124,7 +124,8 @@ export function useUserPlan() {
   const shouldShowUpgradeBanner = useCallback(() => {
     if (!userPlan) return false;
     const remaining = getRemainingCredits();
-    const totalAllowed = userPlan.dailyCredits + PLAN_CONFIG[userPlan.plan].monthlyCredits;
+    const planConfig = PLAN_CONFIG[userPlan.plan] || PLAN_CONFIG.free;
+    const totalAllowed = userPlan.dailyCredits + (planConfig.monthlyCredits ?? 0);
     return remaining.total < totalAllowed * 0.5;
   }, [userPlan, getRemainingCredits]);
 
