@@ -4,7 +4,7 @@ import {
   Code2, Eye, LogOut, Moon, Sun, ChevronDown, Download, Clock, Pencil,
   Eye as EyeIcon, Upload, Coins, Database, GitBranch, Settings2,
   BookOpen, CreditCard, CircleHelp, Rocket, Monitor, FileArchive,
-  Shield
+  Shield, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import githubLogo from '@/assets/logos/github.svg';
 import { ChatView } from './ChatView';
@@ -103,6 +103,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProjectMenu, setShowProjectMenu] = useState(false);
   const [chatWidth, setChatWidth] = useState(450);
+  const [chatHidden, setChatHidden] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light' | 'system'>('system');
   const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
 
@@ -786,35 +787,58 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
         {!isMobileViewport ? (
           <div className="flex flex-1 overflow-hidden">
-            <div
-              className="flex-shrink-0 border-r border-border"
-              style={{ width: chatWidth }}
-            >
-              <ChatView
-                messages={displayMessages}
-                onSendMessage={onSendMessage}
-                isGenerating={isGenerating}
-                fileActivities={fileActivities}
-                generationPhase={generationPhase}
-                onStop={onStop}
-                statusMessage={statusMessage}
-                currentVersion={currentVersionNumber ?? currentVersion}
-                onImageUpload={handleImageUpload}
-                suggestions={suggestions}
-                versions={versions}
-                onSelectVersion={handleSelectVersion}
-                onRollback={handleRollback}
-                onShowDetails={handleShowDetails}
-                waitingForTest={waitingForTest}
-                projectFiles={project?.files || {}}
-              />
-            </div>
+            {/* Toggle chat button */}
+            {chatHidden && (
+              <button
+                onClick={() => setChatHidden(false)}
+                className="flex-shrink-0 w-10 flex items-center justify-center border-r border-border hover:bg-accent/60 transition-colors text-muted-foreground hover:text-foreground"
+                title="Show chat"
+              >
+                <PanelLeftOpen className="w-4 h-4" />
+              </button>
+            )}
 
-            {/* Resize Handle */}
-            <div
-              className="w-1 bg-transparent hover:bg-primary/50 cursor-col-resize transition-colors"
-              onMouseDown={handleResizeStart}
-            />
+            {!chatHidden && (
+              <>
+                <div
+                  className="flex-shrink-0 border-r border-border relative"
+                  style={{ width: chatWidth }}
+                >
+                  {/* Hide chat button */}
+                  <button
+                    onClick={() => setChatHidden(true)}
+                    className="absolute top-2 right-2 z-10 p-1.5 rounded-lg hover:bg-accent/80 transition-colors text-muted-foreground hover:text-foreground"
+                    title="Hide chat"
+                  >
+                    <PanelLeftClose className="w-4 h-4" />
+                  </button>
+                  <ChatView
+                    messages={displayMessages}
+                    onSendMessage={onSendMessage}
+                    isGenerating={isGenerating}
+                    fileActivities={fileActivities}
+                    generationPhase={generationPhase}
+                    onStop={onStop}
+                    statusMessage={statusMessage}
+                    currentVersion={currentVersionNumber ?? currentVersion}
+                    onImageUpload={handleImageUpload}
+                    suggestions={suggestions}
+                    versions={versions}
+                    onSelectVersion={handleSelectVersion}
+                    onRollback={handleRollback}
+                    onShowDetails={handleShowDetails}
+                    waitingForTest={waitingForTest}
+                    projectFiles={project?.files || {}}
+                  />
+                </div>
+
+                {/* Resize Handle */}
+                <div
+                  className="w-1 bg-transparent hover:bg-primary/50 cursor-col-resize transition-colors"
+                  onMouseDown={handleResizeStart}
+                />
+              </>
+            )}
 
             {/* Main Panel */}
             <div className="flex-1 overflow-hidden relative">
@@ -823,6 +847,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   files={project?.files || {}}
                   projectType={project?.projectType || 'vite'}
                   isLoading={isGenerating && !isChatMode}
+                  projectId={project?.id}
                   onPreviewError={(errorLog) => {
                     onSendMessage(`[AUTO-FIX] The preview has console errors. Please fix them:\n\n${errorLog}`, false);
                   }}
@@ -890,6 +915,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 files={project?.files || {}}
                 projectType={project?.projectType || 'vite'}
                 isLoading={isGenerating && !isChatMode}
+                projectId={project?.id}
                 onPreviewError={(errorLog) => {
                   onSendMessage(`[AUTO-FIX] The preview has console errors. Please fix them:\n\n${errorLog}`, false);
                 }}
