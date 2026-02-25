@@ -219,7 +219,7 @@ export const Pricing: React.FC = () => {
                     { label: 'Clone Design', vals: ['yes', 'yes', 'yes'] },
                     { label: 'Color Themes', vals: ['yes', 'yes', 'yes'] },
                     { label: 'Voice Input', vals: ['yes', 'yes', 'yes'] },
-                    { label: 'GitHub Publish', vals: ['yes', 'yes', 'yes'] },
+                    { label: 'Push to GitHub', vals: ['yes', 'yes', 'yes'] },
                     { label: 'Image Upload', vals: ['no', 'yes', 'yes'] },
                     { label: 'Code Editing', vals: ['no', 'yes', 'yes'] },
                     { label: 'Watermark Removal', vals: ['no', 'yes', 'yes'] },
