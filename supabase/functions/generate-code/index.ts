@@ -881,7 +881,7 @@ USER_LANGUAGE=${userLanguage || 'en'}
     const shouldStream = mode !== "credit";
 
     // ═══════════════════════════════════════════════════════════════════
-    // DYNAMIC MODEL CONFIG FROM DATABASE
+    // DYNAMIC MODEL CONFIG FROM DATABASE (SERVER-SIDE PLAN VERIFICATION)
     // ═══════════════════════════════════════════════════════════════════
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -890,11 +890,46 @@ USER_LANGUAGE=${userLanguage || 'en'}
     let gatewayUrl = "https://ai-gateway.vercel.sh/v1/chat/completions";
     let apiKeySecretName = "VERCEL_AI_API_KEY";
 
+    // SECURITY: Verify user's actual plan from database, never trust client-sent value
+    let verifiedPlan = 'free';
     try {
-      // Fetch ALL active model configs matching this user's plan OR 'all'
-      const effectivePlan = userPlan || 'free';
+      const authHeader = req.headers.get('Authorization');
+      if (authHeader) {
+        // Extract user ID from JWT via Supabase auth
+        const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+        const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const token = authHeader.replace('Bearer ', '');
+        const { data: authData } = await supabaseAdmin.auth.getUser(token);
+        
+        if (authData?.user?.id) {
+          const { data: planRow } = await supabaseAdmin
+            .from('user_plans')
+            .select('plan, subscription_expires_at')
+            .eq('user_id', authData.user.id)
+            .single();
+          
+          if (planRow) {
+            // Check if subscription is still active
+            if (planRow.plan === 'pro' || planRow.plan === 'business') {
+              if (planRow.subscription_expires_at && new Date(planRow.subscription_expires_at) <= new Date()) {
+                verifiedPlan = 'free'; // Expired
+              } else {
+                verifiedPlan = planRow.plan;
+              }
+            }
+          }
+        }
+      }
+    } catch (authErr) {
+      console.warn("[generate-code] Plan verification failed, defaulting to free:", authErr);
+    }
+
+    console.log(`[generate-code] Verified plan: ${verifiedPlan} (client sent: ${userPlan})`);
+
+    try {
+      // Fetch model configs matching the VERIFIED plan or 'all'
       const configRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/ai_model_config?is_active=eq.true&or=(target_plan.eq.${effectivePlan},target_plan.eq.all)`,
+        `${SUPABASE_URL}/rest/v1/ai_model_config?is_active=eq.true&or=(target_plan.eq.${verifiedPlan},target_plan.eq.all)`,
         {
           headers: {
             "apikey": SUPABASE_SERVICE_ROLE_KEY,
@@ -906,12 +941,12 @@ USER_LANGUAGE=${userLanguage || 'en'}
         const configs = await configRes.json();
         if (configs && configs.length > 0) {
           // Prefer specific plan match over 'all' fallback
-          const specificMatch = configs.find((c: any) => c.target_plan === effectivePlan);
+          const specificMatch = configs.find((c: any) => c.target_plan === verifiedPlan);
           const cfg = specificMatch || configs[0];
           model = cfg.model_id;
           gatewayUrl = cfg.gateway_url;
           apiKeySecretName = cfg.api_key_secret_name;
-          console.log(`[generate-code] Using model: ${model} (provider: ${cfg.provider}, target: ${cfg.target_plan}, userPlan: ${effectivePlan})`);
+          console.log(`[generate-code] Using model: ${model} (provider: ${cfg.provider}, target: ${cfg.target_plan}, verified: ${verifiedPlan})`);
         }
       }
     } catch (cfgErr) {
