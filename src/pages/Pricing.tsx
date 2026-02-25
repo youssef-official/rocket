@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, X, Zap, Crown, Rocket, ArrowLeft, Globe, ImageOff, Image, Shield, Star, ChevronRight } from 'lucide-react';
+import { Check, X, Zap, Crown, Rocket, ArrowLeft, Globe, ImageOff, Image, Shield, Star, ChevronRight, Github } from 'lucide-react';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -78,9 +78,10 @@ export const Pricing: React.FC = () => {
                 { label: 'Code Editing', v: config.features.codeEditing },
                 { label: 'Watermark Removal', v: config.features.watermarkRemoval },
                 { label: 'ZIP Export', v: config.features.zipExport },
-                { label: 'Private Projects', v: config.features.privateProjects },
-                { label: 'Priority Access', v: config.features.priorityAccess },
-              ];
+	                { label: 'Private Projects', v: config.features.privateProjects },
+	                { label: 'Priority Access', v: config.features.priorityAccess },
+	                { label: 'GitHub Push', v: config.features.githubPush },
+	              ];
 
               return (
                 <motion.div
@@ -148,6 +149,10 @@ export const Pricing: React.FC = () => {
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-white/50">Vercel Deploy</span>
+                          <Check className="w-4 h-4 text-green-400" />
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-white/50">GitHub Push</span>
                           <Check className="w-4 h-4 text-green-400" />
                         </div>
                       </div>
@@ -246,23 +251,43 @@ export const Pricing: React.FC = () => {
 
           {/* Vercel Deploy Section */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="max-w-2xl mx-auto mb-16">
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                  <Globe className="w-5 h-5 text-white" />
+              <div className="grid md:grid-cols-2 gap-5">
+                <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                      <Globe className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white">Vercel Deploy</h3>
+                  </div>
+                  <p className="text-white/60 text-sm mb-4">
+                    Connect your Vercel account and deploy to <code className="text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">yourproject.vercel.app</code>
+                  </p>
+                  <ul className="space-y-2 text-sm text-white/60">
+                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-400" /> Unlimited projects (all plans)</li>
+                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-400" /> Real production URL</li>
+                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-400" /> Auto build logs & error detection</li>
+                    <li className="flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400" /> Requires Vercel account</li>
+                  </ul>
                 </div>
-                <h3 className="text-lg font-bold text-white">Vercel Deploy</h3>
+
+                <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                      <Github className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white">GitHub Push</h3>
+                  </div>
+                  <p className="text-white/60 text-sm mb-4">
+                    Connect your GitHub account and push your code directly to a repository.
+                  </p>
+                  <ul className="space-y-2 text-sm text-white/60">
+                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-400" /> Direct repository sync</li>
+                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-400" /> Private & Public repos</li>
+                    <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-400" /> Version control history</li>
+                    <li className="flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400" /> Requires GitHub account</li>
+                  </ul>
+                </div>
               </div>
-              <p className="text-white/60 text-sm mb-4">
-                Connect your Vercel account and deploy to <code className="text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">yourproject.vercel.app</code>
-              </p>
-              <ul className="space-y-2 text-sm text-white/60">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-400" /> Unlimited projects (all plans)</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-400" /> Real production URL</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-green-400" /> Auto build logs & error detection</li>
-                <li className="flex items-center gap-2"><Zap className="w-4 h-4 text-yellow-400" /> Requires Vercel account</li>
-              </ul>
-            </div>
           </motion.div>
 
           {/* FAQ */}
