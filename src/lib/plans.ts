@@ -1,6 +1,6 @@
 // Shared plan configuration (single source of truth)
 
-export type PlanType = 'free' | 'pro' | 'business';
+export type PlanType = 'free' | 'pro' | 'business' | 'spark' | 'builder' | 'creator' | 'scale';
 
 export const PLAN_CONFIG: Record<
   PlanType,
