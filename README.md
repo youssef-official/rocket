@@ -72,6 +72,11 @@
 | **Notification Inbox** | Plan-targeted in-app notifications with read tracking |
 | **Templates** | Curated project templates for instant project generation |
 | **Premium Branding** | "Built with Vivora X" badge with close button on generated projects |
+| **3D & Immersive Web** | Generate Three.js-powered 3D product viewers, particle systems, and interactive scenes |
+| **AI Video Generation** | Generate cinematic hero videos for product/brand websites via Replicate AI |
+| **Voice Input** | Speech-to-text on homepage with multi-language support (Arabic, English, etc.) |
+| **Color Themes** | Choose from 10 color palettes injected into AI generation prompts |
+| **Billing Dashboard** | View plan details, subscription expiry, transaction history, and credit usage |
 
 ---
 

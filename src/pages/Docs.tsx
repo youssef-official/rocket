@@ -466,6 +466,73 @@ export const Docs: React.FC = () => {
       ],
     },
     {
+      id: '3d-immersive',
+      title: '3D & Immersive Web',
+      icon: Globe,
+      content: [
+        {
+          title: '3D Web Experiences',
+          description: 'Vivora X can generate immersive 3D websites using Three.js. Ask for 3D product showcases, interactive scenes, particle systems, or game-like interfaces.',
+        },
+        {
+          title: 'What You Can Build',
+          description: '3D capabilities include:',
+          steps: [
+            'Rotating 3D product viewers with orbit controls',
+            'Animated particle systems and floating geometries for hero backgrounds',
+            'Interactive 3D scenes with mouse-following objects',
+            'Simple browser-based 3D games with scoring',
+            'PBR materials, shadows, and post-processing effects',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'video-generation',
+      title: 'AI Video Generation',
+      icon: Eye,
+      content: [
+        {
+          title: 'AI-Generated Videos',
+          description: 'Vivora X can generate short AI videos for hero sections and product showcases using AI models. When building product or brand websites, the AI can create cinematic header videos automatically.',
+        },
+        {
+          title: 'How It Works',
+          description: 'Video generation is integrated into the build process:',
+          steps: [
+            'Describe your project (e.g., "Coca-Cola product website with hero video")',
+            'The AI detects the need for video and generates a prompt',
+            'A video is generated using AI and embedded in your project',
+            'The video appears in the activity log during generation',
+            'Generated videos are 16:9 aspect ratio by default',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'voice-input',
+      title: 'Voice Input',
+      icon: MessageSquare,
+      content: [
+        {
+          title: 'Speech-to-Text Input',
+          description: 'Use the microphone button on the homepage to dictate your project description using voice. Supports multiple languages including English, Arabic, Chinese, Japanese, and French.',
+        },
+        {
+          title: 'How to Use',
+          description: 'Voice input is simple:',
+          steps: [
+            'Click the microphone button next to the send button',
+            'Allow microphone access when prompted',
+            'Speak your project description naturally',
+            'The text appears in real-time in the input box',
+            'Click the mic button again to stop recording',
+            'Language is auto-detected from your browser settings',
+          ],
+        },
+      ],
+    },
+    {
       id: 'ai-gateway',
       title: 'AI Gateway',
       icon: Sparkles,
