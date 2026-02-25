@@ -6,7 +6,7 @@ import {
   ChevronRight, Search, Globe, Lock, GitBranch,
   Sparkles, Layers, Rocket, Image as ImageIcon,
   RefreshCw, Languages, CreditCard, Shield, Eye,
-  PenTool, Bell, Users, Wand2
+  PenTool, Bell, Users, Wand2, Copy, Mail
 } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { SEOHead } from '@/components/shared/SEOHead';
@@ -408,6 +408,59 @@ export const Docs: React.FC = () => {
             'Functions are created in supabase/functions/{name}/index.ts',
             'Deploy them using the Supabase CLI: supabase functions deploy {name}',
             'See /supabase-connect for detailed setup instructions',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'clone-design',
+      title: 'Clone Design',
+      icon: Copy,
+      content: [
+        {
+          title: 'Clone Any Website Design',
+          description: 'Clone Design lets you enter any website URL and Vivora X will scrape its HTML, analyze its design, and recreate it as a fully functional React project. Available for all plans — Free, Pro, and Business.',
+        },
+        {
+          title: 'How to Use Clone Design',
+          description: 'Follow these steps:',
+          steps: [
+            'Go to the Vivora X homepage',
+            'Find the "Clone Design" input field below the main prompt',
+            'Enter any website URL (e.g., example.com or https://example.com)',
+            'Add an optional description of what you want to change or keep',
+            'Press Enter — the AI scrapes the site and generates a matching React project',
+            'The cloned source appears as a file badge in chat (not raw HTML)',
+          ],
+        },
+        {
+          title: 'Tips for Best Results',
+          description: 'Get the most out of Clone Design:',
+          steps: [
+            'Use clean, well-structured websites for best results',
+            'Add a prompt like "Make it dark theme" or "Change colors to blue"',
+            'One clone per generation — combine with follow-up chat edits',
+            'Works with any public website — no login required',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'email-notifications',
+      title: 'Email Notifications',
+      icon: Mail,
+      content: [
+        {
+          title: 'Automatic Email Notifications',
+          description: 'Vivora X sends professional branded emails at key moments in your journey — welcome emails on signup, congratulations on plan upgrades, and renewal reminders when your subscription is about to expire.',
+        },
+        {
+          title: 'Email Types',
+          description: 'You\'ll receive emails for:',
+          steps: [
+            'Welcome Email — sent when you create your account',
+            'Plan Upgrade — congratulations when you upgrade to Pro or Business',
+            'Renewal Reminder — notification when your plan is about to expire',
           ],
         },
       ],

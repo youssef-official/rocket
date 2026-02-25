@@ -48,6 +48,7 @@
 | Feature | Description |
 |---------|-------------|
 | **AI Code Generation** | Stream code from AI models (Gemini, OpenRouter) with real-time file detection |
+| **Clone Design** | Enter any website URL — Vivora X scrapes & recreates it as a React project (all plans) |
 | **Multimodal Image Analysis** | Upload up to 5 images per prompt for design reference & analysis |
 | **Live Preview** | Sandbox-based preview via Modal containers |
 | **Visual Editor** | Click-to-edit UI elements, AI applies CSS/content changes |
@@ -58,6 +59,9 @@
 | **Multi-language UI** | Arabic, English, French, Spanish, German, Japanese, Korean, Chinese (full RTL) |
 | **Credit System** | Daily + monthly credits with plan-based limits |
 | **PayPal Billing** | Upgrade plans (Free → Pro → Business) |
+| **Email Notifications** | Welcome, plan upgrade, and renewal reminder emails via Resend |
+| **Custom Cursor** | Premium branded cursor throughout the platform |
+| **Collapsible Chat** | Hide chat panel for full-width preview mode |
 | **Admin Panel** | User management, AI model config, blog CMS, notifications |
 | **Blog System** | Category-based blog with markdown content |
 | **Dark/Light Theme** | System-aware theming with manual override (3-way cycle) |
@@ -67,6 +71,7 @@
 | **File References** | @mention project files in chat for targeted edits |
 | **Notification Inbox** | Plan-targeted in-app notifications with read tracking |
 | **Templates** | Curated project templates for instant project generation |
+| **Premium Branding** | "Built with Vivora X" badge with close button on generated projects |
 
 ---
 
@@ -111,6 +116,8 @@
 │       ├── modal-proxy/           # Modal sandbox provisioning
 │       ├── paypal-capture-order/  # PayPal order capture + plan upgrade
 │       ├── paypal-create-order/   # PayPal order creation
+│       ├── scrape-website/        # Website scraping for Clone Design
+│       ├── send-notification-email/ # Email notifications (Resend)
 │       ├── upload-image/          # Image upload to Cloudflare R2
 │       ├── vercel-deploy/         # Vercel deployment API
 │       └── visual-edits/          # AI-powered visual code edits
@@ -175,6 +182,8 @@
 | `vercel-deploy` | POST | JWT | Vercel project deployment |
 | `admin-data` | GET | JWT+Admin | Fetch admin dashboard data |
 | `upload-image` | POST | JWT | Upload images to Cloudflare R2 |
+| `scrape-website` | POST | JWT | Website scraping for Clone Design |
+| `send-notification-email` | POST | JWT | Email notifications via Resend |
 | `paypal-create-order` | POST | JWT | Create PayPal checkout order |
 | `paypal-capture-order` | POST | JWT | Capture PayPal payment + upgrade plan |
 
@@ -233,6 +242,7 @@ Configure these in your Supabase project → Edge Functions → Secrets:
 | `R2_ENDPOINT` | upload-image |
 | `R2_PUBLIC_URL` | upload-image |
 | `PAYPAL_CLIENT_ID` / `PAYPAL_SECRET` | paypal-create-order, paypal-capture-order |
+| `RESEND_API_KEY` | send-notification-email |
 
 ### 5. Run Development Server
 
@@ -258,12 +268,14 @@ App runs at `http://localhost:5173`
 
 | Feature | Free | Pro | Business |
 |---------|------|-----|----------|
+| Clone Design | ✅ | ✅ | ✅ |
 | Image Upload | ❌ | ✅ | ✅ |
 | ZIP Export | ❌ | ✅ | ✅ |
 | Private Projects | ❌ | ✅ | ✅ |
 | Priority Access | ❌ | ❌ | ✅ |
 | Vercel Deploy | ✅ | ✅ | ✅ |
 | File References (@) | ✅ | ✅ | ✅ |
+| Email Notifications | ✅ | ✅ | ✅ |
 
 Credits reset daily at UTC midnight. First project generation costs 2 credits; edits cost 0.5–3 credits based on file count.
 
@@ -282,6 +294,7 @@ Credits reset daily at UTC midnight. First project generation costs 2 credits; e
 | Sandbox | Modal (containerized preview) |
 | Image Storage | Cloudflare R2 + CDN |
 | Payments | PayPal |
+| Email | Resend (no-reply@vivorax.online) |
 | Deployment | Vercel, GitHub, Cloudflare Pages |
 
 ---

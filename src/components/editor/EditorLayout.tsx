@@ -681,7 +681,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                           <div
                             className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full transition-all duration-500"
                             style={{
-                              width: `${Math.min(100, (getRemainingCredits().total / (userPlan.dailyCredits + PLAN_CONFIG[userPlan.plan].monthlyCredits || 5)) * 100)}%`
+                              width: `${Math.min(100, (getRemainingCredits().total / ((userPlan.dailyCredits + (PLAN_CONFIG[userPlan.plan]?.monthlyCredits ?? 0)) || 5)) * 100)}%`
                             }}
                           />
                         </div>

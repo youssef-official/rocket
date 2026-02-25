@@ -216,6 +216,7 @@ export const Pricing: React.FC = () => {
                     { label: 'Price', vals: ['$0', '$15/mo', '$29/mo'] },
                     { label: 'Daily Credits', vals: ['3', '5', '10'] },
                     { label: 'Monthly Credits', vals: ['—', '+150', '+400'] },
+                    { label: 'Clone Design', vals: ['yes', 'yes', 'yes'] },
                     { label: 'Image Upload', vals: ['no', 'yes', 'yes'] },
                     { label: 'Code Editing', vals: ['no', 'yes', 'yes'] },
                     { label: 'Watermark Removal', vals: ['no', 'yes', 'yes'] },
