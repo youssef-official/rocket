@@ -35,10 +35,10 @@ export const LanguageSelector: React.FC = () => {
               onClick={() => setShowMenu(false)}
             />
             <motion.div
-              initial={{ opacity: 0, y: -5 }}
+              initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              className={`absolute ${isRTL ? 'left-0' : 'right-0'} bottom-full mb-1 w-44 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[10004]`}
+              exit={{ opacity: 0, y: 5 }}
+              className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-full mt-1 w-44 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[10004]`}
             >
               {languages.map((lang) => (
                 <button
