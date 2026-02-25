@@ -119,7 +119,11 @@ export const HomePage: React.FC<HomePageProps> = ({
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = language === 'zh' ? 'zh-CN' : language === 'ja' ? 'ja-JP' : language === 'fr' ? 'fr-FR' : 'en-US';
+    // Support Arabic via browser language detection + explicit mappings
+    const langMap: Record<string, string> = { 'zh': 'zh-CN', 'ja': 'ja-JP', 'fr': 'fr-FR', 'en': 'en-US' };
+    const browserLang = navigator.language || 'en-US';
+    const isArabicBrowser = browserLang.startsWith('ar');
+    recognition.lang = isArabicBrowser ? 'ar-SA' : (langMap[language] || browserLang);
 
     recognition.onresult = (event: any) => {
       let transcript = '';

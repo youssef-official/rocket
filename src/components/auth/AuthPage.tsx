@@ -15,6 +15,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
   const { signIn, signUp } = useAuth();
   const [view, setView] = useState<'login' | 'signup' | 'check-email'>('login');
   const [email, setEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +29,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
 
     try {
       if (view === 'signup') {
-        const { error } = await signUp(email, password);
+        const { error } = await signUp(email, password, displayName || undefined);
         if (error) throw error;
         const { error: signInError } = await signIn(email, password);
         if (signInError) throw signInError;
@@ -206,6 +207,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
 
                   {/* Form */}
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    {view === 'signup' && (
+                      <input
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        placeholder="Your name"
+                        className="w-full px-4 py-3 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 text-gray-800 placeholder-gray-500"
+                      />
+                    )}
                     <input
                       type="email"
                       value={email}

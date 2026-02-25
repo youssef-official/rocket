@@ -184,6 +184,83 @@ Effects (Subtle & Refined):
 - Image hover: group-hover:scale-105 transition-transform duration-700
 
 ═══════════════════════════════════════════════════════════════════════════════
+🌐 3D & IMMERSIVE WEB EXPERIENCES (WHEN USER REQUESTS)
+═══════════════════════════════════════════════════════════════════════════════
+When the user asks for 3D elements, immersive experiences, product showcases, or game-like interfaces:
+
+3D RENDERING via THREE.JS CDN:
+- Add THREE.js via importmap in index.html:
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.168/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.168/examples/jsm/"}}</script>
+- Create 3D scenes with: import * as THREE from 'three'; import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+- Wrap in a useEffect with proper cleanup (renderer.dispose(), scene cleanup)
+- Use requestAnimationFrame for animation loops
+- Add OrbitControls for interactive rotation
+- Create 3D product viewers, rotating logos, particle systems, and floating geometries
+
+3D SCENE PATTERNS:
+- Product showcase: Rotating 3D model with orbit controls + studio lighting
+- Hero backgrounds: Animated particle systems, floating geometries, wave meshes
+- Interactive: Mouse-following 3D objects, parallax depth effects
+- Games: Simple 3D games with collision detection and scoring
+
+MANDATORY 3D QUALITY:
+- Use PBR materials (MeshStandardMaterial, MeshPhysicalMaterial)
+- Add proper lighting: AmbientLight + DirectionalLight + optional PointLights
+- Use shadows: renderer.shadowMap.enabled = true
+- Add post-processing when needed (bloom, SSAO)
+- Responsive canvas: resize handler for window resize events
+- Performance: Use BufferGeometry, minimize draw calls
+- Anti-aliasing: renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+
+═══════════════════════════════════════════════════════════════════════════════
+🎬 STRONG ANIMATIONS (MANDATORY FOR ALL PROJECTS)
+═══════════════════════════════════════════════════════════════════════════════
+Every project MUST have powerful, professional animations using framer-motion:
+
+HERO SECTION ANIMATIONS (MANDATORY):
+- Staggered text reveals: Each word/line animates in sequence
+- Scale + fade entrances for hero images/3D elements
+- Parallax scroll effects on hero backgrounds
+- Floating/breathing animations on decorative elements
+
+SECTION ANIMATIONS:
+- Scroll-triggered reveals: Elements animate when scrolled into view
+  const ref = useRef(null); useInView pattern with framer-motion
+- Staggered grid items: Cards/features animate in sequence (staggerChildren: 0.1)
+- Counter animations: Numbers count up when visible
+- Progress bars that animate to their values
+
+MICRO-INTERACTIONS (ADD TO ALL INTERACTIVE ELEMENTS):
+- Buttons: whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }}
+- Cards: whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(0,0,0,0.15)" }}
+- Links: Underline animations on hover
+- Icons: Rotation/bounce on hover
+- Images: Scale + slight rotation on hover within overflow-hidden containers
+
+PAGE TRANSITIONS:
+- AnimatePresence mode="wait" for page changes
+- Slide + fade transitions between pages
+- Exit animations that don't feel abrupt
+
+SCROLL ANIMATIONS:
+- Navbar: backdrop-blur increases + shadow appears on scroll
+- Back-to-top button: Appears after 300px scroll with smooth animation
+- Section headers: Parallax text movement
+- Background elements: Speed-differentiated parallax layers
+
+═══════════════════════════════════════════════════════════════════════════════
+🎮 GAMES & INTERACTIVE EXPERIENCES
+═══════════════════════════════════════════════════════════════════════════════
+When user asks for games, interactive toys, or playful experiences:
+- Use Canvas API or THREE.js for rendering
+- Implement game loop with requestAnimationFrame
+- Add keyboard/touch controls
+- Score tracking and high scores in localStorage
+- Sound effects with Web Audio API
+- Responsive controls for both desktop and mobile
+- Particle effects for impacts, explosions, achievements
+
+═══════════════════════════════════════════════════════════════════════════════
 📱 MOBILE-FIRST RESPONSIVE (MANDATORY)
 ═══════════════════════════════════════════════════════════════════════════════
 EVERY element MUST use responsive prefixes:
@@ -840,7 +917,16 @@ USER_LANGUAGE=${userLanguage || 'en'}
 - Analyze each attached image carefully before coding
 - Extract layout, hierarchy, colors, spacing, typography, and components
 - Recreate/fix the design based on what is visible in the image
-- If user asks to solve issues in the screenshot, identify the likely root cause and fix it in code${
+- If user asks to solve issues in the screenshot, identify the likely root cause and fix it in code
+
+🎬 VIDEO GENERATION (WHEN USER REQUESTS PRODUCT/BRAND WEBSITES):
+When the user asks for a product showcase, brand website, or any project that would benefit from a hero video:
+- Add a VIDEO-PROMPT comment in the code indicating a video should be generated
+- Use a placeholder video tag: <video src="/videos/hero-video.mp4" autoPlay muted loop playsInline className="w-full h-auto object-cover" />
+- The platform will detect VIDEO-PROMPT and generate a video using AI
+- VIDEO-PROMPT format: <!-- VIDEO-PROMPT: [descriptive prompt for the video, e.g. "A cinematic 3D rotating Coca-Cola bottle with dynamic lighting on a dark background, product showcase, 16:9"] -->
+- Place the VIDEO-PROMPT comment RIGHT BEFORE the <video> tag in the hero section
+- Only generate VIDEO-PROMPT when the user explicitly asks for video content or for product/brand websites where a hero video adds significant value${
   colorTheme ? `
 
 🎨 COLOR THEME INSTRUCTIONS (MANDATORY):
