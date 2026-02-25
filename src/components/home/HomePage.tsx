@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Send, Lock, Globe, X, Image as ImageIcon, ChevronDown, Sparkles, BookOpen, CircleHelp, LogIn, Wand2, ArrowUpRight, Plus, Copy, Loader2 } from 'lucide-react';
+import { ArrowRight, Send, Lock, Globe, X, Image as ImageIcon, ChevronDown, Sparkles, BookOpen, CircleHelp, LogIn, Wand2, ArrowUpRight, Plus, Copy, Loader2, Mic, MicOff, Palette } from 'lucide-react';
 import { UserMenuDropdown } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -83,6 +83,86 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [showCloneInput, setShowCloneInput] = useState(false);
   const [cloneUrl, setCloneUrl] = useState('');
   const [cloneLoading, setCloneLoading] = useState(false);
+
+  // Theme selector state
+  const [selectedTheme, setSelectedTheme] = useState<{ name: string; colors: string[] } | null>(() => {
+    const saved = sessionStorage.getItem('vivora_selected_theme');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+
+  // Voice input state
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const COLOR_THEMES = [
+    { name: 'Default', colors: ['#4F46E5', '#818CF8', '#C7D2FE'], desc: 'Indigo & Blue' },
+    { name: 'Glacier', colors: ['#0EA5E9', '#38BDF8', '#BAE6FD'], desc: 'Cool Blue' },
+    { name: 'Harvest', colors: ['#F59E0B', '#FBBF24', '#FDE68A'], desc: 'Warm Amber' },
+    { name: 'Lavender', colors: ['#A855F7', '#C084FC', '#E9D5FF'], desc: 'Purple' },
+    { name: 'Brutalist', colors: ['#1F2937', '#6B7280', '#F9FAFB'], desc: 'Mono Gray' },
+    { name: 'Obsidian', colors: ['#0F172A', '#334155', '#94A3B8'], desc: 'Dark Slate' },
+    { name: 'Orchid', colors: ['#EC4899', '#F472B6', '#FBCFE8'], desc: 'Pink' },
+    { name: 'Solar', colors: ['#EF4444', '#F97316', '#FCD34D'], desc: 'Red-Orange' },
+    { name: 'Forest', colors: ['#059669', '#34D399', '#A7F3D0'], desc: 'Green' },
+    { name: 'Coral', colors: ['#F43F5E', '#FB7185', '#FECDD3'], desc: 'Rose' },
+  ];
+
+  // Voice recognition handlers
+  const startListening = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({ title: 'Not supported', description: 'Speech recognition is not supported in this browser.', variant: 'destructive' });
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = language === 'zh' ? 'zh-CN' : language === 'ja' ? 'ja-JP' : language === 'fr' ? 'fr-FR' : 'en-US';
+
+    recognition.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setPrompt(prev => {
+        // Replace from the point we started listening
+        const base = prev;
+        if (event.results[event.resultIndex]?.isFinal) {
+          return base + transcript + ' ';
+        }
+        return base;
+      });
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [language]);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  }, []);
+
+  // Save/clear theme in sessionStorage
+  useEffect(() => {
+    if (selectedTheme) {
+      sessionStorage.setItem('vivora_selected_theme', JSON.stringify(selectedTheme));
+    } else {
+      sessionStorage.removeItem('vivora_selected_theme');
+    }
+  }, [selectedTheme]);
 
   // Persist prompt to localStorage
   useEffect(() => {
