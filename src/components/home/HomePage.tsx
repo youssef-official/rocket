@@ -786,7 +786,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                         <X className="w-2.5 h-2.5 text-gray-600" />
                       </button>
                     </div>
-                  )
+                   )}
                   {/* Character Count */}
                   <span className={`text-[10px] md:text-xs font-mono tabular-nums ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-destructive font-bold' : 'text-gray-400'}`}>
                     {prompt.length}/{MAX_PROMPT_LENGTH}
@@ -855,6 +855,18 @@ export const HomePage: React.FC<HomePageProps> = ({
                       )}
                     </AnimatePresence>
                   </div>
+
+                  {/* Mic button */}
+                  <button
+                    type="button"
+                    onClick={isListening ? stopListening : startListening}
+                    className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 flex-shrink-0 ${
+                      isListening ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/25 animate-pulse' : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                    title={isListening ? 'Stop listening' : 'Voice input'}
+                  >
+                    {isListening ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4 text-gray-500" />}
+                  </button>
 
                   <motion.button
                     type="submit"
