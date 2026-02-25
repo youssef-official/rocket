@@ -94,7 +94,7 @@ export const Privacy: React.FC = () => {
                   We integrate with the following third-party services to provide our platform:
                 </p>
                 <ul className="list-disc list-inside text-white/70 space-y-1 ml-4 mt-2">
-                  <li>Google Gemini AI — for code generation and image analysis</li>
+                  <li>AI Models — for code generation and image analysis</li>
                   <li>Vercel — for project deployment (optional, user-initiated)</li>
                   <li>PayPal — for payment processing of subscription plans</li>
                 </ul>
@@ -103,7 +103,7 @@ export const Privacy: React.FC = () => {
               <section>
                 <h2 className="text-2xl font-bold text-white mb-4">5. Your Rights</h2>
                 <p className="text-white/70 leading-relaxed">
-                  You have the right to access, correct, or delete your personal information at any time. You can export your projects as ZIP files. You can delete your account and all associated data. To exercise these rights, contact us at <a href="mailto:privacy@vivora-x.com" className="text-pink-400 hover:underline">privacy@vivora-x.com</a>.
+                  You have the right to access, correct, or delete your personal information at any time. You can export your projects as ZIP files. You can delete your account and all associated data. To exercise these rights, contact us at <a href="mailto:support@vivorax.online" className="text-pink-400 hover:underline">support@vivorax.online</a>.
                 </p>
               </section>
 
@@ -125,7 +125,7 @@ export const Privacy: React.FC = () => {
                 <h2 className="text-2xl font-bold text-white mb-4">8. Contact Us</h2>
                 <p className="text-white/70 leading-relaxed">
                   If you have questions about this Privacy Policy, please contact us at{' '}
-                  <a href="mailto:privacy@vivora-x.com" className="text-pink-400 hover:underline">privacy@vivora-x.com</a>
+                  <a href="mailto:support@vivorax.online" className="text-pink-400 hover:underline">support@vivorax.online</a>
                 </p>
               </section>
             </div>

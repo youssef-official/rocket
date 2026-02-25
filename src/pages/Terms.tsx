@@ -130,7 +130,7 @@ export const Terms: React.FC = () => {
                 <h2 className="text-2xl font-bold text-white mb-4">10. Contact</h2>
                 <p className="text-white/70 leading-relaxed">
                   For any questions regarding these Terms, please contact us at{' '}
-                  <a href="mailto:legal@vivora-x.com" className="text-pink-400 hover:underline">legal@vivora-x.com</a>
+                  <a href="mailto:support@vivorax.online" className="text-pink-400 hover:underline">support@vivorax.online</a>
                 </p>
               </section>
             </div>
