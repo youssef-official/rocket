@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import type { User } from '@/types';
+import { sendNotificationEmail } from '@/services/emailService';
 
 interface AuthContextType {
   user: User | null;
@@ -74,6 +75,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
       if (error) throw error;
+      // Send welcome email (fire and forget)
+      sendNotificationEmail({
+        type: 'welcome',
+        email,
+        name: email.split('@')[0],
+      });
       return { error: null };
     } catch (error) {
       return { error: error as Error };
