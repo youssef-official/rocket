@@ -1253,6 +1253,7 @@ import BlogPost from "@/pages/BlogPost";
 import AboutUs from "@/pages/AboutUs";
 // AdminPanel already imported at the top
 import ProjectSettings from "@/pages/ProjectSettings";
+import Billing from "@/pages/Billing";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -1275,6 +1276,7 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/billing" element={<Billing />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/new-vibe-tool" element={<NewVibeTool />} />
               <Route path="/ai-for-all" element={<Navigate to="/blog/ai-for-all" replace />} />
