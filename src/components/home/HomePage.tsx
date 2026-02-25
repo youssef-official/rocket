@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Send, Paperclip, Lock, Globe, X, Image as ImageIcon, ChevronDown, Sparkles, BookOpen, CircleHelp, LogIn, Wand2, ArrowUpRight, Plus } from 'lucide-react';
+import { ArrowRight, Send, Lock, Globe, X, Image as ImageIcon, ChevronDown, Sparkles, BookOpen, CircleHelp, LogIn, Wand2, ArrowUpRight, Plus, Copy, Loader2 } from 'lucide-react';
 import { UserMenuDropdown } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -78,6 +78,11 @@ export const HomePage: React.FC<HomePageProps> = ({
     url?: string;
   }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [cloneAttachment, setCloneAttachment] = useState<{ url: string; html: string } | null>(null);
+  const [showCloneInput, setShowCloneInput] = useState(false);
+  const [cloneUrl, setCloneUrl] = useState('');
+  const [cloneLoading, setCloneLoading] = useState(false);
 
   // Persist prompt to localStorage
   useEffect(() => {
@@ -229,6 +234,41 @@ export const HomePage: React.FC<HomePageProps> = ({
     });
   };
 
+  const handleCloneDesign = async () => {
+    if (!cloneUrl.trim()) return;
+    setCloneLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-website`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ url: cloneUrl.trim() }),
+        }
+      );
+      if (!res.ok) throw new Error('Scrape failed');
+      const result = await res.json();
+      if (result.html) {
+        setCloneAttachment({ url: cloneUrl.trim(), html: result.html });
+        setShowCloneInput(false);
+        setCloneUrl('');
+        toast({ title: 'Design cloned!', description: `Source code from ${cloneUrl.trim()} attached.` });
+      } else {
+        throw new Error('No HTML returned');
+      }
+    } catch {
+      toast({ title: 'Clone failed', description: 'Could not scrape the website. Please try again.', variant: 'destructive' });
+    } finally {
+      setCloneLoading(false);
+    }
+  };
+
   const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     if (value.length <= MAX_PROMPT_LENGTH) {
@@ -252,9 +292,15 @@ export const HomePage: React.FC<HomePageProps> = ({
         return;
       }
 
+      // Append clone HTML to prompt if attached
+      let finalPrompt = prompt;
+      if (cloneAttachment) {
+        finalPrompt = `${prompt}\n\n---\n[CLONE DESIGN SOURCE - ${cloneAttachment.url}]\nHere is the source code of the website I want to clone/replicate the design of:\n\`\`\`html\n${cloneAttachment.html}\n\`\`\``;
+      }
+
       setIsSubmitting(true);
       localStorage.removeItem('vivora_home_prompt');
-      onStartBuilding(prompt, projectType, undefined, urls.length > 0 ? urls : undefined);
+      onStartBuilding(finalPrompt, projectType, undefined, urls.length > 0 ? urls : undefined);
     }
   };
 
@@ -436,6 +482,64 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
               )}
 
+              {/* Clone Attachment Chip */}
+              {cloneAttachment && (
+                <div className={`px-4 pt-3 ${isRTL ? 'text-right' : ''}`}>
+                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-full text-sm ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <Copy className="w-3.5 h-3.5 text-purple-500" />
+                    <span className="text-purple-700 font-medium truncate max-w-[200px]">clone-attach</span>
+                    <button
+                      type="button"
+                      onClick={() => setCloneAttachment(null)}
+                      className="w-4 h-4 rounded-full bg-purple-200 hover:bg-purple-300 flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-2.5 h-2.5 text-purple-600" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Clone URL Input Dialog */}
+              <AnimatePresence>
+                {showCloneInput && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="px-4 overflow-hidden"
+                  >
+                    <div className={`flex items-center gap-2 py-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <input
+                        type="url"
+                        value={cloneUrl}
+                        onChange={(e) => setCloneUrl(e.target.value)}
+                        placeholder="https://example.com"
+                        className="flex-1 px-3 py-2 text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300"
+                        dir="ltr"
+                        disabled={cloneLoading}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCloneDesign(); } }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCloneDesign}
+                        disabled={!cloneUrl.trim() || cloneLoading}
+                        className="px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-1.5"
+                      >
+                        {cloneLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />}
+                        {cloneLoading ? 'Scraping...' : 'Clone'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowCloneInput(false); setCloneUrl(''); }}
+                        className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                      >
+                        <X className="w-4 h-4 text-gray-400" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <textarea
                 value={prompt}
                 onChange={handlePromptChange}
@@ -446,22 +550,75 @@ export const HomePage: React.FC<HomePageProps> = ({
               />
 
               <div className={`flex items-center justify-between px-3 md:px-6 py-3 md:py-4 border-t border-gray-100/80 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`flex items-center gap-0.5 md:gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="relative">
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2 md:p-2.5 hover:bg-gray-100 rounded-xl transition-all duration-200 group"
-                    title="Attach file"
+                    onClick={() => setShowPlusMenu(!showPlusMenu)}
+                    className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all duration-200 group"
+                    title="Add"
                   >
-                    <Paperclip className="w-[18px] h-[18px] text-gray-400 group-hover:text-gray-600 transition-colors" />
+                    <Plus className={`w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-all duration-200 ${showPlusMenu ? 'rotate-45' : ''}`} />
                   </button>
-                  <button
-                    type="button"
-                    className={`hidden md:flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-xl transition-all duration-200 group ${isRTL ? 'flex-row-reverse' : ''}`}
-                  >
-                    <Wand2 className="w-[18px] h-[18px] text-pink-400 group-hover:text-pink-500 transition-colors" />
-                    <span className="text-sm text-gray-500 group-hover:text-gray-700 font-medium transition-colors">{t('home.import')}</span>
-                  </button>
+
+                  <AnimatePresence>
+                    {showPlusMenu && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowPlusMenu(false)} />
+                        <motion.div
+                          initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
+                          className={`absolute bottom-full ${isRTL ? 'right-0' : 'left-0'} mb-2 w-56 bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-200/80 overflow-hidden z-50`}
+                        >
+                          {/* Attach Images */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowPlusMenu(false);
+                              if (!isPaidPlan) {
+                                toast({ title: 'Upgrade Required', description: 'Image upload is available on paid plans only.', variant: 'destructive' });
+                                return;
+                              }
+                              fileInputRef.current?.click();
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-all duration-200 ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center flex-shrink-0">
+                              <ImageIcon className="w-4 h-4 text-pink-500" />
+                            </div>
+                            <div className={isRTL ? 'text-right' : ''}>
+                              <p className="text-sm font-semibold text-gray-700">Attach Images</p>
+                              <p className="text-[11px] text-gray-500">{isPaidPlan ? 'Up to 5 images' : 'Pro+ only'}</p>
+                            </div>
+                            {!isPaidPlan && <Lock className="w-3.5 h-3.5 text-gray-400 ml-auto" />}
+                          </button>
+
+                          {/* Clone Design */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowPlusMenu(false);
+                              if (cloneAttachment) {
+                                toast({ title: 'Limit reached', description: 'Only 1 clone design per prompt.', variant: 'destructive' });
+                                return;
+                              }
+                              setShowCloneInput(true);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-all duration-200 ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
+                              <Copy className="w-4 h-4 text-purple-500" />
+                            </div>
+                            <div className={isRTL ? 'text-right' : ''}>
+                              <p className="text-sm font-semibold text-gray-700">Clone Design</p>
+                              <p className="text-[11px] text-gray-500">Scrape a website design</p>
+                            </div>
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <div className={`flex items-center gap-1.5 md:gap-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
