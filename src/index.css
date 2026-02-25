@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom Premium Cursor */
+*, *::before, *::after {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M3 2L3 17L7.5 12.5L11 18L13 17L9.5 11L15 10L3 2Z' fill='%23111' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E"), auto;
+}
+a, button, [role='button'], input[type='submit'], input[type='button'], .cursor-pointer, select, label[for], summary {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'%3E%3Cpath d='M7 1L7 14.5L10.5 11L14 16L16 15L12.5 9.5L17 9L7 1Z' fill='%238b5cf6' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E"), pointer !important;
+}
+
 /* Rocket Builder - Premium Dark Gray Design System (Dark Mode Only) */
 
 @layer base {

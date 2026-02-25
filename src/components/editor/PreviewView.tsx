@@ -16,6 +16,7 @@ interface PreviewViewProps {
   isLoading?: boolean;
   onPreviewError?: (errorLog: string) => void;
   onPreviewUrlChange?: (url: string | null) => void;
+  projectId?: string;
 }
 
 // Loading placeholder with rich animation - dark mode compatible
@@ -114,7 +115,7 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
   );
 };
 
-export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, isLoading, onPreviewError, onPreviewUrlChange }) => {
+export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, isLoading, onPreviewError, onPreviewUrlChange, projectId }) => {
   const [viewMode, setViewMode] = React.useState<'desktop' | 'mobile'>('desktop');
   const [sandboxId, setSandboxId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -148,12 +149,22 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
   const [key, setKey] = React.useState(0);
 
   // Prepare files for the sandbox
+  // Check if watermark should be removed
+  const watermarkRemoved = projectId ? localStorage.getItem(`project_watermark_${projectId}`) === 'removed' : false;
+
   const sandboxFiles = useMemo(() => {
     const spFiles: Record<string, string> = {};
 
     Object.entries(files).forEach(([path, file]) => {
       const sandboxPath = path.startsWith('/') ? path : `/${path}`;
-      spFiles[sandboxPath] = file.content;
+      let content = file.content;
+      // Strip branding.js script if watermark is removed
+      if (watermarkRemoved && (sandboxPath === '/index.html' || sandboxPath === '/public/index.html')) {
+        content = content.replace(/<script[^>]*branding\.js[^>]*><\/script>/gi, '');
+        content = content.replace(/<script[^>]*branding\.js[^>]*\/>/gi, '');
+        content = content.replace(/<script[^>]*branding\.js[^>]*>[^<]*<\/script>/gi, '');
+      }
+      spFiles[sandboxPath] = content;
     });
 
     if (projectType === 'vite') {
@@ -278,7 +289,7 @@ export default defineConfig({
     }
 
     return spFiles;
-  }, [files, projectType]);
+  }, [files, projectType, watermarkRemoved]);
 
   // Create Sandbox Logic
   useEffect(() => {

@@ -822,7 +822,22 @@ export const ChatView: React.FC<ChatViewProps> = ({
                             ))}
                         </div>
                       )}
-                      {msg.content}
+                      {/* Render clone design as file badge, not inline text */}
+                      {(() => {
+                        const cloneMatch = msg.content.match(/^([\s\S]*?)\n\n📎 Clone Design: (.+)$/);
+                        if (cloneMatch) {
+                          return (
+                            <>
+                              {cloneMatch[1]}
+                              <div className="mt-2 flex items-center gap-2 bg-white/10 rounded-lg px-3 py-1.5 w-fit">
+                                <Files className="w-4 h-4 text-purple-300 flex-shrink-0" />
+                                <span className="text-xs text-white/70 truncate max-w-[200px]">Clone: {cloneMatch[2]}</span>
+                              </div>
+                            </>
+                          );
+                        }
+                        return msg.content;
+                      })()}
                     </div>
                   ) : (
                     /* AI message */
