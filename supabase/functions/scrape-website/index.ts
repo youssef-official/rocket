@@ -27,7 +27,7 @@ serve(async (req) => {
       targetUrl = `https://${targetUrl}`;
     }
 
-    const scrapeEndpoint = `https://scrape-ofx6.onrender.com/scrape/${encodeURIComponent(targetUrl)}`;
+    const scrapeEndpoint = `https://scrape-ofx6.onrender.com/scrape/${targetUrl}`;
 
     console.log("Scraping:", scrapeEndpoint);
 

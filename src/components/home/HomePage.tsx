@@ -510,10 +510,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                   >
                     <div className={`flex items-center gap-2 py-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                       <input
-                        type="url"
+                        type="text"
                         value={cloneUrl}
                         onChange={(e) => setCloneUrl(e.target.value)}
-                        placeholder="https://example.com"
+                        placeholder="example.com"
                         className="flex-1 px-3 py-2 text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300"
                         dir="ltr"
                         disabled={cloneLoading}
