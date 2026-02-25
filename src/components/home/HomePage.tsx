@@ -522,7 +522,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             />
 
             <div
-              className={`bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative transition-colors ${isDragging ? 'ring-2 ring-pink-400' : ''}`}
+              className={`bg-white rounded-[2.5rem] shadow-2xl relative transition-colors ${isDragging ? 'ring-2 ring-pink-400' : ''}`}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
               onDragOver={handleDragOver}
