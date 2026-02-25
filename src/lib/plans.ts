@@ -1,6 +1,6 @@
 // Shared plan configuration (single source of truth)
 
-export type PlanType = 'free' | 'pro' | 'business' | 'spark' | 'builder' | 'creator' | 'scale';
+export type PlanType = 'free' | 'pro' | 'business';
 
 export const PLAN_CONFIG: Record<
   PlanType,
@@ -58,3 +58,9 @@ export const PLAN_CONFIG: Record<
     },
   },
 };
+
+/** Safely resolve any plan string to a valid PlanType (handles legacy values) */
+export function normalizePlan(plan: string | null | undefined): PlanType {
+  if (plan === 'pro' || plan === 'business') return plan;
+  return 'free';
+}
