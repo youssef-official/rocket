@@ -258,7 +258,7 @@ const Billing: React.FC = () => {
                       <p className="text-xs text-muted-foreground">
                         {tx.projectName && <span>{tx.projectName} · </span>}
                         {new Date(tx.created_at).toLocaleString()}
-                        {tx.model_used && <span className="ml-2 px-1.5 py-0.5 bg-secondary rounded text-[10px]">{tx.model_used}</span>}
+                        
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5 text-destructive font-semibold text-sm flex-shrink-0 ml-4">

@@ -664,6 +664,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                             type="button"
                             onClick={() => {
                               setShowPlusMenu(false);
+                              if (!user) {
+                                toast({ title: t('common.signIn'), description: 'Please sign in first.', variant: 'destructive' });
+                                if (onShowAuth) onShowAuth();
+                                return;
+                              }
                               if (!isPaidPlan) {
                                 toast({ title: 'Upgrade Required', description: 'Image upload is available on paid plans only.', variant: 'destructive' });
                                 return;
@@ -675,11 +680,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                             <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center flex-shrink-0">
                               <ImageIcon className="w-4 h-4 text-pink-500" />
                             </div>
-                            <div className={isRTL ? 'text-right' : ''}>
+                            <div className={`flex-1 ${isRTL ? 'text-right' : ''}`}>
                               <p className="text-sm font-semibold text-gray-700">Attach Images</p>
                               <p className="text-[11px] text-gray-500">{isPaidPlan ? 'Up to 5 images' : 'Pro+ only'}</p>
                             </div>
-                            {!isPaidPlan && <Lock className="w-3.5 h-3.5 text-gray-400 ml-auto" />}
+                            {!isPaidPlan && (
+                              <span className="px-1.5 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[9px] font-bold rounded-full uppercase tracking-wider">PRO</span>
+                            )}
                           </button>
 
                           {/* Clone Design */}
@@ -687,6 +694,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                             type="button"
                             onClick={() => {
                               setShowPlusMenu(false);
+                              if (!user) {
+                                toast({ title: t('common.signIn'), description: 'Please sign in to use Clone Design.', variant: 'destructive' });
+                                if (onShowAuth) onShowAuth();
+                                return;
+                              }
                               if (cloneAttachment) {
                                 toast({ title: 'Limit reached', description: 'Only 1 clone design per prompt.', variant: 'destructive' });
                                 return;

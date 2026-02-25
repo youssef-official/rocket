@@ -1,5 +1,5 @@
 -- ============================================================================
--- Vivora X — Full Database Schema (Updated 2026-02-24)
+-- Vivora X — Full Database Schema (Updated 2026-02-25)
 -- Run this on a fresh Supabase/PostgreSQL database to create everything.
 -- ============================================================================
 
@@ -121,7 +121,8 @@ CREATE TABLE IF NOT EXISTS public.user_roles (
   id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id uuid NOT NULL,
   role public.app_role NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, role)
 );
 
 CREATE TABLE IF NOT EXISTS public.generation_jobs (
@@ -268,7 +269,11 @@ $$;
 CREATE OR REPLACE FUNCTION public.handle_new_user_plan()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = 'public' AS $$
 BEGIN
-  INSERT INTO public.user_plans (user_id, plan, daily_credits, max_daily_credits, monthly_credits, credits_used_today, total_credits_used, subscription_expires_at)
+  INSERT INTO public.user_plans (
+    user_id, plan, daily_credits, max_daily_credits,
+    monthly_credits, credits_used_today, total_credits_used,
+    subscription_expires_at
+  )
   VALUES (NEW.id, 'free', 3, 3, 0, 0, 0, NULL);
   RETURN NEW;
 END;
