@@ -703,13 +703,90 @@ export const HomePage: React.FC<HomePageProps> = ({
                               <p className="text-[11px] text-gray-500">Scrape a website design</p>
                             </div>
                           </button>
+
+                          {/* Themes */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowPlusMenu(false);
+                              setShowThemeMenu(true);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-all duration-200 ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                              <Palette className="w-4 h-4 text-indigo-500" />
+                            </div>
+                            <div className={isRTL ? 'text-right' : ''}>
+                              <p className="text-sm font-semibold text-gray-700">Themes</p>
+                              <p className="text-[11px] text-gray-500">Choose color palette</p>
+                            </div>
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Theme picker dropdown */}
+                  <AnimatePresence>
+                    {showThemeMenu && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowThemeMenu(false)} />
+                        <motion.div
+                          initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                          transition={{ duration: 0.15 }}
+                          className={`absolute bottom-full ${isRTL ? 'right-0' : 'left-0'} mb-2 w-60 bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-200/80 overflow-hidden z-50 max-h-80 overflow-y-auto`}
+                        >
+                          <div className="px-4 py-2.5 border-b border-gray-100">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Default themes</p>
+                          </div>
+                          {COLOR_THEMES.map((theme) => (
+                            <button
+                              key={theme.name}
+                              type="button"
+                              onClick={() => {
+                                if (theme.name === 'Default') {
+                                  setSelectedTheme(null);
+                                } else {
+                                  setSelectedTheme(theme);
+                                }
+                                setShowThemeMenu(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all duration-200 text-left ${
+                                (selectedTheme?.name === theme.name || (!selectedTheme && theme.name === 'Default')) ? 'bg-indigo-50' : ''
+                              }`}
+                            >
+                              <div className="flex -space-x-1.5">
+                                {theme.colors.map((c, i) => (
+                                  <div key={i} className="w-5 h-5 rounded-full border-2 border-white" style={{ backgroundColor: c }} />
+                                ))}
+                              </div>
+                              <span className="text-sm font-medium text-gray-700">{theme.name}</span>
+                            </button>
+                          ))}
                         </motion.div>
                       </>
                     )}
                   </AnimatePresence>
                 </div>
 
+                {/* Selected theme chip + voice + controls */}
                 <div className={`flex items-center gap-1.5 md:gap-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  {/* Theme chip */}
+                  {selectedTheme && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 rounded-full text-xs font-medium text-gray-600">
+                      <div className="flex -space-x-1">
+                        {selectedTheme.colors.map((c, i) => (
+                          <div key={i} className="w-3 h-3 rounded-full border border-white" style={{ backgroundColor: c }} />
+                        ))}
+                      </div>
+                      <span>{selectedTheme.name}</span>
+                      <button type="button" onClick={() => setSelectedTheme(null)} className="w-4 h-4 rounded-full bg-gray-300 hover:bg-gray-400 flex items-center justify-center transition-colors">
+                        <X className="w-2.5 h-2.5 text-gray-600" />
+                      </button>
+                    </div>
+                  )
                   {/* Character Count */}
                   <span className={`text-[10px] md:text-xs font-mono tabular-nums ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-destructive font-bold' : 'text-gray-400'}`}>
                     {prompt.length}/{MAX_PROMPT_LENGTH}
