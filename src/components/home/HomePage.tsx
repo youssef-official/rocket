@@ -651,13 +651,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <AnimatePresence>
                     {showPlusMenu && (
                       <>
-                        <div className="fixed inset-0 z-40" onClick={() => setShowPlusMenu(false)} />
+                        <div className="fixed inset-0 z-[9998]" onClick={() => setShowPlusMenu(false)} />
                         <motion.div
                           initial={{ opacity: 0, y: 5, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 5, scale: 0.95 }}
                           transition={{ duration: 0.15 }}
-                          className={`absolute bottom-full ${isRTL ? 'right-0' : 'left-0'} mb-2 w-56 bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-200/80 overflow-hidden z-50`}
+                          className={`absolute bottom-full ${isRTL ? 'right-0' : 'left-0'} mb-2 w-56 bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-200/80 overflow-hidden z-[9999]`}
                         >
                           {/* Attach Images */}
                           <button
