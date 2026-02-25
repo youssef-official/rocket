@@ -605,6 +605,7 @@ export type Database = {
           max_daily_credits: number
           monthly_credits: number
           plan: Database["public"]["Enums"]["plan_type"]
+          subscription_expires_at: string | null
           total_credits_used: number
           updated_at: string
           user_id: string
@@ -618,6 +619,7 @@ export type Database = {
           max_daily_credits?: number
           monthly_credits?: number
           plan?: Database["public"]["Enums"]["plan_type"]
+          subscription_expires_at?: string | null
           total_credits_used?: number
           updated_at?: string
           user_id: string
@@ -631,6 +633,7 @@ export type Database = {
           max_daily_credits?: number
           monthly_credits?: number
           plan?: Database["public"]["Enums"]["plan_type"]
+          subscription_expires_at?: string | null
           total_credits_used?: number
           updated_at?: string
           user_id?: string
@@ -718,14 +721,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      plan_type:
-        | "spark"
-        | "builder"
-        | "creator"
-        | "scale"
-        | "free"
-        | "pro"
-        | "business"
+      plan_type: "free" | "pro" | "business"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -854,15 +850,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      plan_type: [
-        "spark",
-        "builder",
-        "creator",
-        "scale",
-        "free",
-        "pro",
-        "business",
-      ],
+      plan_type: ["free", "pro", "business"],
     },
   },
 } as const
