@@ -90,6 +90,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     return saved ? JSON.parse(saved) : null;
   });
   const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const plusButtonRef = useRef<HTMLDivElement>(null);
 
   // Voice input state
   const [isListening, setIsListening] = useState(false);
@@ -522,7 +523,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             />
 
             <div
-              className={`bg-white rounded-[2.5rem] shadow-2xl relative transition-colors ${isDragging ? 'ring-2 ring-pink-400' : ''}`}
+              className={`bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative transition-colors ${isDragging ? 'ring-2 ring-pink-400' : ''}`}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
               onDragOver={handleDragOver}
@@ -638,7 +639,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               />
 
               <div className={`flex items-center justify-between px-3 md:px-6 py-3 md:py-4 border-t border-gray-100/80 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className="relative">
+                <div className="relative" ref={plusButtonRef}>
                   <button
                     type="button"
                     onClick={() => setShowPlusMenu(!showPlusMenu)}
@@ -657,7 +658,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 5, scale: 0.95 }}
                           transition={{ duration: 0.15 }}
-                          className={`absolute bottom-full ${isRTL ? 'right-0' : 'left-0'} mb-2 w-56 bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-200/80 overflow-hidden z-[9999]`}
+                          className={`fixed mb-2 w-56 bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-200/80 overflow-hidden z-[9999]`}
+                          style={{ 
+                            left: plusButtonRef.current ? (isRTL ? plusButtonRef.current.getBoundingClientRect().right - 224 : plusButtonRef.current.getBoundingClientRect().left) : 'auto',
+                            top: plusButtonRef.current ? plusButtonRef.current.getBoundingClientRect().top - 210 : 'auto',
+                          }}
                         >
                           {/* Attach Images */}
                           <button
@@ -748,7 +753,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 5, scale: 0.95 }}
                           transition={{ duration: 0.15 }}
-                          className={`absolute bottom-full ${isRTL ? 'right-0' : 'left-0'} mb-2 w-60 bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-200/80 overflow-hidden z-50 max-h-80 overflow-y-auto`}
+                          className={`fixed mb-2 w-60 bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-200/80 overflow-hidden z-50 max-h-80 overflow-y-auto`}
+                          style={{ 
+                            left: plusButtonRef.current ? (isRTL ? plusButtonRef.current.getBoundingClientRect().right - 240 : plusButtonRef.current.getBoundingClientRect().left) : 'auto',
+                            top: plusButtonRef.current ? plusButtonRef.current.getBoundingClientRect().top - 320 : 'auto',
+                          }}
                         >
                           <div className="px-4 py-2.5 border-b border-gray-100">
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Default themes</p>
