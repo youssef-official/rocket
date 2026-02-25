@@ -13,7 +13,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE public.plan_type AS ENUM ('spark', 'builder', 'creator', 'scale', 'free', 'pro', 'business');
+  CREATE TYPE public.plan_type AS ENUM ('free', 'pro', 'business');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -80,13 +80,14 @@ CREATE TABLE IF NOT EXISTS public.chat_messages (
 CREATE TABLE IF NOT EXISTS public.user_plans (
   id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id uuid NOT NULL UNIQUE,
-  plan public.plan_type NOT NULL DEFAULT 'spark',
-  daily_credits numeric NOT NULL DEFAULT 5,
-  max_daily_credits numeric NOT NULL DEFAULT 25,
+  plan public.plan_type NOT NULL DEFAULT 'free',
+  daily_credits numeric NOT NULL DEFAULT 3,
+  max_daily_credits numeric NOT NULL DEFAULT 3,
   monthly_credits numeric NOT NULL DEFAULT 0,
   credits_used_today numeric NOT NULL DEFAULT 0,
   total_credits_used numeric NOT NULL DEFAULT 0,
   last_daily_reset timestamptz DEFAULT now(),
+  subscription_expires_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -267,8 +268,8 @@ $$;
 CREATE OR REPLACE FUNCTION public.handle_new_user_plan()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = 'public' AS $$
 BEGIN
-  INSERT INTO public.user_plans (user_id, plan, daily_credits, max_daily_credits)
-  VALUES (NEW.id, 'spark', 5, 25);
+  INSERT INTO public.user_plans (user_id, plan, daily_credits, max_daily_credits, monthly_credits, credits_used_today, total_credits_used, subscription_expires_at)
+  VALUES (NEW.id, 'free', 3, 3, 0, 0, 0, NULL);
   RETURN NEW;
 END;
 $$;
@@ -292,6 +293,16 @@ DECLARE
   v_credits_used_today INTEGER;
   current_time_utc TIMESTAMP WITH TIME ZONE := NOW() AT TIME ZONE 'UTC';
 BEGIN
+  -- Auto-downgrade expired paid plans to free
+  UPDATE public.user_plans
+  SET plan = 'free', daily_credits = 3, max_daily_credits = 3,
+      monthly_credits = 0, credits_used_today = 0, total_credits_used = 0,
+      subscription_expires_at = NULL, updated_at = current_time_utc
+  WHERE user_id = p_user_id
+    AND plan IN ('pro', 'business')
+    AND subscription_expires_at IS NOT NULL
+    AND subscription_expires_at <= current_time_utc;
+
   SELECT last_daily_reset, daily_credits, credits_used_today
   INTO v_last_reset, v_daily_credits, v_credits_used_today
   FROM user_plans WHERE user_id = p_user_id;

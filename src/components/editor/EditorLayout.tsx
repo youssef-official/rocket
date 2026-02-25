@@ -155,6 +155,19 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [project?.id, fetchVersions]);
 
+  // Warn user before closing tab during generation
+  useEffect(() => {
+    if (!isGenerating) return;
+    const msg = t('editor.closeWarning');
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = msg;
+      return msg;
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isGenerating, t]);
+
   // Auto-create version when generation completes - WITH actions_taken
   useEffect(() => {
     const wasGenerating = prevIsGenerating.current;

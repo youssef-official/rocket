@@ -263,6 +263,9 @@ export const translations: Translations = {
   'integrations.vercelToken': { en: 'Vercel API Token', zh: 'Vercel API 令牌', ja: 'Vercel API トークン', fr: 'Jeton API Vercel' },
   'integrations.getVercelToken': { en: 'Get your token', zh: '获取您的令牌', ja: 'トークンを取得', fr: 'Obtenir votre jeton' },
   'integrations.connectVercel': { en: 'Connect Vercel', zh: '连接 Vercel', ja: 'Vercelを接続', fr: 'Connecter Vercel' },
+
+  // Tab close warning during generation
+  'editor.closeWarning': { en: 'Code generation is still in progress. If you leave now, the current generation will be lost. Are you sure you want to leave?', zh: '代码生成仍在进行中。如果现在离开，当前生成将会丢失。确定要离开吗？', ja: 'コード生成がまだ進行中です。今離れると、現在の生成は失われます。本当に離れますか？', fr: 'La génération de code est toujours en cours. Si vous partez maintenant, la génération en cours sera perdue. Êtes-vous sûr de vouloir partir ?' },
 };
 
 interface LanguageContextType {

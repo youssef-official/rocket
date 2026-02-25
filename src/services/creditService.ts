@@ -1,6 +1,6 @@
 // Credit Service - Smart credit deduction based on complexity
 import { supabase } from '@/integrations/supabase/client';
-import { PLAN_CONFIG, type PlanType } from '@/lib/plans';
+import { PLAN_CONFIG, normalizePlan, type PlanType } from '@/lib/plans';
 
 function toNumber(v: unknown): number {
   if (typeof v === 'number') return v;
@@ -34,8 +34,8 @@ export async function checkCreditsAvailable(userId: string): Promise<boolean> {
     const dailyCredits = toNumber(userPlan.daily_credits);
     const usedToday = toNumber(userPlan.credits_used_today);
     const totalUsed = toNumber(userPlan.total_credits_used);
-    const plan = (userPlan.plan as PlanType) || 'free';
-    const monthlyMax = PLAN_CONFIG[plan]?.monthlyCredits ?? 0;
+    const plan = normalizePlan(userPlan.plan);
+    const monthlyMax = PLAN_CONFIG[plan].monthlyCredits;
 
     const dailyRemaining = Math.max(0, dailyCredits - usedToday);
     const monthlyRemaining = Math.max(0, monthlyMax - totalUsed);
@@ -100,8 +100,8 @@ export async function deductCredits(
     const dailyCredits = toNumber(userPlan.daily_credits);
     const usedToday = toNumber(userPlan.credits_used_today);
     const totalUsed = toNumber(userPlan.total_credits_used);
-    const plan = (userPlan.plan as PlanType) || 'free';
-    const monthlyMax = PLAN_CONFIG[plan]?.monthlyCredits ?? 0;
+    const plan = normalizePlan(userPlan.plan);
+    const monthlyMax = PLAN_CONFIG[plan].monthlyCredits;
 
     const dailyRemaining = Math.max(0, dailyCredits - usedToday);
     const monthlyRemaining = Math.max(0, monthlyMax - totalUsed);

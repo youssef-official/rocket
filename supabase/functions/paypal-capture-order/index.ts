@@ -76,13 +76,16 @@ serve(async (req) => {
       const supabase = createClient(supabaseUrl, supabaseKey);
 
       const planCredits: Record<string, { daily: number; monthly: number; max: number }> = {
-        builder: { daily: 5, monthly: 100, max: 25 },
-        creator: { daily: 5, monthly: 300, max: 25 },
-        scale: { daily: 5, monthly: 700, max: 25 },
+        pro: { daily: 5, monthly: 150, max: 5 },
+        business: { daily: 10, monthly: 400, max: 10 },
       };
 
       const credits = planCredits[plan];
       if (credits) {
+        // Set subscription to expire in 30 days
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30);
+
         const { error } = await supabase
           .from("user_plans")
           .update({
@@ -90,6 +93,9 @@ serve(async (req) => {
             daily_credits: credits.daily,
             max_daily_credits: credits.max,
             monthly_credits: credits.monthly,
+            total_credits_used: 0,
+            credits_used_today: 0,
+            subscription_expires_at: expiresAt.toISOString(),
             updated_at: new Date().toISOString(),
           })
           .eq("user_id", userId);
@@ -99,7 +105,7 @@ serve(async (req) => {
           throw new Error("Payment captured but plan update failed");
         }
 
-        console.log(`[PayPal] User ${userId} upgraded to ${plan}`);
+        console.log(`[PayPal] User ${userId} upgraded to ${plan}, expires: ${expiresAt.toISOString()}`);
       }
     }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { PLAN_CONFIG, type PlanType } from '@/lib/plans';
+import { PLAN_CONFIG, normalizePlan, type PlanType } from '@/lib/plans';
 
 // re-export for existing imports across the app
 export { PLAN_CONFIG };
@@ -69,7 +69,7 @@ export function useUserPlan() {
           setUserPlan({
             id: newPlan.id,
             userId: newPlan.user_id,
-            plan: newPlan.plan as PlanType,
+            plan: normalizePlan(newPlan.plan),
             dailyCredits: newPlan.daily_credits,
             maxDailyCredits: newPlan.max_daily_credits,
             creditsUsedToday: newPlan.credits_used_today,
@@ -83,7 +83,7 @@ export function useUserPlan() {
         setUserPlan({
           id: data.id,
           userId: data.user_id,
-          plan: data.plan as PlanType,
+          plan: normalizePlan(data.plan),
           dailyCredits: data.daily_credits,
           maxDailyCredits: data.max_daily_credits,
           creditsUsedToday: data.credits_used_today,
