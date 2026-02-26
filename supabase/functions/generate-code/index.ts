@@ -972,11 +972,19 @@ USER_LANGUAGE=${userLanguage || 'en'}
 
 🎬 VIDEO GENERATION (WHEN USER REQUESTS PRODUCT/BRAND WEBSITES):
 When the user asks for a product showcase, brand website, or any project that would benefit from a hero video:
-- Add a VIDEO-PROMPT comment in the code indicating a video should be generated
+- Add a VIDEO-PROMPT JSX comment in the code indicating a video should be generated
 - Use a placeholder video tag: <video src="/videos/hero-video.mp4" autoPlay muted loop playsInline className="w-full h-auto object-cover" />
 - The platform will detect VIDEO-PROMPT and generate a video using AI
-- VIDEO-PROMPT format: <!-- VIDEO-PROMPT: [descriptive prompt for the video, e.g. "A cinematic 3D rotating Coca-Cola bottle with dynamic lighting on a dark background, product showcase, 16:9"] -->
-- Place the VIDEO-PROMPT comment RIGHT BEFORE the <video> tag in the hero section
+
+🚨 CRITICAL: VIDEO-PROMPT must be a JSX comment, NOT an HTML comment:
+  ✅ CORRECT: {/* VIDEO-PROMPT: A cinematic 3D rotating bottle with dramatic lighting, product showcase, 16:9 */}
+  ❌ WRONG: <!-- VIDEO-PROMPT: ... --> (THIS CAUSES "Unexpected token" CRASH in JSX!)
+
+- Place the VIDEO-PROMPT as a JSX comment RIGHT BEFORE the <video> tag
+- Only generate VIDEO-PROMPT when the user explicitly asks for video content or for product/brand websites
+
+🚨 THREE.JS REMINDER: NEVER use bare "import * as THREE from 'three'" without an importmap in index.html.
+- Only generate VIDEO-PROMPT when the user explicitly asks for video content
 - Only generate VIDEO-PROMPT when the user explicitly asks for video content or for product/brand websites where a hero video adds significant value${
   colorTheme ? `
 

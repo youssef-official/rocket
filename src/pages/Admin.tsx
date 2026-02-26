@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { AdminBlogEditor } from '@/components/admin/AdminBlogEditor';
 import { toast } from '@/hooks/use-toast';
+import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 interface AdminData {
   users: any[];
@@ -248,8 +249,9 @@ export const AdminPanel: React.FC = () => {
   // ─── Loading / Error ─────────────────────────────────
   if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f]">
-        <div className="text-center">
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundImage: `url(${spaceHeroBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        <div className="absolute inset-0 bg-black/60" />
+        <div className="relative text-center">
           <div className="w-10 h-10 border-[3px] border-white/10 border-t-violet-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-sm text-white/40 font-medium">Loading admin panel...</p>
         </div>
@@ -259,8 +261,9 @@ export const AdminPanel: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f]">
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 text-center max-w-sm backdrop-blur-xl">
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundImage: `url(${spaceHeroBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        <div className="absolute inset-0 bg-black/60" />
+        <div className="relative bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 text-center max-w-sm backdrop-blur-xl">
           <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-4">
             <AlertTriangle size={24} className="text-red-400" />
           </div>
@@ -315,19 +318,20 @@ export const AdminPanel: React.FC = () => {
   const tabTitle = navSections.flatMap(s => s.items).find(n => n.key === tab)?.label || 'Dashboard';
 
   // ─── Shared Styles ─────────────────────────────────
-  const cardCls = "bg-white/[0.03] border border-white/[0.06] rounded-2xl backdrop-blur-sm";
-  const inputCls = "w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/50 transition-all placeholder:text-white/20";
-  const labelCls = "block text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-1.5";
-  const btnPrimary = "px-4 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-sm font-medium rounded-xl hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-violet-500/20";
+  const cardCls = "bg-white/[0.04] border border-white/[0.08] rounded-2xl backdrop-blur-xl shadow-lg shadow-black/10";
+  const inputCls = "w-full px-3.5 py-2.5 bg-white/[0.06] border border-white/[0.1] rounded-xl text-sm text-white outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500/50 transition-all placeholder:text-white/25";
+  const labelCls = "block text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1.5";
+  const btnPrimary = "px-4 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-sm font-semibold rounded-xl hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-violet-500/25";
 
   return (
-    <div className="flex h-screen bg-[#0a0a0f] text-white overflow-hidden">
+    <div className="flex h-screen text-white overflow-hidden" style={{ backgroundImage: `url(${spaceHeroBg})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+      <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-black/80" />
 
       {/* ═══════════════ SIDEBAR ═══════════════ */}
-      <aside className={`${sidebarCollapsed ? 'w-[72px]' : 'w-64'} bg-[#0d0d14] flex flex-col h-screen flex-shrink-0 transition-all duration-300 border-r border-white/[0.04]`}>
+      <aside className={`relative z-10 ${sidebarCollapsed ? 'w-[72px]' : 'w-64'} bg-black/40 backdrop-blur-2xl flex flex-col h-screen flex-shrink-0 transition-all duration-300 border-r border-white/[0.06]`}>
 
         {/* Brand */}
-        <div className="h-16 flex items-center px-4 gap-3 flex-shrink-0 border-b border-white/[0.04]">
+        <div className="h-16 flex items-center px-4 gap-3 flex-shrink-0 border-b border-white/[0.06]">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-violet-500/30">
             <Rocket size={16} className="text-white" />
           </div>
@@ -399,10 +403,10 @@ export const AdminPanel: React.FC = () => {
       </aside>
 
       {/* ═══════════════ MAIN ═══════════════ */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="relative z-10 flex-1 flex flex-col overflow-hidden">
 
         {/* Top bar */}
-        <header className="h-16 px-6 flex items-center justify-between border-b border-white/[0.04] bg-[#0d0d14]/80 backdrop-blur-xl flex-shrink-0">
+        <header className="h-16 px-6 flex items-center justify-between border-b border-white/[0.06] bg-black/30 backdrop-blur-2xl flex-shrink-0">
           <div className="flex items-center gap-2 text-sm text-white/30">
             <Settings2 size={14} />
             <span className="text-white/10">/</span>
@@ -423,7 +427,7 @@ export const AdminPanel: React.FC = () => {
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 bg-[#0a0a0f]">
+        <div className="flex-1 overflow-y-auto p-6">
           <AnimatePresence mode="wait">
             <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
 

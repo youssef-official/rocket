@@ -11,22 +11,30 @@ interface Celebration {
 
 export const CelebrationEffects: React.FC = () => {
   const [celebrations, setCelebrations] = useState<Celebration[]>([]);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchData = async () => {
       const { data } = await supabase.from('site_celebrations').select('*').eq('is_active', true);
       if (data) setCelebrations(data);
     };
-    fetch();
+    fetchData();
   }, []);
+
+  // Auto-hide after 10 seconds
+  useEffect(() => {
+    if (celebrations.length === 0) return;
+    const timer = setTimeout(() => setVisible(false), 10000);
+    return () => clearTimeout(timer);
+  }, [celebrations]);
 
   const isRamadan = celebrations.some(c => c.name === 'ramadan');
   const isEid = celebrations.some(c => c.name === 'eid');
 
-  if (!isRamadan && !isEid) return null;
+  if (!isRamadan && !isEid || !visible) return null;
 
   return (
-    <>
+    <AnimatePresence>
       {/* Ramadan: Crescent + Stars */}
       {isRamadan && (
         <div className="fixed inset-0 pointer-events-none z-[90] overflow-hidden">
@@ -136,6 +144,6 @@ export const CelebrationEffects: React.FC = () => {
           </motion.div>
         </div>
       )}
-    </>
+    </AnimatePresence>
   );
 };
