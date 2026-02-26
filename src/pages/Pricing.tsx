@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PLAN_CONFIG, type PlanType } from '@/hooks/useUserPlan';
 import { PayPalButton } from '@/components/shared/PayPalButton';
 import { SEOHead } from '@/components/shared/SEOHead';
+import { PromoCodeSection } from '@/components/pricing/PromoCodeSection';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 const plans: { key: PlanType; icon: React.ReactNode; color: string; gradient: string; popular?: boolean }[] = [
@@ -289,6 +290,9 @@ export const Pricing: React.FC = () => {
                 </div>
               </div>
           </motion.div>
+
+          {/* Promo Code Section */}
+          <PromoCodeSection />
 
           {/* FAQ */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="text-center">

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Vivora X — Full Database Schema (Updated 2026-02-25)
+-- Vivora X — Full Database Schema (Updated 2026-02-26)
 -- Run this on a fresh Supabase/PostgreSQL database to create everything.
 -- ============================================================================
 
@@ -238,6 +238,28 @@ CREATE TABLE IF NOT EXISTS public.vivora_deployments (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS public.promo_codes (
+  id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  code text NOT NULL UNIQUE,
+  discount_percent integer NOT NULL DEFAULT 10,
+  target_plan text NOT NULL DEFAULT 'all',
+  is_public boolean NOT NULL DEFAULT false,
+  max_uses integer,
+  current_uses integer NOT NULL DEFAULT 0,
+  expires_at timestamptz,
+  created_by uuid,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.site_celebrations (
+  id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  name text NOT NULL,
+  is_active boolean NOT NULL DEFAULT false,
+  config jsonb NOT NULL DEFAULT '{}'::jsonb,
+  updated_by uuid,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- FUNCTIONS
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -456,6 +478,14 @@ CREATE POLICY "Anyone can check subdomain availability" ON public.vivora_deploym
 CREATE POLICY "Users can view their own deployments"    ON public.vivora_deployments FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own deployments"  ON public.vivora_deployments FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+ALTER TABLE public.promo_codes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can view public promos" ON public.promo_codes FOR SELECT USING (is_public = true);
+CREATE POLICY "Admins can manage promos"      ON public.promo_codes FOR ALL USING (has_role(auth.uid(), 'admin'));
+
+ALTER TABLE public.site_celebrations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can view celebrations" ON public.site_celebrations FOR SELECT USING (true);
+CREATE POLICY "Admins can manage celebrations" ON public.site_celebrations FOR ALL USING (has_role(auth.uid(), 'admin'));
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- STORAGE BUCKETS
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -475,3 +505,12 @@ CREATE TRIGGER update_generation_jobs_updated_at BEFORE UPDATE ON public.generat
 CREATE TRIGGER update_ai_model_config_updated_at BEFORE UPDATE ON public.ai_model_config FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_vivora_deployments_updated_at BEFORE UPDATE ON public.vivora_deployments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_blog_posts_updated_at BEFORE UPDATE ON public.blog_posts FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- SEED DATA
+-- ─────────────────────────────────────────────────────────────────────────────
+
+INSERT INTO public.site_celebrations (name, is_active, config) VALUES
+  ('ramadan', false, '{"emoji": "🌙", "label": "Ramadan Kareem"}'),
+  ('eid', false, '{"emoji": "🎉", "label": "Eid Mubarak"}')
+ON CONFLICT DO NOTHING;
