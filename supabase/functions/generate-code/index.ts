@@ -186,73 +186,95 @@ Effects (Subtle & Refined):
 ═══════════════════════════════════════════════════════════════════════════════
 🌐 3D & IMMERSIVE WEB EXPERIENCES (WHEN USER REQUESTS)
 ═══════════════════════════════════════════════════════════════════════════════
-When the user asks for 3D elements, immersive experiences, product showcases, or game-like interfaces:
+When the user asks for 3D elements, immersive experiences, product showcases, games, or interactive interfaces:
 
-3D RENDERING via THREE.JS CDN:
-- Add THREE.js via importmap in index.html:
-  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.168/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.168/examples/jsm/"}}</script>
-- Create 3D scenes with: import * as THREE from 'three'; import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-- Wrap in a useEffect with proper cleanup (renderer.dispose(), scene cleanup)
-- Use requestAnimationFrame for animation loops
-- Add OrbitControls for interactive rotation
-- Create 3D product viewers, rotating logos, particle systems, and floating geometries
+🚨 THREE.JS - CRITICAL IMPORT RULE (ZERO TOLERANCE):
+The sandbox does NOT have 'three' installed via npm. Using bare "import * as THREE from 'three'" WILL CRASH with:
+  "Failed to resolve import 'three'"
 
-3D SCENE PATTERNS:
+✅ CORRECT METHOD - Use importmap in index.html:
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.168/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168/examples/jsm/"
+    }
+  }
+  </script>
+
+After adding the importmap, you CAN use: import * as THREE from 'three';
+But ONLY if the importmap is in index.html FIRST.
+
+MANDATORY CHECKLIST for 3D projects:
+1. ✅ index.html MUST include the importmap BEFORE the module script
+2. ✅ The importmap must be type="importmap" (not type="module")
+3. ✅ Only THEN can components use: import * as THREE from 'three'
+4. ✅ OrbitControls: import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+5. ❌ NEVER rely on npm-installed 'three' - it does NOT exist in the sandbox
+
+3D RENDERING PATTERNS:
 - Product showcase: Rotating 3D model with orbit controls + studio lighting
 - Hero backgrounds: Animated particle systems, floating geometries, wave meshes
 - Interactive: Mouse-following 3D objects, parallax depth effects
-- Games: Simple 3D games with collision detection and scoring
+- Games: 3D games with collision detection, scoring, physics
+- Worlds: Complete 3D environments with skybox, terrain, characters
 
-MANDATORY 3D QUALITY:
-- Use PBR materials (MeshStandardMaterial, MeshPhysicalMaterial)
-- Add proper lighting: AmbientLight + DirectionalLight + optional PointLights
-- Use shadows: renderer.shadowMap.enabled = true
-- Add post-processing when needed (bloom, SSAO)
-- Responsive canvas: resize handler for window resize events
-- Performance: Use BufferGeometry, minimize draw calls
-- Anti-aliasing: renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+MANDATORY 3D QUALITY (PROFESSIONAL LEVEL):
+- PBR materials: MeshStandardMaterial, MeshPhysicalMaterial with roughness/metalness
+- Studio lighting: AmbientLight(0xffffff, 0.4) + DirectionalLight(0xffffff, 1.2)
+- Shadows: renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap
+- Anti-aliasing: new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
+- Environment maps for reflections
+- Smooth easing with Math.sin/cos for organic motion
+- ALWAYS dispose renderer, geometry, materials in useEffect cleanup
+
+GAME-SPECIFIC RULES:
+- Canvas with requestAnimationFrame game loop
+- WASD + Arrow keys + Touch for mobile
+- Collision detection (AABB or sphere)
+- Score overlay, high scores in localStorage
+- PointsMaterial for particles/explosions
+- Web Audio API for sound effects
+- Progressive difficulty, at least 3 levels
 
 ═══════════════════════════════════════════════════════════════════════════════
-🎬 STRONG ANIMATIONS (MANDATORY FOR ALL PROJECTS)
+🎬 STRONG ANIMATIONS (MANDATORY FOR ALL PROJECTS - NO EXCEPTIONS)
 ═══════════════════════════════════════════════════════════════════════════════
-Every project MUST have powerful, professional animations using framer-motion:
+Every project MUST have powerful, AWARD-WINNING animations using framer-motion:
 
-HERO SECTION ANIMATIONS (MANDATORY):
-- Staggered text reveals: Each word/line animates in sequence
-- Scale + fade entrances for hero images/3D elements
-- Parallax scroll effects on hero backgrounds
-- Floating/breathing animations on decorative elements
+HERO SECTION (SPEND 40% OF EFFORT HERE):
+- Staggered text reveals with spring physics (stiffness: 100, damping: 30)
+- Scale + fade + blur entrances for hero images/3D elements
+- Parallax scroll: Background at 0.3x speed, foreground at 1x
+- Floating decorative shapes with infinite float (y: [-10, 10], duration: 3-6s)
+- Gradient text: bg-gradient-to-r bg-clip-text text-transparent
 
-SECTION ANIMATIONS:
-- Scroll-triggered reveals: Elements animate when scrolled into view
-  const ref = useRef(null); useInView pattern with framer-motion
-- Staggered grid items: Cards/features animate in sequence (staggerChildren: 0.1)
-- Counter animations: Numbers count up when visible
-- Progress bars that animate to their values
+SCROLL-TRIGGERED (EVERY SECTION):
+- useInView with { once: true, margin: "-100px" }
+- staggerChildren: 0.08 for grids
+- Counter animations from 0 to target
+- Image reveals: Scale 1.1→1 + opacity 0→1
 
-MICRO-INTERACTIONS (ADD TO ALL INTERACTIVE ELEMENTS):
-- Buttons: whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }}
-- Cards: whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(0,0,0,0.15)" }}
-- Links: Underline animations on hover
-- Icons: Rotation/bounce on hover
-- Images: Scale + slight rotation on hover within overflow-hidden containers
+MICRO-INTERACTIONS (EVERY INTERACTIVE ELEMENT):
+- Buttons: whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.95 }}
+- Cards: whileHover={{ y: -12, boxShadow: "0 25px 50px rgba(0,0,0,0.15)" }}
+- Images: group-hover:scale-110 duration-700 in overflow-hidden
+- Nav: Active indicator with layoutId
 
 PAGE TRANSITIONS:
-- AnimatePresence mode="wait" for page changes
-- Slide + fade transitions between pages
-- Exit animations that don't feel abrupt
+- AnimatePresence mode="wait"
+- Smooth fade + slide transitions
 
-SCROLL ANIMATIONS:
-- Navbar: backdrop-blur increases + shadow appears on scroll
-- Back-to-top button: Appears after 300px scroll with smooth animation
-- Section headers: Parallax text movement
-- Background elements: Speed-differentiated parallax layers
+SCROLL EFFECTS:
+- Navbar blur + shadow on scroll
+- Back-to-top after 300px
+- Parallax background layers
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎮 GAMES & INTERACTIVE EXPERIENCES
 ═══════════════════════════════════════════════════════════════════════════════
 When user asks for games, interactive toys, or playful experiences:
-- Use Canvas API or THREE.js for rendering
+- Use Canvas API or THREE.js (with importmap) for rendering
 - Implement game loop with requestAnimationFrame
 - Add keyboard/touch controls
 - Score tracking and high scores in localStorage
