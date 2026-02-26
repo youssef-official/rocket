@@ -238,37 +238,66 @@ GAME-SPECIFIC RULES:
 - Progressive difficulty, at least 3 levels
 
 ═══════════════════════════════════════════════════════════════════════════════
-🎬 STRONG ANIMATIONS (MANDATORY FOR ALL PROJECTS - NO EXCEPTIONS)
+🎬 CINEMATIC ANIMATIONS & SCROLL EXPERIENCES (MANDATORY - AWARD-WINNING LEVEL)
 ═══════════════════════════════════════════════════════════════════════════════
-Every project MUST have powerful, AWARD-WINNING animations using framer-motion:
+Your websites MUST look like the work of a top-tier design agency (Awwwards, FWA level).
+Study reference: KlickPin, Apple, Locomotive, Elegant Seagulls — smooth parallax, scroll-driven narratives, cinematic reveals.
 
-HERO SECTION (SPEND 40% OF EFFORT HERE):
+HERO SECTION (SPEND 50% OF EFFORT HERE — THIS IS THE FIRST IMPRESSION):
 - Staggered text reveals with spring physics (stiffness: 100, damping: 30)
 - Scale + fade + blur entrances for hero images/3D elements
-- Parallax scroll: Background at 0.3x speed, foreground at 1x
+- PARALLAX: Use useScroll + useTransform from framer-motion:
+  const { scrollY } = useScroll();
+  const bgY = useTransform(scrollY, [0, 500], [0, -150]);
+  const textY = useTransform(scrollY, [0, 500], [0, -50]);
+  Apply via: <motion.div style={{ y: bgY }}>
 - Floating decorative shapes with infinite float (y: [-10, 10], duration: 3-6s)
 - Gradient text: bg-gradient-to-r bg-clip-text text-transparent
+- Full-bleed hero images with Ken Burns (scale-[1.1] → scale-100 over 8s)
+- Split text character animation: each letter animates in sequence
+- Cursor-following light/glow effect on hero
 
-SCROLL-TRIGGERED (EVERY SECTION):
+SCROLL-TRIGGERED (EVERY SECTION — NO STATIC SECTIONS ALLOWED):
 - useInView with { once: true, margin: "-100px" }
-- staggerChildren: 0.08 for grids
-- Counter animations from 0 to target
-- Image reveals: Scale 1.1→1 + opacity 0→1
+- staggerChildren: 0.08 for grids, 0.12 for lists
+- Counter animations from 0 to target (animate numbers counting up)
+- Image reveals: Scale 1.1→1 + opacity 0→1 + clipPath wipe
+- Horizontal scroll sections for galleries: overflow-x-scroll snap-x snap-mandatory
+- Sticky scroll sections: position: sticky; top: 0 for narrative storytelling
+- Reveal-on-scroll with clip-path: inset(100% 0 0 0) → inset(0)
+
+PARALLAX LAYERS (MANDATORY FOR PRODUCT/PORTFOLIO SITES):
+- Background layer: moves at 0.3x scroll speed
+- Content layer: moves at 1x (normal)
+- Foreground layer: moves at 1.5x speed
+- Create depth with: useTransform(scrollYProgress, [0, 1], ["0%", "-30%"])
+- At least 3 parallax layers per hero section
+- Product images that "float" as you scroll
 
 MICRO-INTERACTIONS (EVERY INTERACTIVE ELEMENT):
 - Buttons: whileHover={{ scale: 1.05, y: -3 }} whileTap={{ scale: 0.95 }}
-- Cards: whileHover={{ y: -12, boxShadow: "0 25px 50px rgba(0,0,0,0.15)" }}
-- Images: group-hover:scale-110 duration-700 in overflow-hidden
-- Nav: Active indicator with layoutId
+- Cards: whileHover={{ y: -12, rotateX: 2, boxShadow: "0 25px 50px rgba(0,0,0,0.15)" }}
+- Images: group-hover:scale-110 duration-700 in overflow-hidden container
+- Nav: Active indicator with layoutId for smooth sliding
+- Magnetic buttons: cursor proximity causes subtle pull effect
+- Hover → reveal hidden content with AnimatePresence
 
 PAGE TRANSITIONS:
-- AnimatePresence mode="wait"
-- Smooth fade + slide transitions
+- AnimatePresence mode="wait" with smooth fade + slide
+- Exit animations: opacity: 0, y: 20 over 0.3s
 
 SCROLL EFFECTS:
-- Navbar blur + shadow on scroll
-- Back-to-top after 300px
-- Parallax background layers
+- Navbar: transparent → blur + shadow on scroll (track scrollY > 50)
+- Back-to-top button appears after 300px scroll
+- Progress bar at top showing scroll percentage
+- Smooth scroll for anchor links
+
+FOOD/PRODUCT SITES SPECIFICALLY:
+- Ingredients/items that appear to "float" in parallax as you scroll
+- Full-screen product hero with slow zoom
+- Before/after slider for comparisons
+- Animated stats section with counting numbers
+- Scroll-driven recipe/process timeline
 
 ═══════════════════════════════════════════════════════════════════════════════
 🎮 GAMES & INTERACTIVE EXPERIENCES
