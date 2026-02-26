@@ -458,6 +458,45 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          current_uses: number
+          discount_percent: number
+          expires_at: string | null
+          id: string
+          is_public: boolean
+          max_uses: number | null
+          target_plan: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          discount_percent?: number
+          expires_at?: string | null
+          id?: string
+          is_public?: boolean
+          max_uses?: number | null
+          target_plan?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          discount_percent?: number
+          expires_at?: string | null
+          id?: string
+          is_public?: boolean
+          max_uses?: number | null
+          target_plan?: string
+        }
+        Relationships: []
+      }
       sandbox_mappings: {
         Row: {
           api_url: string
@@ -488,6 +527,33 @@ export type Database = {
           project_id?: string | null
           sandbox_id?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      site_celebrations: {
+        Row: {
+          config: Json
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }

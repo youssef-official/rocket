@@ -120,10 +120,9 @@ export const HomePage: React.FC<HomePageProps> = ({
     recognition.continuous = true;
     recognition.interimResults = true;
     // Support Arabic via browser language detection + explicit mappings
-    const langMap: Record<string, string> = { 'zh': 'zh-CN', 'ja': 'ja-JP', 'fr': 'fr-FR', 'en': 'en-US' };
+    const langMap: Record<string, string> = { 'ar': 'ar-SA', 'zh': 'zh-CN', 'ja': 'ja-JP', 'fr': 'fr-FR', 'en': 'en-US', 'es': 'es-ES', 'de': 'de-DE', 'pt': 'pt-BR', 'ko': 'ko-KR', 'tr': 'tr-TR', 'hi': 'hi-IN', 'ru': 'ru-RU' };
     const browserLang = navigator.language || 'en-US';
-    const isArabicBrowser = browserLang.startsWith('ar');
-    recognition.lang = isArabicBrowser ? 'ar-SA' : (langMap[language] || browserLang);
+    recognition.lang = langMap[language] || (browserLang.startsWith('ar') ? 'ar-SA' : browserLang);
 
     recognition.onresult = (event: any) => {
       let transcript = '';

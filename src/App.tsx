@@ -29,6 +29,7 @@ import {
   type Suggestion
 } from "@/services/aiService";
 import { calculateRequestCredits } from "@/services/directAiService";
+import { processVideoPrompts, hasVideoPrompts } from "@/services/videoGenerationService";
 import type { ProjectData, ChatMessage, ProjectFile } from "@/types";
 import { toast } from "@/hooks/use-toast";
 
@@ -360,6 +361,18 @@ const ProjectEditorRoute = () => {
                 let finalFiles = Object.keys(files).length > 0
                   ? { ...localProject.files, ...files }
                   : localProject.files;
+
+                // Process VIDEO-PROMPT: generate videos and replace placeholders
+                if (hasVideoPrompts(finalFiles)) {
+                  try {
+                    setStatusMessage('Generating video...');
+                    setFileActivities(prev => [...prev, { name: 'hero-video.mp4', status: 'editing' as const, action: 'created' as const }]);
+                    finalFiles = await processVideoPrompts(finalFiles);
+                    setFileActivities(prev => prev.map(f => f.name === 'hero-video.mp4' ? { ...f, status: 'done' as const } : f));
+                  } catch (videoErr) {
+                    console.warn('Video generation skipped:', videoErr);
+                  }
+                }
 
                 await updateProject(localProject.id, {
                   files: finalFiles,
