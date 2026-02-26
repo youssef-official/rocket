@@ -50,7 +50,7 @@ const AnalyzedIcon = () => (
 
 const getActionConfig = (action: string) => {
   switch (action) {
-    case 'edited': return { label: 'Edited', color: 'text-amber-500', Icon: EditedIcon };
+    case 'edited': return { label: 'Edited', color: 'text-muted-foreground', Icon: EditedIcon };
     case 'created': return { label: 'Created', color: 'text-muted-foreground', Icon: CreatedIcon };
     case 'read': return { label: 'Read', color: 'text-muted-foreground/80', Icon: ReadIcon };
     case 'deleted': return { label: 'Deleted', color: 'text-red-400', Icon: DeletedIcon };

@@ -8,7 +8,8 @@ import type { ProjectFile } from '@/types';
 export async function processVideoPrompts(
   files: Record<string, ProjectFile>
 ): Promise<Record<string, ProjectFile>> {
-  const videoPromptRegex = /<!--\s*VIDEO-PROMPT:\s*(.+?)\s*-->/g;
+  // Support both HTML comments <!-- VIDEO-PROMPT: ... --> and JSX comments {/* VIDEO-PROMPT: ... */}
+  const videoPromptRegex = /(?:<!--\s*VIDEO-PROMPT:\s*(.+?)\s*-->|\{\/\*\s*VIDEO-PROMPT:\s*(.+?)\s*\*\/\})/g;
   const updatedFiles = { ...files };
   
   for (const [path, file] of Object.entries(files)) {
@@ -20,7 +21,7 @@ export async function processVideoPrompts(
     let updatedContent = file.content;
     
     for (const match of matches) {
-      const prompt = match[1].replace(/["\[\]]/g, '').trim();
+      const prompt = (match[1] || match[2] || '').replace(/["\[\]]/g, '').trim();
       if (!prompt) continue;
       
       console.log(`[video-gen] Found VIDEO-PROMPT in ${path}: "${prompt.substring(0, 60)}..."`);
@@ -74,6 +75,6 @@ export async function processVideoPrompts(
  * Checks if any files contain VIDEO-PROMPT comments
  */
 export function hasVideoPrompts(files: Record<string, ProjectFile>): boolean {
-  const regex = /<!--\s*VIDEO-PROMPT:/;
+  const regex = /(?:<!--\s*VIDEO-PROMPT:|\{\/\*\s*VIDEO-PROMPT:)/;
   return Object.values(files).some(f => f.content && regex.test(f.content));
 }
