@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, CheckCircle, Loader2, ExternalLink, LogIn, List, Plug, Play } from 'lucide-react';
+import { Database, CheckCircle, Loader2, ExternalLink, LogIn, List, Plug, Play, KeyRound } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const SB_CLIENT_ID = 'bb4087af-31a0-4921-8418-d1eb743291d9';
@@ -25,6 +25,8 @@ export const DatabasePanel: React.FC<DatabasePanelProps> = ({ projectId, onSendM
   const [connectedProjectRef, setConnectedProjectRef] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'auth' | 'select' | 'connected'>('auth');
+  const [manualMode, setManualMode] = useState(false);
+  const [manualProjectRef, setManualProjectRef] = useState('');
 
   // Check connection status on mount
   useEffect(() => {
@@ -241,15 +243,15 @@ The user connected their Supabase database via OAuth. Please:
                   <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                 </div>
               ) : sbProjects.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">No projects found</p>
+                <p className="text-sm text-muted-foreground py-4 text-center">No projects found. Try entering your Project ID manually below.</p>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {sbProjects.map((proj) => (
                     <button
                       key={proj.id}
-                      onClick={() => setSelectedProject(proj.id)}
+                      onClick={() => { setSelectedProject(proj.id); setManualMode(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-colors text-sm ${
-                        selectedProject === proj.id
+                        selectedProject === proj.id && !manualMode
                           ? 'border-green-500 bg-green-500/10 text-foreground'
                           : 'border-border hover:border-muted-foreground/30 text-foreground'
                       }`}
@@ -263,6 +265,34 @@ The user connected their Supabase database via OAuth. Please:
                   ))}
                 </div>
               )}
+
+              {/* Manual Project ID Input */}
+              <div className="border-t border-border pt-4">
+                <button
+                  onClick={() => setManualMode(!manualMode)}
+                  className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors mb-3"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  {manualMode ? 'Hide manual input' : 'Enter Project ID manually'}
+                </button>
+                {manualMode && (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={manualProjectRef}
+                      onChange={(e) => {
+                        setManualProjectRef(e.target.value.trim());
+                        if (e.target.value.trim()) setSelectedProject(e.target.value.trim());
+                      }}
+                      placeholder="e.g. abcdefghijklmnop"
+                      className="w-full px-3 py-2.5 bg-background border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-green-500/30 placeholder:text-muted-foreground"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Find your Project ID in your Supabase dashboard → Settings → General
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {error && (
                 <p className="text-xs text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>
