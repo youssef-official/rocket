@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Settings2, LogOut, Moon, Sun, Monitor, Coins, Crown, Sparkles } from 'lucide-react';
+import { User as UserIcon, Settings2, LogOut, Moon, Sun, Monitor, Coins, Crown, Sparkles, ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '@/types';
 import { useThemePreference } from '@/hooks/useThemePreference';
@@ -7,6 +7,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
 import { LanguageSelector } from './LanguageSelector';
 import { Progress } from '@/components/ui/progress';
+import spaceHeroBg from '@/assets/space-hero-bg.jpg';
+import lightHeroBg from '@/assets/light-hero-bg.jpg';
 
 interface UserMenuDropdownProps {
   user: User;
@@ -14,6 +16,51 @@ interface UserMenuDropdownProps {
   onUpgradeClick?: () => void;
   onSettingsClick?: () => void;
 }
+
+const WALLPAPERS = [
+  { id: 'space', label: 'Space', src: spaceHeroBg },
+  { id: 'light', label: 'Light', src: lightHeroBg },
+];
+
+const WallpaperSelector: React.FC = () => {
+  const [open, setOpen] = useState(false);
+  const current = localStorage.getItem('vivora_wallpaper') || 'space';
+
+  const select = (id: string) => {
+    localStorage.setItem('vivora_wallpaper', id);
+    setOpen(false);
+    window.dispatchEvent(new Event('vivora-wallpaper-change'));
+  };
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(!open); }}
+        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer"
+      >
+        <ImageIcon className="w-4 h-4" />
+        Wallpaper
+      </button>
+      {open && (
+        <div className="mt-1 p-2 bg-white/[0.06] rounded-xl border border-white/[0.08] space-y-1">
+          {WALLPAPERS.map(wp => (
+            <button
+              key={wp.id}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); select(wp.id); }}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${current === wp.id ? 'bg-violet-500/20 text-violet-300' : 'text-white/60 hover:bg-white/[0.04]'}`}
+            >
+              <div className="w-8 h-5 rounded overflow-hidden border border-white/10">
+                <img src={wp.src} alt={wp.label} className="w-full h-full object-cover" />
+              </div>
+              {wp.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOut, onUpgradeClick, onSettingsClick }) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -226,6 +273,9 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                 </div>
                 <span className="text-[11px] text-white/40 bg-white/[0.06] px-2 py-0.5 rounded-md">{getThemeLabel()}</span>
               </button>
+
+              {/* Wallpaper */}
+              <WallpaperSelector />
 
               {/* Billing */}
               <button

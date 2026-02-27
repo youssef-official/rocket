@@ -771,30 +771,21 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Mobile Bottom Navigation */}
-        <div className={`md:hidden fixed bottom-0 left-0 right-0 h-14 bg-card border-t border-border flex items-center justify-around z-50 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className={`md:hidden fixed bottom-0 left-0 right-0 h-14 bg-card border-t border-border flex items-center z-50 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <button
             onClick={() => setMobilePanel('chat')}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${mobilePanel === 'chat' ? 'text-primary' : 'text-muted-foreground'
-              }`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-none transition-all duration-200 ${mobilePanel === 'chat' ? 'text-primary bg-primary/5 font-semibold' : 'text-muted-foreground'}`}
           >
             <Code2 className="w-5 h-5" />
-            <span className="text-xs">{t('editor.chat')}</span>
+            <span className="text-sm">{t('editor.chat')}</span>
           </button>
+          <div className="w-px h-8 bg-border" />
           <button
             onClick={() => setMobilePanel('preview')}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${mobilePanel === 'preview' ? 'text-primary' : 'text-muted-foreground'
-              }`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-none transition-all duration-200 ${mobilePanel === 'preview' ? 'text-primary bg-primary/5 font-semibold' : 'text-muted-foreground'}`}
           >
             <Eye className="w-5 h-5" />
-            <span className="text-xs">{t('editor.preview')}</span>
-          </button>
-          <button
-            onClick={() => setMobilePanel('code')}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${mobilePanel === 'code' ? 'text-primary' : 'text-muted-foreground'
-              }`}
-          >
-            <Code2 className="w-5 h-5" />
-            <span className="text-xs">{t('editor.code')}</span>
+            <span className="text-sm">{t('editor.preview')}</span>
           </button>
         </div>
 
@@ -936,14 +927,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               />
             </div>
 
-            <div className={`h-full ${mobilePanel === 'code' ? 'block' : 'hidden'}`}>
-              <CodeView
-                files={project?.files || {}}
-                selectedFile={selectedFile}
-                onSelectFile={setSelectedFile}
-                onUpdateFile={handleUpdateFile}
-              />
-            </div>
+            {/* Code view hidden on mobile */}
           </div>
         )}
       </div>
