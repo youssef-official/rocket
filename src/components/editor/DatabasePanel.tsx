@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Database, CheckCircle, Loader2, ExternalLink } from 'lucide-react';
+import { Database, CheckCircle, Loader2, ExternalLink, LogIn, List, Plug, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+
+const SB_CLIENT_ID = 'bb4087af-31a0-4921-8418-d1eb743291d9';
+
+interface SupabaseProject {
+  id: string;
+  name: string;
+  region: string;
+}
 
 interface DatabasePanelProps {
   projectId: string | null;
@@ -8,13 +16,22 @@ interface DatabasePanelProps {
 }
 
 export const DatabasePanel: React.FC<DatabasePanelProps> = ({ projectId, onSendMessage }) => {
-  const [supabaseUrl, setSupabaseUrl] = useState('');
-  const [anonKey, setAnonKey] = useState('');
-  const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [sbProjects, setSbProjects] = useState<SupabaseProject[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectedProjectRef, setConnectedProjectRef] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [step, setStep] = useState<'auth' | 'select' | 'connected'>('auth');
 
-  // Load existing credentials if any
+  // Check connection status on mount
+  useEffect(() => {
+    checkStatus();
+  }, []);
+
+  // Check if project already has supabase_url set
   useEffect(() => {
     if (!projectId) return;
     supabase
@@ -24,57 +41,118 @@ export const DatabasePanel: React.FC<DatabasePanelProps> = ({ projectId, onSendM
       .single()
       .then(({ data }) => {
         if (data?.supabase_url) {
-          setSupabaseUrl(data.supabase_url);
-          setAnonKey(data.supabase_anon_key || '');
-          setIsConnected(true);
+          // Extract project ref from URL
+          const match = data.supabase_url.match(/https:\/\/([^.]+)\.supabase\.co/);
+          if (match) {
+            setConnectedProjectRef(match[1]);
+            setStep('connected');
+          }
         }
       });
   }, [projectId]);
 
-  const handleConnect = async () => {
-    if (!supabaseUrl.trim() || !anonKey.trim()) {
-      setError('Please fill in both fields');
-      return;
+  const checkStatus = async () => {
+    setIsLoading(true);
+    try {
+      const res = await supabase.functions.invoke('supabase-oauth', {
+        body: { action: 'status' },
+      });
+      if (res.data?.connected) {
+        setIsConnected(true);
+        if (step === 'auth') setStep('select');
+      }
+    } catch (e) {
+      // Not connected
+    } finally {
+      setIsLoading(false);
     }
-    if (!supabaseUrl.startsWith('https://') || !supabaseUrl.includes('.supabase.co')) {
-      setError('Invalid Supabase URL. It should look like: https://xxxx.supabase.co');
-      return;
+  };
+
+  const handleLogin = () => {
+    // Save current project ID so callback knows where to return
+    if (projectId) {
+      sessionStorage.setItem('sb_oauth_return_project', projectId);
     }
 
+    const redirectUri = `${window.location.origin}/supabase-callback`;
+    const authUrl = `https://api.supabase.com/v1/oauth/authorize?client_id=${SB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`;
+    window.location.href = authUrl;
+  };
+
+  const handleLoadProjects = async () => {
+    setIsLoadingProjects(true);
+    setError('');
+    try {
+      const res = await supabase.functions.invoke('supabase-oauth', {
+        body: { action: 'list-projects' },
+      });
+      if (res.data?.error) {
+        setError(res.data.error);
+        return;
+      }
+      setSbProjects(res.data?.projects || []);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setIsLoadingProjects(false);
+    }
+  };
+
+  // Auto-load projects when entering select step
+  useEffect(() => {
+    if (step === 'select' && isConnected && sbProjects.length === 0) {
+      handleLoadProjects();
+    }
+  }, [step, isConnected]);
+
+  const handleConnectProject = async () => {
+    if (!selectedProject || !projectId) return;
     setIsConnecting(true);
     setError('');
 
     try {
-      // Save credentials to project in DB
-      if (projectId) {
-        const { error: updateError } = await supabase
-          .from('projects')
-          .update({
-            supabase_url: supabaseUrl.trim(),
-            supabase_anon_key: anonKey.trim(),
-          })
-          .eq('id', projectId);
+      // Get project keys
+      const res = await supabase.functions.invoke('supabase-oauth', {
+        body: { action: 'get-keys', project_ref: selectedProject },
+      });
 
-        if (updateError) throw updateError;
+      if (res.data?.error) {
+        setError(res.data.error);
+        return;
       }
 
-      setIsConnected(true);
+      const { url, anon_key } = res.data;
 
-      // Send message to AI to update the project
-      const msg = `Db Connected
-Supabase URL: ${supabaseUrl.trim()}
-Supabase Anon Key: ${anonKey.trim()}
+      // Save to project record
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({
+          supabase_url: url,
+          supabase_anon_key: anon_key,
+        })
+        .eq('id', projectId);
 
-The user has connected their Supabase database. Please:
-1. Create/update src/lib/supabase.ts with the correct client using these credentials
-2. Update existing data operations in the project to use Supabase instead of local state
-3. Generate needed SQL migrations in migrations/001-init.sql
-4. If you need Edge Functions, create them in supabase/functions/{name}/index.ts and tell the user to deploy them
-5. Tell the user which migration files to run in their Supabase SQL Editor`;
+      if (updateError) throw updateError;
+
+      setConnectedProjectRef(selectedProject);
+      setStep('connected');
+
+      // Send message to AI
+      const msg = `Database Connected ✅
+Supabase URL: ${url}
+Supabase Anon Key: ${anon_key}
+Project Ref: ${selectedProject}
+
+The user connected their Supabase database via OAuth. Please:
+1. Create/update src/lib/supabase.ts with createClient using these credentials
+2. Generate SQL migrations in supabase/migrations/001-init.sql for any needed tables
+3. Update data operations to use the real Supabase client
+4. If Edge Functions are needed, create them in supabase/functions/{name}/index.ts
+5. The migrations will be auto-executed on the connected project`;
 
       onSendMessage(msg, false);
     } catch (e: any) {
-      setError(e.message || 'Failed to save credentials');
+      setError(e.message || 'Failed to connect');
     } finally {
       setIsConnecting(false);
     }
@@ -86,103 +164,156 @@ The user has connected their Supabase database. Please:
       .from('projects')
       .update({ supabase_url: null, supabase_anon_key: null })
       .eq('id', projectId);
-    setSupabaseUrl('');
-    setAnonKey('');
-    setIsConnected(false);
+    setConnectedProjectRef(null);
+    setStep(isConnected ? 'select' : 'auth');
   };
+
+  const handleDisconnectAccount = async () => {
+    await supabase.functions.invoke('supabase-oauth', {
+      body: { action: 'disconnect' },
+    });
+    setIsConnected(false);
+    setSbProjects([]);
+    setConnectedProjectRef(null);
+    setStep('auth');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-background">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full overflow-y-auto bg-background p-8">
       <div className="max-w-2xl mx-auto">
+        {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center">
             <Database className="w-5 h-5 text-green-500" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-foreground">Connect Supabase Database</h2>
-            <p className="text-sm text-muted-foreground">Add a real backend to your generated project</p>
+            <p className="text-sm text-muted-foreground">Link your Supabase project via OAuth</p>
           </div>
         </div>
 
-        {isConnected && (
-          <div className="mb-4 flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-sm text-green-600 dark:text-green-400">
-            <CheckCircle className="w-4 h-4 flex-shrink-0" />
-            <span>Database connected! AI has been notified and will update your project files.</span>
+        {/* Step: Auth */}
+        {step === 'auth' && (
+          <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Sign in with your Supabase account to connect your database. This uses secure OAuth — your credentials are never stored.
+            </p>
+            <button
+              onClick={handleLogin}
+              className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 text-black font-bold py-3 rounded-xl transition-colors text-sm"
+            >
+              <LogIn className="w-4 h-4" />
+              Sign in with Supabase
+            </button>
           </div>
         )}
 
-        <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Connect your Supabase project to add persistent storage, authentication, and real-time features. Credentials are saved securely to this project.
-          </p>
-
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">Supabase Project URL</label>
-              <input
-                type="url"
-                value={supabaseUrl}
-                onChange={e => { setSupabaseUrl(e.target.value); setError(''); }}
-                placeholder="https://xxxx.supabase.co"
-                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
-              />
+        {/* Step: Select Project */}
+        {step === 'select' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-sm text-green-600 dark:text-green-400">
+              <CheckCircle className="w-4 h-4 flex-shrink-0" />
+              <span>Supabase account connected! Select a project below.</span>
             </div>
-            <div>
-              <label className="text-xs font-medium text-foreground block mb-1.5">Anon (Public) Key</label>
-              <input
-                type="text"
-                value={anonKey}
-                onChange={e => { setAnonKey(e.target.value); setError(''); }}
-                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors font-mono"
-              />
+
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-foreground">Your Supabase Projects</h3>
+                <button
+                  onClick={handleLoadProjects}
+                  disabled={isLoadingProjects}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {isLoadingProjects ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Refresh'}
+                </button>
+              </div>
+
+              {isLoadingProjects ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : sbProjects.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No projects found</p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {sbProjects.map((proj) => (
+                    <button
+                      key={proj.id}
+                      onClick={() => setSelectedProject(proj.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-colors text-sm ${
+                        selectedProject === proj.id
+                          ? 'border-green-500 bg-green-500/10 text-foreground'
+                          : 'border-border hover:border-muted-foreground/30 text-foreground'
+                      }`}
+                    >
+                      <Database className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{proj.name}</p>
+                        <p className="text-xs text-muted-foreground">{proj.id} · {proj.region}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {error && (
+                <p className="text-xs text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleConnectProject}
+                  disabled={!selectedProject || isConnecting}
+                  className="flex-1 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black font-bold py-2.5 rounded-xl transition-colors text-sm"
+                >
+                  {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plug className="w-4 h-4" />}
+                  Connect Project
+                </button>
+                <button
+                  onClick={handleDisconnectAccount}
+                  className="px-4 py-2.5 border border-red-500/30 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors text-sm"
+                >
+                  Sign out
+                </button>
+              </div>
             </div>
           </div>
+        )}
 
-          {error && (
-            <p className="text-xs text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>
-          )}
+        {/* Step: Connected */}
+        {step === 'connected' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-sm text-green-600 dark:text-green-400">
+              <CheckCircle className="w-4 h-4 flex-shrink-0" />
+              <span>Database connected! Project: <code className="font-mono bg-green-500/10 px-1 rounded">{connectedProjectRef}</code></span>
+            </div>
 
-          <div className="flex gap-3">
-            <button
-              className="flex-1 bg-green-500 hover:bg-green-400 text-black font-bold py-2.5 rounded-xl transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-60"
-              onClick={handleConnect}
-              disabled={isConnecting}
-            >
-              {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-              {isConnected ? 'Reconnect Database' : 'Connect Database'}
-            </button>
-            {isConnected && (
+            <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <h3 className="text-sm font-bold text-foreground">What happens now?</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> AI generates Supabase client with your project credentials</li>
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> SQL migrations created in <code className="text-green-500 bg-green-500/10 px-1 rounded">supabase/migrations/</code></li>
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> Migrations auto-executed on your connected project</li>
+                <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> Edge Functions in <code className="text-green-500 bg-green-500/10 px-1 rounded">supabase/functions/</code></li>
+              </ul>
+
               <button
-                className="px-4 py-2.5 border border-red-500/30 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors text-sm"
                 onClick={handleDisconnect}
+                className="w-full px-4 py-2.5 border border-red-500/30 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors text-sm"
               >
-                Disconnect
+                Disconnect Project
               </button>
-            )}
+            </div>
           </div>
-
-          <div className="pt-2 border-t border-border">
-            <a
-              href="/supabase-connect"
-              target="_blank"
-              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ExternalLink className="w-3 h-3" />
-              <span>How to get your Supabase URL & Anon Key</span>
-            </a>
-          </div>
-        </div>
-
-        <div className="mt-6 bg-card border border-border rounded-2xl p-6">
-          <h3 className="text-sm font-bold mb-3">What happens after connecting?</h3>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> AI updates your files to use the real Supabase client</li>
-            <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> SQL migration files created in <code className="text-green-500 bg-green-500/10 px-1 rounded">migrations/001-init.sql</code></li>
-            <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> Run migrations in your Supabase SQL Editor</li>
-            <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> Edge functions appear in <code className="text-green-500 bg-green-500/10 px-1 rounded">supabase/functions/</code></li>
-          </ul>
-        </div>
+        )}
       </div>
     </div>
   );
