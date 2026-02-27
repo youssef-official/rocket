@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.upload-image]
 verify_jwt = false
+
+[functions.supabase-oauth]
+verify_jwt = false
