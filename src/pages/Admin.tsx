@@ -9,12 +9,11 @@ import {
   BarChart2, Cpu, Power,
   Home, Rocket, LayoutDashboard,
   Settings2, Megaphone, BookOpen, Package, ArrowRight,
-  Gift, Moon, Star, PartyPopper, Calendar, Eye, EyeOff,
-  Copy, Check, ChevronDown, ChevronUp,
+  Gift, Moon, Star, Calendar, Eye, EyeOff,
+  Copy, Check, ChevronDown, ChevronUp, Menu, X,
 } from 'lucide-react';
 import { AdminBlogEditor } from '@/components/admin/AdminBlogEditor';
 import { toast } from '@/hooks/use-toast';
-import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 interface AdminData {
   users: any[];
@@ -33,6 +32,7 @@ export const AdminPanel: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   // AI Model Config state
@@ -249,11 +249,10 @@ export const AdminPanel: React.FC = () => {
   // ─── Loading / Error ─────────────────────────────────
   if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen" style={{ backgroundImage: `url(${spaceHeroBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-        <div className="absolute inset-0 bg-black/60" />
-        <div className="relative text-center">
-          <div className="w-10 h-10 border-[3px] border-white/10 border-t-violet-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm text-white/40 font-medium">Loading admin panel...</p>
+      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f]">
+        <div className="text-center">
+          <div className="w-10 h-10 border-2 border-amber-900/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-xs text-stone-500 font-serif tracking-widest uppercase">Loading Console</p>
         </div>
       </div>
     );
@@ -261,16 +260,13 @@ export const AdminPanel: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen" style={{ backgroundImage: `url(${spaceHeroBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-        <div className="absolute inset-0 bg-black/60" />
-        <div className="relative bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 text-center max-w-sm backdrop-blur-xl">
-          <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle size={24} className="text-red-400" />
-          </div>
-          <h2 className="text-lg font-semibold text-white mb-2">Access Denied</h2>
-          <p className="text-sm text-white/40 mb-6">{error}</p>
-          <button onClick={() => navigate('/')} className="w-full px-4 py-2.5 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-500 transition-colors">
-            Go Home
+      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0f]">
+        <div className="bg-[#111116] border border-stone-800/50 rounded-xl p-10 text-center max-w-sm">
+          <AlertTriangle size={28} className="text-red-500/70 mx-auto mb-4" />
+          <h2 className="text-lg font-serif font-semibold text-stone-200 mb-2">Access Denied</h2>
+          <p className="text-sm text-stone-500 mb-6">{error}</p>
+          <button onClick={() => navigate('/')} className="w-full px-4 py-2.5 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-500 transition-colors">
+            Return Home
           </button>
         </div>
       </div>
@@ -279,36 +275,36 @@ export const AdminPanel: React.FC = () => {
 
   if (!data) return null;
 
-  const navSections: { title: string; items: { key: TabKey; label: string; icon: any; count?: number; color?: string }[] }[] = [
+  const navSections: { title: string; items: { key: TabKey; label: string; icon: any; count?: number }[] }[] = [
     {
       title: 'Overview',
       items: [
-        { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'text-violet-400' },
+        { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
       ],
     },
     {
       title: 'Data',
       items: [
-        { key: 'users', label: 'Users', icon: Users, color: 'text-blue-400', count: data.users.length },
-        { key: 'projects', label: 'Projects', icon: FolderOpen, color: 'text-emerald-400', count: data.projects.length },
-        { key: 'transactions', label: 'Analytics', icon: BarChart2, color: 'text-amber-400' },
-        { key: 'plans', label: 'Plans', icon: CreditCard, color: 'text-cyan-400', count: data.plans.length },
+        { key: 'users', label: 'Users', icon: Users, count: data.users.length },
+        { key: 'projects', label: 'Projects', icon: FolderOpen, count: data.projects.length },
+        { key: 'transactions', label: 'Analytics', icon: BarChart2 },
+        { key: 'plans', label: 'Plans', icon: CreditCard, count: data.plans.length },
       ],
     },
     {
       title: 'Configuration',
       items: [
-        { key: 'ai-models', label: 'AI Models', icon: Cpu, color: 'text-fuchsia-400', count: aiModels.length },
-        { key: 'promo-codes', label: 'Promo Codes', icon: Gift, color: 'text-pink-400', count: promoCodes.length },
-        { key: 'celebrations', label: 'Celebrations', icon: PartyPopper, color: 'text-yellow-400' },
+        { key: 'ai-models', label: 'AI Models', icon: Cpu, count: aiModels.length },
+        { key: 'promo-codes', label: 'Promo Codes', icon: Gift, count: promoCodes.length },
+        { key: 'celebrations', label: 'Celebrations', icon: Star },
       ],
     },
     {
       title: 'Content',
       items: [
-        { key: 'templates', label: 'Templates', icon: Package, color: 'text-orange-400', count: templates.length },
-        { key: 'inbox', label: 'Notifications', icon: Megaphone, color: 'text-rose-400', count: notifications.length },
-        { key: 'blog', label: 'Blog', icon: BookOpen, color: 'text-teal-400' },
+        { key: 'templates', label: 'Templates', icon: Package, count: templates.length },
+        { key: 'inbox', label: 'Notifications', icon: Megaphone, count: notifications.length },
+        { key: 'blog', label: 'Blog', icon: BookOpen },
       ],
     },
   ];
@@ -317,68 +313,75 @@ export const AdminPanel: React.FC = () => {
   const totalCreditsUsed = data.transactions.reduce((sum: number, t: any) => sum + (Number(t.credits_used) || 0), 0);
   const tabTitle = navSections.flatMap(s => s.items).find(n => n.key === tab)?.label || 'Dashboard';
 
-  // ─── Shared Styles ─────────────────────────────────
-  const cardCls = "bg-white/[0.04] border border-white/[0.08] rounded-2xl backdrop-blur-xl shadow-lg shadow-black/10";
-  const inputCls = "w-full px-3.5 py-2.5 bg-white/[0.06] border border-white/[0.1] rounded-xl text-sm text-white outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500/50 transition-all placeholder:text-white/25";
-  const labelCls = "block text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1.5";
-  const btnPrimary = "px-4 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-sm font-semibold rounded-xl hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-violet-500/25";
+  // ─── Classic Premium Design Tokens ─────────────────
+  const cardCls = "bg-[#111116] border border-stone-800/40 rounded-xl";
+  const inputCls = "w-full px-3.5 py-2.5 bg-[#0d0d12] border border-stone-800/50 rounded-lg text-sm text-stone-200 outline-none focus:ring-1 focus:ring-amber-600/40 focus:border-amber-600/40 transition-all placeholder:text-stone-600 font-sans";
+  const labelCls = "block text-[11px] font-semibold text-stone-500 uppercase tracking-widest mb-1.5 font-serif";
+  const btnPrimary = "px-5 py-2.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm";
 
   return (
-    <div className="flex h-screen text-white overflow-hidden" style={{ backgroundImage: `url(${spaceHeroBg})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
-      <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-black/80" />
+    <div className="flex h-screen text-stone-300 overflow-hidden bg-[#0a0a0f]">
+
+      {/* ═══════════════ MOBILE OVERLAY ═══════════════ */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 bg-black/60 z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+      )}
 
       {/* ═══════════════ SIDEBAR ═══════════════ */}
-      <aside className={`relative z-10 ${sidebarCollapsed ? 'w-[72px]' : 'w-64'} bg-black/40 backdrop-blur-2xl flex flex-col h-screen flex-shrink-0 transition-all duration-300 border-r border-white/[0.06]`}>
+      <aside className={`
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
+        fixed md:relative z-50 md:z-10
+        ${sidebarCollapsed ? 'w-[68px]' : 'w-60'}
+        bg-[#0d0d12] border-r border-stone-800/30 flex flex-col h-screen flex-shrink-0 transition-all duration-300
+      `}>
 
         {/* Brand */}
-        <div className="h-16 flex items-center px-4 gap-3 flex-shrink-0 border-b border-white/[0.06]">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-violet-500/30">
-            <Rocket size={16} className="text-white" />
+        <div className="h-16 flex items-center px-4 gap-3 flex-shrink-0 border-b border-stone-800/30">
+          <div className="w-8 h-8 rounded-lg bg-amber-600 flex items-center justify-center flex-shrink-0">
+            <Rocket size={14} className="text-white" />
           </div>
           {!sidebarCollapsed && (
             <div>
-              <span className="text-sm font-bold text-white tracking-tight">Admin Console</span>
-              <p className="text-[10px] text-white/20">Vivora X</p>
+              <span className="text-sm font-serif font-bold text-stone-100 tracking-tight">Admin</span>
+              <p className="text-[10px] text-stone-600 font-serif">Vivora X</p>
             </div>
           )}
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+        <nav className="flex-1 px-2 py-4 overflow-y-auto">
           {navSections.map((section) => (
             <div key={section.title} className="mb-5">
               {!sidebarCollapsed && (
-                <p className="text-[10px] font-bold text-white/15 uppercase tracking-[0.2em] px-3 mb-2">{section.title}</p>
+                <p className="text-[10px] font-serif font-bold text-stone-700 uppercase tracking-[0.2em] px-3 mb-2">{section.title}</p>
               )}
               <div className="space-y-0.5">
                 {section.items.map(item => {
                   const Icon = item.icon;
                   const active = tab === item.key;
                   return (
-                    <motion.button
+                    <button
                       key={item.key}
-                      onClick={() => setTab(item.key)}
+                      onClick={() => { setTab(item.key); setMobileMenuOpen(false); }}
                       title={sidebarCollapsed ? item.label : undefined}
-                      whileHover={{ x: 2 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all duration-200
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all duration-200
                         ${active
-                          ? 'bg-gradient-to-r from-violet-600/20 to-fuchsia-600/10 text-white font-semibold border border-violet-500/20 shadow-lg shadow-violet-500/5'
-                          : 'text-white/40 hover:text-white/70 hover:bg-white/[0.03]'
+                          ? 'bg-amber-600/10 text-amber-500 font-medium border border-amber-600/15'
+                          : 'text-stone-500 hover:text-stone-300 hover:bg-stone-800/30'
                         }`}
                     >
-                      <Icon size={16} className={active ? 'text-violet-400' : item.color || 'text-white/30'} />
+                      <Icon size={15} className={active ? 'text-amber-500' : 'text-stone-600'} />
                       {!sidebarCollapsed && (
                         <>
                           <span className="flex-1 text-left">{item.label}</span>
                           {item.count !== undefined && item.count > 0 && (
-                            <span className={`text-[10px] font-mono font-bold min-w-[24px] text-center px-1.5 py-0.5 rounded-lg ${active ? 'bg-violet-500/20 text-violet-300' : 'bg-white/[0.04] text-white/25'}`}>
+                            <span className={`text-[10px] font-mono min-w-[22px] text-center px-1.5 py-0.5 rounded ${active ? 'bg-amber-600/15 text-amber-400' : 'bg-stone-800/50 text-stone-600'}`}>
                               {item.count}
                             </span>
                           )}
                         </>
                       )}
-                    </motion.button>
+                    </button>
                   );
                 })}
               </div>
@@ -387,74 +390,79 @@ export const AdminPanel: React.FC = () => {
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-white/[0.04] space-y-1">
+        <div className="p-2 border-t border-stone-800/30 space-y-0.5">
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-white/30 hover:text-white/50 hover:bg-white/[0.03] transition-all"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] text-stone-600 hover:text-stone-400 hover:bg-stone-800/30 transition-all"
           >
-            {sidebarCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            {sidebarCollapsed ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
             {!sidebarCollapsed && <span>Collapse</span>}
           </button>
-          <button onClick={() => navigate('/')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] text-white/30 hover:text-white/50 hover:bg-white/[0.03] transition-all">
-            <Home size={16} />
+          <button onClick={() => navigate('/')} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] text-stone-600 hover:text-stone-400 hover:bg-stone-800/30 transition-all">
+            <Home size={15} />
             {!sidebarCollapsed && <span>Back to App</span>}
           </button>
         </div>
       </aside>
 
       {/* ═══════════════ MAIN ═══════════════ */}
-      <div className="relative z-10 flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Top bar */}
-        <header className="h-16 px-6 flex items-center justify-between border-b border-white/[0.06] bg-black/30 backdrop-blur-2xl flex-shrink-0">
-          <div className="flex items-center gap-2 text-sm text-white/30">
-            <Settings2 size={14} />
-            <span className="text-white/10">/</span>
-            <span className="text-white font-medium">{tabTitle}</span>
+        <header className="h-14 px-4 md:px-6 flex items-center justify-between border-b border-stone-800/30 bg-[#0d0d12]/80 backdrop-blur-sm flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setMobileMenuOpen(true)} className="md:hidden text-stone-500 hover:text-stone-300">
+              <Menu size={20} />
+            </button>
+            <div className="flex items-center gap-2 text-sm text-stone-600 font-serif">
+              <Settings2 size={13} />
+              <span className="text-stone-700">/</span>
+              <span className="text-stone-300 font-medium">{tabTitle}</span>
+            </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3.5 py-2 bg-white/[0.03] border border-white/[0.06] rounded-xl w-56">
-              <Search size={13} className="text-white/20" />
-              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search..." className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-white/15" />
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#0a0a0f] border border-stone-800/40 rounded-lg w-48">
+              <Search size={13} className="text-stone-600" />
+              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search..." className="bg-transparent border-none outline-none text-sm text-stone-300 w-full placeholder:text-stone-700" />
             </div>
-            <div className="flex items-center gap-2 pl-3 border-l border-white/[0.06]">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 flex items-center justify-center text-xs font-bold text-violet-300 border border-violet-500/20">
+            <div className="flex items-center gap-2 pl-3 border-l border-stone-800/30">
+              <div className="w-7 h-7 rounded-lg bg-amber-600/15 flex items-center justify-center text-xs font-serif font-bold text-amber-500 border border-amber-600/20">
                 {displayName.charAt(0).toUpperCase()}
               </div>
-              <span className="text-sm font-medium text-white/70 hidden md:inline">{displayName}</span>
+              <span className="text-sm font-serif text-stone-400 hidden md:inline">{displayName}</span>
             </div>
           </div>
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
           <AnimatePresence mode="wait">
-            <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
 
           {/* ══════════════ DASHBOARD ══════════════ */}
           {tab === 'dashboard' && (
             <div className="space-y-5 max-w-6xl">
               <div className={`${cardCls} p-6`}>
-                <h2 className="text-xl font-bold text-white">Welcome back, {displayName} <span className="text-2xl">👋</span></h2>
-                <p className="text-sm text-white/30 mt-1">Here's an overview of your platform activity.</p>
+                <h2 className="text-xl font-serif font-bold text-stone-100">Welcome back, {displayName}</h2>
+                <p className="text-sm text-stone-500 mt-1 font-serif">Platform overview and system status.</p>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: 'Users', value: data.users.length, icon: Users, gradient: 'from-blue-600/20 to-cyan-600/10', iconColor: 'text-blue-400' },
-                  { label: 'Projects', value: data.projects.length, icon: FolderOpen, gradient: 'from-emerald-600/20 to-green-600/10', iconColor: 'text-emerald-400' },
-                  { label: 'Credits Used', value: totalCreditsUsed.toFixed(0), icon: CreditCard, gradient: 'from-amber-600/20 to-yellow-600/10', iconColor: 'text-amber-400' },
-                  { label: 'Active Plans', value: data.plans.length, icon: Star, gradient: 'from-violet-600/20 to-fuchsia-600/10', iconColor: 'text-violet-400' },
+                  { label: 'Users', value: data.users.length, icon: Users, accent: 'text-blue-400', bg: 'bg-blue-500/5 border-blue-500/10' },
+                  { label: 'Projects', value: data.projects.length, icon: FolderOpen, accent: 'text-emerald-400', bg: 'bg-emerald-500/5 border-emerald-500/10' },
+                  { label: 'Credits Used', value: totalCreditsUsed.toFixed(0), icon: CreditCard, accent: 'text-amber-400', bg: 'bg-amber-500/5 border-amber-500/10' },
+                  { label: 'Active Plans', value: data.plans.length, icon: Star, accent: 'text-purple-400', bg: 'bg-purple-500/5 border-purple-500/10' },
                 ].map((stat, i) => {
                   const Icon = stat.icon;
                   return (
-                    <motion.div key={i} whileHover={{ y: -2, scale: 1.01 }} className={`${cardCls} p-4 bg-gradient-to-br ${stat.gradient}`}>
+                    <div key={i} className={`${cardCls} p-4 ${stat.bg}`}>
                       <div className="flex items-center justify-between mb-3">
-                        <Icon size={18} className={stat.iconColor} />
-                        <span className="text-[10px] font-bold text-white/20 uppercase tracking-wider">{stat.label}</span>
+                        <Icon size={16} className={stat.accent} />
+                        <span className="text-[10px] font-serif font-bold text-stone-600 uppercase tracking-widest">{stat.label}</span>
                       </div>
-                      <p className="text-3xl font-bold text-white tabular-nums">{stat.value}</p>
-                    </motion.div>
+                      <p className="text-2xl font-serif font-bold text-stone-100 tabular-nums">{stat.value}</p>
+                    </div>
                   );
                 })}
               </div>
@@ -463,10 +471,10 @@ export const AdminPanel: React.FC = () => {
               <div className={`${cardCls} p-5`}>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Cpu size={16} className="text-fuchsia-400" />
-                    <h3 className="text-sm font-semibold text-white">Active AI Models</h3>
+                    <Cpu size={15} className="text-amber-500" />
+                    <h3 className="text-sm font-serif font-semibold text-stone-200">Active AI Models</h3>
                   </div>
-                  <button onClick={() => setTab('ai-models')} className="text-xs text-violet-400 hover:text-violet-300 font-medium flex items-center gap-1 transition-colors">
+                  <button onClick={() => setTab('ai-models')} className="text-xs text-amber-500 hover:text-amber-400 font-medium flex items-center gap-1 transition-colors">
                     Manage <ArrowRight size={12} />
                   </button>
                 </div>
@@ -474,15 +482,15 @@ export const AdminPanel: React.FC = () => {
                   {['free', 'pro', 'business', 'all'].map(plan => {
                     const m = activeModelsByPlan[plan];
                     return (
-                      <div key={plan} className={`rounded-xl p-3 border transition-colors ${m ? 'bg-violet-500/5 border-violet-500/15' : 'bg-white/[0.02] border-white/[0.04]'}`}>
-                        <p className="text-[10px] font-bold text-white/20 uppercase tracking-wider mb-1">{plan === 'all' ? 'All Plans' : plan}</p>
+                      <div key={plan} className={`rounded-lg p-3 border transition-colors ${m ? 'bg-amber-500/5 border-amber-500/10' : 'bg-stone-900/50 border-stone-800/30'}`}>
+                        <p className="text-[10px] font-serif font-bold text-stone-600 uppercase tracking-widest mb-1">{plan === 'all' ? 'All Plans' : plan}</p>
                         {m ? (
                           <>
-                            <p className="text-xs font-semibold text-white truncate">{m.display_name}</p>
-                            <p className="text-[10px] text-white/20 font-mono truncate mt-0.5">{m.model_id}</p>
+                            <p className="text-xs font-semibold text-stone-200 truncate">{m.display_name}</p>
+                            <p className="text-[10px] text-stone-600 font-mono truncate mt-0.5">{m.model_id}</p>
                           </>
                         ) : (
-                          <p className="text-xs text-white/10 italic">Not set</p>
+                          <p className="text-xs text-stone-700 italic">Not set</p>
                         )}
                       </div>
                     );
@@ -492,16 +500,16 @@ export const AdminPanel: React.FC = () => {
 
               {/* Active Celebrations */}
               {celebrations.some(c => c.is_active) && (
-                <div className={`${cardCls} p-5 bg-gradient-to-br from-yellow-600/10 to-orange-600/5`}>
+                <div className={`${cardCls} p-5 bg-amber-500/5 border-amber-500/10`}>
                   <div className="flex items-center gap-2 mb-2">
-                    <PartyPopper size={16} className="text-yellow-400" />
-                    <h3 className="text-sm font-semibold text-white">Active Celebrations</h3>
+                    <Star size={15} className="text-amber-400" />
+                    <h3 className="text-sm font-serif font-semibold text-stone-200">Active Celebrations</h3>
                   </div>
                   <div className="flex gap-3">
                     {celebrations.filter(c => c.is_active).map(c => (
-                      <div key={c.id} className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                      <div key={c.id} className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/15 rounded-lg">
                         <span className="text-lg">{c.config?.emoji || '🎉'}</span>
-                        <span className="text-sm font-medium text-yellow-300">{c.config?.label || c.name}</span>
+                        <span className="text-sm font-medium text-amber-300">{c.config?.label || c.name}</span>
                       </div>
                     ))}
                   </div>
@@ -512,22 +520,22 @@ export const AdminPanel: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className={`${cardCls} p-5`}>
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-white">Recent Users</h3>
-                    <button onClick={() => setTab('users')} className="text-xs text-violet-400 hover:text-violet-300 font-medium transition-colors">View all</button>
+                    <h3 className="text-sm font-serif font-semibold text-stone-200">Recent Users</h3>
+                    <button onClick={() => setTab('users')} className="text-xs text-amber-500 hover:text-amber-400 font-medium transition-colors">View all</button>
                   </div>
-                  <div className="divide-y divide-white/[0.04]">
+                  <div className="divide-y divide-stone-800/30">
                     {data.users.slice(0, 5).map((u: any) => (
                       <div key={u.id} className="flex items-center justify-between py-2.5">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600/20 to-cyan-600/10 flex items-center justify-center text-[10px] font-bold text-blue-300 border border-blue-500/10">
+                          <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-[10px] font-bold text-blue-400 border border-blue-500/10">
                             {(u.email || '?')[0].toUpperCase()}
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-white leading-tight">{u.display_name || u.email || '—'}</p>
-                            <p className="text-[11px] text-white/20 leading-tight">{u.email}</p>
+                            <p className="text-sm font-medium text-stone-200 leading-tight">{u.display_name || u.email || '—'}</p>
+                            <p className="text-[11px] text-stone-600 leading-tight">{u.email}</p>
                           </div>
                         </div>
-                        <p className="text-[11px] text-white/15 tabular-nums">{new Date(u.created_at).toLocaleDateString()}</p>
+                        <p className="text-[11px] text-stone-700 tabular-nums">{new Date(u.created_at).toLocaleDateString()}</p>
                       </div>
                     ))}
                   </div>
@@ -535,22 +543,22 @@ export const AdminPanel: React.FC = () => {
 
                 <div className={`${cardCls} p-5`}>
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-white">Recent Projects</h3>
-                    <button onClick={() => setTab('projects')} className="text-xs text-violet-400 hover:text-violet-300 font-medium transition-colors">View all</button>
+                    <h3 className="text-sm font-serif font-semibold text-stone-200">Recent Projects</h3>
+                    <button onClick={() => setTab('projects')} className="text-xs text-amber-500 hover:text-amber-400 font-medium transition-colors">View all</button>
                   </div>
-                  <div className="divide-y divide-white/[0.04]">
+                  <div className="divide-y divide-stone-800/30">
                     {data.projects.slice(0, 5).map((p: any) => (
                       <div key={p.id} className="flex items-center justify-between py-2.5">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-600/20 to-green-600/10 flex items-center justify-center border border-emerald-500/10">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/10">
                             <FolderOpen size={12} className="text-emerald-400" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-white leading-tight">{p.name}</p>
-                            <p className="text-[11px] text-white/20 leading-tight">{p.project_type}</p>
+                            <p className="text-sm font-medium text-stone-200 leading-tight">{p.name}</p>
+                            <p className="text-[11px] text-stone-600 leading-tight">{p.project_type}</p>
                           </div>
                         </div>
-                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg ${p.is_published ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/[0.03] text-white/20 border border-white/[0.04]'}`}>
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${p.is_published ? 'bg-emerald-500/10 text-emerald-400' : 'bg-stone-800/50 text-stone-600'}`}>
                           {p.is_published ? 'Live' : 'Draft'}
                         </span>
                       </div>
@@ -566,10 +574,10 @@ export const AdminPanel: React.FC = () => {
             <div className="space-y-5 max-w-5xl">
               <div className={`${cardCls} p-5`}>
                 <div className="flex items-center gap-2 mb-5">
-                  <Gift size={16} className="text-pink-400" />
-                  <h3 className="text-sm font-semibold text-white">Create Promo Code</h3>
+                  <Gift size={15} className="text-amber-500" />
+                  <h3 className="text-sm font-serif font-semibold text-stone-200">Create Promo Code</h3>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <label className={labelCls}>Code *</label>
                     <input value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())} className={`${inputCls} font-mono uppercase`} placeholder="RAMADAN25" />
@@ -587,57 +595,57 @@ export const AdminPanel: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className={labelCls}>Max Uses (empty = unlimited)</label>
+                    <label className={labelCls}>Max Uses</label>
                     <input type="number" value={promoMaxUses} onChange={e => setPromoMaxUses(e.target.value)} className={inputCls} placeholder="100" />
                   </div>
                   <div>
                     <label className={labelCls}>Expires At</label>
                     <input type="datetime-local" value={promoExpires} onChange={e => setPromoExpires(e.target.value)} className={inputCls} />
                   </div>
-                  <div className="flex items-end gap-4">
+                  <div className="flex items-end">
                     <label className="flex items-center gap-2 cursor-pointer py-2.5">
-                      <input type="checkbox" checked={promoPublic} onChange={e => setPromoPublic(e.target.checked)} className="w-4 h-4 rounded border-white/20 bg-white/5 text-violet-600 focus:ring-violet-500/30" />
-                      <span className="text-sm text-white/50">Public (show in Pricing)</span>
+                      <input type="checkbox" checked={promoPublic} onChange={e => setPromoPublic(e.target.checked)} className="w-4 h-4 rounded border-stone-700 bg-stone-900 text-amber-600 focus:ring-amber-500/30" />
+                      <span className="text-sm text-stone-500">Public</span>
                     </label>
                   </div>
                 </div>
                 <button onClick={handleAddPromo} disabled={!promoCode.trim() || savingPromo} className={`${btnPrimary} mt-4`}>
-                  <Plus size={13} /> {savingPromo ? 'Creating...' : 'Create Promo Code'}
+                  <Plus size={13} /> {savingPromo ? 'Creating...' : 'Create Code'}
                 </button>
               </div>
 
               {promoCodes.length === 0 ? (
                 <EmptyState icon={Gift} title="No promo codes yet" desc="Create your first promo code above." />
               ) : (
-                <div className={`${cardCls} overflow-hidden`}>
+                <div className={`${cardCls} overflow-x-auto`}>
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="border-b border-white/[0.04]">
-                        {['Code', 'Discount', 'Plan', 'Type', 'Uses', 'Expires', 'Actions'].map(h => (
-                          <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold text-white/20 uppercase tracking-wider">{h}</th>
+                      <tr className="border-b border-stone-800/30">
+                        {['Code', 'Discount', 'Plan', 'Type', 'Uses', 'Expires', ''].map(h => (
+                          <th key={h} className="px-4 py-3 text-left text-[11px] font-serif font-semibold text-stone-600 uppercase tracking-widest">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {promoCodes.map(p => (
-                        <tr key={p.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                        <tr key={p.id} className="border-b border-stone-800/20 hover:bg-stone-800/10 transition-colors">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-mono font-bold text-violet-400">{p.code}</span>
-                              <button onClick={() => copyPromoCode(p.code)} className="text-white/20 hover:text-white/50 transition-colors">
+                              <span className="text-sm font-mono font-bold text-amber-500">{p.code}</span>
+                              <button onClick={() => copyPromoCode(p.code)} className="text-stone-600 hover:text-stone-400 transition-colors">
                                 {copiedCode === p.code ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
                               </button>
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm font-bold text-emerald-400">{p.discount_percent}%</td>
-                          <td className="px-4 py-3"><span className="text-[11px] font-medium px-2 py-0.5 rounded-lg bg-violet-500/10 text-violet-300 border border-violet-500/15 capitalize">{p.target_plan}</span></td>
+                          <td className="px-4 py-3"><span className="text-[11px] font-medium px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 capitalize">{p.target_plan}</span></td>
                           <td className="px-4 py-3">
-                            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg ${p.is_public ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 'bg-white/[0.03] text-white/30 border border-white/[0.04]'}`}>
+                            <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${p.is_public ? 'bg-emerald-500/10 text-emerald-400' : 'bg-stone-800/50 text-stone-600'}`}>
                               {p.is_public ? 'Public' : 'Private'}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-sm text-white/40 tabular-nums">{p.current_uses}{p.max_uses ? `/${p.max_uses}` : ''}</td>
-                          <td className="px-4 py-3 text-sm text-white/20 tabular-nums">{p.expires_at ? new Date(p.expires_at).toLocaleDateString() : '∞'}</td>
+                          <td className="px-4 py-3 text-sm text-stone-500 tabular-nums">{p.current_uses}{p.max_uses ? `/${p.max_uses}` : ''}</td>
+                          <td className="px-4 py-3 text-sm text-stone-600 tabular-nums">{p.expires_at ? new Date(p.expires_at).toLocaleDateString() : '∞'}</td>
                           <td className="px-4 py-3">
                             <button onClick={() => handleDeletePromo(p.id)} className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors">
                               <Trash2 size={12} />
@@ -657,43 +665,35 @@ export const AdminPanel: React.FC = () => {
             <div className="space-y-5 max-w-4xl">
               <div className={`${cardCls} p-6`}>
                 <div className="flex items-center gap-2 mb-5">
-                  <PartyPopper size={16} className="text-yellow-400" />
-                  <h3 className="text-sm font-semibold text-white">Celebration Modes</h3>
+                  <Star size={15} className="text-amber-500" />
+                  <h3 className="text-sm font-serif font-semibold text-stone-200">Celebration Modes</h3>
                 </div>
-                <p className="text-sm text-white/30 mb-6">Toggle celebration overlays on the homepage. Active celebrations show themed effects for all visitors.</p>
+                <p className="text-sm text-stone-500 mb-6 font-serif">Toggle celebration overlays on the homepage.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {celebrations.map(c => {
                     const config = c.config || {};
-                    const isRamadan = c.name === 'ramadan';
-                    const isEid = c.name === 'eid';
                     return (
-                      <motion.div
-                        key={c.id}
-                        whileHover={{ scale: 1.01 }}
-                        className={`${cardCls} p-5 ${c.is_active ? (isRamadan ? 'bg-gradient-to-br from-indigo-600/10 to-violet-600/5 border-indigo-500/20' : 'bg-gradient-to-br from-yellow-600/10 to-amber-600/5 border-yellow-500/20') : ''}`}
-                      >
+                      <div key={c.id} className={`${cardCls} p-5 ${c.is_active ? 'bg-amber-500/5 border-amber-500/15' : ''}`}>
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
-                            <span className="text-3xl">{config.emoji || '🎉'}</span>
+                            <span className="text-2xl">{config.emoji || '🎉'}</span>
                             <div>
-                              <h4 className="text-base font-bold text-white">{config.label || c.name}</h4>
-                              <p className="text-xs text-white/30">
-                                {isRamadan ? 'Crescent moon & starry atmosphere' : isEid ? 'Confetti & celebration effects' : 'Custom celebration'}
-                              </p>
+                              <h4 className="text-sm font-serif font-bold text-stone-200">{config.label || c.name}</h4>
+                              <p className="text-xs text-stone-600">Themed celebration effect</p>
                             </div>
                           </div>
                         </div>
                         <button
                           onClick={() => handleToggleCelebration(c.id, c.is_active)}
-                          className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                          className={`w-full py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                             c.is_active
-                              ? 'bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20'
-                              : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/20 hover:from-violet-500 hover:to-fuchsia-500'
+                              ? 'bg-red-500/10 text-red-400 border border-red-500/15 hover:bg-red-500/20'
+                              : 'bg-amber-600 text-white hover:bg-amber-500'
                           }`}
                         >
                           {c.is_active ? <><EyeOff size={14} /> Deactivate</> : <><Eye size={14} /> Activate</>}
                         </button>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
@@ -706,8 +706,8 @@ export const AdminPanel: React.FC = () => {
             <div className="space-y-5 max-w-4xl">
               <div className={`${cardCls} p-5`}>
                 <div className="flex items-center gap-2 mb-5">
-                  <Send size={16} className="text-rose-400" />
-                  <h3 className="text-sm font-semibold text-white">Send Notification</h3>
+                  <Send size={15} className="text-amber-500" />
+                  <h3 className="text-sm font-serif font-semibold text-stone-200">Send Notification</h3>
                 </div>
                 <div className="space-y-3">
                   <div>
@@ -718,7 +718,7 @@ export const AdminPanel: React.FC = () => {
                     <label className={labelCls}>Body</label>
                     <textarea value={inboxBody} onChange={e => setInboxBody(e.target.value)} className={`${inputCls} resize-none h-20`} placeholder="Message body..." />
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className={labelCls}>Image URL</label>
                       <input value={inboxImage} onChange={e => setInboxImage(e.target.value)} className={inputCls} placeholder="https://..." />
@@ -749,9 +749,9 @@ export const AdminPanel: React.FC = () => {
                   {notifications.map(n => (
                     <div key={n.id} className={`flex items-center justify-between p-3.5 ${cardCls}`}>
                       <div>
-                        <p className="text-sm font-medium text-white">{n.title}</p>
-                        {n.body && <p className="text-xs text-white/30 mt-0.5">{n.body}</p>}
-                        <p className="text-[10px] text-white/10 mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                        <p className="text-sm font-medium text-stone-200">{n.title}</p>
+                        {n.body && <p className="text-xs text-stone-500 mt-0.5">{n.body}</p>}
+                        <p className="text-[10px] text-stone-700 mt-1">{new Date(n.created_at).toLocaleString()}</p>
                       </div>
                       <button onClick={() => handleDeleteNotification(n.id)} className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors">
                         <Trash2 size={13} />
@@ -768,11 +768,11 @@ export const AdminPanel: React.FC = () => {
             <div className="space-y-5 max-w-5xl">
               <div className={`${cardCls} p-5`}>
                 <div className="flex items-center gap-2 mb-5">
-                  <Plus size={16} className="text-orange-400" />
-                  <h3 className="text-sm font-semibold text-white">Add Template</h3>
+                  <Plus size={15} className="text-amber-500" />
+                  <h3 className="text-sm font-serif font-semibold text-stone-200">Add Template</h3>
                 </div>
                 <div className="space-y-3">
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className={labelCls}>Name *</label>
                       <input value={tplName} onChange={e => setTplName(e.target.value)} className={inputCls} placeholder="Template name..." />
@@ -800,20 +800,20 @@ export const AdminPanel: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {templates.map(tpl => (
-                    <motion.div key={tpl.id} whileHover={{ y: -3 }} className={`group ${cardCls} overflow-hidden`}>
-                      <div className="aspect-video bg-white/[0.02] flex items-center justify-center overflow-hidden">
-                        {tpl.image_url ? <img src={tpl.image_url} alt={tpl.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> : <Layers size={18} className="text-white/10" />}
+                    <div key={tpl.id} className={`group ${cardCls} overflow-hidden hover:border-stone-700/50 transition-colors`}>
+                      <div className="aspect-video bg-stone-900/50 flex items-center justify-center overflow-hidden">
+                        {tpl.image_url ? <img src={tpl.image_url} alt={tpl.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> : <Layers size={18} className="text-stone-700" />}
                       </div>
                       <div className="p-3 flex items-start justify-between">
                         <div>
-                          <p className="text-sm font-medium text-white">{tpl.name}</p>
-                          <p className="text-[11px] text-white/20 mt-0.5">{tpl.category}</p>
+                          <p className="text-sm font-medium text-stone-200">{tpl.name}</p>
+                          <p className="text-[11px] text-stone-600 mt-0.5">{tpl.category}</p>
                         </div>
                         <button onClick={() => handleDeleteTemplate(tpl.id)} className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 transition-opacity">
                           <Trash2 size={11} />
                         </button>
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -830,19 +830,19 @@ export const AdminPanel: React.FC = () => {
                 {['free', 'pro', 'business', 'all'].map(plan => {
                   const m = activeModelsByPlan[plan];
                   return (
-                    <div key={plan} className={`${cardCls} p-4 ${m ? 'bg-gradient-to-br from-violet-600/10 to-fuchsia-600/5 border-violet-500/15' : ''}`}>
+                    <div key={plan} className={`${cardCls} p-4 ${m ? 'bg-amber-500/5 border-amber-500/10' : ''}`}>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-bold text-white/20 uppercase tracking-wider">{plan === 'all' ? 'All Plans' : plan}</span>
-                        {m && <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />}
+                        <span className="text-[10px] font-serif font-bold text-stone-600 uppercase tracking-widest">{plan === 'all' ? 'All Plans' : plan}</span>
+                        {m && <span className="w-2 h-2 rounded-full bg-amber-500" />}
                       </div>
                       {m ? (
                         <>
-                          <p className="text-sm font-semibold text-white truncate">{m.display_name}</p>
-                          <p className="text-[10px] text-white/20 font-mono truncate mt-0.5">{m.model_id}</p>
-                          <span className="inline-block text-[10px] mt-1.5 px-1.5 py-0.5 rounded-lg bg-violet-500/10 text-violet-300 font-semibold capitalize border border-violet-500/15">{m.provider}</span>
+                          <p className="text-sm font-semibold text-stone-200 truncate">{m.display_name}</p>
+                          <p className="text-[10px] text-stone-600 font-mono truncate mt-0.5">{m.model_id}</p>
+                          <span className="inline-block text-[10px] mt-1.5 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 font-medium capitalize">{m.provider}</span>
                         </>
                       ) : (
-                        <p className="text-xs text-white/10 italic mt-1">No active model</p>
+                        <p className="text-xs text-stone-700 italic mt-1">No active model</p>
                       )}
                     </div>
                   );
@@ -851,10 +851,10 @@ export const AdminPanel: React.FC = () => {
 
               <div className={`${cardCls} p-5`}>
                 <div className="flex items-center gap-2 mb-5">
-                  <Cpu size={16} className="text-fuchsia-400" />
-                  <h3 className="text-sm font-semibold text-white">Add AI Model</h3>
+                  <Cpu size={15} className="text-amber-500" />
+                  <h3 className="text-sm font-serif font-semibold text-stone-200">Add AI Model</h3>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -898,16 +898,16 @@ export const AdminPanel: React.FC = () => {
                   </div>
                   <div className="space-y-3">
                     <div className={`${cardCls} p-3.5`}>
-                      <p className="text-xs text-violet-400 font-semibold mb-1">Priority Logic</p>
-                      <p className="text-xs text-white/30 leading-relaxed">Specific plan match first → "All Plans" fallback.</p>
+                      <p className="text-xs text-amber-500 font-serif font-semibold mb-1">Priority Logic</p>
+                      <p className="text-xs text-stone-500 leading-relaxed">Specific plan match first → "All Plans" fallback.</p>
                     </div>
                     <div className={`${cardCls} p-3.5`}>
-                      <p className="text-xs text-white font-semibold mb-2">Providers</p>
+                      <p className="text-xs text-stone-200 font-serif font-semibold mb-2">Providers</p>
                       <div className="space-y-1">
                         {Object.entries(providerDefaults).map(([key, val]) => (
                           <div key={key} className="flex items-center justify-between">
-                            <span className="text-xs text-white/50 font-medium capitalize">{key}</span>
-                            <span className="text-[10px] text-white/20 font-mono">{val.key}</span>
+                            <span className="text-xs text-stone-500 font-medium capitalize">{key}</span>
+                            <span className="text-[10px] text-stone-700 font-mono">{val.key}</span>
                           </div>
                         ))}
                       </div>
@@ -919,33 +919,33 @@ export const AdminPanel: React.FC = () => {
               {aiModels.length === 0 ? (
                 <EmptyState icon={Cpu} title="No models configured" desc="Add your first AI model above." />
               ) : (
-                <div className={`${cardCls} overflow-hidden`}>
+                <div className={`${cardCls} overflow-x-auto`}>
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="border-b border-white/[0.04]">
-                        {['Status', 'Provider', 'Model', 'Name', 'Plan', 'Actions'].map(h => (
-                          <th key={h} className={`px-4 py-3 text-${h === 'Actions' ? 'right' : 'left'} text-[11px] font-semibold text-white/20 uppercase tracking-wider`}>{h}</th>
+                      <tr className="border-b border-stone-800/30">
+                        {['Status', 'Provider', 'Model', 'Name', 'Plan', ''].map(h => (
+                          <th key={h} className="px-4 py-3 text-left text-[11px] font-serif font-semibold text-stone-600 uppercase tracking-widest">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {aiModels.map(m => (
-                        <tr key={m.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                        <tr key={m.id} className="border-b border-stone-800/20 hover:bg-stone-800/10 transition-colors">
                           <td className="px-4 py-3">
-                            <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg ${m.is_active ? 'bg-violet-500/10 text-violet-300 border border-violet-500/15' : 'bg-white/[0.03] text-white/20 border border-white/[0.04]'}`}>
-                              {m.is_active && <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />}
+                            <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded ${m.is_active ? 'bg-amber-500/10 text-amber-400' : 'bg-stone-800/50 text-stone-600'}`}>
+                              {m.is_active && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
                               {m.is_active ? 'Active' : 'Off'}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-xs font-medium text-white/50 capitalize">{m.provider}</td>
-                          <td className="px-4 py-3 text-xs font-mono text-violet-400">{m.model_id}</td>
-                          <td className="px-4 py-3 text-sm font-medium text-white">{m.display_name}</td>
+                          <td className="px-4 py-3 text-xs font-medium text-stone-500 capitalize">{m.provider}</td>
+                          <td className="px-4 py-3 text-xs font-mono text-amber-500">{m.model_id}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-stone-200">{m.display_name}</td>
                           <td className="px-4 py-3">
-                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-lg bg-white/[0.03] text-white/30 capitalize border border-white/[0.04]">{m.target_plan === 'all' ? 'All' : m.target_plan}</span>
+                            <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-stone-800/50 text-stone-500 capitalize">{m.target_plan === 'all' ? 'All' : m.target_plan}</span>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-1.5">
-                              <button onClick={() => handleToggleAiModel(m.id, m.is_active)} className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${m.is_active ? 'bg-white/[0.03] text-white/30 hover:bg-white/[0.06] border border-white/[0.04]' : 'bg-violet-600 text-white hover:bg-violet-500'}`}>
+                              <button onClick={() => handleToggleAiModel(m.id, m.is_active)} className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${m.is_active ? 'bg-stone-800/50 text-stone-500 hover:bg-stone-800' : 'bg-amber-600 text-white hover:bg-amber-500'}`}>
                                 {m.is_active ? 'Deactivate' : 'Activate'}
                               </button>
                               <button onClick={() => handleDeleteAiModel(m.id)} className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-colors">
@@ -965,30 +965,30 @@ export const AdminPanel: React.FC = () => {
           {/* ══════════════ DATA TABLES ══════════════ */}
           {['users', 'plans', 'transactions', 'projects'].includes(tab) && (
             <div className="space-y-4 max-w-6xl">
-              <div className={`${cardCls} overflow-hidden`}>
+              <div className={`${cardCls} overflow-x-auto`}>
                 <table className="w-full border-collapse">
                   {tab === 'users' && (
                     <>
                       <thead>
-                        <tr className="border-b border-white/[0.04]">
+                        <tr className="border-b border-stone-800/30">
                           {['User', 'Email', 'Joined'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold text-white/20 uppercase tracking-wider">{h}</th>
+                            <th key={h} className="px-4 py-3 text-left text-[11px] font-serif font-semibold text-stone-600 uppercase tracking-widest">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {data.users.map(u => (
-                          <tr key={u.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                          <tr key={u.id} className="border-b border-stone-800/20 hover:bg-stone-800/10 transition-colors">
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600/20 to-cyan-600/10 flex items-center justify-center text-[10px] font-bold text-blue-300 border border-blue-500/10">
+                                <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-[10px] font-bold text-blue-400">
                                   {(u.email || '?')[0].toUpperCase()}
                                 </div>
-                                <span className="text-sm font-medium text-white">{u.display_name || '—'}</span>
+                                <span className="text-sm font-medium text-stone-200">{u.display_name || '—'}</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-white/30">{u.email || '—'}</td>
-                            <td className="px-4 py-3 text-sm text-white/20 tabular-nums">{new Date(u.created_at).toLocaleDateString()}</td>
+                            <td className="px-4 py-3 text-sm text-stone-500">{u.email || '—'}</td>
+                            <td className="px-4 py-3 text-sm text-stone-600 tabular-nums">{new Date(u.created_at).toLocaleDateString()}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -998,21 +998,21 @@ export const AdminPanel: React.FC = () => {
                   {tab === 'plans' && (
                     <>
                       <thead>
-                        <tr className="border-b border-white/[0.04]">
+                        <tr className="border-b border-stone-800/30">
                           {['User', 'Plan', 'Daily', 'Used Today', 'Monthly', 'Total'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold text-white/20 uppercase tracking-wider">{h}</th>
+                            <th key={h} className="px-4 py-3 text-left text-[11px] font-serif font-semibold text-stone-600 uppercase tracking-widest">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {data.plans.map(p => (
-                          <tr key={p.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                            <td className="px-4 py-3 text-xs font-mono text-violet-400">{p.user_id?.slice(0, 8)}…</td>
-                            <td className="px-4 py-3"><span className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-violet-500/10 text-violet-300 capitalize border border-violet-500/15">{p.plan}</span></td>
-                            <td className="px-4 py-3 text-sm font-medium text-white tabular-nums">{p.daily_credits}</td>
-                            <td className="px-4 py-3 text-sm text-white/30 tabular-nums">{p.credits_used_today}</td>
-                            <td className="px-4 py-3 text-sm font-medium text-white tabular-nums">{p.monthly_credits}</td>
-                            <td className="px-4 py-3 text-sm text-white/30 tabular-nums">{p.total_credits_used}</td>
+                          <tr key={p.id} className="border-b border-stone-800/20 hover:bg-stone-800/10 transition-colors">
+                            <td className="px-4 py-3 text-xs font-mono text-amber-500">{p.user_id?.slice(0, 8)}…</td>
+                            <td className="px-4 py-3"><span className="text-[11px] font-medium px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 capitalize">{p.plan}</span></td>
+                            <td className="px-4 py-3 text-sm font-medium text-stone-200 tabular-nums">{p.daily_credits}</td>
+                            <td className="px-4 py-3 text-sm text-stone-500 tabular-nums">{p.credits_used_today}</td>
+                            <td className="px-4 py-3 text-sm font-medium text-stone-200 tabular-nums">{p.monthly_credits}</td>
+                            <td className="px-4 py-3 text-sm text-stone-500 tabular-nums">{p.total_credits_used}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1022,20 +1022,20 @@ export const AdminPanel: React.FC = () => {
                   {tab === 'transactions' && (
                     <>
                       <thead>
-                        <tr className="border-b border-white/[0.04]">
+                        <tr className="border-b border-stone-800/30">
                           {['Date', 'User', 'Credits', 'Type', 'Description'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold text-white/20 uppercase tracking-wider">{h}</th>
+                            <th key={h} className="px-4 py-3 text-left text-[11px] font-serif font-semibold text-stone-600 uppercase tracking-widest">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {data.transactions.map(t => (
-                          <tr key={t.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                            <td className="px-4 py-3 text-sm text-white/20 tabular-nums">{new Date(t.created_at).toLocaleString()}</td>
-                            <td className="px-4 py-3 text-xs font-mono text-violet-400">{t.user_id?.slice(0, 8)}…</td>
-                            <td className="px-4 py-3 text-sm font-medium text-white tabular-nums">{t.credits_used}</td>
-                            <td className="px-4 py-3 text-sm text-white/30">{t.work_type || '—'}</td>
-                            <td className="px-4 py-3 text-sm text-white/20 max-w-[200px] truncate">{t.description || '—'}</td>
+                          <tr key={t.id} className="border-b border-stone-800/20 hover:bg-stone-800/10 transition-colors">
+                            <td className="px-4 py-3 text-sm text-stone-600 tabular-nums">{new Date(t.created_at).toLocaleString()}</td>
+                            <td className="px-4 py-3 text-xs font-mono text-amber-500">{t.user_id?.slice(0, 8)}…</td>
+                            <td className="px-4 py-3 text-sm font-medium text-stone-200 tabular-nums">{t.credits_used}</td>
+                            <td className="px-4 py-3 text-sm text-stone-500">{t.work_type || '—'}</td>
+                            <td className="px-4 py-3 text-sm text-stone-600 max-w-[200px] truncate">{t.description || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1045,24 +1045,24 @@ export const AdminPanel: React.FC = () => {
                   {tab === 'projects' && (
                     <>
                       <thead>
-                        <tr className="border-b border-white/[0.04]">
+                        <tr className="border-b border-stone-800/30">
                           {['Project', 'User', 'Type', 'Status', 'Created'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold text-white/20 uppercase tracking-wider">{h}</th>
+                            <th key={h} className="px-4 py-3 text-left text-[11px] font-serif font-semibold text-stone-600 uppercase tracking-widest">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {data.projects.map(p => (
-                          <tr key={p.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                            <td className="px-4 py-3 text-sm font-medium text-white">{p.name}</td>
-                            <td className="px-4 py-3 text-xs font-mono text-violet-400">{p.user_id?.slice(0, 8)}…</td>
-                            <td className="px-4 py-3 text-sm text-white/30">{p.project_type}</td>
+                          <tr key={p.id} className="border-b border-stone-800/20 hover:bg-stone-800/10 transition-colors">
+                            <td className="px-4 py-3 text-sm font-medium text-stone-200">{p.name}</td>
+                            <td className="px-4 py-3 text-xs font-mono text-amber-500">{p.user_id?.slice(0, 8)}…</td>
+                            <td className="px-4 py-3 text-sm text-stone-500">{p.project_type}</td>
                             <td className="px-4 py-3">
-                              <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg ${p.is_published ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 'bg-white/[0.03] text-white/20 border border-white/[0.04]'}`}>
+                              <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${p.is_published ? 'bg-emerald-500/10 text-emerald-400' : 'bg-stone-800/50 text-stone-600'}`}>
                                 {p.is_published ? 'Live' : 'Draft'}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-sm text-white/20 tabular-nums">{new Date(p.created_at).toLocaleDateString()}</td>
+                            <td className="px-4 py-3 text-sm text-stone-600 tabular-nums">{new Date(p.created_at).toLocaleDateString()}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1083,10 +1083,10 @@ export const AdminPanel: React.FC = () => {
 
 const EmptyState: React.FC<{ icon: any; title: string; desc: string }> = ({ icon: Icon, title, desc }) => (
   <div className="flex flex-col items-center justify-center py-16 text-center">
-    <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-3">
-      <Icon size={22} className="text-white/15" />
+    <div className="w-14 h-14 rounded-xl bg-[#111116] border border-stone-800/40 flex items-center justify-center mb-3">
+      <Icon size={22} className="text-stone-700" />
     </div>
-    <h3 className="text-sm font-semibold text-white mb-1">{title}</h3>
-    <p className="text-xs text-white/20">{desc}</p>
+    <h3 className="text-sm font-serif font-semibold text-stone-300 mb-1">{title}</h3>
+    <p className="text-xs text-stone-600">{desc}</p>
   </div>
 );
