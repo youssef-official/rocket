@@ -113,38 +113,43 @@ function sanitizeJsonString(jsonStr: string): string {
 function manualExtractFiles(text: string): { files: Record<string, any>, fileList: string[] } {
   const files: Record<string, any> = {};
   const fileList: string[] = [];
-  
+
   // Try FILE block extraction first (handles partial/malformed blocks)
   const fileTagRegex = /<FILE\s+path=["']([^"']+)["']>/g;
-  let tagMatch;
-  const fileStarts: { path: string; contentStart: number }[] = [];
-  
+  let tagMatch: RegExpExecArray | null;
+  const fileStarts: { path: string; tagStart: number; contentStart: number }[] = [];
+
   while ((tagMatch = fileTagRegex.exec(text)) !== null) {
-    fileStarts.push({ path: tagMatch[1], contentStart: tagMatch.index + tagMatch[0].length });
+    fileStarts.push({
+      path: tagMatch[1],
+      tagStart: tagMatch.index,
+      contentStart: tagMatch.index + tagMatch[0].length,
+    });
   }
-  
+
   for (let i = 0; i < fileStarts.length; i++) {
     const { path, contentStart } = fileStarts[i];
     const closeIdx = text.indexOf('</FILE>', contentStart);
-    // If no close tag, take until next FILE tag or end of text
-    const endIdx = closeIdx !== -1 ? closeIdx : (i + 1 < fileStarts.length ? text.lastIndexOf('<FILE', fileStarts[i + 1].contentStart) : text.length);
+    const nextTagIdx = i + 1 < fileStarts.length ? fileStarts[i + 1].tagStart : -1;
+    const endIdx = closeIdx !== -1 ? closeIdx : (nextTagIdx !== -1 ? nextTagIdx : text.length);
     const content = text.substring(contentStart, endIdx).trim();
+
     if (content.length > 5 && !fileList.includes(path)) {
       fileList.push(path);
       files[path] = { path, content, type: 'file' };
     }
   }
-  
+
   if (fileList.length > 0) return { files, fileList };
 
   // Fallback: JSON-style extraction
   const fileRegex = /"([^"]+\.(tsx?|jsx?|css|json|html|md|js))"\s*:\s*(\{[\s\S]*?\}|"[^"]*")/g;
   let match;
-  
+
   while ((match = fileRegex.exec(text)) !== null) {
     const path = match[1];
     const rawValue = match[2];
-    
+
     try {
       if (rawValue.startsWith('{')) {
         const contentMatch = rawValue.match(/"content"\s*:\s*"([\s\S]*?)"/);
@@ -162,9 +167,11 @@ function manualExtractFiles(text: string): { files: Record<string, any>, fileLis
         files[path] = { path, content, type: 'file' };
         if (!fileList.includes(path)) fileList.push(path);
       }
-    } catch { /* skip */ }
+    } catch {
+      // skip malformed match
+    }
   }
-  
+
   return { files, fileList };
 }
 
@@ -189,11 +196,10 @@ function parseFileBlocks(text: string): { files: Record<string, any>, fileList: 
     const openTagEnd = text.indexOf('>', openTagStart);
     if (openTagEnd === -1) break;
 
-    // Extract path from the opening tag
+    // Extract path from the opening tag (supports quoted and unquoted values)
     const tagStr = text.substring(openTagStart, openTagEnd + 1);
-    const pathMatch = tagStr.match(/path=("|')([^"']+)\1/);
-    if (!pathMatch) { searchFrom = openTagEnd + 1; continue; }
-    const path = pathMatch[2].trim();
+    const pathMatch = tagStr.match(/path=(?:"([^"]+)"|'([^']+)'|([^\s>]+))/);
+    const path = (pathMatch?.[1] ?? pathMatch?.[2] ?? pathMatch?.[3] ?? '').trim();
     if (!path || /^\d+$/.test(path)) { searchFrom = openTagEnd + 1; continue; }
 
     // Find closing tag
@@ -335,14 +341,107 @@ function attemptJsonRepair(jsonStr: string): string {
  */
 function detectTruncation(response: string): boolean {
   const text = response.trim();
-  
+
   const openBraces = (text.match(/\{/g) || []).length;
   const closeBraces = (text.match(/\}/g) || []).length;
-  
+
   if (openBraces !== closeBraces) return true;
 
-  const truncationPatterns = [/\.\.\.$/,/\u2026$/,/\[truncated\]/i,/\[continued\]/i];
+  const truncationPatterns = [/\.\.\.$/, /\u2026$/, /\[truncated\]/i, /\[continued\]/i];
   return truncationPatterns.some(p => p.test(text));
+}
+
+/**
+ * Extracts JSON from mixed responses (markdown/explanations + JSON).
+ */
+function extractJsonFromResponse(raw: string): any {
+  let cleaned = raw
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .trim();
+
+  const jsonStart = cleaned.search(/[\{\[]/);
+  if (jsonStart === -1) {
+    throw new Error('No JSON boundary found');
+  }
+
+  cleaned = cleaned.slice(jsonStart);
+
+  let inString = false;
+  let escaping = false;
+  let braces = 0;
+  let brackets = 0;
+  let endIdx = -1;
+
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+
+    if (escaping) {
+      escaping = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escaping = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (!inString) {
+      if (ch === '{') braces++;
+      if (ch === '}') braces--;
+      if (ch === '[') brackets++;
+      if (ch === ']') brackets--;
+
+      if (i > 0 && braces === 0 && brackets === 0) {
+        endIdx = i;
+        break;
+      }
+    }
+  }
+
+  const candidate = endIdx !== -1 ? cleaned.slice(0, endIdx + 1) : cleaned;
+  const attempts = [
+    candidate,
+    candidate
+      .replace(/,\s*}/g, '}')
+      .replace(/,\s*]/g, ']')
+      .replace(/[\x00-\x1F\x7F]/g, ''),
+    attemptJsonRepair(candidate),
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      return JSON.parse(attempt);
+    } catch {
+      // continue
+    }
+  }
+
+  throw new Error('Could not parse extracted JSON');
+}
+
+function extractJsonFromMixedResponse(raw: string): any {
+  try {
+    return extractJsonFromResponse(raw);
+  } catch {
+    const codeBlockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (codeBlockMatch?.[1]) {
+      return extractJsonFromResponse(codeBlockMatch[1]);
+    }
+
+    const filesIdx = raw.search(/"files"\s*:/);
+    if (filesIdx !== -1) {
+      const objectStart = raw.lastIndexOf('{', filesIdx);
+      if (objectStart !== -1) {
+        return extractJsonFromResponse(raw.slice(objectStart));
+      }
+    }
+
+    throw new Error('No parseable JSON found in mixed response');
+  }
 }
 
 // Main parser with robust error handling
@@ -363,21 +462,17 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
       return { files: fileBlocks.files, fileList: fileBlocks.fileList, deletedFiles: fileBlocks.deletedFiles, actionsTaken: fileBlocks.actionsTaken, summary: fileBlocks.summary };
     }
 
-    // Check for truncation
+    // Check for truncation (diagnostic only)
     if (detectTruncation(response)) {
-      console.warn('[parseAIResponse] Response appears truncated, attempting repair...');
+      console.warn('[parseAIResponse] Response appears truncated, attempting resilient extraction...');
     }
 
-    // Step 1: Sanitize the JSON string
-    let jsonStr: string;
-    try {
-      jsonStr = sanitizeJsonString(response);
-    } catch (e) {
-      console.error('[parseAIResponse] Failed to sanitize JSON:', e);
-      return { files: {}, fileList: [] };
+    // Fallback #1: manual FILE extraction BEFORE JSON parsing
+    const manualEarly = manualExtractFiles(response);
+    if (manualEarly.fileList.length > 0) {
+      return { ...manualEarly, actionsTaken: [] };
     }
 
-    // Step 2: Try direct parsing
     const fixKnownUnquotedKeys = (s: string) =>
       s
         .replace(/([{,]\s*)files\s*:/g, '$1"files":')
@@ -385,40 +480,41 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
         .replace(/([{,]\s*)actionsTaken\s*:/g, '$1"actions_taken":');
 
     let parsed: any;
+
+    // Step 1: robust mixed-response JSON extraction
     try {
-      parsed = JSON.parse(jsonStr);
-    } catch (firstError) {
-      console.warn('[parseAIResponse] First parse failed, attempting repair...');
-
-      const keyFixed = fixKnownUnquotedKeys(jsonStr);
-
-      // Step 2.5: Try parsing after fixing common unquoted keys
+      parsed = extractJsonFromMixedResponse(response);
+    } catch {
+      // Step 2: legacy sanitizer + repair chain
+      let jsonStr: string;
       try {
-        parsed = JSON.parse(keyFixed);
-      } catch {
-        // Step 3: Try with repairs
-        try {
-          const repaired = attemptJsonRepair(keyFixed);
-          parsed = JSON.parse(repaired);
-        } catch (secondError) {
-          console.error('[parseAIResponse] JSON repair failed:', secondError);
+        jsonStr = sanitizeJsonString(response);
+      } catch (e) {
+        console.error('[parseAIResponse] Failed to sanitize JSON:', e);
+        return { files: {}, fileList: [] };
+      }
 
-          // Step 4: Final fallback - try to extract any valid file content
+      try {
+        parsed = JSON.parse(jsonStr);
+      } catch {
+        console.warn('[parseAIResponse] First parse failed, attempting repair...');
+        const keyFixed = fixKnownUnquotedKeys(jsonStr);
+
+        try {
+          parsed = JSON.parse(keyFixed);
+        } catch {
           try {
-            const filesMatch = keyFixed.match(/"files"\s*:\s*\{([^]*)\}/);
-            if (filesMatch) {
-              const partialJson = `{"files":{${filesMatch[1]}}}`;
-              const cleanPartial = attemptJsonRepair(partialJson);
-              parsed = JSON.parse(cleanPartial);
-            } else {
-              throw new Error('Could not extract files object');
-            }
-          } catch (thirdError) {
+            const repaired = attemptJsonRepair(keyFixed);
+            parsed = JSON.parse(repaired);
+          } catch (secondError) {
+            console.error('[parseAIResponse] JSON repair failed:', secondError);
             console.warn('[parseAIResponse] All JSON.parse attempts failed, using manual extraction fallback...');
+
             const manualResult = manualExtractFiles(response);
             if (manualResult.fileList.length > 0) {
               return { ...manualResult, actionsTaken: [] };
             }
+
             console.error('[parseAIResponse] All parsing attempts failed');
             return { files: {}, fileList: [] };
           }
