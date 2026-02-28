@@ -4,9 +4,9 @@ import {
   Book, Code, Zap, Palette, Upload, Download, 
   Share2, Settings, MessageSquare, ArrowLeft,
   ChevronRight, Search, Globe, Lock, GitBranch,
-  Sparkles, Layers, Rocket, Image as ImageIcon,
+  Layers, Rocket, Image as ImageIcon,
   RefreshCw, Languages, CreditCard, Shield, Eye,
-  PenTool, Bell, Users, Wand2, Copy, Mail
+  PenTool, Bell, Users, Copy, Mail, Database
 } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { SEOHead } from '@/components/shared/SEOHead';
@@ -54,23 +54,37 @@ export const Docs: React.FC = () => {
     {
       id: 'ai-generation',
       title: 'AI Code Generation',
-      icon: Sparkles,
+      icon: Code,
       content: [
         {
           title: 'How AI Generation Works',
-          description: 'Vivora X uses advanced AI models (Gemini 3 Flash) to understand your natural language descriptions and convert them into production-ready code. The AI generates clean, maintainable React components with TypeScript type safety, Tailwind CSS styling, and a premium "Classic" design aesthetic with Playfair Display and Plus Jakarta Sans fonts.',
+          description: 'Vivora X uses advanced AI models to understand your natural language descriptions and convert them into production-ready code. The AI generates clean, maintainable React components with TypeScript type safety, Tailwind CSS styling, and a premium "Classic" design aesthetic.',
         },
         {
           title: 'What Vivora X Can Generate',
           description: 'Vivora X can create complete applications including:',
           steps: [
-            'Multi-page websites with navigation and React Router',
+            'Multi-page websites with navigation and routing',
             'E-commerce stores with product catalogs, shopping carts, and checkout',
             'Dashboards with data visualization, charts, and analytics',
             'Landing pages with animations (Framer Motion) and call-to-actions',
             'Admin panels with CRUD forms, data tables, and password protection',
             'Portfolio sites with galleries, animations, and contact forms',
             'Blog and content sites with rich typography and layouts',
+            '3D immersive experiences using Three.js',
+          ],
+        },
+        {
+          title: 'Admin Dashboard Generation',
+          description: 'When you ask for an admin panel, Vivora X builds a fully functional dashboard — not a mockup:',
+          steps: [
+            'Centralized state management with React Context + useReducer',
+            'Full CRUD operations: Create, Read, Update, Delete — all working',
+            'Real statistics calculated from actual data in state',
+            'Form validation with error messages for all inputs',
+            'Password-protected admin login',
+            'Responsive sidebar with icon navigation',
+            'Minimum 5-10 sample data items pre-loaded',
           ],
         },
         {
@@ -93,7 +107,7 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'Upload Images for Design Reference',
-          description: 'Vivora X supports multimodal analysis — upload up to 5 images per prompt (screenshots, mockups, designs) and the AI recreates them as functional code. Images are stored on Cloudflare R2 with CDN delivery.',
+          description: 'Vivora X supports multimodal analysis — upload up to 5 images per prompt (screenshots, mockups, designs) and the AI recreates them as functional code.',
         },
         {
           title: 'How Image Analysis Works',
@@ -113,7 +127,6 @@ export const Docs: React.FC = () => {
             'Crop to the specific section you want recreated',
             'Add a text prompt describing any modifications you want',
             'Upload up to 5 images at once for multi-reference analysis',
-            'Click on any image in chat for full preview with Download & Copy options',
           ],
         },
       ],
@@ -139,17 +152,6 @@ export const Docs: React.FC = () => {
             'Click "Save Changes" to apply — the AI updates your source code precisely',
           ],
         },
-        {
-          title: 'What Can Be Edited',
-          description: 'Visual Edit supports modifying:',
-          steps: [
-            'Text content (headings, paragraphs, button labels)',
-            'Colors (text color, background color)',
-            'Font properties (size, weight, family)',
-            'Alignment and spacing',
-            'Background colors and gradients',
-          ],
-        },
       ],
     },
     {
@@ -170,7 +172,6 @@ export const Docs: React.FC = () => {
             '3-5 files modified: 1 credit',
             '6-10 files modified: 1.5 credits',
             '10+ files modified: 3 credits',
-            'If you have fewer credits than required, the remaining balance is deducted (partial deduction)',
           ],
         },
         {
@@ -182,10 +183,6 @@ export const Docs: React.FC = () => {
             'Business ($29/mo) — 10 daily + 400 monthly credits, ZIP export, private projects, priority access',
           ],
         },
-        {
-          title: 'Daily & Monthly Credits',
-          description: 'Daily credits reset automatically at UTC midnight. Monthly credits are added when your subscription renews. Daily credits are consumed first, then monthly credits.',
-        },
       ],
     },
     {
@@ -195,11 +192,11 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'Push to GitHub',
-          description: 'Connect your GitHub account and push your Vivora X projects directly to any repository. Each version can be committed as a new update.',
+          description: 'Connect your GitHub account and push your Vivora X projects directly to any repository.',
         },
         {
           title: 'How to Connect GitHub',
-          description: 'Follow these steps to set up GitHub integration:',
+          description: 'Follow these steps:',
           steps: [
             'Go to Settings from the top menu',
             'Navigate to the GitHub section',
@@ -209,25 +206,41 @@ export const Docs: React.FC = () => {
         },
         {
           title: 'Publishing a Project',
-          description: 'Once connected, you can push any project:',
+          description: 'Once connected:',
           steps: [
             'Open your project in the editor',
             'Click the GitHub icon in the header toolbar',
             'Choose to create a new repository or push to an existing one',
             'Enter the repository name and click Push',
             'A README is auto-generated with your project details',
-            'Subsequent pushes update the same repo with new commits',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'database',
+      title: 'Database Integration',
+      icon: Database,
+      content: [
+        {
+          title: 'Connect Your Supabase Database',
+          description: 'Use the DB tab in the editor to connect your own Supabase project via OAuth. Click "Sign in with Supabase" to authenticate, then select your project from the list or enter your Project ID manually.',
+        },
+        {
+          title: 'How Database Connection Works',
+          description: 'The connection flow:',
+          steps: [
+            'Click the DB tab in the editor',
+            'Click "Sign in with Supabase" — this uses secure OAuth (no credentials stored)',
+            'Your Supabase projects appear in a list — select one to connect',
+            'If projects don\'t appear, enter your Supabase Project ID manually',
+            'Vivora X saves the project URL and Anon Key to your project record',
+            'The AI generates a Supabase client, migrations, and Edge Functions',
           ],
         },
         {
-          title: 'Tips',
-          description: 'Keep in mind:',
-          steps: [
-            'Your GitHub repo link is saved per project for easy re-pushing',
-            'The "Update Changes" button appears after the first push for quick updates',
-            'You can push after rolling back to a previous version',
-            'Your PAT needs the "repo" scope for full access',
-          ],
+          title: 'SQL Migrations',
+          description: 'When the AI needs database tables, it generates SQL migration files that are auto-executed on your connected Supabase project.',
         },
       ],
     },
@@ -238,18 +251,7 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'Inbox Notifications',
-          description: 'Vivora X has a built-in notification system. Click the bell icon in the navigation bar to open the Inbox panel and see announcements, updates, and messages from the team.',
-        },
-        {
-          title: 'How It Works',
-          description: 'The notification system includes:',
-          steps: [
-            'A red badge appears on the bell icon when you have unread notifications',
-            'Click the bell to open the slide-out Inbox panel',
-            'Notifications can include images, text, and links',
-            'Click a notification to mark it as read and open any associated link',
-            'Notifications can be targeted to specific plan tiers',
-          ],
+          description: 'Vivora X has a built-in notification system. Click the bell icon in the navigation bar to see announcements, updates, and messages from the team.',
         },
       ],
     },
@@ -266,11 +268,11 @@ export const Docs: React.FC = () => {
           title: 'Using Templates',
           description: 'To use a template:',
           steps: [
-            'Browse the Templates section on the homepage (visible to all users)',
+            'Browse the Templates section on the homepage',
             'Click on any template card',
-            'The template prompt is automatically filled into the generation input',
+            'The template prompt is filled into the generation input',
             'Press Enter to generate a project based on that design',
-            'Customize further by chatting with the AI in the editor',
+            'Customize further by chatting with the AI',
           ],
         },
       ],
@@ -282,17 +284,7 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'Automatic Versioning',
-          description: 'Vivora X automatically saves a new version every time the AI generates or modifies code. This gives you a complete history of your project\'s evolution.',
-        },
-        {
-          title: 'Version Selector',
-          description: 'Use the version badge in the editor to browse through your project history. Each version shows:',
-          steps: [
-            'Version number for easy reference',
-            'Timestamp of when the version was created',
-            'The prompt that triggered the generation',
-            'All files that were modified',
-          ],
+          description: 'Vivora X automatically saves a new version every time the AI generates or modifies code, giving you a complete history.',
         },
         {
           title: 'Rollback Feature',
@@ -300,8 +292,7 @@ export const Docs: React.FC = () => {
           steps: [
             'Open the version selector in the chat panel',
             'Find the version you want to restore',
-            'Click the "Rollback" button',
-            'Confirm the action — this will delete all newer versions',
+            'Click the "Rollback" button and confirm',
             'Your project will be restored to that exact state',
           ],
         },
@@ -314,27 +305,17 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'Deploy to Vercel',
-          description: 'Deploy your project to Vercel with one click. Get a live URL instantly that you can share with anyone.',
+          description: 'Deploy your project to Vercel with one click. Get a live URL instantly.',
         },
         {
           title: 'How to Deploy',
-          description: 'Follow these steps:',
+          description: 'Steps:',
           steps: [
             'Go to Settings and add your Vercel API Token',
             'Click the "Publish" button in the editor header',
             'Enter a project name (optional)',
             'Click "Deploy to Vercel"',
             'Wait for deployment to complete and get your live URL',
-          ],
-        },
-        {
-          title: 'Benefits',
-          description: 'Vercel deployment provides:',
-          steps: [
-            'Instant global CDN distribution',
-            'Automatic HTTPS/SSL certificates',
-            'Continuous deployment on code changes',
-            'Preview deployments for testing',
           ],
         },
       ],
@@ -350,10 +331,9 @@ export const Docs: React.FC = () => {
         },
         {
           title: 'Running Locally',
-          description: 'After downloading, run your project on your local machine:',
+          description: 'After downloading:',
           steps: [
             'Extract the ZIP file to a folder',
-            'Open terminal in that folder',
             'Run: npm install',
             'Run: npm run dev',
             'Open http://localhost:5173 in your browser',
@@ -370,62 +350,6 @@ export const Docs: React.FC = () => {
           title: 'Multi-language Support',
           description: 'Vivora X supports multiple languages including English, Arabic (RTL), Chinese, Japanese, and French. The interface automatically adapts to your selected language.',
         },
-        {
-          title: 'How to Change Language',
-          description: 'Follow these steps:',
-          steps: [
-            'Click on your profile icon in the header',
-            'Find the Language option in the dropdown menu',
-            'Select your preferred language',
-            'The interface will update immediately including RTL support for Arabic',
-          ],
-        },
-      ],
-    },
-    {
-      id: 'database',
-      title: 'Database Integration',
-      icon: Code,
-      content: [
-        {
-          title: 'Connect Your Supabase Database',
-          description: 'Use the DB tab in the editor to connect your own Supabase project via OAuth. Click "Sign in with Supabase" to authenticate, then select your project from the list or enter your Project ID manually.',
-        },
-        {
-          title: 'How Database Connection Works',
-          description: 'The connection flow:',
-          steps: [
-            'Click the DB tab in the editor',
-            'Click "Sign in with Supabase" — this uses secure OAuth (no credentials stored)',
-            'Your Supabase projects appear in a list — select one to connect',
-            'If projects don\'t appear, enter your Supabase Project ID manually',
-            'Vivora X saves the project URL and Anon Key to your project record',
-            'The AI is notified and generates a Supabase client, migrations, and Edge Functions',
-          ],
-        },
-        {
-          title: 'SQL Migrations',
-          description: 'When the AI needs database tables, it generates SQL migration files:',
-          steps: [
-            'Migrations are saved as migrations/001-ver.sql, 002-ver.sql, etc.',
-            'Each migration creates tables, indexes, and RLS policies',
-            'Migrations are auto-executed on your connected Supabase project via the API',
-            'If execution fails, the error is returned to the chat for troubleshooting',
-          ],
-        },
-        {
-          title: 'Edge Functions',
-          description: 'For server-side logic, the AI creates Supabase Edge Functions:',
-          steps: [
-            'Functions are created in supabase/functions/{name}/index.ts',
-            'Deploy them using the Supabase CLI: supabase functions deploy {name}',
-            'See /supabase-connect for detailed setup instructions',
-          ],
-        },
-        {
-          title: 'Manual Project ID',
-          description: 'If the OAuth project list is empty, you can enter your Project ID manually. Find it in your Supabase dashboard under Settings → General. Enter the ref ID (e.g., abcdefghijklmnop) in the manual input field.',
-        },
       ],
     },
     {
@@ -435,28 +359,16 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'Clone Any Website Design',
-          description: 'Clone Design lets you enter any website URL and Vivora X will scrape its HTML, analyze its design, and recreate it as a fully functional React project. Available for all plans — Free, Pro, and Business.',
+          description: 'Clone Design lets you enter any website URL and Vivora X will scrape its HTML, analyze its design, and recreate it as a fully functional React project.',
         },
         {
-          title: 'How to Use Clone Design',
-          description: 'Follow these steps:',
+          title: 'How to Use',
+          description: 'Steps:',
           steps: [
-            'Go to the Vivora X homepage',
-            'Find the "Clone Design" input field below the main prompt',
-            'Enter any website URL (e.g., example.com or https://example.com)',
-            'Add an optional description of what you want to change or keep',
-            'Press Enter — the AI scrapes the site and generates a matching React project',
-            'The cloned source appears as a file badge in chat (not raw HTML)',
-          ],
-        },
-        {
-          title: 'Tips for Best Results',
-          description: 'Get the most out of Clone Design:',
-          steps: [
-            'Use clean, well-structured websites for best results',
-            'Add a prompt like "Make it dark theme" or "Change colors to blue"',
-            'One clone per generation — combine with follow-up chat edits',
-            'Works with any public website — no login required',
+            'Find the "Clone Design" input on the homepage',
+            'Enter any website URL',
+            'Add an optional description of changes you want',
+            'Press Enter — the AI scrapes and generates a matching React project',
           ],
         },
       ],
@@ -468,16 +380,7 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'Automatic Email Notifications',
-          description: 'Vivora X sends professional branded emails at key moments in your journey — welcome emails on signup, congratulations on plan upgrades, and renewal reminders when your subscription is about to expire.',
-        },
-        {
-          title: 'Email Types',
-          description: 'You\'ll receive emails for:',
-          steps: [
-            'Welcome Email — sent when you create your account',
-            'Plan Upgrade — congratulations when you upgrade to Pro or Business',
-            'Renewal Reminder — notification when your plan is about to expire',
-          ],
+          description: 'Vivora X sends professional branded emails at key moments — welcome emails on signup, congratulations on plan upgrades, and renewal reminders.',
         },
       ],
     },
@@ -510,11 +413,11 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'CDN Video Backgrounds',
-          description: 'Vivora X automatically adds cinematic hero video backgrounds from a CDN library. When generating product, business, or technology sites, the AI selects the most relevant video category and embeds it directly.',
+          description: 'Vivora X automatically adds cinematic hero video backgrounds from a CDN library. The AI selects the most relevant video category and embeds it directly.',
         },
         {
           title: 'Available Categories',
-          description: 'Videos are available for these site types:',
+          description: 'Videos are available for:',
           steps: [
             'AI / Machine Learning websites',
             'Business / Corporate websites',
@@ -533,40 +436,27 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'Speech-to-Text Input',
-          description: 'Use the microphone button on the homepage to dictate your project description using voice. Supports multiple languages including English, Arabic, Chinese, Japanese, and French.',
-        },
-        {
-          title: 'How to Use',
-          description: 'Voice input is simple:',
-          steps: [
-            'Click the microphone button next to the send button',
-            'Allow microphone access when prompted',
-            'Speak your project description naturally',
-            'The text appears in real-time in the input box',
-            'Click the mic button again to stop recording',
-            'Language is auto-detected from your browser settings',
-          ],
+          description: 'Use the microphone button on the homepage to dictate your project description. Supports English, Arabic, Chinese, Japanese, and French.',
         },
       ],
     },
     {
       id: 'ai-gateway',
       title: 'AI Gateway',
-      icon: Sparkles,
+      icon: Rocket,
       content: [
         {
           title: 'Free AI Gateway',
-          description: 'Vivora X provides a free AI endpoint for developers at https://ai-gateway.vivorax.online/api/ai/generate — no API key, no billing, no rate limits.',
+          description: 'Vivora X provides a free AI endpoint for developers at https://ai-gateway.vivorax.online/api/ai/generate — no API key, no billing.',
         },
         {
           title: 'How to Use',
           description: 'Simple HTTP POST request:',
           steps: [
-            'Send POST request to https://ai-gateway.vivorax.online/api/ai/generate',
-            'Body: { "prompt": "your question", "config": { "stream": false, "temperature": 0.8 } }',
+            'Send POST to https://ai-gateway.vivorax.online/api/ai/generate',
+            'Body: { "prompt": "your question", "config": { "stream": false } }',
             'Response: { "result": "AI response text" }',
             'No API key needed — works from browser or server',
-            'See /ai-for-all for full code examples in JS, Python, cURL, and React',
           ],
         },
       ],
@@ -745,7 +635,6 @@ export const Docs: React.FC = () => {
           </main>
         </div>
       </div>
-      
     </div>
   );
 };
