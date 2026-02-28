@@ -324,6 +324,14 @@ function attemptJsonRepair(jsonStr: string): string {
   // 1. Fix common unquoted keys
   repaired = repaired.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
 
+  // 1.1 Fix single-quoted keys and values
+  // This is a simple heuristic and might fail on complex strings, but it's better than nothing
+  repaired = repaired.replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, '"$1"');
+
+  // 1.2 Fix common malformed JSON like { , } or { "key": , }
+  repaired = repaired.replace(/,\s*([}\]])/g, '$1');
+  repaired = repaired.replace(/{\s*,/g, '{');
+
   // 2. Balance braces and brackets while respecting strings
   let openBraces = 0;
   let openBrackets = 0;
@@ -510,7 +518,7 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
     // Preferred: parse <FILE> blocks (doesn't require JSON escaping)
     const fileBlocks = parseFileBlocks(response);
     if (fileBlocks && (fileBlocks.fileList.length > 0 || fileBlocks.deletedFiles.length > 0 || fileBlocks.actionsTaken.length > 0)) {
-      // Parsed file blocks successfully
+      console.log('[parseAIResponse] Successfully parsed using <FILE> blocks');
       return { files: fileBlocks.files, fileList: fileBlocks.fileList, deletedFiles: fileBlocks.deletedFiles, actionsTaken: fileBlocks.actionsTaken, summary: fileBlocks.summary };
     }
 
@@ -522,12 +530,14 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
     // Fallback #1: manual FILE extraction BEFORE JSON parsing
     const manualEarly = manualExtractFiles(response);
     if (manualEarly.fileList.length > 0) {
+      console.log('[parseAIResponse] Successfully parsed using manualExtractFiles fallback');
       return { ...manualEarly, actionsTaken: [] };
     }
 
     // Fallback #2: markdown file extraction (### path + ```code``` patterns)
     const markdownEarly = extractMarkdownFileBlocks(response);
     if (markdownEarly.fileList.length > 0) {
+      console.log('[parseAIResponse] Successfully parsed using extractMarkdownFileBlocks fallback');
       return { ...markdownEarly, actionsTaken: [] };
     }
 
