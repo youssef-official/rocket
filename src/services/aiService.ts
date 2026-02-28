@@ -114,8 +114,30 @@ function manualExtractFiles(text: string): { files: Record<string, any>, fileLis
   const files: Record<string, any> = {};
   const fileList: string[] = [];
   
-  // Regex to find "path/to/file": "content" or "path/to/file": { "content": "..." }
-  // This is designed to be extremely forgiving
+  // Try FILE block extraction first (handles partial/malformed blocks)
+  const fileTagRegex = /<FILE\s+path=["']([^"']+)["']>/g;
+  let tagMatch;
+  const fileStarts: { path: string; contentStart: number }[] = [];
+  
+  while ((tagMatch = fileTagRegex.exec(text)) !== null) {
+    fileStarts.push({ path: tagMatch[1], contentStart: tagMatch.index + tagMatch[0].length });
+  }
+  
+  for (let i = 0; i < fileStarts.length; i++) {
+    const { path, contentStart } = fileStarts[i];
+    const closeIdx = text.indexOf('</FILE>', contentStart);
+    // If no close tag, take until next FILE tag or end of text
+    const endIdx = closeIdx !== -1 ? closeIdx : (i + 1 < fileStarts.length ? text.lastIndexOf('<FILE', fileStarts[i + 1].contentStart) : text.length);
+    const content = text.substring(contentStart, endIdx).trim();
+    if (content.length > 5 && !fileList.includes(path)) {
+      fileList.push(path);
+      files[path] = { path, content, type: 'file' };
+    }
+  }
+  
+  if (fileList.length > 0) return { files, fileList };
+
+  // Fallback: JSON-style extraction
   const fileRegex = /"([^"]+\.(tsx?|jsx?|css|json|html|md|js))"\s*:\s*(\{[\s\S]*?\}|"[^"]*")/g;
   let match;
   
@@ -125,32 +147,22 @@ function manualExtractFiles(text: string): { files: Record<string, any>, fileLis
     
     try {
       if (rawValue.startsWith('{')) {
-        // Try to find content inside the object
         const contentMatch = rawValue.match(/"content"\s*:\s*"([\s\S]*?)"/);
         if (contentMatch) {
           const content = contentMatch[1]
-            .replace(/\\n/g, '\n')
-            .replace(/\\r/g, '\r')
-            .replace(/\\t/g, '\t')
-            .replace(/\\"/g, '"')
-            .replace(/\\\\/g, '\\');
+            .replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\t/g, '\t')
+            .replace(/\\"/g, '"').replace(/\\\\/g, '\\');
           files[path] = { path, content, type: 'file' };
           if (!fileList.includes(path)) fileList.push(path);
         }
       } else {
-        // Direct string value
         const content = rawValue.slice(1, -1)
-          .replace(/\\n/g, '\n')
-          .replace(/\\r/g, '\r')
-          .replace(/\\t/g, '\t')
-          .replace(/\\"/g, '"')
-          .replace(/\\\\/g, '\\');
+          .replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\t/g, '\t')
+          .replace(/\\"/g, '"').replace(/\\\\/g, '\\');
         files[path] = { path, content, type: 'file' };
         if (!fileList.includes(path)) fileList.push(path);
       }
-    } catch (e) {
-      // Skip this file if extraction fails
-    }
+    } catch { /* skip */ }
   }
   
   return { files, fileList };
@@ -158,6 +170,7 @@ function manualExtractFiles(text: string): { files: Record<string, any>, fileLis
 
 /**
  * Parses <FILE path="...">...</FILE> blocks (preferred for code mode).
+ * Also handles truncated responses where the last FILE block may not be closed.
  */
 function parseFileBlocks(text: string): { files: Record<string, any>, fileList: string[], deletedFiles: string[], actionsTaken: FileActivity[], summary: string } | null {
   const files: Record<string, any> = {};
@@ -166,16 +179,43 @@ function parseFileBlocks(text: string): { files: Record<string, any>, fileList: 
   let actionsTaken: FileActivity[] = [];
   let summary = '';
 
-  // Parse FILE blocks
-  const re = /<FILE\s+path=("|')([^"']+)\1>\s*([\s\S]*?)\s*<\/FILE>/g;
-  let match: RegExpExecArray | null;
+  // Parse complete FILE blocks using indexOf-based approach (faster than regex on large strings)
+  let searchFrom = 0;
+  while (true) {
+    const openTagStart = text.indexOf('<FILE ', searchFrom);
+    if (openTagStart === -1) break;
 
-  while ((match = re.exec(text)) !== null) {
-    const path = match[2]?.trim();
-    if (!path || /^\d+$/.test(path)) continue;
-    const content = match[3] ?? '';
-    if (!fileList.includes(path)) fileList.push(path);
-    files[path] = { path, content, type: 'file' };
+    // Find the end of the opening tag
+    const openTagEnd = text.indexOf('>', openTagStart);
+    if (openTagEnd === -1) break;
+
+    // Extract path from the opening tag
+    const tagStr = text.substring(openTagStart, openTagEnd + 1);
+    const pathMatch = tagStr.match(/path=("|')([^"']+)\1/);
+    if (!pathMatch) { searchFrom = openTagEnd + 1; continue; }
+    const path = pathMatch[2].trim();
+    if (!path || /^\d+$/.test(path)) { searchFrom = openTagEnd + 1; continue; }
+
+    // Find closing tag
+    const closeTag = '</FILE>';
+    const closeIdx = text.indexOf(closeTag, openTagEnd + 1);
+
+    if (closeIdx !== -1) {
+      // Complete block
+      const content = text.substring(openTagEnd + 1, closeIdx).trim();
+      if (!fileList.includes(path)) fileList.push(path);
+      files[path] = { path, content, type: 'file' };
+      searchFrom = closeIdx + closeTag.length;
+    } else {
+      // Truncated: last FILE block has no closing tag - take everything after the opening tag
+      const content = text.substring(openTagEnd + 1).trim();
+      // Only include if there's meaningful content (at least a few chars)
+      if (content.length > 10) {
+        if (!fileList.includes(path)) fileList.push(path);
+        files[path] = { path, content, type: 'file' };
+      }
+      break; // No more blocks possible after a truncated one
+    }
   }
 
   // Parse DELETE blocks
