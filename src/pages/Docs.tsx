@@ -388,20 +388,8 @@ export const Docs: React.FC = () => {
       icon: Code,
       content: [
         {
-          title: 'Connect Your Supabase Database',
-          description: 'Use the DB tab in the editor to connect your own Supabase project via OAuth. Click "Sign in with Supabase" to authenticate, then select your project from the list or enter your Project ID manually.',
-        },
-        {
-          title: 'How Database Connection Works',
-          description: 'The connection flow:',
-          steps: [
-            'Click the DB tab in the editor',
-            'Click "Sign in with Supabase" — this uses secure OAuth (no credentials stored)',
-            'Your Supabase projects appear in a list — select one to connect',
-            'If projects don\'t appear, enter your Supabase Project ID manually',
-            'Vivora X saves the project URL and Anon Key to your project record',
-            'The AI is notified and generates a Supabase client, migrations, and Edge Functions',
-          ],
+          title: 'Connect Your Database',
+          description: 'Use the DB tab in the editor to connect your Supabase project. Enter your Supabase URL and Anon Key to enable database-backed features.',
         },
         {
           title: 'SQL Migrations',
@@ -409,8 +397,8 @@ export const Docs: React.FC = () => {
           steps: [
             'Migrations are saved as migrations/001-ver.sql, 002-ver.sql, etc.',
             'Each migration creates tables, indexes, and RLS policies',
-            'Migrations are auto-executed on your connected Supabase project via the API',
-            'If execution fails, the error is returned to the chat for troubleshooting',
+            'You run these migrations in your Supabase SQL Editor',
+            'The AI tells you which file to run after each generation',
           ],
         },
         {
@@ -421,10 +409,6 @@ export const Docs: React.FC = () => {
             'Deploy them using the Supabase CLI: supabase functions deploy {name}',
             'See /supabase-connect for detailed setup instructions',
           ],
-        },
-        {
-          title: 'Manual Project ID',
-          description: 'If the OAuth project list is empty, you can enter your Project ID manually. Find it in your Supabase dashboard under Settings → General. Enter the ref ID (e.g., abcdefghijklmnop) in the manual input field.',
         },
       ],
     },

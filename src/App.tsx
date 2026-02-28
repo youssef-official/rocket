@@ -1254,7 +1254,6 @@ import AboutUs from "@/pages/AboutUs";
 // AdminPanel already imported at the top
 import ProjectSettings from "@/pages/ProjectSettings";
 import Billing from "@/pages/Billing";
-import SupabaseCallbackPage from "@/pages/SupabaseCallback";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -1284,7 +1283,6 @@ const App = () => (
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/supabase-connect" element={<SupabaseConnect />} />
-              <Route path="/supabase-callback" element={<SupabaseCallbackPage />} />
               <Route path="/about" element={<AboutUs />} />
               <Route path="/" element={<AppContent />} />
             </Routes>

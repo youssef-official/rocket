@@ -260,16 +260,6 @@ CREATE TABLE IF NOT EXISTS public.site_celebrations (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS public.supabase_connections (
-  id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id uuid NOT NULL UNIQUE,
-  access_token text NOT NULL,
-  refresh_token text,
-  token_expires_at timestamptz,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-
 -- ─────────────────────────────────────────────────────────────────────────────
 -- FUNCTIONS
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -496,13 +486,6 @@ ALTER TABLE public.site_celebrations ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can view celebrations" ON public.site_celebrations FOR SELECT USING (true);
 CREATE POLICY "Admins can manage celebrations" ON public.site_celebrations FOR ALL USING (has_role(auth.uid(), 'admin'));
 
-ALTER TABLE public.supabase_connections ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view own sb connection"   ON public.supabase_connections FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can insert own sb connection" ON public.supabase_connections FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own sb connection" ON public.supabase_connections FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete own sb connection" ON public.supabase_connections FOR DELETE USING (auth.uid() = user_id);
-CREATE POLICY "Service role manages sb connections" ON public.supabase_connections FOR ALL USING (auth.role() = 'service_role');
-
 -- ─────────────────────────────────────────────────────────────────────────────
 -- STORAGE BUCKETS
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -522,7 +505,6 @@ CREATE TRIGGER update_generation_jobs_updated_at BEFORE UPDATE ON public.generat
 CREATE TRIGGER update_ai_model_config_updated_at BEFORE UPDATE ON public.ai_model_config FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_vivora_deployments_updated_at BEFORE UPDATE ON public.vivora_deployments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_blog_posts_updated_at BEFORE UPDATE ON public.blog_posts FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_supabase_connections_updated_at BEFORE UPDATE ON public.supabase_connections FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- SEED DATA
