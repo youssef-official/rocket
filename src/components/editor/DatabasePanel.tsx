@@ -53,18 +53,32 @@ export const DatabasePanel: React.FC<DatabasePanelProps> = ({ projectId, onSendM
       });
   }, [projectId]);
 
+  const invokeOAuthAction = async (body: Record<string, unknown>) => {
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token;
+
+    if (!accessToken) {
+      throw new Error('You must be logged in');
+    }
+
+    return supabase.functions.invoke('supabase-oauth', {
+      body,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  };
+
   const checkStatus = async () => {
     setIsLoading(true);
     try {
-      const res = await supabase.functions.invoke('supabase-oauth', {
-        body: { action: 'status' },
-      });
+      const res = await invokeOAuthAction({ action: 'status' });
       if (res.data?.connected) {
         setIsConnected(true);
         if (step === 'auth') setStep('select');
       }
-    } catch (e) {
-      // Not connected
+    } catch {
+      // Not connected or not logged in yet
     } finally {
       setIsLoading(false);
     }
@@ -85,9 +99,7 @@ export const DatabasePanel: React.FC<DatabasePanelProps> = ({ projectId, onSendM
     setIsLoadingProjects(true);
     setError('');
     try {
-      const res = await supabase.functions.invoke('supabase-oauth', {
-        body: { action: 'list-projects' },
-      });
+      const res = await invokeOAuthAction({ action: 'list-projects' });
       if (res.data?.error) {
         setError(res.data.error);
         return;
@@ -114,9 +126,7 @@ export const DatabasePanel: React.FC<DatabasePanelProps> = ({ projectId, onSendM
 
     try {
       // Get project keys
-      const res = await supabase.functions.invoke('supabase-oauth', {
-        body: { action: 'get-keys', project_ref: selectedProject },
-      });
+      const res = await invokeOAuthAction({ action: 'get-keys', project_ref: selectedProject });
 
       if (res.data?.error) {
         setError(res.data.error);
@@ -171,9 +181,7 @@ The user connected their Supabase database via OAuth. Please:
   };
 
   const handleDisconnectAccount = async () => {
-    await supabase.functions.invoke('supabase-oauth', {
-      body: { action: 'disconnect' },
-    });
+    await invokeOAuthAction({ action: 'disconnect' });
     setIsConnected(false);
     setSbProjects([]);
     setConnectedProjectRef(null);

@@ -37,6 +37,9 @@ export default function SupabaseCallbackPage() {
             code,
             redirect_uri: `${window.location.origin}/supabase-callback`,
           },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         if (res.error || res.data?.error) {

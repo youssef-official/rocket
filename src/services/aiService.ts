@@ -114,22 +114,26 @@ function manualExtractFiles(text: string): { files: Record<string, any>, fileLis
   const files: Record<string, any> = {};
   const fileList: string[] = [];
 
-  // Try FILE block extraction first (handles partial/malformed blocks)
-  const fileTagRegex = /<FILE\s+path=["']([^"']+)["']>/g;
+  // Try FILE block extraction first (handles partial/malformed blocks, case-insensitive)
+  const fileTagRegex = /<file\s+[^>]*path=(?:"([^"]+)"|'([^']+)'|([^\s>]+))[^>]*>/gi;
   let tagMatch: RegExpExecArray | null;
   const fileStarts: { path: string; tagStart: number; contentStart: number }[] = [];
 
   while ((tagMatch = fileTagRegex.exec(text)) !== null) {
+    const path = (tagMatch[1] ?? tagMatch[2] ?? tagMatch[3] ?? '').trim();
+    if (!path) continue;
     fileStarts.push({
-      path: tagMatch[1],
+      path,
       tagStart: tagMatch.index,
       contentStart: tagMatch.index + tagMatch[0].length,
     });
   }
 
+  const lowerText = text.toLowerCase();
+
   for (let i = 0; i < fileStarts.length; i++) {
     const { path, contentStart } = fileStarts[i];
-    const closeIdx = text.indexOf('</FILE>', contentStart);
+    const closeIdx = lowerText.indexOf('</file>', contentStart);
     const nextTagIdx = i + 1 < fileStarts.length ? fileStarts[i + 1].tagStart : -1;
     const endIdx = closeIdx !== -1 ? closeIdx : (nextTagIdx !== -1 ? nextTagIdx : text.length);
     const content = text.substring(contentStart, endIdx).trim();
@@ -176,6 +180,49 @@ function manualExtractFiles(text: string): { files: Record<string, any>, fileLis
 }
 
 /**
+ * Fallback: Extracts files from markdown-style responses.
+ * Example supported patterns:
+ * - ### src/App.tsx + fenced code block
+ * - **File: src/App.tsx** + fenced code block
+ * - `src/App.tsx` + fenced code block
+ */
+function extractMarkdownFileBlocks(text: string): { files: Record<string, any>, fileList: string[] } {
+  const files: Record<string, any> = {};
+  const fileList: string[] = [];
+
+  const pathRegex = /([A-Za-z0-9_./-]+\.(?:tsx?|jsx?|css|scss|sass|less|html|json|md|yml|yaml|toml|sql|py|sh))/i;
+  const fenceRegex = /```(?:[a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g;
+
+  let match: RegExpExecArray | null;
+  while ((match = fenceRegex.exec(text)) !== null) {
+    const code = (match[1] || '').trim();
+    if (!code) continue;
+
+    const before = text.slice(Math.max(0, match.index - 320), match.index);
+    const contextLines = before.split('\n').slice(-6).join('\n');
+
+    let path = '';
+    const contextPath = contextLines.match(pathRegex);
+    if (contextPath?.[1]) {
+      path = contextPath[1].trim();
+    } else {
+      const firstLine = code.split('\n')[0] || '';
+      const firstLinePath = firstLine.match(/(?:file|path)\s*[:=-]\s*([A-Za-z0-9_./-]+\.(?:tsx?|jsx?|css|scss|sass|less|html|json|md|yml|yaml|toml|sql|py|sh))/i);
+      if (firstLinePath?.[1]) {
+        path = firstLinePath[1].trim();
+      }
+    }
+
+    if (!path || /^\d+$/.test(path) || fileList.includes(path)) continue;
+
+    fileList.push(path);
+    files[path] = { path, content: code, type: 'file' };
+  }
+
+  return { files, fileList };
+}
+
+/**
  * Parses <FILE path="...">...</FILE> blocks (preferred for code mode).
  * Also handles truncated responses where the last FILE block may not be closed.
  */
@@ -186,35 +233,40 @@ function parseFileBlocks(text: string): { files: Record<string, any>, fileList: 
   let actionsTaken: FileActivity[] = [];
   let summary = '';
 
-  // Parse complete FILE blocks using indexOf-based approach (faster than regex on large strings)
+  // Normalize FILE tags to support uppercase/lowercase variants
+  const normalizedText = text
+    .replace(/<\s*file\b/gi, '<FILE')
+    .replace(/<\/\s*file\s*>/gi, '</FILE>');
+
+  // Parse complete FILE blocks using indexOf-based approach (fast on large strings)
   let searchFrom = 0;
   while (true) {
-    const openTagStart = text.indexOf('<FILE ', searchFrom);
+    const openTagStart = normalizedText.indexOf('<FILE ', searchFrom);
     if (openTagStart === -1) break;
 
     // Find the end of the opening tag
-    const openTagEnd = text.indexOf('>', openTagStart);
+    const openTagEnd = normalizedText.indexOf('>', openTagStart);
     if (openTagEnd === -1) break;
 
     // Extract path from the opening tag (supports quoted and unquoted values)
-    const tagStr = text.substring(openTagStart, openTagEnd + 1);
+    const tagStr = normalizedText.substring(openTagStart, openTagEnd + 1);
     const pathMatch = tagStr.match(/path=(?:"([^"]+)"|'([^']+)'|([^\s>]+))/);
     const path = (pathMatch?.[1] ?? pathMatch?.[2] ?? pathMatch?.[3] ?? '').trim();
     if (!path || /^\d+$/.test(path)) { searchFrom = openTagEnd + 1; continue; }
 
     // Find closing tag
     const closeTag = '</FILE>';
-    const closeIdx = text.indexOf(closeTag, openTagEnd + 1);
+    const closeIdx = normalizedText.indexOf(closeTag, openTagEnd + 1);
 
     if (closeIdx !== -1) {
       // Complete block
-      const content = text.substring(openTagEnd + 1, closeIdx).trim();
+      const content = normalizedText.substring(openTagEnd + 1, closeIdx).trim();
       if (!fileList.includes(path)) fileList.push(path);
       files[path] = { path, content, type: 'file' };
       searchFrom = closeIdx + closeTag.length;
     } else {
       // Truncated: last FILE block has no closing tag - take everything after the opening tag
-      const content = text.substring(openTagEnd + 1).trim();
+      const content = normalizedText.substring(openTagEnd + 1).trim();
       // Only include if there's meaningful content (at least a few chars)
       if (content.length > 10) {
         if (!fileList.includes(path)) fileList.push(path);
@@ -225,9 +277,9 @@ function parseFileBlocks(text: string): { files: Record<string, any>, fileList: 
   }
 
   // Parse DELETE blocks
-  const deleteRe = /<DELETE\s+path=("|')([^"']+)\1\s*\/?>/g;
+  const deleteRe = /<delete\s+path=("|')([^"']+)\1\s*\/?>/gi;
   let deleteMatch: RegExpExecArray | null;
-  while ((deleteMatch = deleteRe.exec(text)) !== null) {
+  while ((deleteMatch = deleteRe.exec(normalizedText)) !== null) {
     const path = deleteMatch[2]?.trim();
     if (path && !deletedFiles.includes(path)) {
       deletedFiles.push(path);
@@ -235,7 +287,7 @@ function parseFileBlocks(text: string): { files: Record<string, any>, fileList: 
   }
 
   // Parse ACTIONS block
-  const actionsMatch = text.match(/<ACTIONS>([\s\S]*?)<\/ACTIONS>/);
+  const actionsMatch = normalizedText.match(/<ACTIONS>([\s\S]*?)<\/ACTIONS>/i);
   if (actionsMatch) {
     const actionsText = actionsMatch[1];
     const actionLines = actionsText.split('\n').filter(l => l.trim().startsWith('{'));
@@ -254,7 +306,7 @@ function parseFileBlocks(text: string): { files: Record<string, any>, fileList: 
   }
 
   // Parse SUMMARY block
-  const summaryMatch = text.match(/<SUMMARY>([\s\S]*?)<\/SUMMARY>/);
+  const summaryMatch = normalizedText.match(/<SUMMARY>([\s\S]*?)<\/SUMMARY>/i);
   if (summaryMatch) {
     summary = summaryMatch[1].trim();
   }
@@ -473,6 +525,12 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
       return { ...manualEarly, actionsTaken: [] };
     }
 
+    // Fallback #2: markdown file extraction (### path + ```code``` patterns)
+    const markdownEarly = extractMarkdownFileBlocks(response);
+    if (markdownEarly.fileList.length > 0) {
+      return { ...markdownEarly, actionsTaken: [] };
+    }
+
     const fixKnownUnquotedKeys = (s: string) =>
       s
         .replace(/([{,]\s*)files\s*:/g, '$1"files":')
@@ -513,6 +571,11 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
             const manualResult = manualExtractFiles(response);
             if (manualResult.fileList.length > 0) {
               return { ...manualResult, actionsTaken: [] };
+            }
+
+            const markdownResult = extractMarkdownFileBlocks(response);
+            if (markdownResult.fileList.length > 0) {
+              return { ...markdownResult, actionsTaken: [] };
             }
 
             console.error('[parseAIResponse] All parsing attempts failed');
