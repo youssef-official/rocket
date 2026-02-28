@@ -122,6 +122,17 @@ These errors WILL break the preview. You MUST follow ALL rules below:
 ❌ ERROR: "the server responded with a status of 404" for favicon
 ✅ FIX: Add to index.html: <link rel="icon" href="data:," />
 
+❌ ERROR: "cn is not defined" or "ReferenceError: cn is not defined"
+✅ FIX: The cn() helper merges Tailwind classes. You MUST define it in src/lib/utils.ts AND import it in EVERY file that uses it:
+  // src/lib/utils.ts
+  import { clsx, type ClassValue } from 'clsx';
+  import { twMerge } from 'tailwind-merge';
+  export function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
+  
+  // In any component that uses cn():
+  import { cn } from '../lib/utils';   // or '@/lib/utils' or relative path
+  NEVER use cn() without importing it first. This is the #1 most common crash.
+
 GOLDEN RULE: Every import MUST match a real export. Every variable MUST be defined before use.
 Never use require(). Always use optional chaining for nested property access.
 
