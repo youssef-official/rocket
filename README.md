@@ -301,3 +301,4 @@ Credits reset daily at UTC midnight. First project generation costs 2 credits; e
 ## 📄 License
 
 Proprietary — All rights reserved.
+
