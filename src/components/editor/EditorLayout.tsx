@@ -68,8 +68,6 @@ interface EditorLayoutProps {
   currentVersion?: number | null;
   isChatMode?: boolean;
   suggestions?: Suggestion[];
-  isBackgroundProcessing?: boolean;
-  backgroundJobStatus?: string;
 }
 
 export const EditorLayout: React.FC<EditorLayoutProps> = ({
@@ -90,8 +88,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   currentVersion,
   isChatMode = false,
   suggestions = [],
-  isBackgroundProcessing = false,
-  backgroundJobStatus,
 }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
