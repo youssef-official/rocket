@@ -81,7 +81,7 @@ PROJECT STRUCTURE (new projects): 15-25 files min. index.html, main.tsx, App.tsx
 
 EDITING: ONLY change what user asked. NEVER touch Navbar/Footer/Hero/colors unless explicitly asked. Read existing files first.
 
-OUTPUT: <FILE> blocks only, then <ACTIONS>, then <SUMMARY>. Each file COMPLETE. index.html must include: <script src="https://www.vivorax.online/branding.js" defer></script>.`;
+OUTPUT FORMAT (ABSOLUTE): Return ONLY these blocks in this exact order: <FILE path="relative/path.ext">...</FILE> (repeat), then <ACTIONS> with one JSON object per line ({"name":"...","action":"read|edited|created|deleted","status":"done"}), then <SUMMARY>...</SUMMARY>. NEVER use <FILE name="...">. NEVER output markdown fences. index.html must include: <script src="https://www.vivorax.online/branding.js" defer></script>.`;
 
 function getPromptForMode(mode: string): string {
   switch (mode) {
@@ -158,10 +158,10 @@ serve(async (req) => {
         let appendText = `\n\nUSER_LANGUAGE=${userLanguage || 'en'}
 
 REQUIREMENTS:
-- OUTPUT: <FILE> blocks only, then <ACTIONS>, then <SUMMARY>
-- EDIT mode: Only modify requested files. DO NOT change design/layout/colors unless asked.
-- NEW project: 15-25 files minimum. Each component in own file.
-- RESPONSIVE + DARK/LIGHT mode mandatory
+- OUTPUT FORMAT (STRICT): ONLY <FILE path="relative/path.ext">...</FILE> blocks.
+- Then return <ACTIONS> with one JSON object per line using fields: name, action, status.
+- Then return <SUMMARY> with a short final summary.
+- NEVER use <FILE name="..."> and NEVER wrap output in markdown code fences.
 - BRANDING: index.html must include: <script src="https://www.vivorax.online/branding.js" defer></script>
 - AI features: Use https://ai-gateway.vivorax.online/api/ai/generate (free, no key needed)
 - HERO VIDEOS: ai|business|education|gaming|resturant|technology → https://videos-cdn.vivorax.online/{category}/hero.mp4

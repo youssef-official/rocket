@@ -325,9 +325,9 @@ const ProjectEditorRoute = () => {
                   jsonPathMatches.forEach(m => markFile(m.replace(/["':]/g, '')));
                 }
 
-                const fileBlockMatches = Array.from(fullResponse.matchAll(/<FILE\s+path=("|')([^"']+)\1>/g));
+                const fileBlockMatches = Array.from(fullResponse.matchAll(/<FILE\s+[^>]*(?:path|name)=(?:"([^"]+)"|'([^']+)')/gi));
                 if (fileBlockMatches.length > 0) {
-                  fileBlockMatches.forEach(m => markFile(m[2]));
+                  fileBlockMatches.forEach(m => markFile((m[1] ?? m[2] ?? '').trim()));
                 }
               },
               onComplete: async (response) => {
@@ -761,8 +761,8 @@ const ProjectEditorRoute = () => {
             const jsonPathMatches = fullResponse.match(/"([^"]+\.(tsx?|jsx?|css|json|html|md))"\s*:/g);
             if (jsonPathMatches) jsonPathMatches.forEach(m => markFile(m.replace(/["':]/g, '')));
 
-            const fileBlockMatches = Array.from(fullResponse.matchAll(/<FILE\s+path=("|')([^"']+)\1>/g));
-            if (fileBlockMatches.length > 0) fileBlockMatches.forEach(m => markFile(m[2]));
+            const fileBlockMatches = Array.from(fullResponse.matchAll(/<FILE\s+[^>]*(?:path|name)=(?:"([^"]+)"|'([^']+)')/gi));
+            if (fileBlockMatches.length > 0) fileBlockMatches.forEach(m => markFile((m[1] ?? m[2] ?? '').trim()));
           },
           onComplete: async (response) => {
             if (isCancelled.current) return;

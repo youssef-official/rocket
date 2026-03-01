@@ -12,7 +12,7 @@ const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 // Parse <FILE path="...">...</FILE> blocks
 function parseFileBlocks(text: string): Record<string, string> {
   const files: Record<string, string> = {};
-  const regex = /<FILE\s+path=("|')([^"']+)\1>([\s\S]*?)<\/FILE>/g;
+  const regex = /<FILE\s+[^>]*(?:path|name)=("|')([^"']+)\1>([\s\S]*?)<\/FILE>/gi;
   let match;
   while ((match = regex.exec(text)) !== null) {
     files[match[2]] = match[3].trim();
@@ -120,14 +120,16 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert React/Tailwind developer. Output ONLY <FILE path="...">...</FILE> blocks with complete file content. No explanations, no markdown, just FILE blocks.
 
-STRICT RULES:
-1. OUTPUT ONLY <FILE> blocks
-2. If EDIT request: only modify files related to the request
-3. If NEW project: generate 8-15+ files minimum
-4. PACKAGES: Only react, lucide-react, framer-motion, clsx, tailwind-merge
-5. RESPONSIVE: mobile-first responsive classes
-6. BRANDING: index.html MUST include: <script src="https://www.vivorax.online/branding.js" defer></script>
-7. DO NOT change design unless explicitly asked
+STRICT OUTPUT CONTRACT:
+1. OUTPUT ONLY <FILE path="...">...</FILE> blocks (NEVER use name=)
+2. After files, output <ACTIONS> with one JSON object per line (fields: name, action, status)
+3. End with <SUMMARY>short summary</SUMMARY>
+4. NEVER output markdown code fences or plain prose
+5. If NEW project: generate 8-15+ files minimum
+6. PACKAGES: Only react, lucide-react, framer-motion, clsx, tailwind-merge
+7. RESPONSIVE: mobile-first responsive classes
+8. BRANDING: index.html MUST include: <script src="https://www.vivorax.online/branding.js" defer></script>
+9. DO NOT change design unless explicitly asked
 
 DESIGN PROTECTION (CRITICAL - ZERO TOLERANCE):
 - NEVER modify Navbar, Footer, Hero, or any layout component UNLESS the user explicitly asked.
