@@ -313,47 +313,48 @@ export const AdminPanel: React.FC = () => {
   const totalCreditsUsed = data.transactions.reduce((sum: number, t: any) => sum + (Number(t.credits_used) || 0), 0);
   const tabTitle = navSections.flatMap(s => s.items).find(n => n.key === tab)?.label || 'Dashboard';
 
-  // ─── Classic Premium Design Tokens ─────────────────
-  const cardCls = "bg-[#111116] border border-stone-800/40 rounded-xl";
-  const inputCls = "w-full px-3.5 py-2.5 bg-[#0d0d12] border border-stone-800/50 rounded-lg text-sm text-stone-200 outline-none focus:ring-1 focus:ring-amber-600/40 focus:border-amber-600/40 transition-all placeholder:text-stone-600 font-sans";
-  const labelCls = "block text-[11px] font-semibold text-stone-500 uppercase tracking-widest mb-1.5 font-serif";
-  const btnPrimary = "px-5 py-2.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm";
+  // ─── Next-gen Design Tokens ─────────────────
+  const cardCls = "rounded-2xl border border-indigo-400/20 bg-slate-950/70 backdrop-blur-xl shadow-[0_18px_50px_-24px_rgba(59,130,246,.65)]";
+  const inputCls = "w-full px-3.5 py-2.5 bg-slate-900/70 border border-indigo-300/15 rounded-xl text-sm text-slate-100 outline-none focus:ring-2 focus:ring-cyan-400/35 focus:border-cyan-300/40 transition-all placeholder:text-slate-500 font-sans";
+  const labelCls = "block text-[11px] font-semibold text-slate-400 uppercase tracking-[0.22em] mb-1.5";
+  const btnPrimary = "px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-indigo-500 text-white text-sm font-semibold rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-[0_12px_25px_-12px_rgba(56,189,248,.8)]";
 
   return (
-    <div className="flex h-screen text-stone-300 overflow-hidden bg-[#0a0a0f]">
+    <div className="relative flex h-screen overflow-hidden bg-slate-950 text-slate-100">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(56,189,248,0.2),transparent_30%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.26),transparent_35%),radial-gradient(circle_at_50%_100%,rgba(34,197,94,0.16),transparent_30%)]" />
 
       {/* ═══════════════ MOBILE OVERLAY ═══════════════ */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/60 z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+        <div className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm md:hidden" onClick={() => setMobileMenuOpen(false)} />
       )}
 
       {/* ═══════════════ SIDEBAR ═══════════════ */}
       <aside className={`
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
         fixed md:relative z-50 md:z-10
-        ${sidebarCollapsed ? 'w-[68px]' : 'w-60'}
-        bg-[#0d0d12] border-r border-stone-800/30 flex flex-col h-screen flex-shrink-0 transition-all duration-300
+        ${sidebarCollapsed ? 'w-[74px]' : 'w-72'}
+        bg-slate-950/80 border-r border-indigo-400/15 backdrop-blur-2xl flex flex-col h-screen flex-shrink-0 transition-all duration-300
       `}>
 
         {/* Brand */}
-        <div className="h-16 flex items-center px-4 gap-3 flex-shrink-0 border-b border-stone-800/30">
-          <div className="w-8 h-8 rounded-lg bg-amber-600 flex items-center justify-center flex-shrink-0">
+        <div className="h-20 flex items-center px-5 gap-3 flex-shrink-0 border-b border-indigo-400/15">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-cyan-500/30">
             <Rocket size={14} className="text-white" />
           </div>
           {!sidebarCollapsed && (
             <div>
-              <span className="text-sm font-serif font-bold text-stone-100 tracking-tight">Admin</span>
-              <p className="text-[10px] text-stone-600 font-serif">Vivora X</p>
+              <span className="text-sm font-semibold text-white tracking-wide">Admin Nexus</span>
+              <p className="text-[11px] text-slate-400">Vivora X Operations</p>
             </div>
           )}
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-2 py-4 overflow-y-auto">
+        <nav className="flex-1 px-3 py-5 overflow-y-auto">
           {navSections.map((section) => (
             <div key={section.title} className="mb-5">
               {!sidebarCollapsed && (
-                <p className="text-[10px] font-serif font-bold text-stone-700 uppercase tracking-[0.2em] px-3 mb-2">{section.title}</p>
+                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.25em] px-3 mb-2">{section.title}</p>
               )}
               <div className="space-y-0.5">
                 {section.items.map(item => {
@@ -364,18 +365,18 @@ export const AdminPanel: React.FC = () => {
                       key={item.key}
                       onClick={() => { setTab(item.key); setMobileMenuOpen(false); }}
                       title={sidebarCollapsed ? item.label : undefined}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all duration-200
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all duration-200
                         ${active
-                          ? 'bg-amber-600/10 text-amber-500 font-medium border border-amber-600/15'
-                          : 'text-stone-500 hover:text-stone-300 hover:bg-stone-800/30'
+                          ? 'bg-gradient-to-r from-cyan-500/15 to-indigo-500/15 text-cyan-300 font-medium border border-cyan-300/20 shadow-[0_8px_20px_-14px_rgba(34,211,238,.9)]'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
                         }`}
                     >
-                      <Icon size={15} className={active ? 'text-amber-500' : 'text-stone-600'} />
+                      <Icon size={15} className={active ? 'text-cyan-300' : 'text-slate-500'} />
                       {!sidebarCollapsed && (
                         <>
                           <span className="flex-1 text-left">{item.label}</span>
                           {item.count !== undefined && item.count > 0 && (
-                            <span className={`text-[10px] font-mono min-w-[22px] text-center px-1.5 py-0.5 rounded ${active ? 'bg-amber-600/15 text-amber-400' : 'bg-stone-800/50 text-stone-600'}`}>
+                            <span className={`text-[10px] font-mono min-w-[22px] text-center px-1.5 py-0.5 rounded ${active ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-800/80 text-slate-500'}`}>
                               {item.count}
                             </span>
                           )}
@@ -390,15 +391,15 @@ export const AdminPanel: React.FC = () => {
         </nav>
 
         {/* Footer */}
-        <div className="p-2 border-t border-stone-800/30 space-y-0.5">
+        <div className="p-3 border-t border-indigo-400/15 space-y-1">
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] text-stone-600 hover:text-stone-400 hover:bg-stone-800/30 transition-all"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] text-slate-400 hover:text-white hover:bg-slate-900/80 transition-all"
           >
             {sidebarCollapsed ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
             {!sidebarCollapsed && <span>Collapse</span>}
           </button>
-          <button onClick={() => navigate('/')} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] text-stone-600 hover:text-stone-400 hover:bg-stone-800/30 transition-all">
+          <button onClick={() => navigate('/')} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] text-slate-400 hover:text-white hover:bg-slate-900/80 transition-all">
             <Home size={15} />
             {!sidebarCollapsed && <span>Back to App</span>}
           </button>
@@ -406,36 +407,36 @@ export const AdminPanel: React.FC = () => {
       </aside>
 
       {/* ═══════════════ MAIN ═══════════════ */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="relative z-10 flex-1 flex flex-col overflow-hidden">
 
         {/* Top bar */}
-        <header className="h-14 px-4 md:px-6 flex items-center justify-between border-b border-stone-800/30 bg-[#0d0d12]/80 backdrop-blur-sm flex-shrink-0">
+        <header className="h-16 px-4 md:px-8 flex items-center justify-between border-b border-indigo-400/15 bg-slate-950/60 backdrop-blur-xl flex-shrink-0">
           <div className="flex items-center gap-3">
-            <button onClick={() => setMobileMenuOpen(true)} className="md:hidden text-stone-500 hover:text-stone-300">
+            <button onClick={() => setMobileMenuOpen(true)} className="md:hidden text-slate-400 hover:text-white">
               <Menu size={20} />
             </button>
-            <div className="flex items-center gap-2 text-sm text-stone-600 font-serif">
-              <Settings2 size={13} />
-              <span className="text-stone-700">/</span>
-              <span className="text-stone-300 font-medium">{tabTitle}</span>
+            <div className="flex items-center gap-2 text-sm text-slate-400">
+              <Settings2 size={13} className="text-cyan-300" />
+              <span className="text-slate-600">/</span>
+              <span className="font-semibold text-white">{tabTitle}</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#0a0a0f] border border-stone-800/40 rounded-lg w-48">
-              <Search size={13} className="text-stone-600" />
-              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search..." className="bg-transparent border-none outline-none text-sm text-stone-300 w-full placeholder:text-stone-700" />
+            <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-slate-900/75 border border-indigo-300/15 rounded-xl w-56">
+              <Search size={13} className="text-slate-500" />
+              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search modules..." className="bg-transparent border-none outline-none text-sm text-slate-100 w-full placeholder:text-slate-500" />
             </div>
-            <div className="flex items-center gap-2 pl-3 border-l border-stone-800/30">
-              <div className="w-7 h-7 rounded-lg bg-amber-600/15 flex items-center justify-center text-xs font-serif font-bold text-amber-500 border border-amber-600/20">
+            <div className="flex items-center gap-2 pl-3 border-l border-indigo-400/15">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 flex items-center justify-center text-xs font-bold text-cyan-300 border border-cyan-300/20">
                 {displayName.charAt(0).toUpperCase()}
               </div>
-              <span className="text-sm font-serif text-stone-400 hidden md:inline">{displayName}</span>
+              <span className="text-sm text-slate-300 hidden md:inline">{displayName}</span>
             </div>
           </div>
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-7">
           <AnimatePresence mode="wait">
             <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
 
