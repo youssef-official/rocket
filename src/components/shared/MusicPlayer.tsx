@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Repeat, X, Plus, Heart, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Repeat, X, Plus, Heart, Trash2, ChevronRight, ChevronLeft } from 'lucide-react';
 
 interface Track {
   id: string;
@@ -211,19 +211,29 @@ export const FloatingMusicPlayer: React.FC = () => {
     <>
       <audio ref={audioRef} onEnded={handleEnded} onTimeUpdate={handleTimeUpdate} />
       
-      {/* Hide/Show Toggle Button - Right side middle */}
-      {isHidden && (
-        <motion.button
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 20 }}
-          onClick={() => setIsHidden(false)}
-          className="fixed right-4 top-1/2 -translate-y-1/2 z-[9999] w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 shadow-2xl shadow-purple-500/50 flex items-center justify-center hover:shadow-lg hover:shadow-purple-500/70 transition-all group"
-          title="Show Music Player"
-        >
-          <ChevronDown className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
-        </motion.button>
-      )}
+      {/* Vertical Sidebar Toggle - Left side */}
+      <AnimatePresence>
+        {isHidden && (
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            onClick={() => setIsHidden(false)}
+            className="fixed left-0 top-1/2 -translate-y-1/2 z-[9999] w-12 h-20 rounded-r-2xl bg-gradient-to-r from-purple-600 to-purple-500 shadow-2xl shadow-purple-500/50 flex items-center justify-center hover:shadow-lg hover:shadow-purple-500/70 transition-all group border-r-2 border-purple-400/30"
+            title="Show Music Player"
+          >
+            <motion.div
+              animate={{ x: [0, 4, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="flex flex-col items-center gap-1"
+            >
+              <Music className="w-5 h-5 text-white" />
+              <ChevronRight className="w-4 h-4 text-white/80" />
+            </motion.div>
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Main Player Container */}
       <motion.div
@@ -376,10 +386,10 @@ const MusicPanel: React.FC<MusicPanelProps> = ({
         </div>
         <div className="flex items-center gap-1">
           <button onClick={onHide} className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors" title="Hide Player">
-            <ChevronDown className="w-4 h-4 text-white/50" />
+            <ChevronLeft className="w-4 h-4 text-white/50" />
           </button>
           <button onClick={onCollapse} className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors" title="Collapse">
-            <ChevronUp className="w-4 h-4 text-white/50" />
+            <ChevronLeft className="w-4 h-4 text-white/50" />
           </button>
           <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-red-500/20 flex items-center justify-center transition-colors" title="Close">
             <X className="w-4 h-4 text-white/50" />
