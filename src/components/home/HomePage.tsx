@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Send, X, Image as ImageIcon, ChevronDown, Sparkles, BookOpen, CircleHelp, LogIn, Wand2, ArrowUpRight, Plus, Copy, Loader2, Mic, MicOff, Palette } from 'lucide-react';
 import { CelebrationEffects } from './CelebrationEffects';
-import { UserMenuDropdown } from '@/components/shared/UserMenuDropdown';
+import { UserMenuDropdown, getWallpaperSrc } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ProjectsSection } from './ProjectsSection';
@@ -71,17 +71,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   }, []);
 
   const getWallpaperUrl = (id: string): string => {
-    switch (id) {
-      case 'space': return spaceHeroBg;
-      case 'light': return lightHeroBg;
-      case 'nebula': return '/wallpapers/nebula.jpg';
-      case 'sunset': return '/wallpapers/sunset.jpg';
-      case 'forest': return '/wallpapers/forest.jpg';
-      case 'ocean': return '/wallpapers/ocean.jpg';
-      case 'mountains': return '/wallpapers/mountains.jpg';
-      case 'city-night': return '/wallpapers/city-night.jpg';
-      default: return spaceHeroBg;
-    }
+    return getWallpaperSrc(id);
   };
 
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
