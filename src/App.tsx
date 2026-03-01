@@ -1022,8 +1022,6 @@ const ProjectEditorRoute = () => {
       currentVersion={currentVersion}
       isChatMode={isChatMode}
       suggestions={suggestions}
-      isBackgroundProcessing={false}
-      backgroundJobStatus={undefined}
     />
   );
 };
