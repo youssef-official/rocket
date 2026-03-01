@@ -118,34 +118,7 @@ export const PromoCodeSection: React.FC<PromoCodeSectionProps> = ({ onApplyCode 
 
         {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
 
-        {/* Public promos */}
-        {publicPromos.length > 0 && !appliedCode && (
-          <div className="space-y-2">
-            <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold">Available offers</p>
-            {publicPromos.map(p => (
-              <motion.button
-                key={p.id}
-                whileHover={{ scale: 1.01 }}
-                onClick={() => {
-                  setInputCode(p.code);
-                  setError('');
-                }}
-                className="w-full flex items-center justify-between px-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] hover:border-purple-500/20 rounded-xl transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <Tag className="w-4 h-4 text-purple-400" />
-                  <span className="text-sm font-mono font-bold text-purple-400">{p.code}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-emerald-400">{p.discount_percent}% OFF</span>
-                  {p.target_plan !== 'all' && (
-                    <span className="text-[10px] px-2 py-0.5 bg-violet-500/10 text-violet-300 rounded-lg border border-violet-500/15 capitalize">{p.target_plan}</span>
-                  )}
-                </div>
-              </motion.button>
-            ))}
-          </div>
-        )}
+        {/* Public promos removed from here - shown on plan cards instead */}
       </div>
     </motion.div>
   );

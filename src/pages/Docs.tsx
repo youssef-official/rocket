@@ -12,7 +12,7 @@ import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { SEOHead } from '@/components/shared/SEOHead';
 
 import { useLanguage } from '@/contexts/LanguageContext';
-import spaceHeroBg from '@/assets/space-hero-bg.jpg';
+
 
 export const Docs: React.FC = () => {
   const { t, isRTL } = useLanguage();
@@ -504,14 +504,15 @@ export const Docs: React.FC = () => {
       />
       <div 
         className="flex-1 relative"
-        style={{
-          backgroundImage: `url(${spaceHeroBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-        }}
+        style={{ backgroundColor: '#0d0d0d' }}
       >
-        <div className="absolute inset-0 bg-black/70" />
+        {/* Noise overlay */}
+        <div 
+          className="absolute inset-0 pointer-events-none z-0"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E")`,
+          }}
+        />
 
         <header className="relative z-10 px-6 py-4 border-b border-white/10">
           <div className={`max-w-7xl mx-auto flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
