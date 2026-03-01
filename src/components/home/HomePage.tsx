@@ -59,9 +59,30 @@ export const HomePage: React.FC<HomePageProps> = ({
   const { userPlan, shouldShowUpgradeBanner, canUsePrivateProjects, getRemainingCredits } = useUserPlan();
   const isPaidPlan = userPlan?.plan && userPlan.plan !== 'free';
 
-  // Determine if dark mode is active
+  // Wallpaper selection (listens for changes from UserMenuDropdown)
+  const [wallpaperId, setWallpaperId] = useState(() => localStorage.getItem('vivora_wallpaper') || 'space');
+  
+  useEffect(() => {
+    const handler = () => {
+      setWallpaperId(localStorage.getItem('vivora_wallpaper') || 'space');
+    };
+    window.addEventListener('vivora-wallpaper-change', handler);
+    return () => window.removeEventListener('vivora-wallpaper-change', handler);
+  }, []);
+
+  const getWallpaperUrl = (id: string): string => {
+    switch (id) {
+      case 'space': return spaceHeroBg;
+      case 'light': return lightHeroBg;
+      case 'nebula': return '/wallpapers/nebula.jpg';
+      case 'sunset': return '/wallpapers/sunset.jpg';
+      case 'forest': return '/wallpapers/forest.jpg';
+      default: return spaceHeroBg;
+    }
+  };
+
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const heroBg = isDark ? spaceHeroBg : lightHeroBg;
+  const heroBg = getWallpaperUrl(wallpaperId);
 
   const [prompt, setPrompt] = useState(() => localStorage.getItem('vivora_home_prompt') || '');
   const [selectedFramework, setSelectedFramework] = useState('React');

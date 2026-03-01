@@ -20,7 +20,16 @@ interface UserMenuDropdownProps {
 const WALLPAPERS = [
   { id: 'space', label: 'Space', src: spaceHeroBg },
   { id: 'light', label: 'Light', src: lightHeroBg },
+  { id: 'nebula', label: 'Nebula', src: '/wallpapers/nebula.jpg' },
+  { id: 'sunset', label: 'Sunset', src: '/wallpapers/sunset.jpg' },
+  { id: 'forest', label: 'Forest', src: '/wallpapers/forest.jpg' },
 ];
+
+// Export for use in HomePage
+export const getWallpaperSrc = (id: string): string => {
+  const wp = WALLPAPERS.find(w => w.id === id);
+  return wp?.src || spaceHeroBg;
+};
 
 const WallpaperSelector: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -43,7 +52,7 @@ const WallpaperSelector: React.FC = () => {
         Wallpaper
       </button>
       {open && (
-        <div className="mt-1 p-2 bg-white/[0.06] rounded-xl border border-white/[0.08] space-y-1">
+        <div className="mt-1 p-2 bg-white/[0.06] rounded-xl border border-white/[0.08] space-y-1 max-h-48 overflow-y-auto">
           {WALLPAPERS.map(wp => (
             <button
               key={wp.id}
