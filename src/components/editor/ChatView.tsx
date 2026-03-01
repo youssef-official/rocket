@@ -680,6 +680,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const formatSummary = (raw: string): string => {
     let text = raw.replace(/^✅\s*/, '').trim();
     text = text.replace(/\s*✅\s*/g, '\n').trim();
+    // Strip markdown bold/italic markers like ** and __
+    text = text.replace(/\*\*([^*]*)\*\*/g, '$1');
+    text = text.replace(/__([^_]*)__/g, '$1');
+    text = text.replace(/\*([^*]*)\*/g, '$1');
+    // Strip ### headings
+    text = text.replace(/^#{1,6}\s+/gm, '');
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
     return lines.join('\n');
   };

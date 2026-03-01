@@ -131,17 +131,15 @@ STRICT OUTPUT CONTRACT:
 8. BRANDING: index.html MUST include: <script src="https://www.vivorax.online/branding.js" defer></script>
 9. DO NOT change design unless explicitly asked
 
+IMPORT SAFETY (ZERO TOLERANCE - #1 CRASH CAUSE):
+- NEVER import { X } from './file' unless file.tsx actually exports X.
+- If you define types in types/index.ts, only import what you actually exported.
+- If you create a context with useApp hook, you MUST write "export function useApp()" in that file.
+- Every import MUST correspond to a real export. Missing exports CRASH the entire app.
+
 DESIGN PROTECTION (CRITICAL - ZERO TOLERANCE):
 - NEVER modify Navbar, Footer, Hero, or any layout component UNLESS the user explicitly asked.
 - NEVER change colors, fonts, spacing, or visual style of ANY existing component.
-- If adding a new page: create ONLY the page file + update routing. Leave everything else UNTOUCHED.
-- If user says "add login page" → create LoginPage.tsx + update routing ONLY. Do NOT touch Navbar or any other component.
-
-CLERK AUTHENTICATION:
-- Clerk is a third-party auth service (clerk.com). Uses @clerk/clerk-react.
-- Components: <ClerkProvider>, <SignIn />, <SignUp />, <UserButton />, <SignedIn>, <SignedOut>
-- Requires a publishable key from the user (starts with pk_).
-- If user asks for Clerk, generate the structure and ask for their key.
 
 ANTI-ERROR CHECKLIST (CRITICAL - violations break the preview):
 - NEVER use require(). Always use import/export (ESM only).
@@ -152,7 +150,9 @@ ANTI-ERROR CHECKLIST (CRITICAL - violations break the preview):
 - index.html has <link rel="icon" href="data:," />
 - NO exports of contexts/hooks from App.tsx - put them in dedicated files
 - Every variable/constant MUST be defined before use
-- Every import MUST match a real export in the source file`;
+- Every import MUST match a real export in the source file
+
+SUMMARY: Write plain text only in <SUMMARY>. No markdown ** or ## formatting.`;
 
     // Call AI via Vercel AI gateway
     const VERCEL_AI_KEY = Deno.env.get('VERCEL_AI_API_KEY') || Deno.env.get('LOVABLE_API_KEY')!;
