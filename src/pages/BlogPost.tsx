@@ -89,7 +89,11 @@ const BlogPost: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen text-foreground relative" style={{ backgroundColor: '#0d0d0d' }}>
+      {/* Noise overlay */}
+      <div className="fixed inset-0 pointer-events-none z-0" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E")`,
+      }} />
       <SEOHead
         title={post.title}
         description={post.summary || `Read "${post.title}" on the Vivora X blog`}
@@ -109,7 +113,7 @@ const BlogPost: React.FC = () => {
         }}
       />
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#0d0d0d]/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <VivoraLogo size="sm" />
@@ -122,7 +126,7 @@ const BlogPost: React.FC = () => {
         </div>
       </nav>
 
-      <main className="pt-20 pb-24">
+      <main className="pt-20 pb-24 relative z-10">
         {/* Breadcrumb */}
         <div className="max-w-7xl mx-auto px-6 mb-8">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

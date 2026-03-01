@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, X, Zap, Crown, Rocket, ArrowLeft, Globe, ImageOff, Image, Shield, Star, ChevronRight, Github } from 'lucide-react';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
@@ -8,7 +8,14 @@ import { PLAN_CONFIG, type PlanType } from '@/hooks/useUserPlan';
 import { PayPalButton } from '@/components/shared/PayPalButton';
 import { SEOHead } from '@/components/shared/SEOHead';
 import { PromoCodeSection } from '@/components/pricing/PromoCodeSection';
+import { supabase } from '@/integrations/supabase/client';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
+
+interface PublicPromo {
+  code: string;
+  discount_percent: number;
+  target_plan: string;
+}
 
 const plans: { key: PlanType; icon: React.ReactNode; color: string; gradient: string; popular?: boolean }[] = [
   { key: 'free', icon: <Zap className="w-6 h-6" />, color: 'gray', gradient: 'from-slate-500/20 to-slate-600/10' },
@@ -19,6 +26,25 @@ const plans: { key: PlanType; icon: React.ReactNode; color: string; gradient: st
 export const Pricing: React.FC = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const [publicPromos, setPublicPromos] = useState<PublicPromo[]>([]);
+
+  useEffect(() => {
+    const fetchPublicPromos = async () => {
+      const { data } = await supabase
+        .from('promo_codes')
+        .select('code, discount_percent, target_plan, is_public, expires_at')
+        .eq('is_public', true);
+      if (data) {
+        const valid = data.filter(p => !p.expires_at || new Date(p.expires_at) > new Date());
+        setPublicPromos(valid);
+      }
+    };
+    fetchPublicPromos();
+  }, []);
+
+  const getPromoForPlan = (planKey: PlanType): PublicPromo | undefined => {
+    return publicPromos.find(p => p.target_plan === planKey || p.target_plan === 'all');
+  };
 
   return (
     <div
@@ -74,15 +100,16 @@ export const Pricing: React.FC = () => {
           <div className="grid md:grid-cols-3 gap-5 mb-16">
             {plans.map(({ key, icon, color, gradient, popular }, index) => {
               const config = PLAN_CONFIG[key];
+              const promo = getPromoForPlan(key);
               const features = [
                 { label: 'Image Upload', v: key !== 'free', icon: key !== 'free' ? Image : ImageOff },
                 { label: 'Code Editing', v: config.features.codeEditing },
                 { label: 'Watermark Removal', v: config.features.watermarkRemoval },
                 { label: 'ZIP Export', v: config.features.zipExport },
-	                { label: 'Private Projects', v: config.features.privateProjects },
-	                { label: 'Priority Access', v: config.features.priorityAccess },
-	                { label: 'GitHub Push', v: config.features.githubPush },
-	              ];
+                { label: 'Private Projects', v: config.features.privateProjects },
+                { label: 'Priority Access', v: config.features.priorityAccess },
+                { label: 'GitHub Push', v: config.features.githubPush },
+              ];
 
               return (
                 <motion.div
@@ -95,7 +122,6 @@ export const Pricing: React.FC = () => {
                     popular ? 'md:-mt-4 md:mb-0' : ''
                   }`}
                 >
-                  {/* Glow effect for popular */}
                   {popular && (
                     <div className="absolute -inset-[1px] bg-gradient-to-b from-purple-500 via-pink-500 to-purple-500 rounded-2xl opacity-70 blur-[1px]" />
                   )}
@@ -128,12 +154,27 @@ export const Pricing: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Price */}
+                      {/* Price with promo */}
                       <div className="mb-6">
                         <div className="flex items-baseline gap-1">
-                          <span className="text-4xl font-extrabold text-white tracking-tight">${config.price}</span>
+                          {promo && key !== 'free' ? (
+                            <>
+                              <span className="text-lg text-white/40 line-through">${config.price}</span>
+                              <span className="text-4xl font-extrabold text-white tracking-tight">
+                                ${(config.price * (1 - promo.discount_percent / 100)).toFixed(0)}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-4xl font-extrabold text-white tracking-tight">${config.price}</span>
+                          )}
                           <span className="text-white/40 text-sm font-medium">/{t('upgrade.month')}</span>
                         </div>
+                        {promo && key !== 'free' && (
+                          <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/20">
+                            <span className="text-[11px] font-bold text-emerald-400">{promo.discount_percent}% OFF</span>
+                            <span className="text-[10px] text-emerald-400/60 font-mono">• {promo.code}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Credits Stats */}
@@ -291,7 +332,7 @@ export const Pricing: React.FC = () => {
               </div>
           </motion.div>
 
-          {/* Promo input only (public promos shown on cards) */}
+          {/* Promo input */}
           <PromoCodeSection />
 
           {/* FAQ */}

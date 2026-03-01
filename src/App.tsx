@@ -14,7 +14,7 @@ import { ThemeInitializer } from "@/components/shared/ThemeInitializer";
 import { useProjects } from "@/hooks/useProjects";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useVersions } from "@/hooks/useVersions";
-// Background generation removed
+import { FloatingMusicPlayer } from "@/components/shared/MusicPlayer";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -1260,6 +1260,7 @@ const App = () => (
       <AuthProvider>
         <TooltipProvider>
           <ThemeInitializer />
+          <FloatingMusicPlayer />
           <Toaster />
           <Sonner />
           <BrowserRouter>

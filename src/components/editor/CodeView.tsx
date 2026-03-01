@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Editor, { type Monaco } from '@monaco-editor/react';
-import { ChevronRight, ChevronDown, File, Folder, FileCode, FileJson, FileText, Loader2, CheckCircle2, Hash, Image, Settings2, Lock } from 'lucide-react';
+import { ChevronRight, ChevronDown, File, Folder, FileCode, FileJson, FileText, Loader2, CheckCircle2, Hash, Image, Settings2, Lock, Save, Undo2, Redo2 } from 'lucide-react';
 import type { ProjectFile } from '@/types';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
 
@@ -74,26 +74,18 @@ function parseStreamingFiles(content: string): { path: string; content: string; 
   if (jsonMatch) {
     try {
       let jsonStr = jsonMatch[1].trim();
-      
-      // Remove trailing commas before closing braces or brackets
       jsonStr = jsonStr.replace(/,\s*([}\]])/g, '$1');
-
       if (!jsonStr.endsWith('}')) {
         jsonStr = jsonStr + '"}}}';
       }
       const parsed = JSON.parse(jsonStr);
       if (parsed.files) {
         for (const [path, fileContent] of Object.entries(parsed.files)) {
-          files.push({ 
-            path, 
-            content: fileContent as string, 
-            complete: jsonMatch[2] === '```' 
-          });
+          files.push({ path, content: fileContent as string, complete: jsonMatch[2] === '```' });
         }
         return files;
       }
     } catch {
-      // Partial JSON, extract what we can
       const fileMatches = jsonMatch[1].matchAll(/"([^"]+)":\s*"((?:[^"\\]|\\.)*)(")?/g);
       for (const match of fileMatches) {
         const path = match[1];
@@ -106,7 +98,7 @@ function parseStreamingFiles(content: string): { path: string; content: string; 
     }
   }
 
-  // Fallback: extract <FILE path|name="..."> blocks from streaming XML responses
+  // Fallback: extract <FILE path|name="..."> blocks
   const fileTagRegex = /<FILE\s+[^>]*(?:path|name)=(?:"([^"]+)"|'([^']+)'|([^\s>]+))[^>]*>/gi;
   const fileTagMatches = Array.from(content.matchAll(fileTagRegex));
   if (fileTagMatches.length > 0) {
@@ -124,34 +116,31 @@ function parseStreamingFiles(content: string): { path: string; content: string; 
       const fileContent = content.slice(current.contentStart, endIdx).trim();
       files.push({ path: current.path, content: fileContent, complete: closeIdx !== -1 });
     }
-
     return files;
   }
 
-  // Fallback: extract markdown code blocks with file paths
+  // Fallback: markdown code blocks
   const codeBlockRegex = /```(\w+)?\s*(?:\/\/\s*)?(\S+\.\w+)\n([\s\S]*?)(```|$)/g;
   let match;
   while ((match = codeBlockRegex.exec(content)) !== null) {
-    const path = match[2];
-    const fileContent = match[3];
-    const complete = match[4] === '```';
-    files.push({ path, content: fileContent, complete });
+    files.push({ path: match[2], content: match[3], complete: match[4] === '```' });
   }
 
   return files;
 }
 
 export const CodeView: React.FC<CodeViewProps> = ({ 
-  files, 
-  selectedFile, 
-  onSelectFile, 
-  onUpdateFile,
-  streamingContent = '',
-  isGenerating = false,
+  files, selectedFile, onSelectFile, onUpdateFile, streamingContent = '', isGenerating = false,
 }) => {
   const { userPlan } = useUserPlan();
   const canEditCode = userPlan ? (PLAN_CONFIG[userPlan.plan] || PLAN_CONFIG.free).features.codeEditing : false;
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['src']));
+
+  // Pending edits buffer (for Save button)
+  const [pendingEdits, setPendingEdits] = useState<Record<string, string>>({});
+  const [undoStack, setUndoStack] = useState<{ path: string; content: string }[]>([]);
+  const [redoStack, setRedoStack] = useState<{ path: string; content: string }[]>([]);
+  const hasPendingChanges = Object.keys(pendingEdits).length > 0;
 
   // Parse streaming files
   const streamingFiles = useMemo(() => {
@@ -162,48 +151,31 @@ export const CodeView: React.FC<CodeViewProps> = ({
   // Combine existing files with streaming files
   const allFiles = useMemo(() => {
     const fileMap = new Map<string, { content: string; isNew: boolean; complete: boolean }>();
-    
-    // Add existing files
     Object.entries(files).forEach(([path, file]) => {
       fileMap.set(path, { content: file.content, isNew: false, complete: true });
     });
-    
-    // Add/update with streaming files
     streamingFiles.forEach(({ path, content, complete }) => {
       const existing = fileMap.get(path);
-      fileMap.set(path, { 
-        content, 
-        isNew: !existing, 
-        complete 
-      });
+      fileMap.set(path, { content, isNew: !existing, complete });
     });
-    
     return fileMap;
   }, [files, streamingFiles]);
 
-  // Auto-select first new file when streaming starts, and update as new files are created
   useEffect(() => {
     if (streamingFiles.length > 0) {
-      // If no file selected, select the first streaming file
       if (!selectedFile) {
         const firstNewFile = streamingFiles[0];
-        if (firstNewFile) {
-          onSelectFile(firstNewFile.path);
-        }
+        if (firstNewFile) onSelectFile(firstNewFile.path);
       } else {
-        // If current file is complete, switch to the latest incomplete file
         const currentFileData = streamingFiles.find(f => f.path === selectedFile);
         if (currentFileData?.complete) {
           const incompleteFile = streamingFiles.find(f => !f.complete);
-          if (incompleteFile) {
-            onSelectFile(incompleteFile.path);
-          }
+          if (incompleteFile) onSelectFile(incompleteFile.path);
         }
       }
     }
   }, [streamingFiles, selectedFile, onSelectFile]);
   
-  // Expand folders containing new files
   useEffect(() => {
     if (streamingFiles.length > 0) {
       const newFolders = new Set(expandedFolders);
@@ -241,46 +213,100 @@ export const CodeView: React.FC<CodeViewProps> = ({
     return 'plaintext';
   };
 
-  // Build folder tree from combined files
   const buildTree = () => {
     const tree: Record<string, any> = {};
-    
     Array.from(allFiles.keys()).forEach(path => {
       const parts = path.split('/');
       let current = tree;
       const fileData = allFiles.get(path)!;
-      
       parts.forEach((part, i) => {
         if (i === parts.length - 1) {
-          current[part] = { 
-            type: 'file', 
-            path,
-            isNew: fileData.isNew,
-            complete: fileData.complete,
-          };
+          current[part] = { type: 'file', path, isNew: fileData.isNew, complete: fileData.complete };
         } else {
-          if (!current[part]) {
-            current[part] = { type: 'folder', children: {} };
-          }
+          if (!current[part]) current[part] = { type: 'folder', children: {} };
           current = current[part].children;
         }
       });
     });
-
     return tree;
   };
 
   const toggleFolder = (path: string) => {
     setExpandedFolders(prev => {
       const next = new Set(prev);
-      if (next.has(path)) {
-        next.delete(path);
-      } else {
-        next.add(path);
-      }
+      if (next.has(path)) next.delete(path); else next.add(path);
       return next;
     });
   };
+
+  // Handle editor changes - buffer to pending edits
+  const handleEditorChange = useCallback((value: string | undefined) => {
+    if (!selectedFile || !canEditCode || !value) return;
+    // Push current content to undo stack
+    const currentContent = files[selectedFile]?.content || '';
+    if (!pendingEdits[selectedFile]) {
+      setUndoStack(prev => [...prev.slice(-50), { path: selectedFile, content: currentContent }]);
+      setRedoStack([]);
+    }
+    setPendingEdits(prev => ({ ...prev, [selectedFile]: value }));
+  }, [selectedFile, canEditCode, files, pendingEdits]);
+
+  // Save all pending changes
+  const handleSave = useCallback(() => {
+    Object.entries(pendingEdits).forEach(([path, content]) => {
+      onUpdateFile(path, content);
+    });
+    setPendingEdits({});
+  }, [pendingEdits, onUpdateFile]);
+
+  // Undo
+  const handleUndo = useCallback(() => {
+    if (undoStack.length === 0) return;
+    const lastUndo = undoStack[undoStack.length - 1];
+    setUndoStack(prev => prev.slice(0, -1));
+    const currentContent = pendingEdits[lastUndo.path] ?? files[lastUndo.path]?.content ?? '';
+    setRedoStack(prev => [...prev, { path: lastUndo.path, content: currentContent }]);
+    setPendingEdits(prev => {
+      const next = { ...prev };
+      if (lastUndo.content === files[lastUndo.path]?.content) {
+        delete next[lastUndo.path];
+      } else {
+        next[lastUndo.path] = lastUndo.content;
+      }
+      return next;
+    });
+  }, [undoStack, pendingEdits, files]);
+
+  // Redo
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0) return;
+    const lastRedo = redoStack[redoStack.length - 1];
+    setRedoStack(prev => prev.slice(0, -1));
+    const currentContent = pendingEdits[lastRedo.path] ?? files[lastRedo.path]?.content ?? '';
+    setUndoStack(prev => [...prev, { path: lastRedo.path, content: currentContent }]);
+    setPendingEdits(prev => ({ ...prev, [lastRedo.path]: lastRedo.content }));
+  }, [redoStack, pendingEdits, files]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!canEditCode) return;
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [canEditCode, handleSave, handleUndo, handleRedo]);
 
   const renderTree = (node: Record<string, any>, parentPath = '', depth = 0) => {
     const entries = Object.entries(node).sort((a, b) => {
@@ -307,21 +333,13 @@ export const CodeView: React.FC<CodeViewProps> = ({
               className="w-full flex items-center gap-2 py-1.5 px-3 text-left transition-colors duration-100 hover:bg-[#161b22]"
               style={{ paddingLeft: `${depth * 12 + 12}px` }}
             >
-              {isExpanded ? (
-                <ChevronDown className="w-3.5 h-3.5" style={{ color: '#484f58' }} />
-              ) : (
-                <ChevronRight className="w-3.5 h-3.5" style={{ color: '#484f58' }} />
-              )}
+              {isExpanded ? <ChevronDown className="w-3.5 h-3.5" style={{ color: '#484f58' }} /> : <ChevronRight className="w-3.5 h-3.5" style={{ color: '#484f58' }} />}
               <Folder className="w-3.5 h-3.5" style={{ color: isExpanded ? '#58a6ff' : '#8b949e' }} />
               <span className="text-[13px] truncate" style={{ color: '#e1e4e8' }}>{name}</span>
             </button>
             <AnimatePresence>
               {isExpanded && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                >
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
                   {renderTree((data as any).children, fullPath, depth + 1)}
                 </motion.div>
               )}
@@ -346,16 +364,10 @@ export const CodeView: React.FC<CodeViewProps> = ({
           onMouseLeave={(e) => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
         >
           <FileIcon className="w-3.5 h-3.5" style={{
-            color: isNew && !complete ? '#d29922' :
-              isNew ? '#3fb950' :
-              isSelected ? '#58a6ff' : '#8b949e'
+            color: isNew && !complete ? '#d29922' : isNew ? '#3fb950' : isSelected ? '#58a6ff' : '#8b949e'
           }} />
           <span className="text-[13px] truncate flex-1" style={{ color: isSelected ? '#e1e4e8' : '#c9d1d9' }}>{name}</span>
-          
-          {isNew && !complete && (
-            <Loader2 className="w-3 h-3 animate-spin" style={{ color: '#d29922' }} />
-          )}
-          
+          {isNew && !complete && <Loader2 className="w-3 h-3 animate-spin" style={{ color: '#d29922' }} />}
           {isNew && complete && (
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
               <CheckCircle2 className="w-3 h-3" style={{ color: '#3fb950' }} />
@@ -367,30 +379,24 @@ export const CodeView: React.FC<CodeViewProps> = ({
   };
 
   const tree = buildTree();
-  
-  // Get current file content (from streaming or existing)
   const currentFileData = selectedFile ? allFiles.get(selectedFile) : null;
   const currentFile = selectedFile && files[selectedFile] ? files[selectedFile] : null;
-  const displayContent = currentFileData?.content || currentFile?.content || '';
+  // Show pending edit content if exists, otherwise show file content
+  const displayContent = (selectedFile && pendingEdits[selectedFile]) || currentFileData?.content || currentFile?.content || '';
   const fileName = selectedFile?.split('/').pop() || '';
+  const isFileModified = selectedFile ? !!pendingEdits[selectedFile] : false;
 
   return (
     <div className="flex h-full" style={{ background: '#0d1117' }}>
       {/* File Tree */}
       <div className="w-64 flex flex-col" style={{ background: '#010409', borderRight: '1px solid #21262d' }}>
         <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #21262d' }}>
-          <h3 className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#8b949e' }}>
-            Explorer
-          </h3>
-          {isGenerating && (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: '#79b8ff' }} />
-          )}
+          <h3 className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#8b949e' }}>Explorer</h3>
+          {isGenerating && <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: '#79b8ff' }} />}
         </div>
         <div className="flex-1 overflow-y-auto py-1.5 no-scrollbar">
           {allFiles.size === 0 ? (
-            <div className="p-4 text-center text-xs" style={{ color: '#484f58' }}>
-              No files generated yet
-            </div>
+            <div className="p-4 text-center text-xs" style={{ color: '#484f58' }}>No files generated yet</div>
           ) : (
             renderTree(tree)
           )}
@@ -403,18 +409,45 @@ export const CodeView: React.FC<CodeViewProps> = ({
           <>
             <div className="px-4 py-2 flex items-center gap-2" style={{ background: '#161b22', borderBottom: '1px solid #21262d' }}>
               <File className="w-3.5 h-3.5" style={{ color: '#8b949e' }} />
-              <span className="text-xs font-medium" style={{ color: '#e1e4e8', fontFamily: "'SF Mono', 'Fira Code', monospace" }}>{selectedFile}</span>
+              <span className="text-xs font-medium flex items-center gap-1.5" style={{ color: '#e1e4e8', fontFamily: "'SF Mono', 'Fira Code', monospace" }}>
+                {selectedFile}
+                {isFileModified && <span className="w-2 h-2 rounded-full bg-yellow-400" />}
+              </span>
               {currentFileData?.isNew && !currentFileData?.complete && (
                 <span className="text-[10px] flex items-center gap-1 ml-auto font-medium" style={{ color: '#d29922' }}>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Generating...
+                  <Loader2 className="w-3 h-3 animate-spin" />Generating...
                 </span>
               )}
               {currentFileData?.isNew && currentFileData?.complete && (
                 <span className="text-[10px] flex items-center gap-1 ml-auto font-medium" style={{ color: '#3fb950' }}>
-                  <CheckCircle2 className="w-3 h-3" />
-                  New
+                  <CheckCircle2 className="w-3 h-3" />New
                 </span>
+              )}
+
+              {/* Save / Undo / Redo buttons for paid plans */}
+              {canEditCode && (
+                <div className="flex items-center gap-1 ml-auto">
+                  <button onClick={handleUndo} disabled={undoStack.length === 0}
+                    className="w-7 h-7 rounded-md flex items-center justify-center transition-colors disabled:opacity-20 hover:bg-white/10"
+                    title="Undo (Ctrl+Z)">
+                    <Undo2 className="w-3.5 h-3.5" style={{ color: '#8b949e' }} />
+                  </button>
+                  <button onClick={handleRedo} disabled={redoStack.length === 0}
+                    className="w-7 h-7 rounded-md flex items-center justify-center transition-colors disabled:opacity-20 hover:bg-white/10"
+                    title="Redo (Ctrl+Y)">
+                    <Redo2 className="w-3.5 h-3.5" style={{ color: '#8b949e' }} />
+                  </button>
+                  <button onClick={handleSave} disabled={!hasPendingChanges}
+                    className={`ml-1 px-3 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all ${
+                      hasPendingChanges
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30'
+                        : 'bg-white/5 text-white/20 border border-white/5'
+                    }`}
+                    title="Save (Ctrl+S)">
+                    <Save className="w-3 h-3" />
+                    Save
+                  </button>
+                </div>
               )}
             </div>
             <div className="flex-1 relative">
@@ -422,11 +455,7 @@ export const CodeView: React.FC<CodeViewProps> = ({
                 height="100%"
                 language={getLanguage(fileName)}
                 value={displayContent}
-                onChange={(value) => {
-                  if (currentFile && canEditCode) {
-                    onUpdateFile(selectedFile, value || '');
-                  }
-                }}
+                onChange={handleEditorChange}
                 theme="github-dark-custom"
                 options={{
                   minimap: { enabled: false },

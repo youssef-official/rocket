@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Settings2, LogOut, Moon, Sun, Monitor, Coins, Crown, Sparkles, ImageIcon } from 'lucide-react';
+import { User as UserIcon, Settings2, LogOut, Moon, Sun, Monitor, Coins, Crown, Sparkles, ImageIcon, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '@/types';
 import { useThemePreference } from '@/hooks/useThemePreference';
@@ -26,6 +26,9 @@ const WALLPAPERS = [
   { id: 'ocean', label: 'Ocean', src: '/wallpapers/ocean.jpg' },
   { id: 'mountains', label: 'Mountains', src: '/wallpapers/mountains.jpg' },
   { id: 'city-night', label: 'City Night', src: '/wallpapers/city-night.jpg' },
+  { id: 'aurora', label: 'Aurora', src: '/wallpapers/aurora.jpg' },
+  { id: 'desert', label: 'Desert', src: '/wallpapers/desert.jpg' },
+  { id: 'tropical', label: 'Tropical', src: '/wallpapers/tropical.jpg' },
 ];
 
 // Export for use in HomePage
@@ -288,6 +291,20 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
 
               {/* Wallpaper */}
               <WallpaperSelector />
+
+              {/* Music */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.dispatchEvent(new CustomEvent('vivora-music-toggle', { detail: 'open' }));
+                }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
+              >
+                <Music className="w-4 h-4" />
+                Music
+              </button>
 
               {/* Billing */}
               <button
