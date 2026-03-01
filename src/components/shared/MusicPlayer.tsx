@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Repeat, X, Plus, Heart, Trash2, ChevronUp } from 'lucide-react';
+import { Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Repeat, X, Plus, Heart, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface Track {
   id: string;
@@ -9,8 +9,15 @@ interface Track {
   favorite: boolean;
 }
 
+interface PlayerPosition {
+  x: number;
+  y: number;
+}
+
 const STORAGE_KEY = 'vivora_music_playlist';
 const PLAYING_KEY = 'vivora_music_playing';
+const POSITION_KEY = 'vivora_music_position';
+const HIDDEN_KEY = 'vivora_music_hidden';
 
 const loadPlaylist = (): Track[] => {
   try {
@@ -23,9 +30,21 @@ const savePlaylist = (tracks: Track[]) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tracks));
 };
 
+const loadPosition = (): PlayerPosition => {
+  try {
+    const saved = localStorage.getItem(POSITION_KEY);
+    return saved ? JSON.parse(saved) : { x: 16, y: 16 };
+  } catch { return { x: 16, y: 16 }; }
+};
+
+const savePosition = (pos: PlayerPosition) => {
+  localStorage.setItem(POSITION_KEY, JSON.stringify(pos));
+};
+
 // Floating mini player that appears on all pages
 export const FloatingMusicPlayer: React.FC = () => {
   const [isEnabled, setIsEnabled] = useState(() => localStorage.getItem(PLAYING_KEY) === 'true');
+  const [isHidden, setIsHidden] = useState(() => localStorage.getItem(HIDDEN_KEY) === 'true');
   const [expanded, setExpanded] = useState(false);
   const [tracks, setTracks] = useState<Track[]>(loadPlaylist);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -34,9 +53,21 @@ export const FloatingMusicPlayer: React.FC = () => {
   const [muted, setMuted] = useState(false);
   const [repeat, setRepeat] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [position, setPosition] = useState<PlayerPosition>(loadPosition);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const audioRef = useRef<HTMLAudioElement>(null);
+  const playerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { savePlaylist(tracks); }, [tracks]);
+
+  useEffect(() => {
+    savePosition(position);
+  }, [position]);
+
+  useEffect(() => {
+    localStorage.setItem(HIDDEN_KEY, isHidden ? 'true' : 'false');
+  }, [isHidden]);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -45,6 +76,7 @@ export const FloatingMusicPlayer: React.FC = () => {
         setIsEnabled(true);
         localStorage.setItem(PLAYING_KEY, 'true');
         setExpanded(true);
+        setIsHidden(false);
       }
     };
     window.addEventListener('vivora-music-toggle', handler);
@@ -134,15 +166,80 @@ export const FloatingMusicPlayer: React.FC = () => {
     setIsPlaying(false);
     setIsEnabled(false);
     setExpanded(false);
+    setIsHidden(false);
     localStorage.setItem(PLAYING_KEY, 'false');
   };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) {
+      return;
+    }
+    setIsDragging(true);
+    setDragOffset({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y,
+    });
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      setPosition({
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y,
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset]);
 
   if (!isEnabled) return null;
 
   return (
     <>
       <audio ref={audioRef} onEnded={handleEnded} onTimeUpdate={handleTimeUpdate} />
-      <div className="fixed top-4 left-4 z-[9998]">
+      
+      {/* Hide/Show Toggle Button - Right side middle */}
+      {isHidden && (
+        <motion.button
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          onClick={() => setIsHidden(false)}
+          className="fixed right-4 top-1/2 -translate-y-1/2 z-[9999] w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 shadow-2xl shadow-purple-500/50 flex items-center justify-center hover:shadow-lg hover:shadow-purple-500/70 transition-all group"
+          title="Show Music Player"
+        >
+          <ChevronDown className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+        </motion.button>
+      )}
+
+      {/* Main Player Container */}
+      <motion.div
+        ref={playerRef}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0, opacity: 0 }}
+        style={{
+          position: 'fixed',
+          left: `${position.x}px`,
+          top: `${position.y}px`,
+          zIndex: 9998,
+          cursor: isDragging ? 'grabbing' : 'grab',
+        }}
+        className="select-none"
+      >
         <AnimatePresence mode="wait">
           {!expanded ? (
             <motion.button
@@ -150,6 +247,7 @@ export const FloatingMusicPlayer: React.FC = () => {
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
+              onMouseDown={handleMouseDown}
               onClick={() => setExpanded(true)}
               className="relative w-12 h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl shadow-black/30 flex items-center justify-center group hover:bg-white/15 transition-all"
             >
@@ -193,6 +291,9 @@ export const FloatingMusicPlayer: React.FC = () => {
               toggleFavorite={toggleFavorite}
               onCollapse={() => setExpanded(false)}
               onClose={closePlayer}
+              onHide={() => setIsHidden(true)}
+              onMouseDown={handleMouseDown}
+              isDragging={isDragging}
               playTrack={(idx: number) => {
                 setCurrentIndex(idx);
                 setTimeout(() => {
@@ -205,7 +306,7 @@ export const FloatingMusicPlayer: React.FC = () => {
             />
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     </>
   );
 };
@@ -230,13 +331,16 @@ interface MusicPanelProps {
   toggleFavorite: (id: string) => void;
   onCollapse: () => void;
   onClose: () => void;
+  onHide: () => void;
+  onMouseDown: (e: React.MouseEvent) => void;
+  isDragging: boolean;
   playTrack: (idx: number) => void;
 }
 
 const MusicPanel: React.FC<MusicPanelProps> = ({
   tracks, currentIndex, isPlaying, togglePlay, nextTrack, prevTrack,
   volume, setVolume, muted, setMuted, repeat, setRepeat, progress,
-  addTrack, removeTrack, toggleFavorite, onCollapse, onClose, playTrack,
+  addTrack, removeTrack, toggleFavorite, onCollapse, onClose, onHide, onMouseDown, isDragging, playTrack,
 }) => {
   const [newUrl, setNewUrl] = useState('');
   const [newTitle, setNewTitle] = useState('');
@@ -261,19 +365,23 @@ const MusicPanel: React.FC<MusicPanelProps> = ({
       animate={{ scale: 1, opacity: 1, y: 0 }}
       exit={{ scale: 0.8, opacity: 0, y: -20 }}
       transition={{ type: 'spring', damping: 25 }}
-      className="w-80 bg-black/60 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden"
+      onMouseDown={onMouseDown}
+      className={`w-80 bg-black/60 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden ${isDragging ? 'opacity-80' : ''}`}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+      {/* Header - Draggable */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 cursor-grab active:cursor-grabbing" onMouseDown={onMouseDown}>
         <div className="flex items-center gap-2">
           <Music className="w-4 h-4 text-purple-400" />
           <span className="text-sm font-semibold text-white/90">Music</span>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={onCollapse} className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors">
+          <button onClick={onHide} className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors" title="Hide Player">
+            <ChevronDown className="w-4 h-4 text-white/50" />
+          </button>
+          <button onClick={onCollapse} className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors" title="Collapse">
             <ChevronUp className="w-4 h-4 text-white/50" />
           </button>
-          <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-red-500/20 flex items-center justify-center transition-colors">
+          <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-red-500/20 flex items-center justify-center transition-colors" title="Close">
             <X className="w-4 h-4 text-white/50" />
           </button>
         </div>
@@ -296,7 +404,9 @@ const MusicPanel: React.FC<MusicPanelProps> = ({
             <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-white/10 flex items-center justify-center mb-3">
               <Music className="w-7 h-7 text-purple-400" />
             </div>
-            <p className="text-sm font-medium text-white/90 truncate">{currentTrack?.title || 'No track selected'}</p>
+            <p className="text-xs font-medium text-white/80 truncate">
+              {currentTrack?.title || 'No track selected'}
+            </p>
             <p className="text-[11px] text-white/40 mt-0.5">
               {tracks.length > 0 ? `${currentIndex + 1} / ${tracks.length}` : 'Add tracks to start'}
             </p>
