@@ -116,13 +116,20 @@ HERO SECTIONS (CRITICAL - First Impression):
 - Include an eyebrow text above the main heading (small, uppercase, tracking-widest, text-accent).
 - CTA buttons: Rounded, with hover scale effect and transition. Primary + secondary button pair.
 
-ANIMATIONS (framer-motion):
-- Hero: useScroll + useTransform for parallax. staggerChildren for text reveals.
-- Sections: useInView with threshold 0.3. Fade + slide up (y: 40 → 0, opacity: 0 → 1).
-- Cards: whileHover={{ y: -8, shadow: "lg" }}. Stagger card appearances.
-- Buttons: whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}.
-- Page transitions: AnimatePresence with fade.
-- NEVER animate everything at once. Use staggerChildren and delays for rhythm.
+ANIMATIONS & TRANSITIONS (MANDATORY - Make sites feel ALIVE):
+- Hero: useScroll + useTransform for parallax. staggerChildren for text reveals (staggerChildren: 0.12, y: 60→0).
+- Sections: useInView with threshold 0.3. Fade + slide up (y: 40 → 0, opacity: 0 → 1, duration: 0.8).
+- Cards: whileHover={{ y: -8, boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}. Stagger card appearances with delayChildren.
+- Buttons: whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}. Add shimmer/glow effect on hover.
+- Page transitions: AnimatePresence with mode="wait" and fade + slide.
+- Navigation: Animate logo on scroll, slide-in mobile menu with backdrop blur.
+- Text: Use motion.span with split-text animation for headlines. typewriter effect for taglines.
+- Images: Reveal with clipPath animation or scale from 1.2 to 1 with overflow hidden.
+- Scroll Progress: Add scroll indicator bar at top of page using useScroll + scaleX transform.
+- Micro-interactions: Input focus glow, checkbox check animation, tooltip fade, skeleton loading shimmer.
+- Counters: Use motion.animate for number counting animations on statistics/metrics.
+- Background: Subtle floating particles, gradient mesh movement, or parallax layers for depth.
+- NEVER animate everything at once. Use staggerChildren and delays for rhythm and visual hierarchy.
 
 IMAGES & MEDIA:
 - Use high-quality Unsplash images via URL: https://images.unsplash.com/photo-XXXX?w=1200&q=80
