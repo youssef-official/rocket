@@ -115,7 +115,7 @@ function manualExtractFiles(text: string): { files: Record<string, any>, fileLis
   const fileList: string[] = [];
 
   // Try FILE block extraction first (handles partial/malformed blocks, case-insensitive)
-  const fileTagRegex = /<file\s+[^>]*path=(?:"([^"]+)"|'([^']+)'|([^\s>]+))[^>]*>/gi;
+  const fileTagRegex = /<file\s+[^>]*(?:path|name)=(?:"([^"]+)"|'([^']+)'|([^\s>]+))[^>]*>/gi;
   let tagMatch: RegExpExecArray | null;
   const fileStarts: { path: string; tagStart: number; contentStart: number }[] = [];
 
@@ -241,16 +241,16 @@ function parseFileBlocks(text: string): { files: Record<string, any>, fileList: 
   // Parse complete FILE blocks using indexOf-based approach (fast on large strings)
   let searchFrom = 0;
   while (true) {
-    const openTagStart = normalizedText.indexOf('<FILE ', searchFrom);
+    const openTagStart = normalizedText.indexOf('<FILE', searchFrom);
     if (openTagStart === -1) break;
 
     // Find the end of the opening tag
     const openTagEnd = normalizedText.indexOf('>', openTagStart);
     if (openTagEnd === -1) break;
 
-    // Extract path from the opening tag (supports quoted and unquoted values)
+    // Extract path from the opening tag (supports path= or name=, quoted and unquoted values)
     const tagStr = normalizedText.substring(openTagStart, openTagEnd + 1);
-    const pathMatch = tagStr.match(/path=(?:"([^"]+)"|'([^']+)'|([^\s>]+))/);
+    const pathMatch = tagStr.match(/(?:path|name)=(?:"([^"]+)"|'([^']+)'|([^\s>]+))/);
     const path = (pathMatch?.[1] ?? pathMatch?.[2] ?? pathMatch?.[3] ?? '').trim();
     if (!path || /^\d+$/.test(path)) { searchFrom = openTagEnd + 1; continue; }
 

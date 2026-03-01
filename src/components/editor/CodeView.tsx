@@ -106,7 +106,29 @@ function parseStreamingFiles(content: string): { path: string; content: string; 
     }
   }
 
-  // Fallback: extract code blocks with file paths
+  // Fallback: extract <FILE path|name="..."> blocks from streaming XML responses
+  const fileTagRegex = /<FILE\s+[^>]*(?:path|name)=(?:"([^"]+)"|'([^']+)'|([^\s>]+))[^>]*>/gi;
+  const fileTagMatches = Array.from(content.matchAll(fileTagRegex));
+  if (fileTagMatches.length > 0) {
+    const starts = fileTagMatches.map((m) => ({
+      path: (m[1] ?? m[2] ?? m[3] ?? '').trim(),
+      tagIndex: m.index ?? 0,
+      contentStart: (m.index ?? 0) + m[0].length,
+    })).filter((s) => s.path.length > 0);
+
+    for (let i = 0; i < starts.length; i++) {
+      const current = starts[i];
+      const nextTagIndex = i + 1 < starts.length ? starts[i + 1].tagIndex : -1;
+      const closeIdx = content.indexOf('</FILE>', current.contentStart);
+      const endIdx = closeIdx !== -1 ? closeIdx : (nextTagIndex !== -1 ? nextTagIndex : content.length);
+      const fileContent = content.slice(current.contentStart, endIdx).trim();
+      files.push({ path: current.path, content: fileContent, complete: closeIdx !== -1 });
+    }
+
+    return files;
+  }
+
+  // Fallback: extract markdown code blocks with file paths
   const codeBlockRegex = /```(\w+)?\s*(?:\/\/\s*)?(\S+\.\w+)\n([\s\S]*?)(```|$)/g;
   let match;
   while ((match = codeBlockRegex.exec(content)) !== null) {
