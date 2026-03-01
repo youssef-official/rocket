@@ -29,8 +29,8 @@
 │  │         Edge Functions (Deno)        │           │
 │  │  generate-code · modal-proxy         │           │
 │  │  github-push · vercel-deploy         │           │
-│  │  visual-edits · background-generate  │           │
-│  │  admin-data · paypal-* · upload-image│           │
+│  │  visual-edits · admin-data           │           │
+│  │  paypal-* · upload-image             │           │
 │  └──────────────────────────────────────┘           │
 └────────────────────┬────────────────────────────────┘
                      │
@@ -48,6 +48,7 @@
 | Feature | Description |
 |---------|-------------|
 | **AI Code Generation** | Stream code from AI models (Gemini, OpenRouter) with real-time file detection |
+| **Awwwards-Level Design** | Generated projects follow premium design standards with serif fonts, parallax, and motion |
 | **Clone Design** | Enter any website URL — Vivora X scrapes & recreates it as a React project (all plans) |
 | **Multimodal Image Analysis** | Upload up to 5 images per prompt for design reference & analysis |
 | **Live Preview** | Sandbox-based preview via Modal containers |
@@ -58,25 +59,20 @@
 | **Cloudflare Deployment** | Deploy to Cloudflare Pages with custom subdomains |
 | **Multi-language UI** | Arabic, English, French, Spanish, German, Japanese, Korean, Chinese (full RTL) |
 | **Credit System** | Daily + monthly credits with plan-based limits |
+| **Promo Codes** | Public discount codes displayed on pricing plan cards |
 | **PayPal Billing** | Upgrade plans (Free → Pro → Business) |
 | **Email Notifications** | Welcome, plan upgrade, and renewal reminder emails via Resend |
 | **Custom Cursor** | Premium branded cursor throughout the platform |
-| **Collapsible Chat** | Hide chat panel for full-width preview mode |
+| **Wallpaper Customization** | 8 premium wallpapers: Space, Light, Nebula, Sunset, Forest, Ocean, Mountains, City Night |
 | **Admin Panel** | User management, AI model config, blog CMS, notifications |
 | **Blog System** | Category-based blog with markdown content |
 | **Dark/Light Theme** | System-aware theming with manual override (3-way cycle) |
 | **Image Upload to R2** | Chat images stored on Cloudflare R2 with CDN delivery |
-| **Image Preview Modal** | Click images in chat for full preview with Download & Copy |
-| **Background Generation** | Queue-based code generation for long-running jobs |
-| **File References** | @mention project files in chat for targeted edits |
-| **Notification Inbox** | Plan-targeted in-app notifications with read tracking |
-| **Templates** | Curated project templates for instant project generation |
-| **Premium Branding** | "Built with Vivora X" badge with close button on generated projects |
-| **3D & Immersive Web** | Generate Three.js-powered 3D product viewers, particle systems, and interactive scenes |
-| **AI Video Generation** | Generate cinematic hero videos for product/brand websites via Replicate AI |
-| **Voice Input** | Speech-to-text on homepage with multi-language support (Arabic, English, etc.) |
+| **Premium Branding** | "Built with Vivora X" badge with animated logo on generated projects |
+| **3D & Immersive Web** | Generate Three.js-powered 3D product viewers, particle systems |
+| **Voice Input** | Speech-to-text on homepage with multi-language support |
 | **Color Themes** | Choose from 10 color palettes injected into AI generation prompts |
-| **Billing Dashboard** | View plan details, subscription expiry, transaction history, and credit usage |
+| **Billing Dashboard** | View plan details, subscription expiry, transaction history |
 
 ---
 
@@ -92,6 +88,7 @@
 │   │   ├── dashboard/             # Projects dashboard
 │   │   ├── editor/                # Code editor, chat, preview, versions
 │   │   ├── home/                  # Landing page sections
+│   │   ├── pricing/               # PromoCodeSection
 │   │   ├── shared/                # Reusable components (footer, modals, logo, etc.)
 │   │   └── ui/                    # shadcn/ui primitives
 │   ├── contexts/
@@ -115,7 +112,6 @@
 │   ├── migrations/                # Incremental SQL migrations
 │   └── functions/
 │       ├── admin-data/            # Admin dashboard data endpoint
-│       ├── background-generate/   # Background code generation jobs
 │       ├── generate-code/         # Main AI code generation (SSE streaming)
 │       ├── github-push/           # GitHub OAuth + repo push
 │       ├── modal-proxy/           # Modal sandbox provisioning
@@ -128,7 +124,10 @@
 │       └── visual-edits/          # AI-powered visual code edits
 │
 ├── full.sql                       # Complete DB schema (single file)
-└── public/                        # Static assets (branding.js, sounds, videos)
+└── public/
+    ├── branding.js                # "Built with Vivora X" badge
+    ├── wallpapers/                # 8 premium wallpaper images
+    └── sounds/                    # UI sound effects
 ```
 
 ---
@@ -155,19 +154,19 @@
 | `user_notification_reads` | Read status tracking per user |
 | `templates` | Project templates with categories |
 | `ai_model_config` | AI model configuration per plan |
-| `oauth_pkce_store` | Temporary PKCE state for OAuth flows |
+| `promo_codes` | Discount promo codes with usage tracking |
 | `vivora_deployments` | Cloudflare Pages deployments |
 
 ### Enums
 
-- `plan_type`: free, pro, business (+ legacy: spark, builder, creator, scale)
+- `plan_type`: free, pro, business
 - `app_role`: admin, moderator, user
 
 ---
 
 ## 🔐 Security
 
-- **Row Level Security (RLS)** enabled on all 18 tables
+- **Row Level Security (RLS)** enabled on all tables
 - Users can only access their own data (projects, messages, plans)
 - Admin operations gated by `has_role()` function
 - Service role used only in edge functions for cross-user operations
@@ -181,7 +180,6 @@
 |----------|--------|------|-------------|
 | `generate-code` | POST | JWT | AI code generation with SSE streaming |
 | `modal-proxy` | POST | Anon | Provisions Modal sandbox containers |
-| `background-generate` | POST | Service | Background generation job processor |
 | `visual-edits` | POST | JWT | AI-powered visual code modifications |
 | `github-push` | POST | JWT | GitHub OAuth flow + file push |
 | `vercel-deploy` | POST | JWT | Vercel project deployment |
@@ -235,11 +233,9 @@ supabase db push
 
 ### 4. Required Secrets (Edge Functions)
 
-Configure these in your Supabase project → Edge Functions → Secrets:
-
 | Secret | Used By |
 |--------|---------|
-| `VERCEL_AI_API_KEY` | generate-code, background-generate |
+| `VERCEL_AI_API_KEY` | generate-code |
 | `OPENROUTER_API_KEY` | visual-edits |
 | `MODAL_API_URL` | modal-proxy |
 | `R2_ACCESS_KEY_ID` | upload-image |
@@ -279,8 +275,6 @@ App runs at `http://localhost:5173`
 | Private Projects | ❌ | ✅ | ✅ |
 | Priority Access | ❌ | ❌ | ✅ |
 | Vercel Deploy | ✅ | ✅ | ✅ |
-| File References (@) | ✅ | ✅ | ✅ |
-| Email Notifications | ✅ | ✅ | ✅ |
 
 Credits reset daily at UTC midnight. First project generation costs 2 credits; edits cost 0.5–3 credits based on file count.
 
@@ -294,7 +288,7 @@ Credits reset daily at UTC midnight. First project generation costs 2 credits; e
 | Styling | Tailwind CSS, shadcn/ui, Framer Motion |
 | State | React Query, React Context |
 | Backend | Supabase (Postgres, Auth, Edge Functions, Storage) |
-| AI | Gemini (via Vercel AI Gateway), OpenRouter |
+| AI | Gemini (via AI Gateway), OpenRouter |
 | Code Editor | Monaco Editor |
 | Sandbox | Modal (containerized preview) |
 | Image Storage | Cloudflare R2 + CDN |

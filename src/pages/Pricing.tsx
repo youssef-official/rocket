@@ -291,7 +291,7 @@ export const Pricing: React.FC = () => {
               </div>
           </motion.div>
 
-          {/* Promo Code Section */}
+          {/* Promo input only (public promos shown on cards) */}
           <PromoCodeSection />
 
           {/* FAQ */}

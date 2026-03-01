@@ -23,6 +23,9 @@ const WALLPAPERS = [
   { id: 'nebula', label: 'Nebula', src: '/wallpapers/nebula.jpg' },
   { id: 'sunset', label: 'Sunset', src: '/wallpapers/sunset.jpg' },
   { id: 'forest', label: 'Forest', src: '/wallpapers/forest.jpg' },
+  { id: 'ocean', label: 'Ocean', src: '/wallpapers/ocean.jpg' },
+  { id: 'mountains', label: 'Mountains', src: '/wallpapers/mountains.jpg' },
+  { id: 'city-night', label: 'City Night', src: '/wallpapers/city-night.jpg' },
 ];
 
 // Export for use in HomePage
