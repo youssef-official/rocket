@@ -867,7 +867,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               </div>
               {/* Database Tab */}
               {currentView === 'database' && !showVisualEdit && (
-                <DatabasePanel projectId={project?.id || null} onSendMessage={onSendMessage} />
+                <DatabasePanel projectId={project?.id || null} onSendMessage={onSendMessage} projectFiles={project?.files} />
               )}
               {/* Details Tab - use live fileActivities during generation */}
               {currentView === 'details' && !showVisualEdit && detailsVersion && (

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Database, CheckCircle, Loader2, ExternalLink, LogIn, List, Plug, Play, KeyRound } from 'lucide-react';
+import { Database, CheckCircle, Loader2, ExternalLink, LogIn, List, Plug, Play, KeyRound, PlayCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import type { ProjectFile } from '@/types';
 
 const SB_CLIENT_ID = 'bb4087af-31a0-4921-8418-d1eb743291d9';
 
@@ -13,9 +15,10 @@ interface SupabaseProject {
 interface DatabasePanelProps {
   projectId: string | null;
   onSendMessage: (content: string, isChatOnly?: boolean) => void;
+  projectFiles?: Record<string, ProjectFile>;
 }
 
-export const DatabasePanel: React.FC<DatabasePanelProps> = ({ projectId, onSendMessage }) => {
+export const DatabasePanel: React.FC<DatabasePanelProps> = ({ projectId, onSendMessage, projectFiles }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sbProjects, setSbProjects] = useState<SupabaseProject[]>([]);
@@ -27,6 +30,7 @@ export const DatabasePanel: React.FC<DatabasePanelProps> = ({ projectId, onSendM
   const [step, setStep] = useState<'auth' | 'select' | 'connected'>('auth');
   const [manualMode, setManualMode] = useState(false);
   const [manualProjectRef, setManualProjectRef] = useState('');
+  const [isRunningMigrations, setIsRunningMigrations] = useState(false);
 
   // Check connection status on mount
   useEffect(() => {
@@ -178,6 +182,56 @@ The user connected their Supabase database via OAuth. Please:
       .eq('id', projectId);
     setConnectedProjectRef(null);
     setStep(isConnected ? 'select' : 'auth');
+  };
+
+  const handleRunMigrations = async () => {
+    if (!connectedProjectRef || !projectFiles) return;
+    setIsRunningMigrations(true);
+
+    // Find all SQL migration files
+    const migrationFiles = Object.entries(projectFiles)
+      .filter(([path]) => path.match(/^(supabase\/)?migrations\/.*\.sql$/i))
+      .sort(([a], [b]) => a.localeCompare(b));
+
+    if (migrationFiles.length === 0) {
+      toast({ title: 'No Migrations', description: 'No SQL migration files found in the project.' });
+      setIsRunningMigrations(false);
+      return;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const [filePath, file] of migrationFiles) {
+      const sql = file.content?.trim();
+      if (!sql) continue;
+
+      try {
+        const res = await invokeOAuthAction({
+          action: 'run-sql',
+          project_ref: connectedProjectRef,
+          query: sql,
+        });
+
+        if (res.data?.error) {
+          console.error(`Migration ${filePath} failed:`, res.data.error, res.data.details);
+          failCount++;
+        } else {
+          successCount++;
+        }
+      } catch (err) {
+        console.error(`Migration ${filePath} error:`, err);
+        failCount++;
+      }
+    }
+
+    if (successCount > 0 && failCount === 0) {
+      toast({ title: '✅ Migrations Executed', description: `${successCount} migration(s) executed successfully.` });
+    } else if (failCount > 0) {
+      toast({ title: '⚠️ Migration Issues', description: `${successCount} succeeded, ${failCount} failed. Check console.`, variant: 'destructive' });
+    }
+
+    setIsRunningMigrations(false);
   };
 
   const handleDisconnectAccount = async () => {
@@ -343,9 +397,19 @@ The user connected their Supabase database via OAuth. Please:
                 <li className="flex items-start gap-2"><span className="text-green-500 mt-0.5">✓</span> Edge Functions in <code className="text-green-500 bg-green-500/10 px-1 rounded">supabase/functions/</code></li>
               </ul>
 
+              {/* Run Migrations Button */}
+              <button
+                onClick={handleRunMigrations}
+                disabled={isRunningMigrations}
+                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-bold py-2.5 rounded-xl transition-colors text-sm"
+              >
+                {isRunningMigrations ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlayCircle className="w-4 h-4" />}
+                {isRunningMigrations ? 'Running Migrations...' : 'Run SQL Migrations'}
+              </button>
+
               <button
                 onClick={handleDisconnect}
-                className="w-full px-4 py-2.5 border border-red-500/30 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors text-sm"
+                className="w-full px-4 py-2.5 border border-destructive/30 text-destructive hover:bg-destructive/10 rounded-xl transition-colors text-sm"
               >
                 Disconnect Project
               </button>

@@ -19,153 +19,7 @@ interface PreviewViewProps {
   projectId?: string;
 }
 
-// ═══════════════ MINI GAMES ═══════════════
-
-// Tic-Tac-Toe Game
-const TicTacToeGame: React.FC = () => {
-  const [board, setBoard] = React.useState(Array(9).fill(null));
-  const [isX, setIsX] = React.useState(true);
-  const [winner, setWinner] = React.useState<string | null>(null);
-
-  const checkWinner = (b: (string | null)[]) => {
-    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    for (const [a,c,d] of lines) { if (b[a] && b[a] === b[c] && b[a] === b[d]) return b[a]; }
-    return b.every(v => v) ? 'Draw' : null;
-  };
-
-  const aiMove = (b: (string | null)[]) => {
-    const empty = b.map((v, i) => v === null ? i : -1).filter(i => i >= 0);
-    if (empty.length === 0) return;
-    // Simple AI: try to win, block, or random
-    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    for (const mark of ['O', 'X']) {
-      for (const [a,c,d] of lines) {
-        const vals = [b[a],b[c],b[d]];
-        if (vals.filter(v => v === mark).length === 2 && vals.includes(null)) {
-          return [a,c,d][vals.indexOf(null)];
-        }
-      }
-    }
-    if (b[4] === null) return 4;
-    return empty[Math.floor(Math.random() * empty.length)];
-  };
-
-  const handleClick = (i: number) => {
-    if (board[i] || winner) return;
-    const newBoard = [...board];
-    newBoard[i] = 'X';
-    const w = checkWinner(newBoard);
-    if (w) { setBoard(newBoard); setWinner(w); return; }
-    const ai = aiMove(newBoard);
-    if (ai !== undefined) { newBoard[ai] = 'O'; }
-    setBoard(newBoard);
-    setWinner(checkWinner(newBoard));
-  };
-
-  const reset = () => { setBoard(Array(9).fill(null)); setWinner(null); setIsX(true); };
-
-  return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="grid grid-cols-3 gap-1.5">
-        {board.map((cell, i) => (
-          <motion.button key={i} whileHover={{ scale: cell ? 1 : 1.1 }} whileTap={{ scale: 0.95 }}
-            onClick={() => handleClick(i)}
-            className={`w-12 h-12 rounded-lg text-lg font-bold flex items-center justify-center transition-colors
-              ${cell === 'X' ? 'bg-primary/20 text-primary' : cell === 'O' ? 'bg-destructive/20 text-destructive' : 'bg-secondary hover:bg-secondary/80'}`}>
-            {cell}
-          </motion.button>
-        ))}
-      </div>
-      {winner && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-          <p className="text-sm font-semibold text-foreground">{winner === 'Draw' ? "It's a draw!" : `${winner} wins!`}</p>
-          <button onClick={reset} className="mt-1 text-xs text-primary hover:underline">Play again</button>
-        </motion.div>
-      )}
-    </div>
-  );
-};
-
-// Snake Game
-const SnakeGame: React.FC = () => {
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
-  const [score, setScore] = React.useState(0);
-  const [gameOver, setGameOver] = React.useState(false);
-  const [started, setStarted] = React.useState(false);
-  const gameRef = React.useRef<{ snake: number[][]; dir: number[]; food: number[]; interval: any; }>({
-    snake: [[5,5]], dir: [1,0], food: [10,10], interval: null
-  });
-
-  const GRID = 20, CELL = 10;
-
-  const startGame = () => {
-    const g = gameRef.current;
-    g.snake = [[5,5]]; g.dir = [1,0]; g.food = [Math.floor(Math.random()*GRID), Math.floor(Math.random()*GRID)];
-    setScore(0); setGameOver(false); setStarted(true);
-    if (g.interval) clearInterval(g.interval);
-    g.interval = setInterval(tick, 120);
-  };
-
-  const tick = () => {
-    const g = gameRef.current;
-    const head = [g.snake[0][0] + g.dir[0], g.snake[0][1] + g.dir[1]];
-    if (head[0] < 0 || head[0] >= GRID || head[1] < 0 || head[1] >= GRID || g.snake.some(s => s[0] === head[0] && s[1] === head[1])) {
-      clearInterval(g.interval); setGameOver(true); return;
-    }
-    g.snake.unshift(head);
-    if (head[0] === g.food[0] && head[1] === g.food[1]) {
-      g.food = [Math.floor(Math.random()*GRID), Math.floor(Math.random()*GRID)];
-      setScore(s => s + 1);
-    } else { g.snake.pop(); }
-    draw();
-  };
-
-  const draw = () => {
-    const ctx = canvasRef.current?.getContext('2d');
-    if (!ctx) return;
-    const g = gameRef.current;
-    ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, 0, GRID*CELL, GRID*CELL);
-    ctx.fillStyle = '#22c55e';
-    g.snake.forEach(([x,y]) => ctx.fillRect(x*CELL+1, y*CELL+1, CELL-2, CELL-2));
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(g.food[0]*CELL+1, g.food[1]*CELL+1, CELL-2, CELL-2);
-  };
-
-  React.useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const g = gameRef.current;
-      const map: Record<string, number[]> = { ArrowUp: [0,-1], ArrowDown: [0,1], ArrowLeft: [-1,0], ArrowRight: [1,0] };
-      if (map[e.key] && !(map[e.key][0] === -g.dir[0] && map[e.key][1] === -g.dir[1])) { g.dir = map[e.key]; }
-    };
-    window.addEventListener('keydown', handler);
-    return () => { window.removeEventListener('keydown', handler); if (gameRef.current.interval) clearInterval(gameRef.current.interval); };
-  }, []);
-
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <canvas ref={canvasRef} width={GRID*CELL} height={GRID*CELL} className="rounded-lg border border-border" />
-      <div className="flex items-center gap-4">
-        <span className="text-xs text-muted-foreground">Score: <span className="font-bold text-foreground">{score}</span></span>
-        {(!started || gameOver) && (
-          <button onClick={startGame} className="text-xs px-3 py-1 rounded-lg bg-primary text-primary-foreground hover:opacity-90">
-            {gameOver ? 'Retry' : 'Start'}
-          </button>
-        )}
-      </div>
-      {/* Mobile controls */}
-      <div className="grid grid-cols-3 gap-1 w-24">
-        <div />
-        <button onClick={() => { gameRef.current.dir = [0,-1]; }} className="w-8 h-8 rounded bg-secondary text-foreground text-xs flex items-center justify-center">↑</button>
-        <div />
-        <button onClick={() => { gameRef.current.dir = [-1,0]; }} className="w-8 h-8 rounded bg-secondary text-foreground text-xs flex items-center justify-center">←</button>
-        <button onClick={() => { gameRef.current.dir = [0,1]; }} className="w-8 h-8 rounded bg-secondary text-foreground text-xs flex items-center justify-center">↓</button>
-        <button onClick={() => { gameRef.current.dir = [1,0]; }} className="w-8 h-8 rounded bg-secondary text-foreground text-xs flex items-center justify-center">→</button>
-      </div>
-    </div>
-  );
-};
-
-// Loading placeholder with rich animation + games
+// Loading placeholder with rich animation
 const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
   const tips = [
     "Building your premium design...",
@@ -177,7 +31,6 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
   ];
   const [tipIndex, setTipIndex] = React.useState(0);
   const [progress, setProgress] = React.useState(0);
-  const [activeGame, setActiveGame] = React.useState<'none' | 'xo' | 'snake'>('none');
 
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -237,39 +90,12 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
         </div>
 
         {/* Animated dots */}
-        <div className="flex items-center justify-center gap-1.5 mb-6">
+        <div className="flex items-center justify-center gap-1.5">
           {[0, 1, 2, 3, 4].map(i => (
             <motion.div key={i} animate={{ scale: [0.6, 1, 0.6], opacity: [0.3, 1, 0.3] }}
               transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.15 }}
               className="w-1.5 h-1.5 rounded-full bg-primary" />
           ))}
-        </div>
-
-        {/* Play Game Section */}
-        <div className="border-t border-border pt-4">
-          <p className="text-xs text-muted-foreground mb-3">Play a game while you wait</p>
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <button onClick={() => setActiveGame(activeGame === 'xo' ? 'none' : 'xo')}
-              className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${activeGame === 'xo' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>
-              Tic-Tac-Toe
-            </button>
-            <button onClick={() => setActiveGame(activeGame === 'snake' ? 'none' : 'snake')}
-              className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${activeGame === 'snake' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}>
-              Snake
-            </button>
-          </div>
-          <AnimatePresence mode="wait">
-            {activeGame === 'xo' && (
-              <motion.div key="xo" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                <TicTacToeGame />
-              </motion.div>
-            )}
-            {activeGame === 'snake' && (
-              <motion.div key="snake" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                <SnakeGame />
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </motion.div>
     </div>
