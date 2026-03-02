@@ -32,31 +32,6 @@ export const DatabasePanel: React.FC<DatabasePanelProps> = ({ projectId, onSendM
   const [manualProjectRef, setManualProjectRef] = useState('');
   const [isRunningMigrations, setIsRunningMigrations] = useState(false);
 
-  // Check connection status on mount
-  useEffect(() => {
-    checkStatus();
-  }, []);
-
-  // Check if project already has supabase_url set
-  useEffect(() => {
-    if (!projectId) return;
-    supabase
-      .from('projects')
-      .select('supabase_url, supabase_anon_key')
-      .eq('id', projectId)
-      .single()
-      .then(({ data }) => {
-        if (data?.supabase_url) {
-          // Extract project ref from URL
-          const match = data.supabase_url.match(/https:\/\/([^.]+)\.supabase\.co/);
-          if (match) {
-            setConnectedProjectRef(match[1]);
-            setStep('connected');
-          }
-        }
-      });
-  }, [projectId]);
-
   const invokeOAuthAction = async (body: Record<string, unknown>) => {
     const { data } = await supabase.auth.getSession();
     const accessToken = data.session?.access_token;
@@ -73,21 +48,47 @@ export const DatabasePanel: React.FC<DatabasePanelProps> = ({ projectId, onSendM
     });
   };
 
-  const checkStatus = async () => {
-    setIsLoading(true);
-    try {
-      const res = await invokeOAuthAction({ action: 'status' });
-      if (res.data?.connected) {
-        setIsConnected(true);
-        if (step === 'auth') setStep('select');
-      }
-    } catch {
-      // Not connected or not logged in yet
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Combined init: check project connection first, then OAuth status
+  useEffect(() => {
+    const init = async () => {
+      setIsLoading(true);
 
+      // 1. Check if project already has supabase_url saved
+      if (projectId) {
+        const { data: projData } = await supabase
+          .from('projects')
+          .select('supabase_url, supabase_anon_key')
+          .eq('id', projectId)
+          .single();
+
+        if (projData?.supabase_url) {
+          const match = projData.supabase_url.match(/https:\/\/([^.]+)\.supabase\.co/);
+          if (match) {
+            setConnectedProjectRef(match[1]);
+            setIsConnected(true);
+            setStep('connected');
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
+
+      // 2. If project not connected, check OAuth account status
+      try {
+        const res = await invokeOAuthAction({ action: 'status' });
+        if (res.data?.connected) {
+          setIsConnected(true);
+          setStep('select');
+        }
+      } catch {
+        // Not connected or not logged in yet
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    init();
+  }, [projectId]);
   const handleLogin = () => {
     // Save current project ID so callback knows where to return
     if (projectId) {
