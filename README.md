@@ -56,15 +56,16 @@
 | **Version History** | Save/restore project versions with diff tracking & AI-generated names |
 | **GitHub Integration** | Push projects directly to GitHub repos |
 | **Vercel Deployment** | One-click deploy to Vercel |
-| **Cloudflare Deployment** | Deploy to Cloudflare Pages with custom subdomains |
 | **Multi-language UI** | Arabic, English, French, Spanish, German, Japanese, Korean, Chinese (full RTL) |
 | **Credit System** | Daily + monthly credits with plan-based limits |
 | **Promo Codes** | Public discount codes displayed on pricing plan cards |
 | **PayPal Billing** | Upgrade plans (Free → Pro → Business) |
 | **Email Notifications** | Welcome, plan upgrade, and renewal reminder emails via Resend |
-| **Custom Cursor** | Premium branded cursor throughout the platform |
-| **Wallpaper Customization** | 8 premium wallpapers: Space, Light, Nebula, Sunset, Forest, Ocean, Mountains, City Night |
-| **Admin Panel** | User management, AI model config, blog CMS, notifications |
+| **Wallpaper Customization** | 9 premium wallpapers: Space, Light, Nebula, Sunset, Forest, Ocean, Mountains, City Night, Aurora, Desert, Tropical |
+| **Music Player** | Floating draggable music player with playlist, favorites, and persistent playback across all pages |
+| **Preview Games** | Play Tic-Tac-Toe or Snake while waiting for code generation |
+| **Code Editor** | Monaco-based editor with Save/Undo/Redo (paid plans only, free = read-only) |
+| **Admin Panel** | User management, AI model config, blog CMS, promo codes, notifications, celebrations |
 | **Blog System** | Category-based blog with markdown content |
 | **Dark/Light Theme** | System-aware theming with manual override (3-way cycle) |
 | **Image Upload to R2** | Chat images stored on Cloudflare R2 with CDN delivery |
@@ -73,6 +74,7 @@
 | **Voice Input** | Speech-to-text on homepage with multi-language support |
 | **Color Themes** | Choose from 10 color palettes injected into AI generation prompts |
 | **Billing Dashboard** | View plan details, subscription expiry, transaction history |
+| **Mandatory Animations** | AI generates projects with framer-motion parallax, stagger reveals, scroll transforms |
 
 ---
 
@@ -89,7 +91,7 @@
 │   │   ├── editor/                # Code editor, chat, preview, versions
 │   │   ├── home/                  # Landing page sections
 │   │   ├── pricing/               # PromoCodeSection
-│   │   ├── shared/                # Reusable components (footer, modals, logo, etc.)
+│   │   ├── shared/                # Reusable components (footer, modals, logo, music player, etc.)
 │   │   └── ui/                    # shadcn/ui primitives
 │   ├── contexts/
 │   │   ├── AuthContext.tsx         # Auth state management
@@ -126,7 +128,7 @@
 ├── full.sql                       # Complete DB schema (single file)
 └── public/
     ├── branding.js                # "Built with Vivora X" badge
-    ├── wallpapers/                # 8 premium wallpaper images
+    ├── wallpapers/                # 9+ premium wallpaper images
     └── sounds/                    # UI sound effects
 ```
 
@@ -155,7 +157,7 @@
 | `templates` | Project templates with categories |
 | `ai_model_config` | AI model configuration per plan |
 | `promo_codes` | Discount promo codes with usage tracking |
-| `vivora_deployments` | Cloudflare Pages deployments |
+| `site_celebrations` | Seasonal celebration overlays |
 
 ### Enums
 
@@ -272,7 +274,7 @@ App runs at `http://localhost:5173`
 | Clone Design | ✅ | ✅ | ✅ |
 | Image Upload | ❌ | ✅ | ✅ |
 | ZIP Export | ❌ | ✅ | ✅ |
-| Private Projects | ❌ | ✅ | ✅ |
+| Code Editing | ❌ | ✅ | ✅ |
 | Priority Access | ❌ | ❌ | ✅ |
 | Vercel Deploy | ✅ | ✅ | ✅ |
 
@@ -294,7 +296,7 @@ Credits reset daily at UTC midnight. First project generation costs 2 credits; e
 | Image Storage | Cloudflare R2 + CDN |
 | Payments | PayPal |
 | Email | Resend (no-reply@vivorax.online) |
-| Deployment | Vercel, GitHub, Cloudflare Pages |
+| Deployment | Vercel, GitHub |
 
 ---
 
