@@ -211,27 +211,31 @@ export const FloatingMusicPlayer: React.FC = () => {
     <>
       <audio ref={audioRef} onEnded={handleEnded} onTimeUpdate={handleTimeUpdate} />
       
-      {/* Vertical Sidebar Toggle - Left side */}
+      {/* Draggable Mini Toggle - when hidden */}
       <AnimatePresence>
         {isHidden && (
-          <motion.button
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
             transition={{ duration: 0.3 }}
-            onClick={() => setIsHidden(false)}
-            className="fixed left-0 top-1/2 -translate-y-1/2 z-[9999] w-12 h-20 rounded-r-2xl bg-gradient-to-r from-purple-600 to-purple-500 shadow-2xl shadow-purple-500/50 flex items-center justify-center hover:shadow-lg hover:shadow-purple-500/70 transition-all group border-r-2 border-purple-400/30"
-            title="Show Music Player"
+            style={{
+              position: 'fixed',
+              left: `${position.x}px`,
+              top: `${position.y}px`,
+              zIndex: 9999,
+              cursor: isDragging ? 'grabbing' : 'grab',
+            }}
+            onMouseDown={handleMouseDown}
           >
-            <motion.div
-              animate={{ x: [0, 4, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="flex flex-col items-center gap-1"
+            <button
+              onClick={() => setIsHidden(false)}
+              className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-purple-500 shadow-lg shadow-purple-500/30 flex items-center justify-center hover:shadow-xl hover:shadow-purple-500/40 transition-all"
+              title="Show Music Player"
             >
-              <Music className="w-5 h-5 text-white" />
-              <ChevronRight className="w-4 h-4 text-white/80" />
-            </motion.div>
-          </motion.button>
+              <Music className="w-4 h-4 text-white" />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
 

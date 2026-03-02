@@ -4,7 +4,7 @@ import {
   Code2, Eye, LogOut, Moon, Sun, ChevronDown, Download, Clock, Pencil,
   Eye as EyeIcon, Upload, Coins, Database, GitBranch, Settings2,
   BookOpen, CreditCard, CircleHelp, Rocket, Monitor, FileArchive,
-  Shield, PanelLeftClose, PanelLeftOpen
+  Shield, PanelLeftClose, PanelLeftOpen, BarChart2
 } from 'lucide-react';
 import githubLogo from '@/assets/logos/github.svg';
 import { ChatView } from './ChatView';
@@ -14,6 +14,7 @@ import { VisualEditMode } from './VisualEditMode';
 import { VercelDeployDialog } from './IntegrationDialogs';
 import { GitHubPushDialog } from './GitHubPushDialog';
 import { DatabasePanel } from './DatabasePanel';
+import { AnalyticsPanel } from './AnalyticsPanel';
 import { DetailsPanel } from './DetailsPanel';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -95,7 +96,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const { t, isRTL } = useLanguage();
   const { userPlan, getRemainingCredits } = useUserPlan();
   const { runMigrations } = useAutoMigration(project?.id || null);
-  const [currentView, setCurrentView] = useState<'code' | 'preview' | 'database' | 'details'>('preview');
+  const [currentView, setCurrentView] = useState<'code' | 'preview' | 'database' | 'details' | 'analytics'>('preview');
   const [detailsVersion, setDetailsVersion] = useState<{ version: ProjectVersion; activities: any[] } | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -586,6 +587,13 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <Database className="w-3.5 h-3.5" />
             <span>DB</span>
           </button>
+          <button
+            onClick={() => setCurrentView('analytics')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'analytics' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
+          >
+            <BarChart2 className="w-3.5 h-3.5" />
+            <span>Analytics</span>
+          </button>
         </div>
 
         {/* Right Section */}
@@ -877,6 +885,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   onClose={() => setCurrentView('preview')}
                   isGenerating={isGenerating}
                 />
+              )}
+              {currentView === 'analytics' && !showVisualEdit && (
+                <AnalyticsPanel previewUrl={previewUrl} />
               )}
               {showVisualEdit && (
                 <div className="absolute inset-0 z-10 flex">
