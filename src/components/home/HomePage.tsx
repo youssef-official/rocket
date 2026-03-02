@@ -19,7 +19,6 @@ import { useThemePreference } from '@/hooks/useThemePreference';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 import lightHeroBg from '@/assets/light-hero-bg.jpg';
 import { supabase } from '@/integrations/supabase/client';
-import { HomePageV2 } from './HomePageV2';
 
 interface Project {
   id: string;
@@ -44,27 +43,7 @@ interface HomePageProps {
 
 const MAX_PROMPT_LENGTH = 1000000;
 
-export const HomePage: React.FC<HomePageProps> = (props) => {
-  const [homeLayout, setHomeLayout] = useState(() => localStorage.getItem('vivora_home_layout') || 'classic');
-
-  useEffect(() => {
-    const handler = () => {
-      setHomeLayout(localStorage.getItem('vivora_home_layout') || 'classic');
-    };
-    window.addEventListener('vivora-layout-change', handler);
-    return () => window.removeEventListener('vivora-layout-change', handler);
-  }, []);
-
-  // Render V2 sidebar layout
-  if (homeLayout === 'sidebar') {
-    return <HomePageV2 {...props} />;
-  }
-
-  // Render classic layout
-  return <HomePageClassic {...props} />;
-};
-
-const HomePageClassic: React.FC<HomePageProps> = ({
+export const HomePage: React.FC<HomePageProps> = ({
   onStartBuilding,
   onViewDashboard,
   onOpenProject,

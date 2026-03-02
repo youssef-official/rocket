@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Settings2, LogOut, Moon, Sun, Monitor, Coins, Crown, Sparkles, ImageIcon, Music, LayoutDashboard } from 'lucide-react';
+import { User as UserIcon, Settings2, LogOut, Moon, Sun, Monitor, Coins, Crown, Sparkles, ImageIcon, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '@/types';
 import { useThemePreference } from '@/hooks/useThemePreference';
@@ -291,28 +291,6 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
 
               {/* Wallpaper */}
               <WallpaperSelector />
-
-              {/* Layout Toggle */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const current = localStorage.getItem('vivora_home_layout') || 'classic';
-                  const next = current === 'classic' ? 'sidebar' : 'classic';
-                  localStorage.setItem('vivora_home_layout', next);
-                  window.dispatchEvent(new Event('vivora-layout-change'));
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
-              >
-                <div className={`flex items-center gap-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <LayoutDashboard className="w-4 h-4" />
-                  Layout
-                </div>
-                <span className="text-[11px] text-white/40 bg-white/[0.06] px-2 py-0.5 rounded-md">
-                  {(localStorage.getItem('vivora_home_layout') || 'classic') === 'classic' ? 'Classic' : 'Sidebar'}
-                </span>
-              </button>
 
               {/* Music */}
               <button
