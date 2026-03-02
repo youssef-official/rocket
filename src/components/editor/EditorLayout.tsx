@@ -25,6 +25,7 @@ import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
+import { useAutoMigration } from '@/hooks/useAutoMigration';
 // CreditWarningBanner removed
 
 interface FileActivity {
@@ -93,6 +94,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
   const { userPlan, getRemainingCredits } = useUserPlan();
+  const { runMigrations } = useAutoMigration(project?.id || null);
   const [currentView, setCurrentView] = useState<'code' | 'preview' | 'database' | 'details'>('preview');
   const [detailsVersion, setDetailsVersion] = useState<{ version: ProjectVersion; activities: any[] } | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -174,10 +176,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       const hasMessages = messages.length > 0;
 
       if (hasFiles && hasMessages) {
+        // Auto-run SQL migrations on connected Supabase project
+        runMigrations(project.files);
+
         const isFirstVersion = versions.length === 0;
 
         if (isFirstVersion) {
-          // Save version immediately (no more screenshot test blocking)
           const createFirstVersion = async () => {
             const versionNumber = 1;
             const projectDescription = project.description || project.name || '';
@@ -201,7 +205,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
           createFirstVersion();
         } else {
-          // For subsequent versions, save immediately (no test)
           const createVersionWithAIName = async () => {
             const versionNumber = versions.length + 1;
             const projectDescription = project.description || project.name || '';
@@ -240,7 +243,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
 
     prevIsGenerating.current = isGenerating;
-  }, [isGenerating, messages, project?.files, project?.description, project?.name, createVersion, versions.length, isChatMode]);
+  }, [isGenerating, messages, project?.files, project?.description, project?.name, createVersion, versions.length, isChatMode, runMigrations]);
 
   // Handle test completion - save pending version
   const handleTestComplete = useCallback(async (passed: boolean) => {
