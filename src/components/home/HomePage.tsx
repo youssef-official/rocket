@@ -422,37 +422,54 @@ export const HomePage: React.FC<HomePageProps> = ({
         backgroundAttachment: 'fixed'
       }}
     >
-      {/* Aurora Gradient Background */}
+      {/* Aurora Gradient Background - only from bottom */}
       {isAuroraGradient && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0d0d0d] via-[#0d0d0d]/80 to-transparent z-[1]" />
+          {/* Pink center glow - bottom only */}
           <div
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] animate-pulse"
+            className="absolute left-1/2 -translate-x-1/2 animate-pulse"
             style={{
-              background: 'radial-gradient(ellipse at center, rgba(236,72,153,0.7) 0%, rgba(219,39,119,0.4) 30%, transparent 70%)',
+              bottom: '-80px',
+              width: '900px',
+              height: '350px',
+              background: 'radial-gradient(ellipse at center, rgba(236,72,153,0.65) 0%, rgba(219,39,119,0.35) 30%, transparent 70%)',
               filter: 'blur(60px)',
               animationDuration: '8s',
             }}
           />
+          {/* Blue left glow */}
           <div
-            className="absolute -bottom-20 left-[10%] w-[500px] h-[350px] animate-pulse"
+            className="absolute animate-pulse"
             style={{
-              background: 'radial-gradient(ellipse at center, rgba(59,130,246,0.6) 0%, rgba(37,99,235,0.3) 40%, transparent 70%)',
+              bottom: '-100px',
+              left: '5%',
+              width: '500px',
+              height: '300px',
+              background: 'radial-gradient(ellipse at center, rgba(59,130,246,0.55) 0%, rgba(37,99,235,0.25) 40%, transparent 70%)',
               filter: 'blur(50px)',
               animationDuration: '10s',
             }}
           />
+          {/* Blue right glow */}
           <div
-            className="absolute -bottom-20 right-[10%] w-[500px] h-[350px] animate-pulse"
+            className="absolute animate-pulse"
             style={{
-              background: 'radial-gradient(ellipse at center, rgba(59,130,246,0.6) 0%, rgba(37,99,235,0.3) 40%, transparent 70%)',
+              bottom: '-100px',
+              right: '5%',
+              width: '500px',
+              height: '300px',
+              background: 'radial-gradient(ellipse at center, rgba(59,130,246,0.55) 0%, rgba(37,99,235,0.25) 40%, transparent 70%)',
               filter: 'blur(50px)',
               animationDuration: '12s',
             }}
           />
+          {/* Purple center accent */}
           <div
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[250px] animate-pulse"
+            className="absolute left-1/2 -translate-x-1/2 animate-pulse"
             style={{
+              bottom: '-40px',
+              width: '600px',
+              height: '200px',
               background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.4) 0%, transparent 60%)',
               filter: 'blur(40px)',
               animationDuration: '6s',

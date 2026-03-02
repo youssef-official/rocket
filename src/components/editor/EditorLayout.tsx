@@ -217,8 +217,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               versionNumber
             );
 
-            const alreadyExists = versions.some(v => 
-              v.chatMessages.length === messages.length && 
+            const alreadyExists = versions.some(v =>
+              v.chatMessages.length === messages.length &&
               JSON.stringify(v.files) === JSON.stringify(project.files)
             );
 
@@ -249,7 +249,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   // Handle test completion - save pending version
   const handleTestComplete = useCallback(async (passed: boolean) => {
     if (!waitingForTest || !pendingVersionRef.current) return;
-    
+
     const pending = pendingVersionRef.current;
     const versionNumber = versions.length + 1;
     const projectDescription = project?.description || project?.name || '';
@@ -598,22 +598,22 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
         {/* Right Section */}
         <div className={`flex items-center gap-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          {/* Download */}
+          {/* Download - hidden on mobile */}
           <button
             onClick={handleDownload}
             disabled={!project || Object.keys(project.files).length === 0}
-            className="p-2 rounded-xl hover:bg-accent/80 transition-all duration-200 disabled:opacity-40 text-muted-foreground hover:text-foreground"
+            className="hidden md:inline-flex p-2 rounded-xl hover:bg-accent/80 transition-all duration-200 disabled:opacity-40 text-muted-foreground hover:text-foreground"
             title={t('editor.download')}
           >
             <Download className="w-4 h-4" />
           </button>
 
-          {/* GitHub */}
+          {/* GitHub - hidden on mobile */}
           <motion.button
             onClick={() => setShowGitHubPush(true)}
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-border/60 bg-secondary/60 hover:bg-secondary text-foreground text-sm font-semibold transition-all duration-200 shadow-sm"
+            className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-border/60 bg-secondary/60 hover:bg-secondary text-foreground text-sm font-semibold transition-all duration-200 shadow-sm"
             title="Push to GitHub"
           >
             <img src={githubLogo} alt="GitHub" className="w-4 h-4 dark:invert" />
@@ -638,10 +638,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center text-sm font-bold text-primary-foreground overflow-hidden ring-2 ring-border/40 hover:ring-primary/30 transition-all duration-200"
             >
               {user?.avatarUrl ? (
-                <img 
-                  src={user.avatarUrl} 
-                  alt="" 
-                  className="w-full h-full object-cover rounded-xl" 
+                <img
+                  src={user.avatarUrl}
+                  alt=""
+                  className="w-full h-full object-cover rounded-xl"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
@@ -778,20 +778,19 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Mobile Bottom Navigation */}
-        <div className={`md:hidden fixed bottom-0 left-0 right-0 h-14 bg-card border-t border-border flex items-center z-50 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border/60 flex items-center gap-2 px-3 py-2 z-50 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <button
             onClick={() => setMobilePanel('chat')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-none transition-all duration-200 ${mobilePanel === 'chat' ? 'text-primary bg-primary/5 font-semibold' : 'text-muted-foreground'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl transition-all duration-200 ${mobilePanel === 'chat' ? 'bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/20' : 'text-muted-foreground hover:bg-accent/60'}`}
           >
-            <Code2 className="w-5 h-5" />
+            <Code2 className="w-4 h-4" />
             <span className="text-sm">{t('editor.chat')}</span>
           </button>
-          <div className="w-px h-8 bg-border" />
           <button
             onClick={() => setMobilePanel('preview')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-none transition-all duration-200 ${mobilePanel === 'preview' ? 'text-primary bg-primary/5 font-semibold' : 'text-muted-foreground'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl transition-all duration-200 ${mobilePanel === 'preview' ? 'bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/20' : 'text-muted-foreground hover:bg-accent/60'}`}
           >
-            <Eye className="w-5 h-5" />
+            <Eye className="w-4 h-4" />
             <span className="text-sm">{t('editor.preview')}</span>
           </button>
         </div>
@@ -904,24 +903,24 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         ) : (
           <div className="flex-1 overflow-hidden pb-14">
             {mobilePanel === 'chat' && (
-            <ChatView
-              messages={displayMessages}
-              onSendMessage={onSendMessage}
-              isGenerating={isGenerating}
-              fileActivities={fileActivities}
-              generationPhase={generationPhase}
-              onStop={onStop}
-              statusMessage={statusMessage}
-              currentVersion={currentVersionNumber ?? currentVersion}
-              onImageUpload={handleImageUpload}
-              suggestions={suggestions}
-              versions={versions}
-              onSelectVersion={handleSelectVersion}
-              onRollback={handleRollback}
-              onShowDetails={handleShowDetails}
-              waitingForTest={waitingForTest}
-              projectFiles={project?.files || {}}
-            />
+              <ChatView
+                messages={displayMessages}
+                onSendMessage={onSendMessage}
+                isGenerating={isGenerating}
+                fileActivities={fileActivities}
+                generationPhase={generationPhase}
+                onStop={onStop}
+                statusMessage={statusMessage}
+                currentVersion={currentVersionNumber ?? currentVersion}
+                onImageUpload={handleImageUpload}
+                suggestions={suggestions}
+                versions={versions}
+                onSelectVersion={handleSelectVersion}
+                onRollback={handleRollback}
+                onShowDetails={handleShowDetails}
+                waitingForTest={waitingForTest}
+                projectFiles={project?.files || {}}
+              />
             )}
 
             <div className={`h-full ${mobilePanel === 'preview' ? 'block' : 'hidden'}`}>
@@ -991,7 +990,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                       const name = renameValue.trim() || displayProjectName;
                       onUpdateProject({ name, generatedName: name });
                       if (project?.id) {
-                        supabase.from('projects').update({ name, generated_name: name }).eq('id', project.id).then(() => {});
+                        supabase.from('projects').update({ name, generated_name: name }).eq('id', project.id).then(() => { });
                       }
                       setShowRenameDialog(false);
                     }
@@ -1010,7 +1009,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                       const name = renameValue.trim() || displayProjectName;
                       onUpdateProject({ name, generatedName: name });
                       if (project?.id) {
-                        supabase.from('projects').update({ name, generated_name: name }).eq('id', project.id).then(() => {});
+                        supabase.from('projects').update({ name, generated_name: name }).eq('id', project.id).then(() => { });
                       }
                       setShowRenameDialog(false);
                     }}
