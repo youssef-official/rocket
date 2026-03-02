@@ -17,7 +17,6 @@ interface DetailsPanelProps {
   isGenerating?: boolean;
 }
 
-// Custom SVG icons matching the reference design
 const ReadIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4 shrink-0">
     <path d="M8 2.25A3.75 3.75 0 0 0 4.25 6v12A3.75 3.75 0 0 0 8 21.75h8A3.75 3.75 0 0 0 19.75 18V8.53a.75.75 0 0 0-.22-.53l-6-6a.75.75 0 0 0-.53-.22zm5.75 1.5v2.5A2.25 2.25 0 0 0 16 8.25h1.19l-3.44-3.44zM5.75 6A2.25 2.25 0 0 1 8 3.75h4.25V6A3.75 3.75 0 0 0 16 9.75h2.25V18A2.25 2.25 0 0 1 16 20.25H8A2.25 2.25 0 0 1 5.75 18z" />
@@ -69,9 +68,6 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
   const otherFiles = activities.filter(a => !['edited', 'created', 'read'].includes(a.action));
   const groupedActivities = [...modifiedFiles, ...createdFiles, ...otherFiles, ...readFiles];
 
-
-
-
   return (
     <div className="h-full flex flex-col bg-card">
       {/* Header */}
@@ -102,7 +98,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.02, duration: 0.15 }}
-                  className="flex items-center gap-3 px-5 py-3.5 transition-colors cursor-default group hover:bg-secondary/40"
+                  className="flex items-center gap-3 px-5 py-5 transition-colors cursor-default group hover:bg-secondary/40"
                 >
                   <div className={`${config.color}`}>
                     <config.Icon />
