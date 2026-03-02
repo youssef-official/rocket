@@ -293,16 +293,24 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
       }
     }
 
-    // Inject language into explanation mode
-    if (mode === "explanation" && userLanguage && messages.length > 0) {
+    // Inject language into explanation, suggestions, chat, version-name modes
+    const languageModes = ["explanation", "suggestions", "chat", "version-name"];
+    if (languageModes.includes(mode) && userLanguage && messages.length > 0) {
       const lastIdx = messages.findLastIndex((m: any) => m.role === "user");
       if (lastIdx >= 0) {
         finalMessages = [...messages];
+        const langMap: Record<string, string> = {
+          ar: 'Arabic', fr: 'French', es: 'Spanish', de: 'German',
+          ja: 'Japanese', ko: 'Korean', zh: 'Chinese', pt: 'Portuguese',
+          ru: 'Russian', tr: 'Turkish', hi: 'Hindi', it: 'Italian',
+          nl: 'Dutch', pl: 'Polish', en: 'English',
+        };
+        const langName = langMap[userLanguage] || userLanguage;
         finalMessages[lastIdx] = {
           ...finalMessages[lastIdx],
           content: appendTextToMessageContent(
             finalMessages[lastIdx].content,
-            `\n\nIMPORTANT: Reply in ${userLanguage === 'ar' ? 'Arabic' : userLanguage === 'fr' ? 'French' : userLanguage === 'es' ? 'Spanish' : 'English'}.`,
+            `\n\nCRITICAL: You MUST reply ENTIRELY in ${langName}. Every word of your response must be in ${langName}. USER_LANGUAGE=${userLanguage}`,
           ),
         };
       }

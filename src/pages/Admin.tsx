@@ -313,15 +313,18 @@ export const AdminPanel: React.FC = () => {
   const totalCreditsUsed = data.transactions.reduce((sum: number, t: any) => sum + (Number(t.credits_used) || 0), 0);
   const tabTitle = navSections.flatMap(s => s.items).find(n => n.key === tab)?.label || 'Dashboard';
 
-  // ─── Next-gen Design Tokens ─────────────────
-  const cardCls = "rounded-2xl border border-indigo-400/20 bg-slate-950/70 backdrop-blur-xl shadow-[0_18px_50px_-24px_rgba(59,130,246,.65)]";
-  const inputCls = "w-full px-3.5 py-2.5 bg-slate-900/70 border border-indigo-300/15 rounded-xl text-sm text-slate-100 outline-none focus:ring-2 focus:ring-cyan-400/35 focus:border-cyan-300/40 transition-all placeholder:text-slate-500 font-sans";
-  const labelCls = "block text-[11px] font-semibold text-slate-400 uppercase tracking-[0.22em] mb-1.5";
-  const btnPrimary = "px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-indigo-500 text-white text-sm font-semibold rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-[0_12px_25px_-12px_rgba(56,189,248,.8)]";
+  // ─── Design Tokens ─────────────────
+  const cardCls = "rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl";
+  const inputCls = "w-full px-3.5 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-white outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400/30 transition-all placeholder:text-white/20 font-sans";
+  const labelCls = "block text-[11px] font-semibold text-white/30 uppercase tracking-[0.22em] mb-1.5";
+  const btnPrimary = "px-5 py-2.5 bg-gradient-to-r from-violet-500 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg shadow-violet-500/20";
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-slate-950 text-slate-100">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(56,189,248,0.2),transparent_30%),radial-gradient(circle_at_80%_0%,rgba(99,102,241,0.26),transparent_35%),radial-gradient(circle_at_50%_100%,rgba(34,197,94,0.16),transparent_30%)]" />
+    <div className="relative flex h-screen overflow-hidden bg-[#08080c] text-white/90">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute top-0 left-[10%] w-[500px] h-[500px] rounded-full bg-violet-600/[0.06] blur-[120px]" />
+        <div className="absolute bottom-0 right-[20%] w-[400px] h-[400px] rounded-full bg-cyan-500/[0.04] blur-[100px]" />
+      </div>
 
       {/* ═══════════════ MOBILE OVERLAY ═══════════════ */}
       {mobileMenuOpen && (
@@ -333,18 +336,18 @@ export const AdminPanel: React.FC = () => {
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
         fixed md:relative z-50 md:z-10
         ${sidebarCollapsed ? 'w-[74px]' : 'w-72'}
-        bg-slate-950/80 border-r border-indigo-400/15 backdrop-blur-2xl flex flex-col h-screen flex-shrink-0 transition-all duration-300
+        bg-[#0c0c12] border-r border-white/[0.06] flex flex-col h-screen flex-shrink-0 transition-all duration-300
       `}>
 
         {/* Brand */}
-        <div className="h-20 flex items-center px-5 gap-3 flex-shrink-0 border-b border-indigo-400/15">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-cyan-500/30">
+        <div className="h-20 flex items-center px-5 gap-3 flex-shrink-0 border-b border-white/[0.06]">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-violet-500/20">
             <Rocket size={14} className="text-white" />
           </div>
           {!sidebarCollapsed && (
             <div>
-              <span className="text-sm font-semibold text-white tracking-wide">Admin Nexus</span>
-              <p className="text-[11px] text-slate-400">Vivora X Operations</p>
+              <span className="text-sm font-semibold text-white tracking-wide">Admin</span>
+              <p className="text-[11px] text-white/25">Vivora X Console</p>
             </div>
           )}
         </div>
@@ -354,7 +357,7 @@ export const AdminPanel: React.FC = () => {
           {navSections.map((section) => (
             <div key={section.title} className="mb-5">
               {!sidebarCollapsed && (
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.25em] px-3 mb-2">{section.title}</p>
+                <p className="text-[10px] font-semibold text-white/15 uppercase tracking-[0.25em] px-3 mb-2">{section.title}</p>
               )}
               <div className="space-y-0.5">
                 {section.items.map(item => {
@@ -367,16 +370,16 @@ export const AdminPanel: React.FC = () => {
                       title={sidebarCollapsed ? item.label : undefined}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all duration-200
                         ${active
-                          ? 'bg-gradient-to-r from-cyan-500/15 to-indigo-500/15 text-cyan-300 font-medium border border-cyan-300/20 shadow-[0_8px_20px_-14px_rgba(34,211,238,.9)]'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-900/80'
+                          ? 'bg-gradient-to-r from-violet-500/15 to-indigo-500/15 text-violet-300 font-medium border border-violet-400/20'
+                          : 'text-white/30 hover:text-white/70 hover:bg-white/[0.04]'
                         }`}
                     >
-                      <Icon size={15} className={active ? 'text-cyan-300' : 'text-slate-500'} />
+                      <Icon size={15} className={active ? 'text-violet-400' : 'text-white/20'} />
                       {!sidebarCollapsed && (
                         <>
                           <span className="flex-1 text-left">{item.label}</span>
                           {item.count !== undefined && item.count > 0 && (
-                            <span className={`text-[10px] font-mono min-w-[22px] text-center px-1.5 py-0.5 rounded ${active ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-800/80 text-slate-500'}`}>
+                            <span className={`text-[10px] font-mono min-w-[22px] text-center px-1.5 py-0.5 rounded ${active ? 'bg-violet-500/20 text-violet-300' : 'bg-white/[0.06] text-white/20'}`}>
                               {item.count}
                             </span>
                           )}
@@ -391,15 +394,13 @@ export const AdminPanel: React.FC = () => {
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-indigo-400/15 space-y-1">
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] text-slate-400 hover:text-white hover:bg-slate-900/80 transition-all"
-          >
+        <div className="p-3 border-t border-white/[0.06] space-y-1">
+          <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] text-white/25 hover:text-white/60 hover:bg-white/[0.04] transition-all">
             {sidebarCollapsed ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
             {!sidebarCollapsed && <span>Collapse</span>}
           </button>
-          <button onClick={() => navigate('/')} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] text-slate-400 hover:text-white hover:bg-slate-900/80 transition-all">
+          <button onClick={() => navigate('/')} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] text-white/25 hover:text-white/60 hover:bg-white/[0.04] transition-all">
             <Home size={15} />
             {!sidebarCollapsed && <span>Back to App</span>}
           </button>
@@ -410,27 +411,27 @@ export const AdminPanel: React.FC = () => {
       <div className="relative z-10 flex-1 flex flex-col overflow-hidden">
 
         {/* Top bar */}
-        <header className="h-16 px-4 md:px-8 flex items-center justify-between border-b border-indigo-400/15 bg-slate-950/60 backdrop-blur-xl flex-shrink-0">
+        <header className="h-16 px-4 md:px-8 flex items-center justify-between border-b border-white/[0.06] bg-[#08080c]/80 backdrop-blur-xl flex-shrink-0">
           <div className="flex items-center gap-3">
-            <button onClick={() => setMobileMenuOpen(true)} className="md:hidden text-slate-400 hover:text-white">
+            <button onClick={() => setMobileMenuOpen(true)} className="md:hidden text-white/30 hover:text-white">
               <Menu size={20} />
             </button>
-            <div className="flex items-center gap-2 text-sm text-slate-400">
-              <Settings2 size={13} className="text-cyan-300" />
-              <span className="text-slate-600">/</span>
+            <div className="flex items-center gap-2 text-sm text-white/30">
+              <Settings2 size={13} className="text-violet-400" />
+              <span className="text-white/10">/</span>
               <span className="font-semibold text-white">{tabTitle}</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-slate-900/75 border border-indigo-300/15 rounded-xl w-56">
-              <Search size={13} className="text-slate-500" />
-              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search modules..." className="bg-transparent border-none outline-none text-sm text-slate-100 w-full placeholder:text-slate-500" />
+            <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white/[0.04] border border-white/[0.06] rounded-xl w-56">
+              <Search size={13} className="text-white/20" />
+              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search..." className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-white/20" />
             </div>
-            <div className="flex items-center gap-2 pl-3 border-l border-indigo-400/15">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 flex items-center justify-center text-xs font-bold text-cyan-300 border border-cyan-300/20">
+            <div className="flex items-center gap-2 pl-3 border-l border-white/[0.06]">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 flex items-center justify-center text-xs font-bold text-violet-300 border border-violet-400/20">
                 {displayName.charAt(0).toUpperCase()}
               </div>
-              <span className="text-sm text-slate-300 hidden md:inline">{displayName}</span>
+              <span className="text-sm text-white/50 hidden md:inline">{displayName}</span>
             </div>
           </div>
         </header>

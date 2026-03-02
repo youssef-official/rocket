@@ -4,7 +4,7 @@ import {
   Book, Code, Zap, Palette, Upload, Download, 
   Share2, Settings, MessageSquare, ArrowLeft,
   ChevronRight, Search, Globe, Lock, GitBranch,
-  Layers, Rocket, Image as ImageIcon,
+  Layers, Rocket, Image as ImageIcon, Play,
   RefreshCw, Languages, CreditCard, Shield, Eye,
   PenTool, Bell, Users, Copy, Mail, Database
 } from 'lucide-react';
@@ -457,6 +457,62 @@ export const Docs: React.FC = () => {
             'Body: { "prompt": "your question", "config": { "stream": false } }',
             'Response: { "result": "AI response text" }',
             'No API key needed — works from browser or server',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'music-player',
+      title: 'Music Player',
+      icon: Play,
+      content: [
+        {
+          title: 'Integrated Music Player',
+          description: 'Vivora X includes a built-in floating music player that lets you listen to your favorite music while building projects.',
+        },
+        {
+          title: 'How to Use',
+          description: 'Getting started with the music player:',
+          steps: [
+            'Click the user menu (avatar) in the top right',
+            'Select "Music" from the dropdown',
+            'The floating player appears — drag it anywhere on screen',
+            'Click "Add Track" in the Playlist tab and paste an MP3 URL',
+            'Use playback controls: play/pause, next/previous, repeat, volume',
+            'Add tracks to Favorites by clicking the heart icon',
+          ],
+        },
+        {
+          title: 'Features',
+          description: 'The music player includes:',
+          steps: [
+            'Persistent across all pages — music keeps playing when navigating',
+            'Playlist management with unlimited tracks',
+            'Favorites list for quick access to loved tracks',
+            'Volume control and mute toggle',
+            'Repeat mode for looping tracks',
+            'Draggable mini-player — position it anywhere',
+            'Collapse to a small floating circle when not in use',
+            'All data saved locally in your browser',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'preview-games',
+      title: 'Preview Games',
+      icon: Zap,
+      content: [
+        {
+          title: 'Play Games While You Wait',
+          description: 'When your project is generating or the preview is loading, you can play mini-games to pass the time.',
+        },
+        {
+          title: 'Available Games',
+          description: 'Two games are available:',
+          steps: [
+            'Tic-Tac-Toe — Play against AI in the classic XO game',
+            'Snake — Control the snake with arrow keys or on-screen buttons',
           ],
         },
       ],

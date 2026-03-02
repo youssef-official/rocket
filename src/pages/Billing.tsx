@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CreditCard, Calendar, Coins, TrendingUp, AlertCircle, Crown, Zap, Rocket, Sparkles, Gauge, Layers } from 'lucide-react';
+import { ArrowLeft, CreditCard, Calendar, Coins, TrendingUp, AlertCircle, Crown, Zap, Rocket, Sparkles, Gauge, Layers, BarChart2, Clock, ArrowUpRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
@@ -29,6 +29,7 @@ const Billing: React.FC = () => {
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscriptionExpiry, setSubscriptionExpiry] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'projects'>('overview');
 
   useEffect(() => {
     if (!user) return;
@@ -39,7 +40,6 @@ const Billing: React.FC = () => {
     if (!user) return;
     setLoading(true);
     try {
-      // Fetch subscription expiry
       const { data: planData } = await supabase
         .from('user_plans')
         .select('subscription_expires_at')
@@ -50,7 +50,6 @@ const Billing: React.FC = () => {
         setSubscriptionExpiry(planData.subscription_expires_at);
       }
 
-      // Fetch credit transactions with project names
       const { data: txns } = await supabase
         .from('credit_transactions')
         .select('*')
@@ -59,256 +58,289 @@ const Billing: React.FC = () => {
         .limit(100);
 
       if (txns && txns.length > 0) {
-        // Get unique project IDs
         const projectIds = [...new Set(txns.filter(t => t.project_id).map(t => t.project_id!))];
-
         let projectMap: Record<string, string> = {};
         if (projectIds.length > 0) {
-          const { data: projects } = await supabase
-            .from('projects')
-            .select('id, name')
-            .in('id', projectIds);
-
-          if (projects) {
-            projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]));
-          }
+          const { data: projects } = await supabase.from('projects').select('id, name').in('id', projectIds);
+          if (projects) { projectMap = Object.fromEntries(projects.map(p => [p.id, p.name])); }
         }
-
-        setTransactions(txns.map(t => ({
-          ...t,
-          projectName: t.project_id ? projectMap[t.project_id] || 'Unknown Project' : undefined
-        })));
+        setTransactions(txns.map(t => ({ ...t, projectName: t.project_id ? projectMap[t.project_id] || 'Unknown Project' : undefined })));
       }
     } catch (err) {
       console.error('Failed to fetch billing data:', err);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  if (!user) {
-    navigate('/login');
-    return null;
-  }
+  if (!user) { navigate('/login'); return null; }
 
   const plan = userPlan?.plan || 'free';
   const planConfig = PLAN_CONFIG[plan] || PLAN_CONFIG.free;
   const remaining = getRemainingCredits();
   const isFree = plan === 'free';
-
   const totalCreditsUsed = transactions.reduce((sum, t) => sum + Number(t.credits_used), 0);
 
-  // Group transactions by project
   const projectUsage: Record<string, { name: string; credits: number; count: number }> = {};
   transactions.forEach(t => {
     const key = t.project_id || 'no-project';
-    if (!projectUsage[key]) {
-      projectUsage[key] = { name: t.projectName || 'General', credits: 0, count: 0 };
-    }
+    if (!projectUsage[key]) { projectUsage[key] = { name: t.projectName || 'General', credits: 0, count: 0 }; }
     projectUsage[key].credits += Number(t.credits_used);
     projectUsage[key].count += 1;
   });
 
-  const planIcon = plan === 'business' ? <Rocket className="w-6 h-6" /> : plan === 'pro' ? <Crown className="w-6 h-6" /> : <Zap className="w-6 h-6" />;
-  const planGradient = plan === 'business' ? 'from-fuchsia-500 via-indigo-500 to-cyan-500' : plan === 'pro' ? 'from-violet-500 via-indigo-500 to-sky-500' : 'from-slate-600 via-slate-500 to-slate-700';
+  const planColors = {
+    free: { gradient: 'from-slate-500 to-slate-600', badge: 'bg-slate-500/15 text-slate-300', glow: 'shadow-slate-500/20' },
+    pro: { gradient: 'from-violet-500 to-indigo-600', badge: 'bg-violet-500/15 text-violet-300', glow: 'shadow-violet-500/30' },
+    business: { gradient: 'from-amber-500 to-orange-600', badge: 'bg-amber-500/15 text-amber-300', glow: 'shadow-amber-500/30' },
+  }[plan] || { gradient: 'from-slate-500 to-slate-600', badge: 'bg-slate-500/15 text-slate-300', glow: 'shadow-slate-500/20' };
+
+  const cardCls = "rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl";
+
+  // Today stats
+  const todayTx = transactions.filter(t => {
+    const d = new Date(t.created_at);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  });
+  const todayCredits = todayTx.reduce((s, t) => s + Number(t.credits_used), 0);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-950">
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_10%_10%,rgba(56,189,248,0.2),transparent_32%),radial-gradient(circle_at_90%_0%,rgba(99,102,241,0.2),transparent_35%),radial-gradient(circle_at_50%_100%,rgba(168,85,247,0.16),transparent_32%)]" />
-      <div
-        className="fixed inset-0 pointer-events-none z-0 opacity-30"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E")`,
-        }}
-      />
+    <div className="relative min-h-screen bg-[#08080c]">
+      {/* Ambient glow */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full bg-violet-600/[0.07] blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full bg-cyan-500/[0.05] blur-[100px]" />
+      </div>
+
       <SEOHead title="Billing — Vivora X" description="Manage your subscription and view credit usage." />
 
-      <header className="relative z-10 border-b border-indigo-300/15 bg-slate-950/70 px-6 py-4 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
-            <VivoraXLogo size="md" />
-          </a>
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm">
-            <ArrowLeft className="w-4 h-4" />
-            {t('nav.backToHome')}
+      {/* Header */}
+      <header className="relative z-10 border-b border-white/[0.06] bg-[#08080c]/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <a href="/" className="flex items-center gap-2"><VivoraXLogo size="md" /></a>
+          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-white/40 hover:text-white/80 transition-colors text-sm">
+            <ArrowLeft className="w-4 h-4" />{t('nav.backToHome')}
           </button>
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-6xl px-4 py-8 space-y-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="mb-2 text-4xl font-black tracking-tight text-white">Billing Command Center</h1>
-          <p className="text-slate-300">Track credits, monitor spending velocity, and manage your plan in one premium cockpit.</p>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-indigo-300/15 bg-slate-900/70 p-4">
-            <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-400"><Gauge className="h-3.5 w-3.5 text-cyan-300" />Velocity</div>
-            <p className="text-2xl font-bold text-white">{totalCreditsUsed.toFixed(1)}</p>
-            <p className="text-xs text-slate-400">credits consumed</p>
+      <main className="relative z-10 mx-auto max-w-7xl px-6 py-10 space-y-8">
+        {/* Title + Plan Badge */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Billing</h1>
+            <p className="text-white/40 text-sm mt-1">Track usage, manage your plan, and view transaction history.</p>
           </div>
-          <div className="rounded-2xl border border-indigo-300/15 bg-slate-900/70 p-4">
-            <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-400"><Layers className="h-3.5 w-3.5 text-fuchsia-300" />Projects</div>
-            <p className="text-2xl font-bold text-white">{Object.keys(projectUsage).length}</p>
-            <p className="text-xs text-slate-400">active usage buckets</p>
-          </div>
-          <div className="rounded-2xl border border-indigo-300/15 bg-slate-900/70 p-4">
-            <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-400"><Sparkles className="h-3.5 w-3.5 text-emerald-300" />Transactions</div>
-            <p className="text-2xl font-bold text-white">{transactions.length}</p>
-            <p className="text-xs text-slate-400">entries in log</p>
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${planColors.badge}`}>
+            {plan === 'business' ? <Rocket className="w-4 h-4" /> : plan === 'pro' ? <Crown className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+            <span className="text-sm font-semibold capitalize">{plan} Plan</span>
           </div>
         </motion.div>
 
-        {/* Current Subscription Tier Card */}
+        {/* Stats Cards */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Daily Remaining', value: remaining.daily.toFixed(1), icon: Gauge, color: 'text-cyan-400', sub: `of ${planConfig.dailyCredits}` },
+            { label: 'Monthly Remaining', value: remaining.monthly.toFixed(1), icon: Layers, color: 'text-violet-400', sub: `of ${planConfig.monthlyCredits}` },
+            { label: 'Today Used', value: todayCredits.toFixed(1), icon: Clock, color: 'text-amber-400', sub: `${todayTx.length} generations` },
+            { label: 'Total Consumed', value: totalCreditsUsed.toFixed(1), icon: TrendingUp, color: 'text-emerald-400', sub: `${transactions.length} transactions` },
+          ].map((stat, i) => {
+            const Icon = stat.icon;
+            return (
+              <div key={i} className={`${cardCls} p-5 group hover:border-white/[0.12] transition-colors`}>
+                <div className="flex items-center justify-between mb-3">
+                  <Icon className={`w-4 h-4 ${stat.color}`} />
+                  <span className="text-[10px] font-medium text-white/30 uppercase tracking-widest">{stat.label}</span>
+                </div>
+                <p className="text-2xl font-bold text-white tabular-nums">{stat.value}</p>
+                <p className="text-[11px] text-white/25 mt-0.5">{stat.sub}</p>
+              </div>
+            );
+          })}
+        </motion.div>
+
+        {/* Plan Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="overflow-hidden rounded-3xl border border-indigo-300/15 bg-slate-950/70 shadow-[0_30px_60px_-35px_rgba(56,189,248,.7)] backdrop-blur-xl">
-          <div className={`p-7 bg-gradient-to-r ${planGradient} text-white`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  {planIcon}
+          className={`${cardCls} overflow-hidden shadow-2xl ${planColors.glow}`}>
+          <div className={`p-6 bg-gradient-to-r ${planColors.gradient}`}>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                  {plan === 'business' ? <Rocket className="w-7 h-7 text-white" /> : plan === 'pro' ? <Crown className="w-7 h-7 text-white" /> : <Zap className="w-7 h-7 text-white" />}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{planConfig.name} Plan</h2>
-                  <p className="text-white/80 text-sm">${planConfig.price}/month</p>
+                  <h2 className="text-xl font-bold text-white">{planConfig.name} Plan</h2>
+                  <p className="text-white/70 text-sm">${planConfig.price}/month</p>
                 </div>
               </div>
               {!isFree && subscriptionExpiry && (
                 <div className="text-right">
-                  <div className="flex items-center gap-2 text-white/80 text-sm">
-                    <Calendar className="w-4 h-4" />
-                    <span>Expires</span>
-                  </div>
-                  <p className="font-semibold">{new Date(subscriptionExpiry).toLocaleDateString()}</p>
+                  <div className="flex items-center gap-2 text-white/70 text-xs"><Calendar className="w-3.5 h-3.5" />Expires</div>
+                  <p className="font-semibold text-white">{new Date(subscriptionExpiry).toLocaleDateString()}</p>
                 </div>
               )}
             </div>
           </div>
-
-          <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-3 rounded-xl bg-secondary/50">
-              <p className="text-2xl font-bold text-foreground">{remaining.daily.toFixed(1)}</p>
-              <p className="text-xs text-slate-400">Daily Remaining</p>
+          
+          {/* Credit bars */}
+          <div className="p-6 space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-white/40">Daily Credits</span>
+                <span className="text-xs font-mono text-white/60">{remaining.daily.toFixed(1)} / {planConfig.dailyCredits}</span>
+              </div>
+              <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
+                <motion.div className={`h-full rounded-full bg-gradient-to-r ${planColors.gradient}`}
+                  initial={{ width: 0 }} animate={{ width: `${Math.min((remaining.daily / planConfig.dailyCredits) * 100, 100)}%` }}
+                  transition={{ duration: 1, ease: 'easeOut' }} />
+              </div>
             </div>
-            <div className="text-center p-3 rounded-xl bg-secondary/50">
-              <p className="text-2xl font-bold text-foreground">{remaining.monthly.toFixed(1)}</p>
-              <p className="text-xs text-slate-400">Monthly Remaining</p>
-            </div>
-            <div className="text-center p-3 rounded-xl bg-secondary/50">
-              <p className="text-2xl font-bold text-foreground">{totalCreditsUsed.toFixed(1)}</p>
-              <p className="text-xs text-slate-400">Total Burned</p>
-            </div>
-            <div className="text-center p-3 rounded-xl bg-secondary/50">
-              <p className="text-2xl font-bold text-foreground">{transactions.length}</p>
-              <p className="text-xs text-slate-400">Ops Logs</p>
-            </div>
+            {planConfig.monthlyCredits > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs text-white/40">Monthly Credits</span>
+                  <span className="text-xs font-mono text-white/60">{remaining.monthly.toFixed(1)} / {planConfig.monthlyCredits}</span>
+                </div>
+                <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
+                  <motion.div className={`h-full rounded-full bg-gradient-to-r ${planColors.gradient}`}
+                    initial={{ width: 0 }} animate={{ width: `${Math.min((remaining.monthly / planConfig.monthlyCredits) * 100, 100)}%` }}
+                    transition={{ duration: 1, delay: 0.2, ease: 'easeOut' }} />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Renewal / Upgrade CTA */}
-          <div className="border-t border-indigo-300/15 p-6">
+          {/* CTA */}
+          <div className="border-t border-white/[0.06] p-6">
             {isFree ? (
-              <div className="flex items-center gap-4 rounded-2xl border border-indigo-300/15 bg-slate-900/70 p-4">
-                <AlertCircle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+              <div className="flex items-center gap-4 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+                <AlertCircle className="w-5 h-5 text-white/30 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-white">You're on the Free plan</p>
-                  <p className="text-xs text-slate-300">Upgrade for higher limits, deeper analytics, and priority generation speed.</p>
+                  <p className="text-sm font-semibold text-white">Upgrade for more power</p>
+                  <p className="text-xs text-white/40">Unlock higher limits, code editing, and priority generation.</p>
                 </div>
-                <a href="/pricing" className="rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity">
-                  View Plans
+                <a href="/pricing" className={`rounded-xl bg-gradient-to-r ${planColors.gradient} px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity flex items-center gap-1`}>
+                  View Plans <ArrowUpRight className="w-3.5 h-3.5" />
                 </a>
               </div>
             ) : (
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Renew or change your plan</p>
+                <p className="text-sm text-white/30">Renew or change your plan</p>
                 <PayPalButton plan={plan} onSuccess={() => window.location.reload()} />
               </div>
             )}
           </div>
         </motion.div>
 
-        {/* Project Usage Breakdown */}
-        {!isFree && Object.keys(projectUsage).length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="rounded-3xl border border-indigo-300/15 bg-slate-950/70 p-6 backdrop-blur-xl">
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
-              <TrendingUp className="h-5 w-5 text-cyan-300" />
-              Usage by Project
-            </h3>
-            <div className="grid gap-3 md:grid-cols-2">
-              {Object.entries(projectUsage)
-                .sort(([, a], [, b]) => b.credits - a.credits)
-                .map(([key, data]) => (
-                  <div key={key} className="flex items-center justify-between rounded-2xl border border-indigo-300/10 bg-slate-900/70 p-3 hover:border-cyan-300/25 transition-colors">
-                    <div>
-                      <p className="text-sm font-medium text-white">{data.name}</p>
-                      <p className="text-xs text-slate-400">{data.count} generations</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Coins className="w-4 h-4 text-yellow-500" />
-                      <span className="font-bold text-cyan-200">{data.credits.toFixed(1)}</span>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Transaction History */}
+        {/* Tabs */}
         {!isFree && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="overflow-hidden rounded-3xl border border-indigo-300/15 bg-slate-950/70 shadow-[0_30px_60px_-35px_rgba(56,189,248,.7)] backdrop-blur-xl">
-            <div className="border-b border-indigo-300/15 p-6">
-              <h3 className="flex items-center gap-2 text-lg font-bold text-white">
-                <CreditCard className="h-5 w-5 text-cyan-300" />
-                Transaction History
-              </h3>
+          <>
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06] w-fit">
+              {(['overview', 'transactions', 'projects'] as const).map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2 rounded-lg text-xs font-medium capitalize transition-all ${activeTab === tab ? 'bg-white/[0.08] text-white' : 'text-white/30 hover:text-white/60'}`}>
+                  {tab}
+                </button>
+              ))}
             </div>
 
-            {loading ? (
-              <div className="p-8 text-center">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-              </div>
-            ) : transactions.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-sm">
-                No transactions yet.
-              </div>
-            ) : (
-              <div className="max-h-[500px] divide-y divide-indigo-300/10 overflow-y-auto">
-                {transactions.map(tx => (
-                  <div key={tx.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-slate-900/70 transition-colors">
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-medium text-white">
-                        {tx.description || tx.work_type || 'Code Generation'}
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {tx.projectName && <span>{tx.projectName} · </span>}
-                        {new Date(tx.created_at).toLocaleString()}
-                        
-                      </p>
+            {/* Overview: Project Usage */}
+            {activeTab === 'overview' && Object.keys(projectUsage).length > 0 && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${cardCls} p-6`}>
+                <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+                  <BarChart2 className="h-4 w-4 text-cyan-400" /> Usage by Project
+                </h3>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {Object.entries(projectUsage).sort(([, a], [, b]) => b.credits - a.credits).map(([key, data]) => (
+                    <div key={key} className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5 hover:border-white/[0.1] transition-colors">
+                      <div>
+                        <p className="text-sm font-medium text-white">{data.name}</p>
+                        <p className="text-[11px] text-white/25">{data.count} generations</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-amber-400 font-semibold text-sm">
+                        <Coins className="w-3.5 h-3.5" />{data.credits.toFixed(1)}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 text-destructive font-semibold text-sm flex-shrink-0 ml-4">
-                      <Coins className="w-3.5 h-3.5" />
-                      -{Number(tx.credits_used).toFixed(1)}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </motion.div>
             )}
-          </motion.div>
+
+            {/* Transactions */}
+            {activeTab === 'transactions' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${cardCls} overflow-hidden`}>
+                <div className="border-b border-white/[0.06] p-5">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <CreditCard className="h-4 w-4 text-violet-400" /> Transaction History
+                  </h3>
+                </div>
+                {loading ? (
+                  <div className="p-8 text-center"><div className="w-6 h-6 border-2 border-white/10 border-t-white/40 rounded-full animate-spin mx-auto" /></div>
+                ) : transactions.length === 0 ? (
+                  <div className="p-8 text-center text-white/20 text-sm">No transactions yet.</div>
+                ) : (
+                  <div className="max-h-[500px] divide-y divide-white/[0.04] overflow-y-auto">
+                    {transactions.map(tx => (
+                      <div key={tx.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02] transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate text-sm font-medium text-white/80">{tx.description || tx.work_type || 'Code Generation'}</p>
+                          <p className="text-[11px] text-white/20">
+                            {tx.projectName && <span>{tx.projectName} · </span>}
+                            {new Date(tx.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-red-400 font-semibold text-sm flex-shrink-0 ml-4">
+                          <Coins className="w-3 h-3" />-{Number(tx.credits_used).toFixed(1)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Projects breakdown */}
+            {activeTab === 'projects' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={`${cardCls} p-6`}>
+                <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+                  <Sparkles className="h-4 w-4 text-emerald-400" /> Project Breakdown
+                </h3>
+                {Object.keys(projectUsage).length === 0 ? (
+                  <p className="text-sm text-white/20 text-center py-8">No project usage data yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {Object.entries(projectUsage).sort(([, a], [, b]) => b.credits - a.credits).map(([key, data]) => {
+                      const pct = totalCreditsUsed > 0 ? (data.credits / totalCreditsUsed) * 100 : 0;
+                      return (
+                        <div key={key} className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-white/70">{data.name}</span>
+                            <span className="text-xs font-mono text-white/40">{data.credits.toFixed(1)} credits ({pct.toFixed(0)}%)</span>
+                          </div>
+                          <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                            <motion.div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-violet-500"
+                              initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                              transition={{ duration: 0.8, ease: 'easeOut' }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </>
         )}
 
-        {/* Free plan message */}
+        {/* Free plan */}
         {isFree && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="rounded-3xl border border-indigo-300/15 bg-slate-950/70 p-8 text-center backdrop-blur-xl">
-            <CreditCard className="mx-auto mb-4 h-12 w-12 text-cyan-300" />
+            className={`${cardCls} p-10 text-center`}>
+            <CreditCard className="mx-auto mb-4 h-10 w-10 text-white/15" />
             <h3 className="mb-2 text-lg font-bold text-white">No billing history</h3>
-            <p className="mb-6 text-sm text-slate-300">
-              Upgrade to a paid plan to access detailed transaction history, project usage breakdown, and more credits.
-            </p>
-            <a href="/pricing" className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-500 px-6 py-3 font-semibold text-white hover:opacity-90 transition-opacity">
-              <Crown className="w-4 h-4" />
-              View Plans
+            <p className="mb-6 text-sm text-white/30">Upgrade to a paid plan to access transaction history and detailed analytics.</p>
+            <a href="/pricing" className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-600 px-6 py-3 font-semibold text-white hover:opacity-90 transition-opacity">
+              <Crown className="w-4 h-4" /> View Plans
             </a>
           </motion.div>
         )}
