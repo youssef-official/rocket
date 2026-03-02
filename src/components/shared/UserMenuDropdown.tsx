@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Settings2, LogOut, Moon, Sun, Monitor, Coins, Crown, Sparkles, ImageIcon, Music } from 'lucide-react';
+import { User as UserIcon, Settings2, LogOut, Moon, Sun, Monitor, Coins, Crown, Sparkles, ImageIcon, Music, LayoutDashboard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '@/types';
 import { useThemePreference } from '@/hooks/useThemePreference';
@@ -166,10 +166,10 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
         className="w-9 h-9 rounded-full bg-accent flex items-center justify-center hover:opacity-90 transition-all duration-200 overflow-hidden ring-2 ring-white/[0.08] hover:ring-white/20"
       >
         {user.avatarUrl ? (
-          <img 
-            src={user.avatarUrl} 
-            alt="" 
-            className="w-full h-full object-cover rounded-full" 
+          <img
+            src={user.avatarUrl}
+            alt=""
+            className="w-full h-full object-cover rounded-full"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
@@ -213,19 +213,19 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                 </div>
                 <span className="text-sm font-bold text-yellow-400">{remainingCredits.total.toFixed(1)}</span>
               </div>
-              
-              <Progress 
-                value={100 - usagePercent} 
+
+              <Progress
+                value={100 - usagePercent}
                 className="h-1.5 bg-white/[0.06] mb-2"
               />
-              
+
               <div className="flex justify-between text-[11px] text-white/40">
                 <span>{t('credits.daily')}: {remainingCredits.daily.toFixed(1)}</span>
                 {planConfig.monthlyCredits > 0 && (
                   <span>{t('credits.monthly')}: {remainingCredits.monthly.toFixed(1)}</span>
                 )}
               </div>
-              
+
               <p className="text-[10px] text-white/30 mt-1.5">
                 {t('credits.resetsDaily')} (UTC)
               </p>
@@ -291,6 +291,28 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
 
               {/* Wallpaper */}
               <WallpaperSelector />
+
+              {/* Layout Toggle */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const current = localStorage.getItem('vivora_home_layout') || 'classic';
+                  const next = current === 'classic' ? 'sidebar' : 'classic';
+                  localStorage.setItem('vivora_home_layout', next);
+                  window.dispatchEvent(new Event('vivora-layout-change'));
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
+              >
+                <div className={`flex items-center gap-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <LayoutDashboard className="w-4 h-4" />
+                  Layout
+                </div>
+                <span className="text-[11px] text-white/40 bg-white/[0.06] px-2 py-0.5 rounded-md">
+                  {(localStorage.getItem('vivora_home_layout') || 'classic') === 'classic' ? 'Classic' : 'Sidebar'}
+                </span>
+              </button>
 
               {/* Music */}
               <button

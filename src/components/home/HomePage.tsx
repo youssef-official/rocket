@@ -19,6 +19,7 @@ import { useThemePreference } from '@/hooks/useThemePreference';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 import lightHeroBg from '@/assets/light-hero-bg.jpg';
 import { supabase } from '@/integrations/supabase/client';
+import { HomePageV2 } from './HomePageV2';
 
 interface Project {
   id: string;
@@ -43,7 +44,27 @@ interface HomePageProps {
 
 const MAX_PROMPT_LENGTH = 1000000;
 
-export const HomePage: React.FC<HomePageProps> = ({
+export const HomePage: React.FC<HomePageProps> = (props) => {
+  const [homeLayout, setHomeLayout] = useState(() => localStorage.getItem('vivora_home_layout') || 'classic');
+
+  useEffect(() => {
+    const handler = () => {
+      setHomeLayout(localStorage.getItem('vivora_home_layout') || 'classic');
+    };
+    window.addEventListener('vivora-layout-change', handler);
+    return () => window.removeEventListener('vivora-layout-change', handler);
+  }, []);
+
+  // Render V2 sidebar layout
+  if (homeLayout === 'sidebar') {
+    return <HomePageV2 {...props} />;
+  }
+
+  // Render classic layout
+  return <HomePageClassic {...props} />;
+};
+
+const HomePageClassic: React.FC<HomePageProps> = ({
   onStartBuilding,
   onViewDashboard,
   onOpenProject,
@@ -61,7 +82,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   // Wallpaper selection (listens for changes from UserMenuDropdown)
   const [wallpaperId, setWallpaperId] = useState(() => localStorage.getItem('vivora_wallpaper') || 'space');
-  
+
   useEffect(() => {
     const handler = () => {
       setWallpaperId(localStorage.getItem('vivora_wallpaper') || 'space');
@@ -679,7 +700,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                           exit={{ opacity: 0, y: 5, scale: 0.95 }}
                           transition={{ duration: 0.15 }}
                           className={`fixed mb-2 w-56 bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-200/80 overflow-hidden z-[9999]`}
-                          style={{ 
+                          style={{
                             left: plusButtonRef.current ? (isRTL ? plusButtonRef.current.getBoundingClientRect().right - 224 : plusButtonRef.current.getBoundingClientRect().left) : 'auto',
                             top: plusButtonRef.current ? plusButtonRef.current.getBoundingClientRect().top - 210 : 'auto',
                           }}
@@ -774,7 +795,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                           exit={{ opacity: 0, y: 5, scale: 0.95 }}
                           transition={{ duration: 0.15 }}
                           className={`fixed mb-2 w-60 bg-white rounded-2xl shadow-xl shadow-black/10 border border-gray-200/80 overflow-hidden z-50 max-h-80 overflow-y-auto`}
-                          style={{ 
+                          style={{
                             left: plusButtonRef.current ? (isRTL ? plusButtonRef.current.getBoundingClientRect().right - 240 : plusButtonRef.current.getBoundingClientRect().left) : 'auto',
                             top: plusButtonRef.current ? plusButtonRef.current.getBoundingClientRect().top - 320 : 'auto',
                           }}
@@ -794,9 +815,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                                 }
                                 setShowThemeMenu(false);
                               }}
-                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all duration-200 text-left ${
-                                (selectedTheme?.name === theme.name || (!selectedTheme && theme.name === 'Default')) ? 'bg-indigo-50' : ''
-                              }`}
+                              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all duration-200 text-left ${(selectedTheme?.name === theme.name || (!selectedTheme && theme.name === 'Default')) ? 'bg-indigo-50' : ''
+                                }`}
                             >
                               <div className="flex -space-x-1.5">
                                 {theme.colors.map((c, i) => (
@@ -827,7 +847,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                         <X className="w-2.5 h-2.5 text-gray-600" />
                       </button>
                     </div>
-                   )}
+                  )}
                   {/* Character Count */}
                   <span className={`text-[10px] md:text-xs font-mono tabular-nums ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-destructive font-bold' : 'text-gray-400'}`}>
                     {prompt.length}/{MAX_PROMPT_LENGTH}
@@ -839,9 +859,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <button
                     type="button"
                     onClick={isListening ? stopListening : startListening}
-                    className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 flex-shrink-0 ${
-                      isListening ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/25 animate-pulse' : 'bg-gray-100 hover:bg-gray-200'
-                    }`}
+                    className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 flex-shrink-0 ${isListening ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/25 animate-pulse' : 'bg-gray-100 hover:bg-gray-200'
+                      }`}
                     title={isListening ? 'Stop listening' : 'Voice input'}
                   >
                     {isListening ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4 text-gray-500" />}
@@ -852,9 +871,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
                     disabled={!prompt.trim() || isSubmitting}
-                    className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-40 flex-shrink-0 shadow-lg ${
-                      prompt.trim() ? 'bg-primary hover:bg-primary/90 shadow-primary/25' : 'bg-gray-200 hover:bg-gray-300 shadow-none'
-                    }`}
+                    className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-40 flex-shrink-0 shadow-lg ${prompt.trim() ? 'bg-primary hover:bg-primary/90 shadow-primary/25' : 'bg-gray-200 hover:bg-gray-300 shadow-none'
+                      }`}
                   >
                     <ArrowRight className={`w-4 h-4 md:w-[18px] md:h-[18px] ${prompt.trim() ? 'text-primary-foreground' : 'text-gray-500'}`} />
                   </motion.button>
