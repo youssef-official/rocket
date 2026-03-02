@@ -172,7 +172,7 @@ const ProjectEditorRoute = () => {
         let cloneData: { url: string; html: string } | null = null;
         if (cloneDataRaw) {
           sessionStorage.removeItem('pending_clone_data');
-          try { cloneData = JSON.parse(cloneDataRaw); } catch {}
+          try { cloneData = JSON.parse(cloneDataRaw); } catch { }
         }
 
         // Add user message (visible) - show clone indicator but NOT the HTML
@@ -248,10 +248,10 @@ const ProjectEditorRoute = () => {
 
           // Add explanation message for initial generation (keep it SHORT)
           const assistantId = crypto.randomUUID();
-           const planContent = planLines.length > 0
-             ? `${planLines.slice(0, 4).map((line) => `- ${line}`).join('\n')}\n\n`
-             : '';
-           const explanationMessage = `${planContent}**${t('chat.generating')}**`;
+          const planContent = planLines.length > 0
+            ? `${planLines.slice(0, 4).map((line) => `- ${line}`).join('\n')}\n\n`
+            : '';
+          const explanationMessage = `${planContent}**${t('chat.generating')}**`;
           await addMessage('assistant', explanationMessage, undefined, undefined, undefined, assistantId);
           lastAssistantMessageId.current = assistantId;
 
@@ -771,7 +771,7 @@ const ProjectEditorRoute = () => {
 
             // Use AI's actions_taken for read/edit/create activities
             const imageActivities: FileActivity[] = fileActivities.filter(a => a.action === 'analyzed_image');
-            
+
             let fileActivitiesList: FileActivity[];
             if (actionsTaken && actionsTaken.length > 0) {
               // AI provided its own actions (reads + edits + creates)
@@ -1073,11 +1073,11 @@ const AppContent = () => {
           files: dbProject.files,
           isPublished: dbProject.isPublished,
           publishedSlug: dbProject.publishedSlug,
-           createdAt: dbProject.createdAt,
-           updatedAt: dbProject.updatedAt,
-           githubRepoUrl: dbProject.githubRepoUrl,
-           vercelUrl: dbProject.vercelUrl,
-         });
+          createdAt: dbProject.createdAt,
+          updatedAt: dbProject.updatedAt,
+          githubRepoUrl: dbProject.githubRepoUrl,
+          vercelUrl: dbProject.vercelUrl,
+        });
       }
     }
   }, [currentProjectId, projects, localProject]);
@@ -1253,6 +1253,7 @@ import AboutUs from "@/pages/AboutUs";
 import ProjectSettings from "@/pages/ProjectSettings";
 import Billing from "@/pages/Billing";
 import SupabaseCallbackPage from "@/pages/SupabaseCallback";
+import GetStarted from "@/pages/GetStarted";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -1265,7 +1266,10 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/login" element={<AuthPage onSuccess={() => window.location.href = '/'} />} />
+              <Route path="/login" element={<AuthPage onSuccess={() => {
+                const onboardingDone = localStorage.getItem('onboarding_completed');
+                window.location.href = onboardingDone ? '/' : '/get-started';
+              }} />} />
               <Route path="/dashboard" element={<DashboardRoute />} />
               <Route path="/projects/:id" element={<ProjectEditorRoute />} />
               <Route path="/projects/:id/settings" element={<ProjectSettings />} />
@@ -1285,6 +1289,7 @@ const App = () => (
               <Route path="/supabase-connect" element={<SupabaseConnect />} />
               <Route path="/supabase-callback" element={<SupabaseCallbackPage />} />
               <Route path="/about" element={<AboutUs />} />
+              <Route path="/get-started" element={<GetStarted />} />
               <Route path="/" element={<AppContent />} />
             </Routes>
           </BrowserRouter>
