@@ -84,9 +84,18 @@ export const AdminPanel: React.FC = () => {
     }
     const fetchData = async () => {
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
+        let { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData?.session) {
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          sessionData = refreshed;
+        }
         if (!sessionData?.session) { navigate('/login'); return; }
-        const { data: result, error: fnError } = await supabase.functions.invoke('admin-data');
+        const accessToken = sessionData.session.access_token;
+        const { data: result, error: fnError } = await supabase.functions.invoke('admin-data', {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
         if (fnError) {
           const msg = fnError.message || '';
           if (msg.includes('Unauthorized') || msg.includes('401')) { setError('Unauthorized'); return; }
