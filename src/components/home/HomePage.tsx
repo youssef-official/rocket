@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Send, X, Image as ImageIcon, ChevronDown, Sparkles, BookOpen, CircleHelp, LogIn, Wand2, ArrowUpRight, Plus, Copy, Loader2, Mic, MicOff, Palette } from 'lucide-react';
 import { CelebrationEffects } from './CelebrationEffects';
-import { UserMenuDropdown, getWallpaperSrc, isGradientWallpaper } from '@/components/shared/UserMenuDropdown';
+import { UserMenuDropdown, getWallpaperSrc } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ProjectsSection } from './ProjectsSection';
@@ -75,8 +75,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   };
 
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const isAuroraGradient = isGradientWallpaper(wallpaperId);
-  const heroBg = isAuroraGradient ? '' : getWallpaperUrl(wallpaperId);
+  const heroBg = getWallpaperUrl(wallpaperId);
 
   const [prompt, setPrompt] = useState(() => localStorage.getItem('vivora_home_prompt') || '');
   const [selectedFramework, setSelectedFramework] = useState('React');
@@ -415,76 +414,18 @@ export const HomePage: React.FC<HomePageProps> = ({
     <div
       className="min-h-screen relative overflow-hidden"
       dir={isRTL ? 'rtl' : 'ltr'}
-      style={isAuroraGradient ? { backgroundColor: '#0d0d0d' } : {
+      style={{
         backgroundImage: `url(${heroBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed'
       }}
     >
-      {/* Aurora Gradient Background - only from bottom */}
-      {isAuroraGradient && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {/* Pink center glow - bottom only */}
-          <div
-            className="absolute left-1/2 -translate-x-1/2 animate-pulse"
-            style={{
-              bottom: '-80px',
-              width: '900px',
-              height: '350px',
-              background: 'radial-gradient(ellipse at center, rgba(236,72,153,0.65) 0%, rgba(219,39,119,0.35) 30%, transparent 70%)',
-              filter: 'blur(60px)',
-              animationDuration: '8s',
-            }}
-          />
-          {/* Blue left glow */}
-          <div
-            className="absolute animate-pulse"
-            style={{
-              bottom: '-100px',
-              left: '5%',
-              width: '500px',
-              height: '300px',
-              background: 'radial-gradient(ellipse at center, rgba(59,130,246,0.55) 0%, rgba(37,99,235,0.25) 40%, transparent 70%)',
-              filter: 'blur(50px)',
-              animationDuration: '10s',
-            }}
-          />
-          {/* Blue right glow */}
-          <div
-            className="absolute animate-pulse"
-            style={{
-              bottom: '-100px',
-              right: '5%',
-              width: '500px',
-              height: '300px',
-              background: 'radial-gradient(ellipse at center, rgba(59,130,246,0.55) 0%, rgba(37,99,235,0.25) 40%, transparent 70%)',
-              filter: 'blur(50px)',
-              animationDuration: '12s',
-            }}
-          />
-          {/* Purple center accent */}
-          <div
-            className="absolute left-1/2 -translate-x-1/2 animate-pulse"
-            style={{
-              bottom: '-40px',
-              width: '600px',
-              height: '200px',
-              background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.4) 0%, transparent 60%)',
-              filter: 'blur(40px)',
-              animationDuration: '6s',
-            }}
-          />
-        </div>
-      )}
-
       {/* Celebration Effects */}
       <CelebrationEffects />
 
       {/* Dark overlay */}
-      {!isAuroraGradient && (
-        <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-b from-black/30 via-transparent to-black/50' : 'bg-gradient-to-b from-white/10 via-transparent to-white/30'}`} />
-      )}
+      <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-b from-black/30 via-transparent to-black/50' : 'bg-gradient-to-b from-white/10 via-transparent to-white/30'}`} />
 
       {/* Header */}
       <header className="relative z-[100] px-4 md:px-6 py-4">

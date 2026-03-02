@@ -9,6 +9,7 @@ import { LanguageSelector } from './LanguageSelector';
 import { Progress } from '@/components/ui/progress';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 import lightHeroBg from '@/assets/light-hero-bg.jpg';
+import auroraGradientBg from '@/assets/aurora-gradient-bg.png';
 
 interface UserMenuDropdownProps {
   user: User;
@@ -18,7 +19,7 @@ interface UserMenuDropdownProps {
 }
 
 const WALLPAPERS = [
-  { id: 'aurora-gradient', label: 'Aurora', src: 'gradient:aurora', gradient: 'linear-gradient(to bottom, #0d0d0d 0%, #1a0a1e 40%, #2d1b4e 60%, #1a3a5c 80%, #0d0d0d 100%)' },
+  { id: 'aurora-gradient', label: 'Aurora', src: auroraGradientBg },
   { id: 'space', label: 'Space', src: spaceHeroBg },
   { id: 'light', label: 'Light', src: lightHeroBg },
   { id: 'nebula', label: 'Nebula', src: '/wallpapers/nebula.jpg' },
@@ -35,10 +36,6 @@ const WALLPAPERS = [
 export const getWallpaperSrc = (id: string): string => {
   const wp = WALLPAPERS.find(w => w.id === id);
   return wp?.src || spaceHeroBg;
-};
-
-export const isGradientWallpaper = (id: string): boolean => {
-  return id === 'aurora-gradient';
 };
 
 const WallpaperSelector: React.FC = () => {
@@ -70,11 +67,7 @@ const WallpaperSelector: React.FC = () => {
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${current === wp.id ? 'bg-violet-500/20 text-violet-300' : 'text-white/60 hover:bg-white/[0.04]'}`}
             >
               <div className="w-8 h-5 rounded overflow-hidden border border-white/10">
-                {wp.gradient ? (
-                  <div className="w-full h-full" style={{ background: wp.gradient }} />
-                ) : (
-                  <img src={wp.src} alt={wp.label} className="w-full h-full object-cover" />
-                )}
+                <img src={wp.src} alt={wp.label} className="w-full h-full object-cover" />
               </div>
               {wp.label}
             </button>
