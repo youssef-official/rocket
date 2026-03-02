@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Send, X, Image as ImageIcon, ChevronDown, Sparkles, BookOpen, CircleHelp, LogIn, Wand2, ArrowUpRight, Plus, Copy, Loader2, Mic, MicOff, Palette } from 'lucide-react';
 import { CelebrationEffects } from './CelebrationEffects';
-import { UserMenuDropdown, getWallpaperSrc } from '@/components/shared/UserMenuDropdown';
+import { UserMenuDropdown, getWallpaperSrc, isGradientWallpaper } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ProjectsSection } from './ProjectsSection';
@@ -75,7 +75,8 @@ export const HomePage: React.FC<HomePageProps> = ({
   };
 
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const heroBg = getWallpaperUrl(wallpaperId);
+  const isAuroraGradient = isGradientWallpaper(wallpaperId);
+  const heroBg = isAuroraGradient ? '' : getWallpaperUrl(wallpaperId);
 
   const [prompt, setPrompt] = useState(() => localStorage.getItem('vivora_home_prompt') || '');
   const [selectedFramework, setSelectedFramework] = useState('React');
@@ -414,18 +415,59 @@ export const HomePage: React.FC<HomePageProps> = ({
     <div
       className="min-h-screen relative overflow-hidden"
       dir={isRTL ? 'rtl' : 'ltr'}
-      style={{
+      style={isAuroraGradient ? { backgroundColor: '#0d0d0d' } : {
         backgroundImage: `url(${heroBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed'
       }}
     >
+      {/* Aurora Gradient Background */}
+      {isAuroraGradient && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0d0d0d] via-[#0d0d0d]/80 to-transparent z-[1]" />
+          <div
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] animate-pulse"
+            style={{
+              background: 'radial-gradient(ellipse at center, rgba(236,72,153,0.7) 0%, rgba(219,39,119,0.4) 30%, transparent 70%)',
+              filter: 'blur(60px)',
+              animationDuration: '8s',
+            }}
+          />
+          <div
+            className="absolute -bottom-20 left-[10%] w-[500px] h-[350px] animate-pulse"
+            style={{
+              background: 'radial-gradient(ellipse at center, rgba(59,130,246,0.6) 0%, rgba(37,99,235,0.3) 40%, transparent 70%)',
+              filter: 'blur(50px)',
+              animationDuration: '10s',
+            }}
+          />
+          <div
+            className="absolute -bottom-20 right-[10%] w-[500px] h-[350px] animate-pulse"
+            style={{
+              background: 'radial-gradient(ellipse at center, rgba(59,130,246,0.6) 0%, rgba(37,99,235,0.3) 40%, transparent 70%)',
+              filter: 'blur(50px)',
+              animationDuration: '12s',
+            }}
+          />
+          <div
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[250px] animate-pulse"
+            style={{
+              background: 'radial-gradient(ellipse at center, rgba(168,85,247,0.4) 0%, transparent 60%)',
+              filter: 'blur(40px)',
+              animationDuration: '6s',
+            }}
+          />
+        </div>
+      )}
+
       {/* Celebration Effects */}
       <CelebrationEffects />
 
       {/* Dark overlay */}
-      <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-b from-black/30 via-transparent to-black/50' : 'bg-gradient-to-b from-white/10 via-transparent to-white/30'}`} />
+      {!isAuroraGradient && (
+        <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-b from-black/30 via-transparent to-black/50' : 'bg-gradient-to-b from-white/10 via-transparent to-white/30'}`} />
+      )}
 
       {/* Header */}
       <header className="relative z-[100] px-4 md:px-6 py-4">

@@ -18,6 +18,7 @@ interface UserMenuDropdownProps {
 }
 
 const WALLPAPERS = [
+  { id: 'aurora-gradient', label: 'Aurora', src: 'gradient:aurora', gradient: 'linear-gradient(to bottom, #0d0d0d 0%, #1a0a1e 40%, #2d1b4e 60%, #1a3a5c 80%, #0d0d0d 100%)' },
   { id: 'space', label: 'Space', src: spaceHeroBg },
   { id: 'light', label: 'Light', src: lightHeroBg },
   { id: 'nebula', label: 'Nebula', src: '/wallpapers/nebula.jpg' },
@@ -26,7 +27,6 @@ const WALLPAPERS = [
   { id: 'ocean', label: 'Ocean', src: '/wallpapers/ocean.jpg' },
   { id: 'mountains', label: 'Mountains', src: '/wallpapers/mountains.jpg' },
   { id: 'city-night', label: 'City Night', src: '/wallpapers/city-night.jpg' },
-  { id: 'aurora', label: 'Aurora', src: '/wallpapers/aurora.jpg' },
   { id: 'desert', label: 'Desert', src: '/wallpapers/desert.jpg' },
   { id: 'tropical', label: 'Tropical', src: '/wallpapers/tropical.jpg' },
 ];
@@ -35,6 +35,10 @@ const WALLPAPERS = [
 export const getWallpaperSrc = (id: string): string => {
   const wp = WALLPAPERS.find(w => w.id === id);
   return wp?.src || spaceHeroBg;
+};
+
+export const isGradientWallpaper = (id: string): boolean => {
+  return id === 'aurora-gradient';
 };
 
 const WallpaperSelector: React.FC = () => {
@@ -66,7 +70,11 @@ const WallpaperSelector: React.FC = () => {
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${current === wp.id ? 'bg-violet-500/20 text-violet-300' : 'text-white/60 hover:bg-white/[0.04]'}`}
             >
               <div className="w-8 h-5 rounded overflow-hidden border border-white/10">
-                <img src={wp.src} alt={wp.label} className="w-full h-full object-cover" />
+                {wp.gradient ? (
+                  <div className="w-full h-full" style={{ background: wp.gradient }} />
+                ) : (
+                  <img src={wp.src} alt={wp.label} className="w-full h-full object-cover" />
+                )}
               </div>
               {wp.label}
             </button>
