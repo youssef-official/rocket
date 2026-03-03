@@ -26,7 +26,7 @@ interface AdminData {
 type TabKey =
   | 'dashboard' | 'users' | 'plans' | 'transactions' | 'projects'
   | 'inbox' | 'templates' | 'blog' | 'ai-models' | 'promo-codes'
-  | 'celebrations' | 'onboarding';
+  | 'celebrations' | 'onboarding' | 'feedback';
 
 /* ================================================================
    DESIGN SYSTEM
@@ -249,6 +249,9 @@ export const AdminPanel: React.FC = () => {
   // Celebrations
   const [celebrations, setCelebrations] = useState<any[]>([]);
 
+  // Feedback
+  const [feedbackData, setFeedbackData] = useState<any[]>([]);
+
   /* — Fetch — */
   useEffect(() => {
     if (authLoading) return;
@@ -276,12 +279,13 @@ export const AdminPanel: React.FC = () => {
     refreshAll();
   }, [user, authLoading, navigate]);
 
-  const refreshAll = () => { fetchNotifs(); fetchTpls(); fetchAiMs(); fetchPromos(); fetchCelebs(); };
+  const refreshAll = () => { fetchNotifs(); fetchTpls(); fetchAiMs(); fetchPromos(); fetchCelebs(); fetchFeedback(); };
   const fetchNotifs = async () => { const { data: d } = await supabase.from('inbox_notifications').select('*').order('created_at', { ascending: false }); if (d) setNotifications(d); };
   const fetchTpls   = async () => { const { data: d } = await supabase.from('templates').select('*').order('sort_order', { ascending: true }); if (d) setTemplates(d); };
   const fetchAiMs   = async () => { const { data: d } = await supabase.from('ai_model_config').select('*').order('created_at', { ascending: false }); if (d) setAiModels(d); };
   const fetchPromos = async () => { const { data: d } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false }); if (d) setPromoCodes(d); };
   const fetchCelebs = async () => { const { data: d } = await supabase.from('site_celebrations').select('*').order('name'); if (d) setCelebrations(d); };
+  const fetchFeedback = async () => { const { data: d } = await supabase.from('message_feedback').select('*').order('created_at', { ascending: false }).limit(100); if (d) setFeedbackData(d); };
 
   /* — Handlers — */
   const sendNotif = async () => {
@@ -373,6 +377,7 @@ export const AdminPanel: React.FC = () => {
       { key: 'transactions', label: 'Analytics',  icon: BarChart2 },
       { key: 'plans',        label: 'Plans',      icon: CreditCard,    count: data.plans.length },
       { key: 'onboarding',   label: 'Onboarding', icon: ClipboardList, count: data.onboarding?.length || 0 },
+      { key: 'feedback',     label: 'Feedback',   icon: Star,          count: feedbackData.length },
     ]},
     { group: 'Configuration', items: [
       { key: 'ai-models',    label: 'AI Models',      icon: Cpu,       count: aiModels.length },
@@ -929,6 +934,48 @@ export const AdminPanel: React.FC = () => {
                                   <IconBtn onClick={() => deleteAiModel(m.id)} danger><Trash2 size={13} /></IconBtn>
                                 </div>
                               </TD>
+                            </TRow>
+                          ))}
+                        </tbody>
+                      </table>
+                    </Card>
+                  )}
+                </div>
+              )}
+
+              {/* ══ FEEDBACK ══ */}
+              {tab === 'feedback' && (
+                <div className="space-y-5">
+                  <div>
+                    <h2 className="text-[20px] font-bold text-[#191919]">User Feedback</h2>
+                    <p className="text-[13px] text-[#9b9a97] mt-0.5">AI response ratings from users</p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="rounded-xl p-5 bg-[#0f7b6c]">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-white/80 mb-2">Total</p>
+                      <p className="text-[32px] font-black tabular-nums leading-none text-white">{feedbackData.length}</p>
+                    </div>
+                    <div className="rounded-xl p-5 bg-[#2383e2]">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-white/80 mb-2">👍 Likes</p>
+                      <p className="text-[32px] font-black tabular-nums leading-none text-white">{feedbackData.filter(f => f.feedback === 'like').length}</p>
+                    </div>
+                    <div className="rounded-xl p-5 bg-[#e03e3e]">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-white/80 mb-2">👎 Dislikes</p>
+                      <p className="text-[32px] font-black tabular-nums leading-none text-white">{feedbackData.filter(f => f.feedback === 'dislike').length}</p>
+                    </div>
+                  </div>
+                  {!feedbackData.length ? <Empty icon={Star} title="No feedback yet" desc="Users can rate AI responses with like/dislike" /> : (
+                    <Card>
+                      <table className="w-full border-collapse">
+                        <THead cols={['Rating','User','Message ID','Project','Date']} />
+                        <tbody>
+                          {feedbackData.map(f => (
+                            <TRow key={f.id}>
+                              <TD><Tag color={f.feedback === 'like' ? 'green' : 'red'}>{f.feedback === 'like' ? '👍 Like' : '👎 Dislike'}</Tag></TD>
+                              <TD className="font-mono text-[#9b9a97]">{f.user_id?.slice(0, 8)}</TD>
+                              <TD className="font-mono text-[#9b9a97]">{f.message_id?.slice(0, 8)}</TD>
+                              <TD className="font-mono text-[#9b9a97]">{f.project_id?.slice(0, 8) || '—'}</TD>
+                              <TD>{new Date(f.created_at).toLocaleString()}</TD>
                             </TRow>
                           ))}
                         </tbody>
