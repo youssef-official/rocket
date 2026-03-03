@@ -461,7 +461,7 @@ REQUIREMENTS:
 - Then return <ACTIONS> with one JSON object per line using fields: name, action, status.
 - Then return <SUMMARY> with a short final summary.
 - NEVER use <FILE name="..."> and NEVER wrap output in markdown code fences.
-- BRANDING: index.html must include: <script src="https://www.vivorax.online/branding.js" defer></script>
+- BRANDING: index.html must include: <script src="https://www.vivorax.online/branding.js" defer></script>. This script adds a "Made in Vivorax" badge. The badge text MUST BE BLACK at all times.
 - ANALYTICS: index.html must include: <script src="https://www.vivorax.online/analyzer.js" defer></script>
 - TAILWIND CDN: index.html MUST include: <script src="https://cdn.tailwindcss.com"></script> inside the <head>.
 - CONFIG FILES: YOU MUST GENERATE tailwind.config.js and postcss.config.js so the app compiles properly. IMPORTANT: You MUST use \`export default\` instead of \`module.exports\` in these files because the project uses ES Modules!

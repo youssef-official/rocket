@@ -62,6 +62,7 @@
     /* === النص === */
     let span = l("span");
     span.textContent = "Made in Vivorax";
+    span.style.color = "#000000"; // Force black color for visibility
     A(badge, span);
 
     badge.style.cursor = "pointer";
