@@ -118,7 +118,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({ files, projectType, is
   const filesHash = React.useMemo(() => {
     let hash = 0;
     const entries = Object.entries(files).sort(([a], [b]) => a.localeCompare(b));
-    
+
     for (const [path, file] of entries) {
       const content = file?.content || '';
       // Hash full content for accurate change detection
@@ -224,6 +224,19 @@ root.render(<App />);`;
 @tailwind utilities;`;
       }
 
+      // Parse AI generated dependencies if a package.json was provided
+      let customDeps: Record<string, string> = {};
+      try {
+        if (spFiles['/package.json']) {
+          const customPkg = JSON.parse(spFiles['/package.json']);
+          if (customPkg.dependencies) {
+            customDeps = { ...customPkg.dependencies };
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to parse AI package.json dependencies, falling back to base.', e);
+      }
+
       // Generate package.json if strictly needed by the server
       spFiles['/package.json'] = JSON.stringify({
         "name": "preview-app",
@@ -241,7 +254,10 @@ root.render(<App />);`;
           "lucide-react": "latest",
           "framer-motion": "latest",
           "clsx": "latest",
-          "tailwind-merge": "latest"
+          "tailwind-merge": "latest",
+          "@clerk/clerk-react": "latest",
+          "react-router-dom": "latest",
+          ...customDeps
         },
         "devDependencies": {
           "@types/react": "^18.2.66",
@@ -325,7 +341,7 @@ export default defineConfig({
   useEffect(() => {
     const syncFiles = async () => {
       if (!apiUrl || !sandboxFiles) return;
-      
+
       // Skip if hash unchanged
       if (lastSyncedHash.current === filesHash) return;
 

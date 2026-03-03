@@ -51,7 +51,7 @@ async def init_project(data: FileMap, background_tasks: BackgroundTasks):
 
 @app.post("/update")
 async def update_files(data: FileMap):
-    print("Update files received")
+    package_json_updated = False
     for path, content in data.files.items():
         if isinstance(content, dict): 
             content = content.get('content', '')
@@ -60,11 +60,19 @@ async def update_files(data: FileMap):
             continue
 
         clean_path = path.lstrip('/')
+        if clean_path == "package.json":
+            package_json_updated = True
+
         full_path = os.path.join("/app", clean_path)
         
         os.makedirs(os.path.dirname(full_path), exist_ok=True)
         with open(full_path, "w") as f:
             f.write(content)
+    
+    if package_json_updated:
+        print("package.json updated, running npm install...")
+        subprocess.run(["npm", "install"], cwd="/app")
+
     return {"status": "updated"}
 
 def start_vite():
