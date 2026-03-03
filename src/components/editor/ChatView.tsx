@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp, Monitor, AtSign, Download, Copy } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp, Monitor, AtSign, Download, Copy, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
 import type { ProjectVersion } from '@/hooks/useVersions';
@@ -170,6 +171,88 @@ const normalizePublicImageUrl = (url: string): string => {
   if (!trimmed) return '';
   if (/^(https?:\/\/|data:|blob:)/i.test(trimmed)) return trimmed;
   return `https://${trimmed.replace(/^\/+/, '')}`;
+};
+
+// ═══════════════════════════════════════════════
+// Feedback component for AI messages (like/dislike/copy/token info)
+// ═══════════════════════════════════════════════
+const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; content: string }> = ({ messageId, creditsUsed, content }) => {
+  const [feedback, setFeedback] = useState<'like' | 'dislike' | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Load existing feedback from supabase
+    supabase.from('message_feedback').select('feedback').eq('message_id', messageId).maybeSingle().then(({ data }) => {
+      if (data?.feedback) setFeedback(data.feedback as 'like' | 'dislike');
+    });
+  }, [messageId]);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  const handleFeedback = async (type: 'like' | 'dislike') => {
+    const newFeedback = feedback === type ? null : type;
+    setFeedback(newFeedback);
+    try {
+      if (newFeedback) {
+        await supabase.from('message_feedback').upsert({ message_id: messageId, user_id: (await supabase.auth.getUser()).data.user?.id || '', feedback: newFeedback, project_id: null }, { onConflict: 'message_id,user_id' });
+      } else {
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        if (userId) await supabase.from('message_feedback').delete().eq('message_id', messageId).eq('user_id', userId);
+      }
+    } catch (e) { console.error('Feedback error:', e); }
+  };
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <button onClick={() => handleFeedback('like')} className={`p-1.5 rounded-lg transition-colors ${feedback === 'like' ? 'bg-emerald-500/10 text-emerald-500' : 'hover:bg-muted text-muted-foreground'}`}>
+        <ThumbsUp className="w-3.5 h-3.5" />
+      </button>
+      <button onClick={() => handleFeedback('dislike')} className={`p-1.5 rounded-lg transition-colors ${feedback === 'dislike' ? 'bg-red-500/10 text-red-500' : 'hover:bg-muted text-muted-foreground'}`}>
+        <ThumbsDown className="w-3.5 h-3.5" />
+      </button>
+      <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors">
+        {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+      </button>
+      <div ref={menuRef} className="relative">
+        <button onClick={() => setShowMenu(!showMenu)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors">
+          <MoreVertical className="w-3.5 h-3.5" />
+        </button>
+        <AnimatePresence>
+          {showMenu && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="absolute bottom-full left-0 mb-1 w-48 bg-card rounded-xl shadow-2xl border border-border overflow-hidden z-50"
+            >
+              {creditsUsed !== undefined && (
+                <div className="flex items-center justify-between px-3 py-2.5">
+                  <span className="text-xs text-muted-foreground">Credits Used</span>
+                  <span className="text-xs font-medium text-amber-500">{Number(creditsUsed).toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between px-3 py-2.5 border-t border-border">
+                <span className="text-xs text-muted-foreground">Message ID</span>
+                <span className="text-[10px] font-mono text-muted-foreground">{messageId.slice(0, 8)}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
 };
 
 export const ChatView: React.FC<ChatViewProps> = ({
@@ -913,16 +996,23 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           renderSummaryBlock(extractSummaryFromMessage(msg.content), versionActivities)
                         )}
 
-                        {/* Ready message */}
+                        {/* Feedback + Ready message */}
                         {isLastAssistant && !isGenerating && version && (
                           <motion.div 
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="flex items-center gap-2 py-2.5 mt-2"
+                            className="mt-2"
                           >
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            <span className="text-sm text-foreground font-medium">{t('chat.readyMessage')}</span>
+                            <MessageFeedback messageId={msg.id} creditsUsed={msg.creditsUsed} content={cleanedContent || msg.content} />
+                            <div className="flex items-center gap-2 py-2.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              <span className="text-sm text-foreground font-medium">{t('chat.readyMessage')}</span>
+                            </div>
                           </motion.div>
+                        )}
+                        {/* Non-last assistant messages also get feedback */}
+                        {!isLastAssistant && !isUser && version && (
+                          <MessageFeedback messageId={msg.id} creditsUsed={msg.creditsUsed} content={cleanedContent || msg.content} />
                         )}
                       </div>
                     </div>
