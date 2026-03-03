@@ -56,11 +56,12 @@ serve(async (req) => {
     }
 
     // Fetch admin data using service role
-    const [usersRes, plansRes, transactionsRes, projectsRes] = await Promise.all([
+    const [usersRes, plansRes, transactionsRes, projectsRes, onboardingRes] = await Promise.all([
       adminClient.from("profiles").select("*").order("created_at", { ascending: false }),
       adminClient.from("user_plans").select("*").order("updated_at", { ascending: false }),
       adminClient.from("credit_transactions").select("*").order("created_at", { ascending: false }).limit(100),
       adminClient.from("projects").select("id, name, user_id, project_type, is_published, created_at, updated_at").order("created_at", { ascending: false }).limit(100),
+      adminClient.from("onboarding_responses").select("*").order("created_at", { ascending: false }),
     ]);
 
     return new Response(
@@ -69,6 +70,7 @@ serve(async (req) => {
         plans: plansRes.data || [],
         transactions: transactionsRes.data || [],
         projects: projectsRes.data || [],
+        onboarding: onboardingRes.data || [],
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

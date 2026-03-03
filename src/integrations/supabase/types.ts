@@ -318,6 +318,36 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_responses: {
+        Row: {
+          company_size: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          preferred_theme: string | null
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          company_size?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          preferred_theme?: string | null
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          company_size?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          preferred_theme?: string | null
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

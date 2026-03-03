@@ -117,26 +117,38 @@ const GetStarted: React.FC = () => {
             localStorage.setItem('theme', 'light');
         }
 
-        // Save onboarding data to Supabase user_metadata
         if (user) {
             try {
+                // Save to user_metadata
                 await supabase.auth.updateUser({
                     data: {
-                        display_name: data.fullName || user.displayName || user.email?.split('@')[0],
+                        display_name: data.fullName || user.email?.split('@')[0],
                         onboarding_completed: true,
                         role: data.role,
                         company_size: data.companySize,
                         preferred_theme: data.theme,
                     },
                 });
+
+                // Save to onboarding_responses table
+                await supabase.from('onboarding_responses').insert({
+                    user_id: user.id,
+                    full_name: data.fullName || null,
+                    role: data.role || null,
+                    company_size: data.companySize || null,
+                    preferred_theme: data.theme || null,
+                });
+
+                // Update profile display name
+                if (data.fullName) {
+                    await supabase.from('profiles').update({ display_name: data.fullName }).eq('user_id', user.id);
+                }
             } catch (e) {
                 console.error('Failed to save onboarding data:', e);
             }
         }
 
-        // Mark onboarding complete in localStorage as fallback
         localStorage.setItem('onboarding_completed', 'true');
-
         setIsSubmitting(false);
         navigate('/');
     }, [data, user, navigate]);
