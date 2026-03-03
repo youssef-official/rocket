@@ -4,158 +4,198 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Users, CreditCard, FolderOpen, AlertTriangle,
+  Users, CreditCard, FolderOpen,
   Layers, Plus, Trash2, Send, Bell, Search,
   BarChart2, Cpu, Home, Rocket, LayoutDashboard,
   Megaphone, BookOpen, Package, ArrowRight,
   Gift, Star, Eye, EyeOff, Copy, Check,
-  ChevronLeft, ChevronRight, Menu, X,
-  TrendingUp, Activity, Zap, ClipboardList, Shield,
-  RefreshCw,
+  ChevronLeft, ChevronRight, Menu,
+  Activity, Zap, ClipboardList, Shield,
+  RefreshCw, Settings, LogOut,
 } from 'lucide-react';
 import { AdminBlogEditor } from '@/components/admin/AdminBlogEditor';
 import { toast } from '@/hooks/use-toast';
 
-/* ╔══════════════════════════════════════════════════════════╗
-   ║                        TYPES                            ║
-   ╚══════════════════════════════════════════════════════════╝ */
+/* ================================================================
+   TYPES
+================================================================ */
 interface AdminData {
-  users: any[];
-  plans: any[];
-  transactions: any[];
-  projects: any[];
-  onboarding: any[];
+  users: any[]; plans: any[]; transactions: any[];
+  projects: any[]; onboarding: any[];
 }
 type TabKey =
   | 'dashboard' | 'users' | 'plans' | 'transactions' | 'projects'
   | 'inbox' | 'templates' | 'blog' | 'ai-models' | 'promo-codes'
   | 'celebrations' | 'onboarding';
 
-/* ╔══════════════════════════════════════════════════════════╗
-   ║                    SMALL ATOMS                          ║
-   ╚══════════════════════════════════════════════════════════╝ */
+/* ================================================================
+   DESIGN SYSTEM
+================================================================ */
+// Notion-like neutral palette
+const C = {
+  bg:       '#ffffff',
+  bgSub:    '#f7f6f3',
+  bgHover:  '#f1f0ed',
+  bgActive: '#e9e8e4',
+  border:   '#e3e2de',
+  borderSub:'#d5d4d0',
+  text:     '#191919',
+  textSub:  '#6b6b6b',
+  textMuted:'#9b9a97',
+  sidebar:  '#f7f6f3',
+};
 
-const Pill: React.FC<{ color?: 'blue'|'green'|'amber'|'red'|'teal'|'purple'|'muted'; children: React.ReactNode }> = ({ color = 'muted', children }) => {
-  const map = {
-    blue:   'bg-[#1e3a5f] text-[#60a5fa] ring-1 ring-[#1d4ed8]/30',
-    green:  'bg-[#14332a] text-[#34d399] ring-1 ring-[#059669]/30',
-    amber:  'bg-[#3b2700] text-[#fbbf24] ring-1 ring-[#d97706]/30',
-    red:    'bg-[#3b1515] text-[#f87171] ring-1 ring-[#dc2626]/30',
-    teal:   'bg-[#0f2e35] text-[#2dd4bf] ring-1 ring-[#0d9488]/30',
-    purple: 'bg-[#2d1b4e] text-[#c084fc] ring-1 ring-[#7c3aed]/30',
-    muted:  'bg-[#1a1a1a] text-[#555] ring-1 ring-[#333]/60',
+// Solid filled KPI colors (Notion-style accent blocks)
+const KPI_COLORS = [
+  { bg: '#2383e2', text: '#ffffff', label: 'Total Users' },
+  { bg: '#0f7b6c', text: '#ffffff', label: 'Projects' },
+  { bg: '#9065b0', text: '#ffffff', label: 'Credits Used' },
+  { bg: '#e03e3e', text: '#ffffff', label: 'Active Plans' },
+];
+
+/* ================================================================
+   ATOMS
+================================================================ */
+
+/** Notion-style status tag */
+const Tag: React.FC<{ color?: 'blue'|'green'|'orange'|'red'|'purple'|'gray'|'teal'; children: React.ReactNode }> = ({ color = 'gray', children }) => {
+  const s: Record<string, string> = {
+    blue:   'bg-[#dbeafe] text-[#1e40af]',
+    green:  'bg-[#dcfce7] text-[#166534]',
+    orange: 'bg-[#ffedd5] text-[#9a3412]',
+    red:    'bg-[#fee2e2] text-[#991b1b]',
+    purple: 'bg-[#ede9fe] text-[#5b21b6]',
+    gray:   'bg-[#f3f4f6] text-[#374151]',
+    teal:   'bg-[#ccfbf1] text-[#115e59]',
   };
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${s[color]}`}>{children}</span>;
+};
+
+/** Card shell */
+const Card: React.FC<{ children: React.ReactNode; className?: string; pad?: boolean }> = ({ children, className = '', pad = false }) => (
+  <div className={`rounded-lg border border-[#e3e2de] bg-white ${pad ? 'p-5' : ''} ${className}`}>
+    {children}
+  </div>
+);
+
+/** Section header inside a card */
+const CardHead: React.FC<{ title: string; sub?: string; count?: number|string; right?: React.ReactNode }> = ({ title, sub, count, right }) => (
+  <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#e3e2de]">
+    <div>
+      <div className="flex items-center gap-2">
+        <span className="text-[13px] font-semibold text-[#191919]">{title}</span>
+        {count !== undefined && (
+          <span className="text-[11px] text-[#9b9a97] bg-[#f3f4f6] px-1.5 py-0.5 rounded font-medium">{count}</span>
+        )}
+      </div>
+      {sub && <p className="text-[11px] text-[#9b9a97] mt-0.5">{sub}</p>}
+    </div>
+    {right}
+  </div>
+);
+
+/** Ghost text button */
+const GhostLink: React.FC<{ onClick: () => void; children: React.ReactNode }> = ({ onClick, children }) => (
+  <button onClick={onClick} className="text-[12px] text-[#6b6b6b] hover:text-[#191919] flex items-center gap-1 transition-colors font-medium">
+    {children}
+  </button>
+);
+
+/** Filled button */
+const Btn: React.FC<{ onClick?: () => void; disabled?: boolean; loading?: boolean; children: React.ReactNode; variant?: 'solid'|'ghost'|'danger'; size?: 'sm'|'md' }> = ({
+  onClick, disabled, loading, children, variant = 'solid', size = 'md'
+}) => {
+  const v = {
+    solid:  'bg-[#2383e2] text-white hover:bg-[#1a6ec2] disabled:bg-[#93c5fd] disabled:cursor-not-allowed',
+    ghost:  'bg-transparent text-[#6b6b6b] border border-[#e3e2de] hover:bg-[#f7f6f3] hover:text-[#191919] disabled:opacity-50',
+    danger: 'bg-[#fee2e2] text-[#991b1b] hover:bg-[#fecaca] disabled:opacity-50',
+  };
+  const sz = size === 'sm' ? 'px-3 py-1.5 text-[11px]' : 'px-4 py-2 text-[12px]';
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase tracking-wider ${map[color]}`}>
-      {children}
-    </span>
+    <button onClick={onClick} disabled={disabled || loading}
+      className={`inline-flex items-center gap-1.5 rounded-md font-semibold transition-all ${v[variant]} ${sz}`}>
+      {loading ? <RefreshCw size={11} className="animate-spin" /> : children}
+    </button>
   );
 };
 
-const Block: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={`rounded-xl border border-[#1f1f1f] bg-[#0d0d0d] overflow-hidden ${className}`}>
+/** Icon-only button */
+const IconBtn: React.FC<{ onClick?: () => void; danger?: boolean; title?: string; children: React.ReactNode }> = ({ onClick, danger, title, children }) => (
+  <button onClick={onClick} title={title}
+    className={`w-7 h-7 rounded flex items-center justify-center transition-colors ${danger ? 'text-[#c0392b] hover:bg-[#fee2e2]' : 'text-[#9b9a97] hover:bg-[#f1f0ed] hover:text-[#191919]'}`}>
+    {children}
+  </button>
+);
+
+/** Form field */
+const Field: React.FC<{ label: string; children: React.ReactNode; col?: boolean }> = ({ label, children, col }) => (
+  <div className={col ? 'col-span-full' : ''}>
+    <label className="block text-[11px] font-semibold text-[#6b6b6b] mb-1.5 uppercase tracking-wide">{label}</label>
     {children}
   </div>
 );
 
-const BlockHeader: React.FC<{ title: string; sub?: string; count?: number; action?: React.ReactNode }> = ({ title, sub, count, action }) => (
-  <div className="flex items-center justify-between px-5 py-4 border-b border-[#1a1a1a]">
-    <div className="flex items-center gap-3 min-w-0">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2.5">
-          <h2 className="text-[13px] font-bold text-[#e5e5e5] tracking-tight">{title}</h2>
-          {count !== undefined && (
-            <span className="text-[10px] font-mono text-[#444] bg-[#151515] border border-[#1f1f1f] px-1.5 py-0.5 rounded">
-              {count}
-            </span>
-          )}
-        </div>
-        {sub && <p className="text-[11px] text-[#444] mt-0.5">{sub}</p>}
-      </div>
-    </div>
-    {action}
-  </div>
-);
-
-const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <div>
-    <label className="block text-[10px] font-mono font-bold text-[#444] uppercase tracking-widest mb-1.5">{label}</label>
-    {children}
-  </div>
-);
-
-const inputCls = 'w-full px-3 py-2.5 bg-[#0a0a0a] border border-[#222] rounded-lg text-[13px] text-[#ccc] font-mono placeholder:text-[#333] outline-none focus:border-[#444] focus:ring-1 focus:ring-[#333] transition-colors';
+const inputCls = 'w-full px-3 py-2 bg-white border border-[#e3e2de] rounded-md text-[13px] text-[#191919] placeholder:text-[#c4c3bf] outline-none focus:border-[#2383e2] focus:ring-2 focus:ring-[#2383e2]/20 transition-all';
 const selectCls = `${inputCls} cursor-pointer`;
 const textareaCls = `${inputCls} resize-none`;
 
-const Btn: React.FC<{ onClick?: () => void; disabled?: boolean; loading?: boolean; children: React.ReactNode; variant?: 'primary'|'danger'|'ghost' }> = ({ onClick, disabled, loading, children, variant = 'primary' }) => {
-  const styles = {
-    primary: 'bg-[#e5e5e5] text-[#0a0a0a] hover:bg-white disabled:bg-[#1f1f1f] disabled:text-[#444]',
-    danger:  'bg-[#1a0808] text-[#f87171] border border-[#2a1010] hover:bg-[#220d0d] disabled:opacity-40',
-    ghost:   'bg-transparent text-[#555] border border-[#1f1f1f] hover:bg-[#111] hover:text-[#ccc] disabled:opacity-40',
-  };
-  return (
-    <button onClick={onClick} disabled={disabled || loading}
-      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-bold transition-all ${styles[variant]} disabled:cursor-not-allowed`}>
-      {loading ? <RefreshCw size={12} className="animate-spin" /> : children}
-    </button>
-  );
-};
-
-const IconBtn: React.FC<{ onClick?: () => void; variant?: 'ghost'|'danger'; children: React.ReactNode; title?: string }> = ({ onClick, variant = 'ghost', children, title }) => {
-  const styles = { ghost: 'text-[#444] hover:bg-[#151515] hover:text-[#888]', danger: 'text-[#3b1515] hover:bg-[#1c0909] hover:text-[#f87171]' };
-  return (
-    <button title={title} onClick={onClick} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${styles[variant]}`}>
-      {children}
-    </button>
-  );
-};
-
+/** Empty state */
 const Empty: React.FC<{ icon: any; title: string; desc?: string }> = ({ icon: Icon, title, desc }) => (
-  <div className="flex flex-col items-center justify-center py-16">
-    <div className="w-10 h-10 rounded-lg border border-[#1a1a1a] bg-[#0d0d0d] flex items-center justify-center mb-3">
-      <Icon size={18} className="text-[#2a2a2a]" />
+  <div className="flex flex-col items-center justify-center py-16 text-center">
+    <div className="w-12 h-12 rounded-xl bg-[#f7f6f3] border border-[#e3e2de] flex items-center justify-center mb-3">
+      <Icon size={20} className="text-[#c4c3bf]" />
     </div>
-    <p className="text-[12px] font-bold text-[#333] mb-1">{title}</p>
-    {desc && <p className="text-[11px] text-[#282828] text-center max-w-xs">{desc}</p>}
+    <p className="text-[13px] font-semibold text-[#6b6b6b] mb-1">{title}</p>
+    {desc && <p className="text-[12px] text-[#9b9a97] max-w-xs">{desc}</p>}
   </div>
 );
 
-const KPI: React.FC<{ label: string; value: string|number; icon: any; delta?: string; accent: string }> = ({ label, value, icon: Icon, delta, accent }) => (
-  <div className="relative bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl overflow-hidden hover:border-[#252525] transition-colors">
-    <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: accent }} />
-    <div className="pl-5 pr-4 py-4">
-      <div className="flex items-start justify-between mb-3">
-        <div className="w-8 h-8 rounded-lg border border-[#1a1a1a] flex items-center justify-center" style={{ background: `${accent}10` }}>
-          <Icon size={14} style={{ color: accent }} />
-        </div>
-        {delta && <span className="text-[10px] font-mono text-[#34d399] bg-[#14332a] px-1.5 py-0.5 rounded">{delta}</span>}
+/** Solid filled KPI card */
+const KpiCard: React.FC<{ label: string; value: string|number; icon: any; bg: string; textColor: string; delta?: string }> = ({
+  label, value, icon: Icon, bg, textColor, delta
+}) => (
+  <motion.div whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+    className="rounded-xl p-5 flex flex-col justify-between min-h-[120px] cursor-default select-none"
+    style={{ background: bg }}>
+    <div className="flex items-start justify-between">
+      <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.2)' }}>
+        <Icon size={17} style={{ color: textColor }} />
       </div>
-      <p className="text-[28px] font-black text-[#e5e5e5] leading-none tabular-nums mb-1">{value}</p>
-      <p className="text-[10px] font-mono text-[#3a3a3a] uppercase tracking-widest">{label}</p>
+      {delta && (
+        <span className="text-[10px] font-bold px-2 py-1 rounded-md" style={{ background: 'rgba(255,255,255,0.2)', color: textColor }}>
+          {delta}
+        </span>
+      )}
     </div>
-  </div>
+    <div>
+      <p className="text-[30px] font-black leading-none tabular-nums" style={{ color: textColor }}>{value}</p>
+      <p className="text-[11px] font-semibold mt-1 opacity-80" style={{ color: textColor }}>{label}</p>
+    </div>
+  </motion.div>
 );
 
+/* ================================================================
+   TABLE PRIMITIVES
+================================================================ */
 const THead: React.FC<{ cols: string[] }> = ({ cols }) => (
   <thead>
-    <tr className="border-b border-[#151515]">
+    <tr className="border-b border-[#e3e2de] bg-[#f7f6f3]">
       {cols.map(c => (
-        <th key={c} className="px-4 py-3 text-left text-[9px] font-mono font-bold text-[#333] uppercase tracking-[0.2em] whitespace-nowrap">{c}</th>
+        <th key={c} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider whitespace-nowrap">{c}</th>
       ))}
     </tr>
   </thead>
 );
 const TRow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <tr className="border-b border-[#0f0f0f] hover:bg-[#0f0f0f] transition-colors">{children}</tr>
+  <tr className="border-b border-[#f1f0ed] hover:bg-[#fafaf9] transition-colors">{children}</tr>
 );
 const TD: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <td className={`px-4 py-3 text-[12px] text-[#555] ${className}`}>{children}</td>
+  <td className={`px-4 py-3 text-[13px] text-[#6b6b6b] ${className}`}>{children}</td>
 );
 
-/* ╔══════════════════════════════════════════════════════════╗
-   ║                   MAIN COMPONENT                        ║
-   ╚══════════════════════════════════════════════════════════╝ */
+/* ================================================================
+   MAIN COMPONENT
+================================================================ */
 export const AdminPanel: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -164,10 +204,11 @@ export const AdminPanel: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // AI Models
   const [aiModels, setAiModels] = useState<any[]>([]);
   const [aiProvider, setAiProvider] = useState('vercel');
   const [aiModelId, setAiModelId] = useState('');
@@ -177,6 +218,7 @@ export const AdminPanel: React.FC = () => {
   const [aiTargetPlan, setAiTargetPlan] = useState('all');
   const [savingModel, setSavingModel] = useState(false);
 
+  // Inbox
   const [inboxTitle, setInboxTitle] = useState('');
   const [inboxBody, setInboxBody] = useState('');
   const [inboxImage, setInboxImage] = useState('');
@@ -185,6 +227,7 @@ export const AdminPanel: React.FC = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [sendingNotif, setSendingNotif] = useState(false);
 
+  // Templates
   const [tplName, setTplName] = useState('');
   const [tplImage, setTplImage] = useState('');
   const [tplPrompt, setTplPrompt] = useState('');
@@ -192,6 +235,7 @@ export const AdminPanel: React.FC = () => {
   const [templates, setTemplates] = useState<any[]>([]);
   const [savingTpl, setSavingTpl] = useState(false);
 
+  // Promo
   const [promoCodes, setPromoCodes] = useState<any[]>([]);
   const [promoCode, setPromoCode] = useState('');
   const [promoDiscount, setPromoDiscount] = useState(10);
@@ -201,8 +245,11 @@ export const AdminPanel: React.FC = () => {
   const [promoExpires, setPromoExpires] = useState('');
   const [savingPromo, setSavingPromo] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  // Celebrations
   const [celebrations, setCelebrations] = useState<any[]>([]);
 
+  /* — Fetch — */
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -226,32 +273,29 @@ export const AdminPanel: React.FC = () => {
       } catch (e: any) { setError(e.message || 'Failed'); }
       finally { setLoading(false); }
     })();
-    fetchAll();
+    refreshAll();
   }, [user, authLoading, navigate]);
 
-  const fetchAll = () => { fetchNotifs(); fetchTpls(); fetchAiMs(); fetchPromos(); fetchCelebs(); };
-  const fetchNotifs  = async () => { const { data: d } = await supabase.from('inbox_notifications').select('*').order('created_at', { ascending: false }); if (d) setNotifications(d); };
-  const fetchTpls    = async () => { const { data: d } = await supabase.from('templates').select('*').order('sort_order', { ascending: true }); if (d) setTemplates(d); };
-  const fetchAiMs    = async () => { const { data: d } = await supabase.from('ai_model_config').select('*').order('created_at', { ascending: false }); if (d) setAiModels(d); };
-  const fetchPromos  = async () => { const { data: d } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false }); if (d) setPromoCodes(d); };
-  const fetchCelebs  = async () => { const { data: d } = await supabase.from('site_celebrations').select('*').order('name'); if (d) setCelebrations(d); };
+  const refreshAll = () => { fetchNotifs(); fetchTpls(); fetchAiMs(); fetchPromos(); fetchCelebs(); };
+  const fetchNotifs = async () => { const { data: d } = await supabase.from('inbox_notifications').select('*').order('created_at', { ascending: false }); if (d) setNotifications(d); };
+  const fetchTpls   = async () => { const { data: d } = await supabase.from('templates').select('*').order('sort_order', { ascending: true }); if (d) setTemplates(d); };
+  const fetchAiMs   = async () => { const { data: d } = await supabase.from('ai_model_config').select('*').order('created_at', { ascending: false }); if (d) setAiModels(d); };
+  const fetchPromos = async () => { const { data: d } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false }); if (d) setPromoCodes(d); };
+  const fetchCelebs = async () => { const { data: d } = await supabase.from('site_celebrations').select('*').order('name'); if (d) setCelebrations(d); };
 
+  /* — Handlers — */
   const sendNotif = async () => {
-    if (!inboxTitle.trim()) return;
-    setSendingNotif(true);
-    await supabase.from('inbox_notifications').insert({ title: inboxTitle, body: inboxBody || null, image_url: inboxImage || null, link_url: inboxLink || null, target_plan: inboxPlan, created_by: user?.id });
+    if (!inboxTitle.trim()) return; setSendingNotif(true);
+    await supabase.from('inbox_notifications').insert({ title: inboxTitle, body: inboxBody||null, image_url: inboxImage||null, link_url: inboxLink||null, target_plan: inboxPlan, created_by: user?.id });
     setInboxTitle(''); setInboxBody(''); setInboxImage(''); setInboxLink(''); setInboxPlan('all');
-    await fetchNotifs(); setSendingNotif(false);
-    toast({ title: 'Sent ✓' });
+    await fetchNotifs(); setSendingNotif(false); toast({ title: 'Sent ✓' });
   };
-  const deleteNotif  = async (id: string) => { await supabase.from('inbox_notifications').delete().eq('id', id); await fetchNotifs(); };
-  const addTemplate  = async () => {
-    if (!tplName.trim() || !tplPrompt.trim()) return;
-    setSavingTpl(true);
-    await supabase.from('templates').insert({ name: tplName, image_url: tplImage || null, prompt: tplPrompt, category: tplCategory, created_by: user?.id, sort_order: templates.length });
+  const deleteNotif = async (id: string) => { await supabase.from('inbox_notifications').delete().eq('id', id); await fetchNotifs(); };
+  const addTemplate = async () => {
+    if (!tplName.trim() || !tplPrompt.trim()) return; setSavingTpl(true);
+    await supabase.from('templates').insert({ name: tplName, image_url: tplImage||null, prompt: tplPrompt, category: tplCategory, created_by: user?.id, sort_order: templates.length });
     setTplName(''); setTplImage(''); setTplPrompt(''); setTplCategory('general');
-    await fetchTpls(); setSavingTpl(false);
-    toast({ title: 'Template added ✓' });
+    await fetchTpls(); setSavingTpl(false); toast({ title: 'Template added ✓' });
   };
   const deleteTpl = async (id: string) => { await supabase.from('templates').delete().eq('id', id); await fetchTpls(); };
 
@@ -263,39 +307,30 @@ export const AdminPanel: React.FC = () => {
   };
   const changeProvider = (p: string) => { setAiProvider(p); const d = providerDefs[p]; if (d) { setAiGatewayUrl(d.url); setAiKeySecretName(d.key); setAiModelId(''); } };
   const addAiModel = async () => {
-    if (!aiModelId.trim() || !aiDisplayName.trim()) return;
-    setSavingModel(true);
+    if (!aiModelId.trim() || !aiDisplayName.trim()) return; setSavingModel(true);
     await supabase.from('ai_model_config').insert({ provider: aiProvider, model_id: aiModelId, display_name: aiDisplayName, gateway_url: aiGatewayUrl, api_key_secret_name: aiKeySecretName, target_plan: aiTargetPlan, is_active: false, created_by: user?.id });
     setAiModelId(''); setAiDisplayName('');
-    await fetchAiMs(); setSavingModel(false);
-    toast({ title: 'Model added ✓' });
+    await fetchAiMs(); setSavingModel(false); toast({ title: 'Model added ✓' });
   };
   const toggleAiModel = async (id: string, cur: boolean) => {
     if (!cur) {
       const m = aiModels.find(x => x.id === id);
-      if (m) {
-        const ids = aiModels.filter(x => x.id !== id && x.is_active && x.target_plan === m.target_plan).map(x => x.id);
-        if (ids.length) await supabase.from('ai_model_config').update({ is_active: false }).in('id', ids);
-      }
+      if (m) { const ids = aiModels.filter(x => x.id !== id && x.is_active && x.target_plan === m.target_plan).map(x => x.id); if (ids.length) await supabase.from('ai_model_config').update({ is_active: false }).in('id', ids); }
     }
-    await supabase.from('ai_model_config').update({ is_active: !cur }).eq('id', id);
-    await fetchAiMs();
+    await supabase.from('ai_model_config').update({ is_active: !cur }).eq('id', id); await fetchAiMs();
   };
   const deleteAiModel = async (id: string) => { await supabase.from('ai_model_config').delete().eq('id', id); await fetchAiMs(); };
   const addPromo = async () => {
-    if (!promoCode.trim()) return;
-    setSavingPromo(true);
-    await supabase.from('promo_codes').insert({ code: promoCode.toUpperCase().trim(), discount_percent: promoDiscount, target_plan: promoPlan, is_public: promoPublic, max_uses: promoMaxUses ? parseInt(promoMaxUses) : null, expires_at: promoExpires || null, created_by: user?.id });
+    if (!promoCode.trim()) return; setSavingPromo(true);
+    await supabase.from('promo_codes').insert({ code: promoCode.toUpperCase().trim(), discount_percent: promoDiscount, target_plan: promoPlan, is_public: promoPublic, max_uses: promoMaxUses ? parseInt(promoMaxUses) : null, expires_at: promoExpires||null, created_by: user?.id });
     setPromoCode(''); setPromoDiscount(10); setPromoPlan('all'); setPromoPublic(false); setPromoMaxUses(''); setPromoExpires('');
-    await fetchPromos(); setSavingPromo(false);
-    toast({ title: 'Promo created ✓' });
+    await fetchPromos(); setSavingPromo(false); toast({ title: 'Promo created ✓' });
   };
-  const deletePromo  = async (id: string) => { await supabase.from('promo_codes').delete().eq('id', id); await fetchPromos(); };
+  const deletePromo = async (id: string) => { await supabase.from('promo_codes').delete().eq('id', id); await fetchPromos(); };
   const copyCode = (code: string) => { navigator.clipboard.writeText(code); setCopiedCode(code); setTimeout(() => setCopiedCode(null), 2000); };
-  const toggleCeleb  = async (id: string, cur: boolean) => {
+  const toggleCeleb = async (id: string, cur: boolean) => {
     await supabase.from('site_celebrations').update({ is_active: !cur, updated_by: user?.id, updated_at: new Date().toISOString() }).eq('id', id);
-    await fetchCelebs();
-    toast({ title: `${cur ? 'Deactivated' : 'Activated'} ✓` });
+    await fetchCelebs(); toast({ title: `${cur ? 'Deactivated' : 'Activated'} ✓` });
   };
 
   const activeByPlan = useMemo(() => {
@@ -304,34 +339,33 @@ export const AdminPanel: React.FC = () => {
     return m;
   }, [aiModels]);
 
+  /* — Loading — */
   if (authLoading || loading) return (
-    <div className="flex items-center justify-center min-h-screen bg-[#080808]">
-      <div className="text-center space-y-4">
-        <div className="w-8 h-8 border border-[#222] border-t-[#555] rounded-full animate-spin mx-auto" />
-        <p className="text-[10px] font-mono text-[#2a2a2a] uppercase tracking-[0.4em]">Loading</p>
+    <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="text-center space-y-3">
+        <div className="w-8 h-8 border-2 border-[#e3e2de] border-t-[#2383e2] rounded-full animate-spin mx-auto" />
+        <p className="text-[12px] text-[#9b9a97] font-medium">Loading workspace…</p>
       </div>
     </div>
   );
 
   if (error) return (
-    <div className="flex items-center justify-center min-h-screen bg-[#080808]">
-      <div className="max-w-sm w-full mx-4">
-        <Block className="p-8 text-center">
-          <div className="w-12 h-12 rounded-xl border border-[#2a1010] bg-[#150808] flex items-center justify-center mx-auto mb-5">
-            <Shield size={20} className="text-[#f87171]" />
-          </div>
-          <p className="text-[10px] font-mono text-[#f87171] uppercase tracking-widest mb-2">Access Denied</p>
-          <h2 className="text-[16px] font-black text-[#e5e5e5] mb-2">{error}</h2>
-          <p className="text-[12px] text-[#333] mb-6 leading-relaxed">You don't have permission to access this console.</p>
-          <Btn onClick={() => navigate('/')} variant="ghost">Return to App</Btn>
-        </Block>
-      </div>
+    <div className="flex items-center justify-center min-h-screen bg-[#f7f6f3]">
+      <Card pad className="max-w-sm w-full mx-4 text-center shadow-sm">
+        <div className="w-12 h-12 rounded-xl bg-[#fee2e2] flex items-center justify-center mx-auto mb-4">
+          <Shield size={22} className="text-[#991b1b]" />
+        </div>
+        <h2 className="text-[16px] font-bold text-[#191919] mb-1">Access Denied</h2>
+        <p className="text-[13px] text-[#9b9a97] mb-5 leading-relaxed">{error}</p>
+        <Btn onClick={() => navigate('/')} variant="ghost">← Return to App</Btn>
+      </Card>
     </div>
   );
 
   if (!data) return null;
 
-  const nav: { group: string; items: { key: TabKey; label: string; icon: any; count?: number }[] }[] = [
+  /* — Nav config — */
+  const navSections: { group: string; items: { key: TabKey; label: string; icon: any; count?: number }[] }[] = [
     { group: 'Overview', items: [{ key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }] },
     { group: 'Data', items: [
       { key: 'users',        label: 'Users',      icon: Users,         count: data.users.length },
@@ -340,10 +374,10 @@ export const AdminPanel: React.FC = () => {
       { key: 'plans',        label: 'Plans',      icon: CreditCard,    count: data.plans.length },
       { key: 'onboarding',   label: 'Onboarding', icon: ClipboardList, count: data.onboarding?.length || 0 },
     ]},
-    { group: 'Config', items: [
-      { key: 'ai-models',    label: 'AI Models',  icon: Cpu,      count: aiModels.length },
-      { key: 'promo-codes',  label: 'Promos',     icon: Gift,     count: promoCodes.length },
-      { key: 'celebrations', label: 'Seasons',    icon: Star },
+    { group: 'Configuration', items: [
+      { key: 'ai-models',    label: 'AI Models',      icon: Cpu,       count: aiModels.length },
+      { key: 'promo-codes',  label: 'Promo Codes',    icon: Gift,      count: promoCodes.length },
+      { key: 'celebrations', label: 'Celebrations',   icon: Star },
     ]},
     { group: 'Content', items: [
       { key: 'templates', label: 'Templates',     icon: Package,   count: templates.length },
@@ -354,47 +388,49 @@ export const AdminPanel: React.FC = () => {
 
   const displayName = data.users.find((u: any) => u.user_id === user?.id)?.display_name || user?.email?.split('@')[0] || 'Admin';
   const totalCredits = data.transactions.reduce((s: number, t: any) => s + (Number(t.credits_used) || 0), 0);
-  const activeTabLabel = nav.flatMap(g => g.items).find(i => i.key === tab)?.label || 'Dashboard';
+  const activeLabel = navSections.flatMap(g => g.items).find(i => i.key === tab)?.label || 'Dashboard';
 
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-[#111]">
-        <div className="w-7 h-7 rounded-lg bg-[#e5e5e5] flex items-center justify-center flex-shrink-0">
-          <Rocket size={12} className="text-[#0a0a0a]" />
+  /* — Sidebar inner — */
+  const SidebarInner = () => (
+    <div className="flex flex-col h-full bg-[#f7f6f3]">
+      {/* Brand */}
+      <div className={`flex items-center gap-2.5 border-b border-[#e3e2de] ${sidebarCollapsed ? 'justify-center px-0 py-4' : 'px-4 py-4'}`}>
+        <div className="w-7 h-7 rounded-lg bg-[#2383e2] flex items-center justify-center flex-shrink-0 shadow-sm">
+          <Rocket size={13} className="text-white" />
         </div>
-        {sidebarOpen && (
+        {!sidebarCollapsed && (
           <div className="min-w-0">
-            <p className="text-[13px] font-black text-[#e5e5e5] leading-none">Vivora X</p>
-            <p className="text-[9px] font-mono text-[#333] uppercase tracking-wider mt-0.5">Console</p>
+            <p className="text-[14px] font-bold text-[#191919] leading-none">Vivora X</p>
+            <p className="text-[10px] text-[#9b9a97] mt-0.5">Admin Console</p>
           </div>
         )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
-        {nav.map(group => (
-          <div key={group.group}>
-            {sidebarOpen && (
-              <p className="text-[8px] font-mono font-black text-[#252525] uppercase tracking-[0.35em] px-2 mb-1.5">{group.group}</p>
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto p-2 space-y-3">
+        {navSections.map(section => (
+          <div key={section.group}>
+            {!sidebarCollapsed && (
+              <p className="text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider px-2 mb-1">{section.group}</p>
             )}
             <div className="space-y-px">
-              {group.items.map(item => {
+              {section.items.map(item => {
                 const Icon = item.icon;
                 const active = tab === item.key;
                 return (
                   <button
                     key={item.key}
                     onClick={() => { setTab(item.key); setMobileOpen(false); }}
-                    title={!sidebarOpen ? item.label : undefined}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-semibold transition-all ${
-                      active ? 'bg-[#e5e5e5] text-[#0a0a0a]' : 'text-[#3a3a3a] hover:bg-[#111] hover:text-[#aaa]'
-                    } ${!sidebarOpen ? 'justify-center' : ''}`}
+                    title={sidebarCollapsed ? item.label : undefined}
+                    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium transition-all ${sidebarCollapsed ? 'justify-center' : ''}
+                      ${active ? 'bg-white text-[#191919] shadow-sm border border-[#e3e2de]' : 'text-[#6b6b6b] hover:bg-[#eeede9] hover:text-[#191919]'}`}
                   >
-                    <Icon size={13} className="flex-shrink-0" />
-                    {sidebarOpen && (
+                    <Icon size={14} className={`flex-shrink-0 ${active ? 'text-[#2383e2]' : ''}`} />
+                    {!sidebarCollapsed && (
                       <>
                         <span className="flex-1 text-left truncate">{item.label}</span>
                         {item.count !== undefined && item.count > 0 && (
-                          <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${active ? 'bg-[#0a0a0a]/10 text-[#0a0a0a]' : 'bg-[#151515] text-[#333]'}`}>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${active ? 'bg-[#dbeafe] text-[#1e40af]' : 'bg-[#e9e8e4] text-[#9b9a97]'}`}>
                             {item.count}
                           </span>
                         )}
@@ -408,373 +444,381 @@ export const AdminPanel: React.FC = () => {
         ))}
       </nav>
 
-      <div className="border-t border-[#111] p-2 space-y-px">
-        <button onClick={() => setSidebarOpen(!sidebarOpen)}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[11px] text-[#2a2a2a] hover:bg-[#111] hover:text-[#555] transition-all ${!sidebarOpen ? 'justify-center' : ''}`}>
-          {sidebarOpen ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
-          {sidebarOpen && <span>Collapse</span>}
+      {/* Bottom */}
+      <div className="border-t border-[#e3e2de] p-2 space-y-px">
+        <button
+          onClick={() => navigate('/')}
+          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[12px] font-medium text-[#9b9a97] hover:bg-[#eeede9] hover:text-[#191919] transition-all ${sidebarCollapsed ? 'justify-center' : ''}`}
+        >
+          <Home size={13} />
+          {!sidebarCollapsed && <span>Back to App</span>}
         </button>
-        <button onClick={() => navigate('/')}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[11px] text-[#2a2a2a] hover:bg-[#111] hover:text-[#555] transition-all ${!sidebarOpen ? 'justify-center' : ''}`}>
-          <Home size={12} />
-          {sidebarOpen && <span>Back to App</span>}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[12px] font-medium text-[#9b9a97] hover:bg-[#eeede9] hover:text-[#191919] transition-all ${sidebarCollapsed ? 'justify-center' : ''}`}
+        >
+          {sidebarCollapsed ? <ChevronLeft size={13} /> : <><ChevronRight size={13} /><span>Collapse</span></>}
         </button>
       </div>
     </div>
   );
 
+  /* ================================================================
+     RENDER — Right Sidebar Layout
+  ================================================================ */
   return (
-    <div className="flex h-screen bg-[#080808] text-[#e5e5e5] overflow-hidden" style={{ fontFamily: "'JetBrains Mono', 'Fira Code', ui-monospace, monospace" }}>
+    <div className="flex h-screen bg-white overflow-hidden" style={{ fontFamily: "-apple-system, 'Segoe UI', sans-serif" }}>
 
+      {/* Mobile overlay */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 z-40 md:hidden" onClick={() => setMobileOpen(false)} />
+            className="fixed inset-0 bg-black/30 z-40 md:hidden backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
         )}
       </AnimatePresence>
 
-      {/* Mobile sidebar */}
-      <div className={`fixed left-0 top-0 bottom-0 z-50 w-56 bg-[#080808] border-r border-[#111] flex flex-col transition-transform duration-300 md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <SidebarContent />
-      </div>
+      {/* ══════ MAIN CONTENT (left side) ══════ */}
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
-      {/* Desktop sidebar */}
-      <aside className={`hidden md:flex flex-col flex-shrink-0 border-r border-[#111] bg-[#080808] transition-all duration-300 ${sidebarOpen ? 'w-[200px]' : 'w-[52px]'}`}>
-        <SidebarContent />
-      </aside>
-
-      {/* Main */}
-      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex-shrink-0 h-12 flex items-center justify-between px-4 border-b border-[#111] bg-[#080808]">
+        <header className="flex-shrink-0 h-12 flex items-center justify-between px-5 border-b border-[#e3e2de] bg-white">
           <div className="flex items-center gap-3">
-            <button onClick={() => setMobileOpen(true)} className="md:hidden p-1.5 rounded-lg text-[#333] hover:text-[#666] hover:bg-[#111] transition-colors">
-              <Menu size={14} />
+            <button onClick={() => setMobileOpen(true)} className="md:hidden p-1.5 rounded text-[#9b9a97] hover:bg-[#f7f6f3] transition-colors">
+              <Menu size={15} />
             </button>
-            <div className="flex items-center gap-1.5 text-[11px] font-mono">
-              <span className="text-[#222]">admin</span>
-              <span className="text-[#1a1a1a]">/</span>
-              <span className="text-[#555] font-bold">{activeTabLabel.toLowerCase().replace(' ', '_')}</span>
-            </div>
+            <h1 className="text-[14px] font-semibold text-[#191919]">{activeLabel}</h1>
           </div>
           <div className="flex items-center gap-2">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg w-44 focus-within:border-[#2a2a2a] transition-colors">
-              <Search size={11} className="text-[#2a2a2a] flex-shrink-0" />
-              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="search..."
-                className="bg-transparent outline-none text-[11px] font-mono text-[#666] w-full placeholder:text-[#222]" />
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#f7f6f3] border border-[#e3e2de] rounded-md w-48 focus-within:border-[#2383e2] focus-within:ring-2 focus-within:ring-[#2383e2]/20 transition-all">
+              <Search size={12} className="text-[#c4c3bf] flex-shrink-0" />
+              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search…"
+                className="bg-transparent outline-none text-[13px] text-[#191919] w-full placeholder:text-[#c4c3bf]" />
             </div>
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg">
-              <div className="w-5 h-5 rounded-md bg-[#1a1a1a] border border-[#222] flex items-center justify-center text-[9px] font-black text-[#666]">
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-              <span className="text-[11px] font-mono text-[#444] hidden sm:block">{displayName}</span>
-            </div>
+            <Btn onClick={refreshAll} variant="ghost" size="sm">
+              <RefreshCw size={11} /> Refresh
+            </Btn>
           </div>
         </header>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto bg-[#fafaf9]">
           <AnimatePresence mode="wait">
-            <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }} className="p-5 md:p-7 max-w-7xl">
+            <motion.div key={tab} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }} className="p-6 max-w-5xl space-y-5">
 
-              {/* ══════ DASHBOARD ══════ */}
+              {/* ══ DASHBOARD ══ */}
               {tab === 'dashboard' && (
                 <div className="space-y-5">
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <p className="text-[10px] font-mono text-[#2a2a2a] uppercase tracking-[0.35em] mb-1">vivora_x / console</p>
-                      <h1 className="text-[22px] font-black text-[#e5e5e5] leading-none">
-                        gm, <span className="text-[#555]">{displayName}</span>
-                      </h1>
-                    </div>
-                    <Btn variant="ghost" onClick={fetchAll}><RefreshCw size={11} /> Refresh</Btn>
+                  <div>
+                    <h2 className="text-[22px] font-bold text-[#191919] leading-tight">Good morning, {displayName} 👋</h2>
+                    <p className="text-[13px] text-[#9b9a97] mt-1">Here's what's happening on your platform.</p>
                   </div>
 
+                  {/* KPI Grid — filled solid */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <KPI label="Total Users"  value={data.users.length}       icon={Users}    accent="#3b82f6" delta={data.users.length > 0 ? `+${Math.min(data.users.length,12)}` : undefined} />
-                    <KPI label="Projects"     value={data.projects.length}    icon={FolderOpen} accent="#10b981" />
-                    <KPI label="Credits Used" value={totalCredits.toFixed(0)} icon={Zap}      accent="#a855f7" />
-                    <KPI label="Active Plans" value={data.plans.length}       icon={Activity} accent="#f59e0b" />
+                    <KpiCard label="Total Users"  value={data.users.length}       icon={Users}    bg="#2383e2" textColor="#fff" delta={data.users.length > 0 ? `+${Math.min(data.users.length,12)}` : undefined} />
+                    <KpiCard label="Projects"     value={data.projects.length}    icon={FolderOpen} bg="#0f7b6c" textColor="#fff" />
+                    <KpiCard label="Credits Used" value={totalCredits.toFixed(0)} icon={Zap}      bg="#9065b0" textColor="#fff" />
+                    <KpiCard label="Active Plans" value={data.plans.length}       icon={Activity} bg="#e03e3e" textColor="#fff" />
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <Block>
-                      <BlockHeader title="Active Models" sub="Per-plan AI routing"
-                        action={<button onClick={() => setTab('ai-models')} className="flex items-center gap-1 text-[10px] font-mono text-[#333] hover:text-[#666] transition-colors">manage <ArrowRight size={10} /></button>}
+                    {/* Active AI Models */}
+                    <Card>
+                      <CardHead title="Active AI Models" sub="Per-plan routing"
+                        right={<GhostLink onClick={() => setTab('ai-models')}>Manage <ArrowRight size={11} /></GhostLink>}
                       />
                       <div className="p-4 grid grid-cols-2 gap-2">
                         {['free','pro','business','all'].map(plan => {
                           const m = activeByPlan[plan];
                           return (
-                            <div key={plan} className={`rounded-lg p-3 border transition-colors ${m ? 'border-[#1f2a1f] bg-[#0d150d]' : 'border-[#111] bg-[#0a0a0a]'}`}>
+                            <div key={plan} className={`rounded-lg p-3 border transition-all ${m ? 'border-[#bbf7d0] bg-[#f0fdf4]' : 'border-[#e3e2de] bg-[#f7f6f3]'}`}>
                               <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-[8px] font-mono font-black text-[#2a2a2a] uppercase tracking-widest">{plan === 'all' ? 'all plans' : plan}</span>
-                                {m && <div className="w-1.5 h-1.5 rounded-full bg-[#34d399]" />}
+                                <span className="text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wide">{plan === 'all' ? 'All Plans' : plan}</span>
+                                {m && <div className="w-2 h-2 rounded-full bg-[#16a34a]" />}
                               </div>
-                              {m
-                                ? <><p className="text-[11px] font-bold text-[#888] truncate">{m.display_name}</p><p className="text-[9px] font-mono text-[#333] truncate mt-0.5">{m.model_id}</p></>
-                                : <p className="text-[10px] text-[#222] italic">not configured</p>
-                              }
+                              {m ? (
+                                <><p className="text-[12px] font-semibold text-[#191919] truncate">{m.display_name}</p><p className="text-[10px] text-[#9b9a97] truncate mt-0.5">{m.model_id}</p></>
+                              ) : (
+                                <p className="text-[11px] text-[#c4c3bf] italic">Not configured</p>
+                              )}
                             </div>
                           );
                         })}
                       </div>
-                    </Block>
+                    </Card>
 
-                    <Block>
-                      <BlockHeader title="Recent Users" count={data.users.length}
-                        action={<button onClick={() => setTab('users')} className="text-[10px] font-mono text-[#333] hover:text-[#666] transition-colors flex items-center gap-1">all <ArrowRight size={10} /></button>}
+                    {/* Recent Users */}
+                    <Card>
+                      <CardHead title="Recent Users" count={data.users.length}
+                        right={<GhostLink onClick={() => setTab('users')}>View all <ArrowRight size={11} /></GhostLink>}
                       />
-                      <div className="divide-y divide-[#0f0f0f]">
+                      <div className="divide-y divide-[#f1f0ed]">
                         {data.users.slice(0, 5).map((u: any) => (
-                          <div key={u.id} className="flex items-center justify-between px-4 py-3 hover:bg-[#0c0c0c] transition-colors">
+                          <div key={u.id} className="flex items-center justify-between px-4 py-2.5 hover:bg-[#fafaf9] transition-colors">
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-7 h-7 rounded-lg bg-[#111] border border-[#1a1a1a] flex items-center justify-center text-[10px] font-black text-[#444] flex-shrink-0">
+                              <div className="w-7 h-7 rounded-full bg-[#dbeafe] flex items-center justify-center text-[11px] font-bold text-[#1e40af] flex-shrink-0">
                                 {(u.email || '?')[0].toUpperCase()}
                               </div>
                               <div className="min-w-0">
-                                <p className="text-[12px] font-semibold text-[#666] truncate">{u.display_name || u.email || '—'}</p>
-                                <p className="text-[10px] font-mono text-[#2a2a2a] truncate">{u.email}</p>
+                                <p className="text-[13px] font-medium text-[#191919] truncate">{u.display_name || u.email || '—'}</p>
+                                <p className="text-[11px] text-[#9b9a97] truncate">{u.email}</p>
                               </div>
                             </div>
-                            <span className="text-[9px] font-mono text-[#222] flex-shrink-0">{new Date(u.created_at).toLocaleDateString()}</span>
+                            <span className="text-[11px] text-[#c4c3bf] flex-shrink-0">{new Date(u.created_at).toLocaleDateString()}</span>
                           </div>
                         ))}
                       </div>
-                    </Block>
+                    </Card>
                   </div>
 
+                  {/* Active Celebrations */}
                   {celebrations.some(c => c.is_active) && (
-                    <Block>
-                      <BlockHeader title="Active Celebrations" />
+                    <Card>
+                      <CardHead title="Active Celebrations" />
                       <div className="p-4 flex flex-wrap gap-2">
                         {celebrations.filter(c => c.is_active).map(c => (
-                          <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#2a2500] bg-[#150f00]">
+                          <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#fef9c3] border border-[#fde047]">
                             <span className="text-lg">{c.config?.emoji || '🎉'}</span>
-                            <span className="text-[12px] font-bold text-[#fbbf24]">{c.config?.label || c.name}</span>
+                            <span className="text-[12px] font-semibold text-[#713f12]">{c.config?.label || c.name}</span>
                           </div>
                         ))}
                       </div>
-                    </Block>
+                    </Card>
                   )}
 
-                  <Block>
-                    <BlockHeader title="Recent Projects" count={data.projects.length}
-                      action={<button onClick={() => setTab('projects')} className="text-[10px] font-mono text-[#333] hover:text-[#666] transition-colors flex items-center gap-1">all <ArrowRight size={10} /></button>}
+                  {/* Recent Projects */}
+                  <Card>
+                    <CardHead title="Recent Projects" count={data.projects.length}
+                      right={<GhostLink onClick={() => setTab('projects')}>View all <ArrowRight size={11} /></GhostLink>}
                     />
-                    <div className="divide-y divide-[#0f0f0f]">
-                      {data.projects.slice(0, 4).map((p: any) => (
-                        <div key={p.id} className="flex items-center justify-between px-4 py-3 hover:bg-[#0c0c0c] transition-colors">
+                    <div className="divide-y divide-[#f1f0ed]">
+                      {data.projects.slice(0, 5).map((p: any) => (
+                        <div key={p.id} className="flex items-center justify-between px-4 py-2.5 hover:bg-[#fafaf9] transition-colors">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-7 h-7 rounded-lg bg-[#111] border border-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-                              <FolderOpen size={11} className="text-[#333]" />
+                            <div className="w-7 h-7 rounded-lg bg-[#dcfce7] flex items-center justify-center flex-shrink-0">
+                              <FolderOpen size={13} className="text-[#166534]" />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-[12px] font-semibold text-[#666] truncate">{p.name}</p>
-                              <p className="text-[10px] font-mono text-[#2a2a2a] capitalize">{p.project_type}</p>
+                              <p className="text-[13px] font-medium text-[#191919] truncate">{p.name}</p>
+                              <p className="text-[11px] text-[#9b9a97] capitalize">{p.project_type}</p>
                             </div>
                           </div>
-                          <Pill color={p.is_published ? 'green' : 'muted'}>{p.is_published ? 'live' : 'draft'}</Pill>
+                          <Tag color={p.is_published ? 'green' : 'gray'}>{p.is_published ? 'Live' : 'Draft'}</Tag>
                         </div>
                       ))}
                     </div>
-                  </Block>
+                  </Card>
                 </div>
               )}
 
-              {/* ══════ ONBOARDING ══════ */}
+              {/* ══ ONBOARDING ══ */}
               {tab === 'onboarding' && (
                 <div className="space-y-5">
-                  <h1 className="text-[18px] font-black text-[#e5e5e5]">Onboarding Responses</h1>
+                  <div>
+                    <h2 className="text-[20px] font-bold text-[#191919]">Onboarding Responses</h2>
+                    <p className="text-[13px] text-[#9b9a97] mt-0.5">Users from the Get Started flow</p>
+                  </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {['founder','engineer','designer','product'].map(role => (
-                      <Block key={role} className="p-4">
-                        <p className="text-[8px] font-mono font-black text-[#2a2a2a] uppercase tracking-widest mb-2">{role}</p>
-                        <p className="text-[28px] font-black text-[#e5e5e5] tabular-nums">{data.onboarding?.filter((o:any)=>o.role===role).length||0}</p>
-                      </Block>
+                    {[
+                      { role: 'founder',  bg: '#2383e2', text: '#fff' },
+                      { role: 'engineer', bg: '#0f7b6c', text: '#fff' },
+                      { role: 'designer', bg: '#9065b0', text: '#fff' },
+                      { role: 'product',  bg: '#e03e3e', text: '#fff' },
+                    ].map(({ role, bg, text }) => (
+                      <div key={role} className="rounded-xl p-5" style={{ background: bg }}>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide mb-2 opacity-80" style={{ color: text }}>{role}</p>
+                        <p className="text-[32px] font-black tabular-nums leading-none" style={{ color: text }}>
+                          {data.onboarding?.filter((o: any) => o.role === role).length || 0}
+                        </p>
+                      </div>
                     ))}
                   </div>
                   {(!data.onboarding || !data.onboarding.length)
-                    ? <Empty icon={ClipboardList} title="No onboarding data yet" />
-                    : <Block>
+                    ? <Empty icon={ClipboardList} title="No onboarding data yet" desc="Users appear after completing the Get Started flow" />
+                    : <Card>
                         <table className="w-full border-collapse">
                           <THead cols={['Name','Role','Company','Theme','Date']} />
                           <tbody>
-                            {data.onboarding.map((o:any)=>(
+                            {data.onboarding.map((o: any) => (
                               <TRow key={o.id}>
-                                <TD className="text-[#888] font-semibold">{o.full_name||'—'}</TD>
-                                <TD><Pill color="teal">{o.role||'—'}</Pill></TD>
-                                <TD>{o.company_size||'—'}</TD>
-                                <TD><Pill color={o.preferred_theme==='dark'?'muted':'amber'}>{o.preferred_theme||'—'}</Pill></TD>
-                                <TD className="font-mono">{new Date(o.created_at).toLocaleDateString()}</TD>
+                                <TD className="font-medium text-[#191919]">{o.full_name || '—'}</TD>
+                                <TD><Tag color="teal">{o.role || '—'}</Tag></TD>
+                                <TD>{o.company_size || '—'}</TD>
+                                <TD><Tag color={o.preferred_theme === 'dark' ? 'gray' : 'orange'}>{o.preferred_theme || '—'}</Tag></TD>
+                                <TD>{new Date(o.created_at).toLocaleDateString()}</TD>
                               </TRow>
                             ))}
                           </tbody>
                         </table>
-                      </Block>
+                      </Card>
                   }
                 </div>
               )}
 
-              {/* ══════ PROMO CODES ══════ */}
+              {/* ══ PROMO CODES ══ */}
               {tab === 'promo-codes' && (
                 <div className="space-y-5">
-                  <h1 className="text-[18px] font-black text-[#e5e5e5]">Promo Codes</h1>
-                  <Block>
-                    <BlockHeader title="Create Code" />
+                  <h2 className="text-[20px] font-bold text-[#191919]">Promo Codes</h2>
+                  <Card>
+                    <CardHead title="Create Promo Code" />
                     <div className="p-5">
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                        <Field label="Code *"><input value={promoCode} onChange={e=>setPromoCode(e.target.value.toUpperCase())} className={inputCls} placeholder="SUMMER25" /></Field>
-                        <Field label="Discount %"><input type="number" value={promoDiscount} onChange={e=>setPromoDiscount(Number(e.target.value))} min={1} max={100} className={inputCls} /></Field>
-                        <Field label="Target Plan"><select value={promoPlan} onChange={e=>setPromoPlan(e.target.value)} className={selectCls}><option value="all">All Plans</option><option value="pro">Pro Only</option><option value="business">Business Only</option></select></Field>
-                        <Field label="Max Uses"><input type="number" value={promoMaxUses} onChange={e=>setPromoMaxUses(e.target.value)} className={inputCls} placeholder="100" /></Field>
-                        <Field label="Expires At"><input type="datetime-local" value={promoExpires} onChange={e=>setPromoExpires(e.target.value)} className={inputCls} /></Field>
+                        <Field label="Code *"><input value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())} className={inputCls} placeholder="SUMMER25" /></Field>
+                        <Field label="Discount %"><input type="number" value={promoDiscount} onChange={e => setPromoDiscount(Number(e.target.value))} min={1} max={100} className={inputCls} /></Field>
+                        <Field label="Target Plan"><select value={promoPlan} onChange={e => setPromoPlan(e.target.value)} className={selectCls}><option value="all">All Plans</option><option value="pro">Pro Only</option><option value="business">Business Only</option></select></Field>
+                        <Field label="Max Uses"><input type="number" value={promoMaxUses} onChange={e => setPromoMaxUses(e.target.value)} className={inputCls} placeholder="100" /></Field>
+                        <Field label="Expires At"><input type="datetime-local" value={promoExpires} onChange={e => setPromoExpires(e.target.value)} className={inputCls} /></Field>
                         <Field label="Visibility">
-                          <label className="flex items-center gap-2.5 cursor-pointer h-[40px]">
-                            <input type="checkbox" checked={promoPublic} onChange={e=>setPromoPublic(e.target.checked)} className="w-3.5 h-3.5 rounded border-[#222] bg-[#0a0a0a] accent-[#e5e5e5]" />
-                            <span className="text-[12px] font-mono text-[#444]">Make public</span>
+                          <label className="flex items-center gap-2.5 cursor-pointer mt-1">
+                            <input type="checkbox" checked={promoPublic} onChange={e => setPromoPublic(e.target.checked)} className="w-4 h-4 rounded border-[#e3e2de] accent-[#2383e2]" />
+                            <span className="text-[13px] text-[#6b6b6b]">Make public</span>
                           </label>
                         </Field>
                       </div>
-                      <Btn onClick={addPromo} disabled={!promoCode.trim()} loading={savingPromo}><Plus size={11}/> Create Code</Btn>
+                      <Btn onClick={addPromo} disabled={!promoCode.trim()} loading={savingPromo}><Plus size={12} /> Create Code</Btn>
                     </div>
-                  </Block>
-                  {!promoCodes.length ? <Empty icon={Gift} title="No codes yet" /> : (
-                    <Block>
+                  </Card>
+                  {!promoCodes.length ? <Empty icon={Gift} title="No promo codes yet" /> : (
+                    <Card>
                       <table className="w-full border-collapse">
                         <THead cols={['Code','Discount','Plan','Type','Uses','Expires','']} />
                         <tbody>
-                          {promoCodes.map(p=>(
+                          {promoCodes.map(p => (
                             <TRow key={p.id}>
                               <TD>
                                 <div className="flex items-center gap-2">
-                                  <span className="font-mono font-black text-[#888]">{p.code}</span>
-                                  <button onClick={()=>copyCode(p.code)} className="text-[#2a2a2a] hover:text-[#555] transition-colors">
-                                    {copiedCode===p.code?<Check size={10} className="text-[#34d399]"/>:<Copy size={10}/>}
+                                  <span className="font-semibold text-[#191919]">{p.code}</span>
+                                  <button onClick={() => copyCode(p.code)} className="text-[#c4c3bf] hover:text-[#6b6b6b] transition-colors">
+                                    {copiedCode === p.code ? <Check size={12} className="text-[#16a34a]" /> : <Copy size={12} />}
                                   </button>
                                 </div>
                               </TD>
-                              <TD><span className="font-black text-[#34d399]">{p.discount_percent}%</span></TD>
-                              <TD><Pill color="teal">{p.target_plan}</Pill></TD>
-                              <TD><Pill color={p.is_public?'green':'muted'}>{p.is_public?'public':'private'}</Pill></TD>
-                              <TD className="font-mono">{p.current_uses}{p.max_uses?`/${p.max_uses}`:''}</TD>
-                              <TD className="font-mono text-[#2a2a2a]">{p.expires_at?new Date(p.expires_at).toLocaleDateString():'∞'}</TD>
-                              <TD><IconBtn onClick={()=>deletePromo(p.id)} variant="danger"><Trash2 size={12}/></IconBtn></TD>
+                              <TD><span className="font-bold text-[#0f7b6c]">{p.discount_percent}%</span></TD>
+                              <TD><Tag color="blue">{p.target_plan}</Tag></TD>
+                              <TD><Tag color={p.is_public ? 'green' : 'gray'}>{p.is_public ? 'Public' : 'Private'}</Tag></TD>
+                              <TD>{p.current_uses}{p.max_uses ? `/${p.max_uses}` : ''}</TD>
+                              <TD>{p.expires_at ? new Date(p.expires_at).toLocaleDateString() : '∞'}</TD>
+                              <TD><IconBtn onClick={() => deletePromo(p.id)} danger><Trash2 size={13} /></IconBtn></TD>
                             </TRow>
                           ))}
                         </tbody>
                       </table>
-                    </Block>
+                    </Card>
                   )}
                 </div>
               )}
 
-              {/* ══════ CELEBRATIONS ══════ */}
+              {/* ══ CELEBRATIONS ══ */}
               {tab === 'celebrations' && (
                 <div className="space-y-5">
-                  <h1 className="text-[18px] font-black text-[#e5e5e5]">Seasonal Celebrations</h1>
+                  <div>
+                    <h2 className="text-[20px] font-bold text-[#191919]">Seasonal Celebrations</h2>
+                    <p className="text-[13px] text-[#9b9a97] mt-0.5">Toggle seasonal overlays for all users</p>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {celebrations.map(c=>(
-                      <Block key={c.id} className={c.is_active ? '!border-[#2a2500]' : ''}>
+                    {celebrations.map(c => (
+                      <Card key={c.id} className={c.is_active ? '!border-[#fde047]' : ''}>
                         <div className="p-5">
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center gap-3">
-                              <span className="text-2xl">{c.config?.emoji||'🎉'}</span>
+                              <div className="w-12 h-12 rounded-xl bg-[#fef9c3] border border-[#fde047] flex items-center justify-center text-2xl">
+                                {c.config?.emoji || '🎉'}
+                              </div>
                               <div>
-                                <p className="text-[13px] font-bold text-[#ccc]">{c.config?.label||c.name}</p>
-                                <p className="text-[10px] font-mono text-[#333] mt-0.5">{c.name}</p>
+                                <p className="text-[14px] font-semibold text-[#191919]">{c.config?.label || c.name}</p>
+                                <p className="text-[11px] text-[#9b9a97] mt-0.5">{c.name}</p>
                               </div>
                             </div>
-                            {c.is_active && <Pill color="amber">active</Pill>}
+                            {c.is_active && <Tag color="orange">Active</Tag>}
                           </div>
-                          <button onClick={()=>toggleCeleb(c.id,c.is_active)}
-                            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-[12px] font-bold transition-all ${c.is_active?'bg-[#111] text-[#444] border border-[#1a1a1a] hover:border-[#222] hover:text-[#666]':'bg-[#e5e5e5] text-[#0a0a0a] hover:bg-white'}`}>
-                            {c.is_active?<><EyeOff size={12}/> Deactivate</>:<><Eye size={12}/> Activate</>}
+                          <button onClick={() => toggleCeleb(c.id, c.is_active)}
+                            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-[13px] font-semibold transition-all ${c.is_active ? 'bg-[#f7f6f3] text-[#6b6b6b] border border-[#e3e2de] hover:bg-[#f1f0ed]' : 'bg-[#2383e2] text-white hover:bg-[#1a6ec2] shadow-sm'}`}>
+                            {c.is_active ? <><EyeOff size={14} /> Deactivate</> : <><Eye size={14} /> Activate</>}
                           </button>
                         </div>
-                      </Block>
+                      </Card>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* ══════ INBOX ══════ */}
+              {/* ══ INBOX ══ */}
               {tab === 'inbox' && (
                 <div className="space-y-5">
-                  <h1 className="text-[18px] font-black text-[#e5e5e5]">Notifications</h1>
-                  <Block>
-                    <BlockHeader title="Send Notification" />
+                  <h2 className="text-[20px] font-bold text-[#191919]">Notifications</h2>
+                  <Card>
+                    <CardHead title="Send Notification" />
                     <div className="p-5 space-y-4">
-                      <Field label="Title *"><input value={inboxTitle} onChange={e=>setInboxTitle(e.target.value)} className={inputCls} placeholder="Notification title..." /></Field>
-                      <Field label="Body"><textarea value={inboxBody} onChange={e=>setInboxBody(e.target.value)} className={`${textareaCls} h-20`} placeholder="Message..." /></Field>
+                      <Field label="Title *"><input value={inboxTitle} onChange={e => setInboxTitle(e.target.value)} className={inputCls} placeholder="Notification title…" /></Field>
+                      <Field label="Body"><textarea value={inboxBody} onChange={e => setInboxBody(e.target.value)} className={`${textareaCls} h-20`} placeholder="Message body…" /></Field>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <Field label="Image URL"><input value={inboxImage} onChange={e=>setInboxImage(e.target.value)} className={inputCls} placeholder="https://..." /></Field>
-                        <Field label="Link URL"><input value={inboxLink} onChange={e=>setInboxLink(e.target.value)} className={inputCls} placeholder="https://..." /></Field>
-                        <Field label="Target"><select value={inboxPlan} onChange={e=>setInboxPlan(e.target.value)} className={selectCls}><option value="all">All</option><option value="free">Free</option><option value="pro">Pro</option><option value="business">Business</option></select></Field>
+                        <Field label="Image URL"><input value={inboxImage} onChange={e => setInboxImage(e.target.value)} className={inputCls} placeholder="https://…" /></Field>
+                        <Field label="Link URL"><input value={inboxLink} onChange={e => setInboxLink(e.target.value)} className={inputCls} placeholder="https://…" /></Field>
+                        <Field label="Target Plan"><select value={inboxPlan} onChange={e => setInboxPlan(e.target.value)} className={selectCls}><option value="all">All</option><option value="free">Free</option><option value="pro">Pro</option><option value="business">Business</option></select></Field>
                       </div>
-                      <Btn onClick={sendNotif} disabled={!inboxTitle.trim()} loading={sendingNotif}><Send size={11}/> Send</Btn>
+                      <Btn onClick={sendNotif} disabled={!inboxTitle.trim()} loading={sendingNotif}><Send size={12} /> Send Notification</Btn>
                     </div>
-                  </Block>
+                  </Card>
                   {!notifications.length ? <Empty icon={Bell} title="No notifications sent yet" /> : (
-                    <div className="space-y-1.5">
-                      {notifications.map(n=>(
-                        <Block key={n.id}>
+                    <div className="space-y-2">
+                      {notifications.map(n => (
+                        <Card key={n.id}>
                           <div className="flex items-center justify-between px-4 py-3">
                             <div className="flex items-start gap-3 min-w-0">
-                              <div className="w-7 h-7 rounded-lg bg-[#111] border border-[#1a1a1a] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <Bell size={11} className="text-[#333]" />
+                              <div className="w-8 h-8 rounded-lg bg-[#ede9fe] flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <Bell size={13} className="text-[#5b21b6]" />
                               </div>
                               <div className="min-w-0">
-                                <p className="text-[12px] font-bold text-[#888] truncate">{n.title}</p>
-                                {n.body && <p className="text-[11px] text-[#333] mt-0.5 truncate">{n.body}</p>}
-                                <p className="text-[9px] font-mono text-[#222] mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                                <p className="text-[13px] font-semibold text-[#191919] truncate">{n.title}</p>
+                                {n.body && <p className="text-[12px] text-[#6b6b6b] mt-0.5 truncate">{n.body}</p>}
+                                <p className="text-[11px] text-[#c4c3bf] mt-1">{new Date(n.created_at).toLocaleString()}</p>
                               </div>
                             </div>
-                            <IconBtn onClick={()=>deleteNotif(n.id)} variant="danger"><Trash2 size={11}/></IconBtn>
+                            <IconBtn onClick={() => deleteNotif(n.id)} danger><Trash2 size={13} /></IconBtn>
                           </div>
-                        </Block>
+                        </Card>
                       ))}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* ══════ TEMPLATES ══════ */}
+              {/* ══ TEMPLATES ══ */}
               {tab === 'templates' && (
                 <div className="space-y-5">
-                  <h1 className="text-[18px] font-black text-[#e5e5e5]">Templates</h1>
-                  <Block>
-                    <BlockHeader title="Add Template" />
+                  <h2 className="text-[20px] font-bold text-[#191919]">Templates</h2>
+                  <Card>
+                    <CardHead title="Add Template" />
                     <div className="p-5 space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <Field label="Name *"><input value={tplName} onChange={e=>setTplName(e.target.value)} className={inputCls} placeholder="Template name..." /></Field>
-                        <Field label="Category"><input value={tplCategory} onChange={e=>setTplCategory(e.target.value)} className={inputCls} placeholder="general" /></Field>
-                        <Field label="Image URL"><input value={tplImage} onChange={e=>setTplImage(e.target.value)} className={inputCls} placeholder="https://..." /></Field>
+                        <Field label="Name *"><input value={tplName} onChange={e => setTplName(e.target.value)} className={inputCls} placeholder="Template name…" /></Field>
+                        <Field label="Category"><input value={tplCategory} onChange={e => setTplCategory(e.target.value)} className={inputCls} placeholder="general" /></Field>
+                        <Field label="Image URL"><input value={tplImage} onChange={e => setTplImage(e.target.value)} className={inputCls} placeholder="https://…" /></Field>
                       </div>
-                      <Field label="Prompt *"><textarea value={tplPrompt} onChange={e=>setTplPrompt(e.target.value)} className={`${textareaCls} h-24`} placeholder="AI prompt..." /></Field>
-                      <Btn onClick={addTemplate} disabled={!tplName.trim()||!tplPrompt.trim()} loading={savingTpl}><Plus size={11}/> Add Template</Btn>
+                      <Field label="Prompt *"><textarea value={tplPrompt} onChange={e => setTplPrompt(e.target.value)} className={`${textareaCls} h-24`} placeholder="AI prompt…" /></Field>
+                      <Btn onClick={addTemplate} disabled={!tplName.trim() || !tplPrompt.trim()} loading={savingTpl}><Plus size={12} /> Add Template</Btn>
                     </div>
-                  </Block>
+                  </Card>
                   {!templates.length ? <Empty icon={Layers} title="No templates yet" /> : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {templates.map(tpl=>(
+                      {templates.map(tpl => (
                         <motion.div key={tpl.id} whileHover={{ y: -2 }} className="group">
-                          <Block className="overflow-hidden hover:!border-[#252525] transition-colors">
-                            <div className="aspect-video bg-[#090909] flex items-center justify-center overflow-hidden">
+                          <Card className="overflow-hidden hover:border-[#c4c3bf] transition-colors">
+                            <div className="aspect-video bg-[#f7f6f3] flex items-center justify-center overflow-hidden">
                               {tpl.image_url
-                                ? <img src={tpl.image_url} alt={tpl.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"/>
-                                : <Layers size={18} className="text-[#1a1a1a]"/>
+                                ? <img src={tpl.image_url} alt={tpl.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                : <Layers size={20} className="text-[#c4c3bf]" />
                               }
                             </div>
                             <div className="px-3 py-3 flex items-center justify-between">
                               <div className="min-w-0">
-                                <p className="text-[11px] font-bold text-[#666] truncate">{tpl.name}</p>
-                                <p className="text-[9px] font-mono text-[#2a2a2a] capitalize mt-0.5">{tpl.category}</p>
+                                <p className="text-[12px] font-semibold text-[#191919] truncate">{tpl.name}</p>
+                                <p className="text-[10px] text-[#9b9a97] capitalize mt-0.5">{tpl.category}</p>
                               </div>
-                              <IconBtn onClick={()=>deleteTpl(tpl.id)} variant="danger"><Trash2 size={11}/></IconBtn>
+                              <IconBtn onClick={() => deleteTpl(tpl.id)} danger><Trash2 size={12} /></IconBtn>
                             </div>
-                          </Block>
+                          </Card>
                         </motion.div>
                       ))}
                     </div>
@@ -782,164 +826,165 @@ export const AdminPanel: React.FC = () => {
                 </div>
               )}
 
-              {/* ══════ BLOG ══════ */}
+              {/* ══ BLOG ══ */}
               {tab === 'blog' && <AdminBlogEditor />}
 
-              {/* ══════ AI MODELS ══════ */}
+              {/* ══ AI MODELS ══ */}
               {tab === 'ai-models' && (
                 <div className="space-y-5">
-                  <h1 className="text-[18px] font-black text-[#e5e5e5]">AI Models</h1>
+                  <h2 className="text-[20px] font-bold text-[#191919]">AI Models</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {['free','pro','business','all'].map(plan=>{
+                    {[
+                      { plan: 'free',     bg: '#2383e2', text: '#fff' },
+                      { plan: 'pro',      bg: '#9065b0', text: '#fff' },
+                      { plan: 'business', bg: '#e03e3e', text: '#fff' },
+                      { plan: 'all',      bg: '#0f7b6c', text: '#fff' },
+                    ].map(({ plan, bg, text }) => {
                       const m = activeByPlan[plan];
                       return (
-                        <Block key={plan} className={m ? '!border-[#1f2a1f]' : ''}>
-                          <div className="p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-[8px] font-mono font-black text-[#2a2a2a] uppercase tracking-widest">{plan==='all'?'all plans':plan}</span>
-                              <div className={`w-1.5 h-1.5 rounded-full ${m?'bg-[#34d399]':'bg-[#1a1a1a]'}`} />
-                            </div>
-                            {m?<><p className="text-[11px] font-bold text-[#666] truncate">{m.display_name}</p><p className="text-[9px] font-mono text-[#2a2a2a] truncate mt-0.5">{m.model_id}</p></>
-                              :<p className="text-[10px] text-[#222] italic">not set</p>}
+                        <div key={plan} className="rounded-xl p-4" style={{ background: m ? bg : '#f7f6f3', border: m ? 'none' : '1px solid #e3e2de' }}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: m ? `${text}cc` : '#9b9a97' }}>{plan === 'all' ? 'All Plans' : plan}</span>
+                            {m && <div className="w-2 h-2 rounded-full bg-white/60" />}
                           </div>
-                        </Block>
+                          {m
+                            ? <><p className="text-[12px] font-bold truncate" style={{ color: text }}>{m.display_name}</p><p className="text-[10px] truncate mt-0.5" style={{ color: `${text}99` }}>{m.model_id}</p></>
+                            : <p className="text-[11px] text-[#c4c3bf] italic">Not configured</p>
+                          }
+                        </div>
                       );
                     })}
                   </div>
 
-                  <Block>
-                    <BlockHeader title="Add AI Model" />
+                  <Card>
+                    <CardHead title="Add AI Model" />
                     <div className="p-5">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
-                            <Field label="Provider"><select value={aiProvider} onChange={e=>changeProvider(e.target.value)} className={selectCls}><option value="vercel">Vercel AI</option><option value="openrouter">OpenRouter</option><option value="nvidia">NVIDIA NIM</option><option value="lovable">Lovable AI</option></select></Field>
-                            <Field label="Target Plan"><select value={aiTargetPlan} onChange={e=>setAiTargetPlan(e.target.value)} className={selectCls}><option value="all">All Plans</option><option value="free">Free</option><option value="pro">Pro</option><option value="business">Business</option></select></Field>
+                            <Field label="Provider"><select value={aiProvider} onChange={e => changeProvider(e.target.value)} className={selectCls}><option value="vercel">Vercel AI</option><option value="openrouter">OpenRouter</option><option value="nvidia">NVIDIA NIM</option><option value="lovable">Lovable AI</option></select></Field>
+                            <Field label="Target Plan"><select value={aiTargetPlan} onChange={e => setAiTargetPlan(e.target.value)} className={selectCls}><option value="all">All Plans</option><option value="free">Free</option><option value="pro">Pro</option><option value="business">Business</option></select></Field>
                           </div>
-                          <Field label="Model ID *"><input value={aiModelId} onChange={e=>setAiModelId(e.target.value)} className={inputCls} placeholder={providerDefs[aiProvider]?.ph} /></Field>
-                          <Field label="Display Name *"><input value={aiDisplayName} onChange={e=>setAiDisplayName(e.target.value)} className={inputCls} placeholder="Gemini 3 Flash" /></Field>
-                          <Field label="Gateway URL"><input value={aiGatewayUrl} onChange={e=>setAiGatewayUrl(e.target.value)} className={inputCls} /></Field>
-                          <Field label="API Key Secret"><input value={aiKeySecretName} onChange={e=>setAiKeySecretName(e.target.value)} className={inputCls} /></Field>
-                          <Btn onClick={addAiModel} disabled={!aiModelId.trim()||!aiDisplayName.trim()} loading={savingModel}><Plus size={11}/> Add Model</Btn>
+                          <Field label="Model ID *"><input value={aiModelId} onChange={e => setAiModelId(e.target.value)} className={inputCls} placeholder={providerDefs[aiProvider]?.ph} /></Field>
+                          <Field label="Display Name *"><input value={aiDisplayName} onChange={e => setAiDisplayName(e.target.value)} className={inputCls} placeholder="e.g. Gemini Flash" /></Field>
+                          <Field label="Gateway URL"><input value={aiGatewayUrl} onChange={e => setAiGatewayUrl(e.target.value)} className={inputCls} /></Field>
+                          <Field label="API Key Secret"><input value={aiKeySecretName} onChange={e => setAiKeySecretName(e.target.value)} className={inputCls} /></Field>
+                          <Btn onClick={addAiModel} disabled={!aiModelId.trim() || !aiDisplayName.trim()} loading={savingModel}><Plus size={12} /> Add Model</Btn>
                         </div>
                         <div className="space-y-3">
-                          <Block className="!bg-[#090909]">
-                            <div className="p-4">
-                              <p className="text-[9px] font-mono font-black text-[#34d399] uppercase tracking-widest mb-2">Priority Logic</p>
-                              <p className="text-[11px] text-[#2a2a2a] leading-relaxed">Specific plan match → "all plans" fallback. Only one model active per plan slot.</p>
+                          <div className="rounded-lg bg-[#f0fdf4] border border-[#bbf7d0] p-4">
+                            <p className="text-[11px] font-semibold text-[#166534] uppercase tracking-wide mb-1.5">Priority Logic</p>
+                            <p className="text-[12px] text-[#6b6b6b] leading-relaxed">Specific plan match takes priority over "All Plans" fallback. Only one model can be active per plan slot.</p>
+                          </div>
+                          <div className="rounded-lg bg-[#f7f6f3] border border-[#e3e2de] p-4">
+                            <p className="text-[11px] font-semibold text-[#9b9a97] uppercase tracking-wide mb-3">Provider Keys</p>
+                            <div className="space-y-2">
+                              {Object.entries(providerDefs).map(([k, v]) => (
+                                <div key={k} className="flex justify-between items-center">
+                                  <span className="text-[12px] text-[#6b6b6b] capitalize">{k}</span>
+                                  <span className="text-[11px] text-[#9b9a97] font-mono">{v.key}</span>
+                                </div>
+                              ))}
                             </div>
-                          </Block>
-                          <Block className="!bg-[#090909]">
-                            <div className="p-4">
-                              <p className="text-[9px] font-mono font-black text-[#333] uppercase tracking-widest mb-3">Providers</p>
-                              <div className="space-y-2">
-                                {Object.entries(providerDefs).map(([k,v])=>(
-                                  <div key={k} className="flex justify-between items-center">
-                                    <span className="text-[10px] font-mono text-[#2a2a2a] capitalize">{k}</span>
-                                    <span className="text-[9px] font-mono text-[#1e1e1e]">{v.key}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </Block>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </Block>
+                  </Card>
 
                   {!aiModels.length ? <Empty icon={Cpu} title="No models configured" /> : (
-                    <Block>
+                    <Card>
                       <table className="w-full border-collapse">
                         <THead cols={['Status','Provider','Model ID','Name','Plan','']} />
                         <tbody>
-                          {aiModels.map(m=>(
+                          {aiModels.map(m => (
                             <TRow key={m.id}>
                               <TD>
-                                <div className="flex items-center gap-1.5">
-                                  <div className={`w-1.5 h-1.5 rounded-full ${m.is_active?'bg-[#34d399]':'bg-[#1f1f1f]'}`} />
-                                  <span className="text-[10px] font-mono text-[#333]">{m.is_active?'active':'off'}</span>
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-2 h-2 rounded-full ${m.is_active ? 'bg-[#16a34a]' : 'bg-[#e3e2de]'}`} />
+                                  <span className="text-[12px]">{m.is_active ? 'Active' : 'Off'}</span>
                                 </div>
                               </TD>
-                              <TD className="capitalize font-mono">{m.provider}</TD>
-                              <TD><span className="font-mono text-[#555]">{m.model_id}</span></TD>
-                              <TD className="text-[#888] font-semibold">{m.display_name}</TD>
-                              <TD><Pill color="muted">{m.target_plan==='all'?'all':m.target_plan}</Pill></TD>
+                              <TD className="capitalize">{m.provider}</TD>
+                              <TD className="font-mono text-[#9b9a97]">{m.model_id}</TD>
+                              <TD className="font-medium text-[#191919]">{m.display_name}</TD>
+                              <TD><Tag color="blue">{m.target_plan === 'all' ? 'All' : m.target_plan}</Tag></TD>
                               <TD>
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <button onClick={()=>toggleAiModel(m.id,m.is_active)}
-                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition-all ${m.is_active?'bg-[#111] text-[#333] hover:text-[#666]':'bg-[#e5e5e5] text-[#0a0a0a] hover:bg-white'}`}>
-                                    {m.is_active?'deactivate':'activate'}
+                                <div className="flex items-center justify-end gap-2">
+                                  <button onClick={() => toggleAiModel(m.id, m.is_active)}
+                                    className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all ${m.is_active ? 'bg-[#f7f6f3] text-[#6b6b6b] border border-[#e3e2de] hover:bg-[#f1f0ed]' : 'bg-[#2383e2] text-white hover:bg-[#1a6ec2]'}`}>
+                                    {m.is_active ? 'Deactivate' : 'Activate'}
                                   </button>
-                                  <IconBtn onClick={()=>deleteAiModel(m.id)} variant="danger"><Trash2 size={11}/></IconBtn>
+                                  <IconBtn onClick={() => deleteAiModel(m.id)} danger><Trash2 size={13} /></IconBtn>
                                 </div>
                               </TD>
                             </TRow>
                           ))}
                         </tbody>
                       </table>
-                    </Block>
+                    </Card>
                   )}
                 </div>
               )}
 
-              {/* ══════ DATA TABLES ══════ */}
+              {/* ══ DATA TABLES ══ */}
               {(['users','plans','transactions','projects'] as TabKey[]).includes(tab) && (
                 <div className="space-y-5">
                   <div className="flex items-center justify-between">
-                    <h1 className="text-[18px] font-black text-[#e5e5e5]">{activeTabLabel}</h1>
-                    <Pill color="muted">
-                      {tab==='users'?data.users.length:tab==='plans'?data.plans.length:tab==='projects'?data.projects.length:data.transactions.length} rows
-                    </Pill>
+                    <h2 className="text-[20px] font-bold text-[#191919]">{activeLabel}</h2>
+                    <Tag color="gray">
+                      {tab==='users'?data.users.length:tab==='plans'?data.plans.length:tab==='projects'?data.projects.length:data.transactions.length} records
+                    </Tag>
                   </div>
-                  <Block>
+                  <Card>
                     <table className="w-full border-collapse">
                       <thead>
-                        <tr className="border-b border-[#151515]">
-                          {tab==='users'&&['','Email','Name','Joined'].map(h=><th key={h} className="px-4 py-3 text-left text-[9px] font-mono font-black text-[#2a2a2a] uppercase tracking-[0.2em]">{h}</th>)}
-                          {tab==='plans'&&['User','Plan','Daily','Used Today','Total','Expires'].map(h=><th key={h} className="px-4 py-3 text-left text-[9px] font-mono font-black text-[#2a2a2a] uppercase tracking-[0.2em]">{h}</th>)}
-                          {tab==='transactions'&&['User','Credits','Model','Type','Date'].map(h=><th key={h} className="px-4 py-3 text-left text-[9px] font-mono font-black text-[#2a2a2a] uppercase tracking-[0.2em]">{h}</th>)}
-                          {tab==='projects'&&['Name','Type','Status','Created'].map(h=><th key={h} className="px-4 py-3 text-left text-[9px] font-mono font-black text-[#2a2a2a] uppercase tracking-[0.2em]">{h}</th>)}
+                        <tr className="border-b border-[#e3e2de] bg-[#f7f6f3]">
+                          {tab==='users'&&['','Email','Name','Joined'].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
+                          {tab==='plans'&&['User','Plan','Daily','Used Today','Total','Expires'].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
+                          {tab==='transactions'&&['User','Credits','Model','Type','Date'].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
+                          {tab==='projects'&&['Name','Type','Status','Created'].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
                         </tr>
                       </thead>
                       <tbody>
                         {tab==='users'&&data.users.filter(u=>!searchQuery||JSON.stringify(u).toLowerCase().includes(searchQuery.toLowerCase())).map((u:any)=>(
                           <TRow key={u.id}>
-                            <TD><div className="w-7 h-7 rounded-lg bg-[#111] border border-[#1a1a1a] flex items-center justify-center text-[9px] font-black text-[#444]">{(u.email||'?')[0].toUpperCase()}</div></TD>
-                            <TD className="font-mono text-[#555]">{u.email||'—'}</TD>
-                            <TD className="text-[#888] font-semibold">{u.display_name||'—'}</TD>
-                            <TD className="font-mono">{new Date(u.created_at).toLocaleDateString()}</TD>
+                            <TD><div className="w-7 h-7 rounded-full bg-[#dbeafe] flex items-center justify-center text-[10px] font-bold text-[#1e40af]">{(u.email||'?')[0].toUpperCase()}</div></TD>
+                            <TD className="text-[#6b6b6b]">{u.email||'—'}</TD>
+                            <TD className="font-medium text-[#191919]">{u.display_name||'—'}</TD>
+                            <TD>{new Date(u.created_at).toLocaleDateString()}</TD>
                           </TRow>
                         ))}
                         {tab==='plans'&&data.plans.filter(p=>!searchQuery||JSON.stringify(p).toLowerCase().includes(searchQuery.toLowerCase())).map((p:any)=>(
                           <TRow key={p.id}>
-                            <TD className="font-mono">{p.user_id?.slice(0,8)}</TD>
-                            <TD><Pill color={p.plan==='pro'?'blue':p.plan==='business'?'amber':'muted'}>{p.plan}</Pill></TD>
-                            <TD className="font-mono">{p.daily_credits}</TD>
-                            <TD className="font-mono">{p.credits_used_today}</TD>
-                            <TD className="font-mono">{p.total_credits_used}</TD>
-                            <TD className="font-mono">{p.subscription_expires_at?new Date(p.subscription_expires_at).toLocaleDateString():'—'}</TD>
+                            <TD className="font-mono text-[#9b9a97]">{p.user_id?.slice(0,8)}</TD>
+                            <TD><Tag color={p.plan==='pro'?'purple':p.plan==='business'?'orange':'blue'}>{p.plan}</Tag></TD>
+                            <TD>{p.daily_credits}</TD>
+                            <TD>{p.credits_used_today}</TD>
+                            <TD>{p.total_credits_used}</TD>
+                            <TD>{p.subscription_expires_at?new Date(p.subscription_expires_at).toLocaleDateString():'—'}</TD>
                           </TRow>
                         ))}
                         {tab==='transactions'&&data.transactions.filter(t=>!searchQuery||JSON.stringify(t).toLowerCase().includes(searchQuery.toLowerCase())).map((t:any)=>(
                           <TRow key={t.id}>
-                            <TD className="font-mono">{t.user_id?.slice(0,8)}</TD>
-                            <TD><span className="font-black text-[#a855f7] font-mono">{t.credits_used}</span></TD>
-                            <TD className="font-mono text-[#333]">{t.model_used||'—'}</TD>
-                            <TD><Pill color="muted">{t.work_type||'—'}</Pill></TD>
-                            <TD className="font-mono">{new Date(t.created_at).toLocaleString()}</TD>
+                            <TD className="font-mono text-[#9b9a97]">{t.user_id?.slice(0,8)}</TD>
+                            <TD><span className="font-bold text-[#9065b0]">{t.credits_used}</span></TD>
+                            <TD className="text-[#9b9a97]">{t.model_used||'—'}</TD>
+                            <TD><Tag color="gray">{t.work_type||'—'}</Tag></TD>
+                            <TD>{new Date(t.created_at).toLocaleString()}</TD>
                           </TRow>
                         ))}
                         {tab==='projects'&&data.projects.filter(p=>!searchQuery||JSON.stringify(p).toLowerCase().includes(searchQuery.toLowerCase())).map((p:any)=>(
                           <TRow key={p.id}>
-                            <TD className="text-[#888] font-bold">{p.name}</TD>
-                            <TD className="capitalize">{p.project_type}</TD>
-                            <TD><Pill color={p.is_published?'green':'muted'}>{p.is_published?'published':'draft'}</Pill></TD>
-                            <TD className="font-mono">{new Date(p.created_at).toLocaleDateString()}</TD>
+                            <TD className="font-medium text-[#191919]">{p.name}</TD>
+                            <TD className="capitalize text-[#9b9a97]">{p.project_type}</TD>
+                            <TD><Tag color={p.is_published?'green':'gray'}>{p.is_published?'Published':'Draft'}</Tag></TD>
+                            <TD>{new Date(p.created_at).toLocaleDateString()}</TD>
                           </TRow>
                         ))}
                       </tbody>
                     </table>
-                  </Block>
+                  </Card>
                 </div>
               )}
 
@@ -947,6 +992,19 @@ export const AdminPanel: React.FC = () => {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* ══════ RIGHT SIDEBAR ══════ */}
+      {/* Mobile: slides in from right */}
+      <div className={`fixed right-0 top-0 bottom-0 z-50 border-l border-[#e3e2de] shadow-xl transition-transform duration-300 md:hidden ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        style={{ width: 220 }}>
+        <SidebarInner />
+      </div>
+
+      {/* Desktop: always visible on the right */}
+      <aside className={`hidden md:flex flex-col flex-shrink-0 border-l border-[#e3e2de] transition-all duration-300 ${sidebarCollapsed ? 'w-[52px]' : 'w-[220px]'}`}>
+        <SidebarInner />
+      </aside>
+
     </div>
   );
 };
