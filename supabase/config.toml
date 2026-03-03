@@ -15,19 +15,7 @@ verify_jwt = false
 [functions.visual-edits]
 verify_jwt = false
 
-[functions.vercel-oauth]
-verify_jwt = false
-
-[functions.vivora-deploy]
-verify_jwt = false
-
 [functions.vercel-deploy]
-verify_jwt = false
-
-[functions.background-generate]
-verify_jwt = false
-
-[functions.screenshot-test]
 verify_jwt = false
 
 [functions.modal-proxy]

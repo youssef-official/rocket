@@ -4,7 +4,7 @@ import {
   Code2, Eye, LogOut, Moon, Sun, ChevronDown, Download, Clock, Pencil,
   Eye as EyeIcon, Upload, Coins, Database, GitBranch, Settings2,
   BookOpen, CreditCard, CircleHelp, Rocket, Monitor, FileArchive,
-  Shield, PanelLeftClose, PanelLeftOpen, BarChart2
+  PanelLeftClose, PanelLeftOpen, BarChart2
 } from 'lucide-react';
 import githubLogo from '@/assets/logos/github.svg';
 import { ChatView } from './ChatView';
@@ -15,7 +15,6 @@ import { VercelDeployDialog } from './IntegrationDialogs';
 import { GitHubPushDialog } from './GitHubPushDialog';
 import { DatabasePanel } from './DatabasePanel';
 import { AnalyticsPanel } from './AnalyticsPanel';
-import { SecretsPanel } from './SecretsPanel';
 import { DetailsPanel } from './DetailsPanel';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -97,7 +96,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const { t, isRTL } = useLanguage();
   const { userPlan, getRemainingCredits } = useUserPlan();
   const { runMigrations } = useAutoMigration(project?.id || null);
-  const [currentView, setCurrentView] = useState<'code' | 'preview' | 'database' | 'details' | 'analytics' | 'secrets'>('preview');
+  const [currentView, setCurrentView] = useState<'code' | 'preview' | 'database' | 'details' | 'analytics'>('preview');
   const [detailsVersion, setDetailsVersion] = useState<{ version: ProjectVersion; activities: any[] } | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -595,13 +594,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <BarChart2 className="w-3.5 h-3.5" />
             <span>Analytics</span>
           </button>
-          <button
-            onClick={() => setCurrentView('secrets')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'secrets' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
-          >
-            <Shield className="w-3.5 h-3.5" />
-            <span>Secrets</span>
-          </button>
+
         </div>
 
         {/* Right Section */}
@@ -896,9 +889,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               {currentView === 'analytics' && !showVisualEdit && (
                 <AnalyticsPanel previewUrl={previewUrl} />
               )}
-              {currentView === 'secrets' && !showVisualEdit && (
-                <SecretsPanel projectId={project?.id} />
-              )}
+
               {showVisualEdit && (
                 <div className="absolute inset-0 z-10 flex">
                   <VisualEditMode

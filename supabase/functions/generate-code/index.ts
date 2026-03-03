@@ -64,14 +64,59 @@ ABSOLUTE RULES (VIOLATIONS = INSTANT FAILURE)
 
 1. LANGUAGE: Reply in the SAME language as the user's message. USER_LANGUAGE parameter confirms this.
 
-2. IMPORT SAFETY (ZERO TOLERANCE - #1 CRASH CAUSE):
-   - NEVER import { X } from './file' unless that file ACTUALLY exports X with that EXACT name.
-   - If you create types/index.ts with "export interface MenuItem", do NOT import "INITIAL_MENU" from it unless you ALSO export that constant IN THE SAME FILE.
-   - If you create a context (e.g. AppContext.tsx) and want "useApp", you MUST write "export function useApp()" or "export const useApp =" in that SAME file.
-   - RULE: Every single import statement MUST correspond to a real, written export in the source file. If it doesn't exist yet, WRITE IT before importing.
-   - COMMON CRASH: File A imports { X } from File B, but File B never exports X → APP CRASHES. NEVER do this.
-   - BEFORE finishing, mentally verify EVERY import in EVERY file you generated.
-   - EXPORT NAMES: If you export "export const AdminPanel", import it as { AdminPanel } NOT { Admin }. The name MUST match EXACTLY.
+2. ⛔ IMPORT/EXPORT CRASH PREVENTION (ZERO TOLERANCE — #1 CAUSE OF APP CRASHES):
+   
+   🔴 GOLDEN RULE: You MUST NOT write ANY import statement unless you are 100% certain the target file exports that exact name. If the file doesn't exist yet, you MUST create it in the same response with the correct export.
+
+   🔴 COMMON CRASHES YOU MUST NEVER CAUSE:
+   
+   a) PACKAGE IMPORTS — Use the CORRECT package for each import:
+      ✅ CORRECT: import { clsx } from "clsx";             (clsx comes from the "clsx" package)
+      ✅ CORRECT: import { twMerge } from "tailwind-merge"; (twMerge comes from "tailwind-merge")
+      ❌ WRONG:   import { clsx } from "tailwind-merge";    (clsx is NOT in tailwind-merge — CRASH!)
+      ❌ WRONG:   import { cn } from "tailwind-merge";      (cn is NOT in tailwind-merge — CRASH!)
+      
+      If you create a utility function "cn" in lib/utils.ts, it should be:
+      \`\`\`
+      import { clsx, type ClassValue } from "clsx";
+      import { twMerge } from "tailwind-merge";
+      export function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
+      \`\`\`
+      Then other files import: import { cn } from "../lib/utils";
+      
+   b) COMPONENT EXPORTS — Be consistent with named vs default exports:
+      ✅ If a file has: export function Button() {...}  → import { Button } from "./Button";
+      ✅ If a file has: export default function Button() {...} → import Button from "./Button";
+      ❌ NEVER mix: export function Button() → import Button from (CRASH! — needs { Button })
+      ❌ NEVER mix: export default function Button() → import { Button } from (CRASH! — needs default import)
+      RULE: Pick ONE style and be consistent. RECOMMENDED: Use NAMED exports (export function/const) for all components. Then ALWAYS import with { }.
+      
+   c) CONTEXT HOOKS — Every custom hook MUST be exported from the file that creates it:
+      ❌ CRASH: import { useAppContext } from "./contexts/AppContext" — but AppContext.tsx doesn't export "useAppContext"
+      ✅ FIX: In AppContext.tsx you MUST write: export function useAppContext() { ... } or export const useAppContext = () => { ... }
+      ❌ CRASH: import { useApp } from "./contexts/AppContext" — but the export is named "useAppContext" 
+      ✅ FIX: The import name MUST match the export name EXACTLY, character for character.
+      
+   d) CONSTANTS FILE — If you tell files to import from lib/constants.ts, that file MUST export everything those files need:
+      ❌ CRASH: Hero.tsx does import { TRANSLATIONS } from "../lib/constants" — but constants.ts exports "translations" (lowercase), not "TRANSLATIONS"
+      ❌ CRASH: Navbar.tsx does import { translations } from "../lib/constants" — but constants.ts doesn't export "translations" at all
+      ✅ FIX: If constants.ts has: export const translations = {...} → EVERY file must import { translations } (exact case match)
+      ✅ FIX: If constants.ts has: export const TRANSLATIONS = {...} → EVERY file must import { TRANSLATIONS } (exact case match)
+      
+   e) PHANTOM FUNCTIONS — NEVER import functions that don't exist:
+      ❌ CRASH: import { enhancePrompt } from "../lib/utils" — but utils.ts doesn't have enhancePrompt
+      ❌ CRASH: import { formatDate } from "../lib/helpers" — but helpers.ts doesn't exist
+      ✅ FIX: If you need a function, WRITE IT in the file you're importing from, in the same response.
+      
+   f) FILE PATH ACCURACY:
+      ❌ CRASH: import { Button } from "../components/ui/Button" — but the actual file is "button.tsx" (lowercase)
+      ✅ FIX: File paths are case-sensitive. Match the EXACT filename you created.
+
+   MANDATORY SELF-AUDIT: Before outputting, go through EVERY file you generated and for EACH import line:
+   1. Find the source file in your output
+   2. Verify the export exists with the EXACT same name
+   3. If it doesn't exist → either add the export to the source file OR fix the import
+   This is NON-NEGOTIABLE. A single mismatched import = the entire app crashes.
 
 3. CONTEXT PROVIDER SAFETY (ZERO TOLERANCE - #2 CRASH CAUSE):
    - If ANY component uses a custom hook like useCart(), useApp(), useProducts(), useAuth(), the Provider MUST wrap that component in the tree.
@@ -105,22 +150,26 @@ ABSOLUTE RULES (VIOLATIONS = INSTANT FAILURE)
 
 8. ESM ONLY. No require(). Always use optional chaining for nested access: obj?.prop ?? fallback.
 
-9. App.tsx MUST: export default function App(). Use ThemeContext for dark/light. Use LanguageContext for i18n. Put translations in lib/constants.ts.
+9. App.tsx MUST: export default function App(). Use ThemeContext for dark/light. Use LanguageContext for i18n. 
+   TRANSLATIONS: Create lib/constants.ts with: export const translations = { ... }; 
+   Then import it as: import { translations } from "../lib/constants";
+   NEVER use "TRANSLATIONS" (uppercase) unless that's the exact export name in constants.ts. The name MUST match.
 
 10. DARK/LIGHT MODE: Mandatory. ThemeProvider + localStorage + system preference detection. Use CSS variables for all colors.
 
 ═══════════════════════════════════════════════
-PRE-SUBMISSION CHECKLIST (RUN BEFORE OUTPUTTING)
+PRE-SUBMISSION CHECKLIST (MANDATORY — RUN BEFORE OUTPUTTING)
 ═══════════════════════════════════════════════
-Before returning your code, mentally run these checks:
-✅ 1. Every import { X } → does file Y actually "export X"? If not, FIX IT.
-✅ 2. Every useContext hook → is the Provider wrapping the consumer in App.tsx? If not, FIX IT.
-✅ 3. Every context destructure → using optional chaining (state?.prop ?? default)? If not, FIX IT.
-✅ 4. Every className="" → is the string properly closed? No line breaks inside quotes? If not, FIX IT.
-✅ 5. Every page file → does its export name match exactly what App.tsx imports? If not, FIX IT.
-✅ 6. All lucide-react icons → are they from the SAFE LIST above? If not, REPLACE with a safe icon.
-✅ 7. Every import from a package → is it in the ALLOWED PACKAGES list (rule 6)? If not, REMOVE IT and use an alternative from allowed packages. NEVER import @clerk, @auth0, firebase, zustand, axios, or any package not explicitly listed.
-✅ 8. Every file you create with "export function X" or "export const X" → verify that every other file importing { X } uses the EXACT same name.
+Before returning your code, you MUST mentally run these checks. Skipping them = broken app = failure:
+✅ 1. IMPORT AUDIT: For EVERY import { X } from "./file" → open that file in your output → confirm "export function X" or "export const X" exists. If not → FIX IT NOW.
+✅ 2. PACKAGE AUDIT: clsx from "clsx", twMerge from "tailwind-merge". NEVER cross-import.
+✅ 3. CONTEXT AUDIT: Every useXxx() hook → is the Provider in App.tsx wrapping the component? If not → FIX IT.
+✅ 4. CONTEXT ACCESS: Using optional chaining (state?.prop ?? default) for all context values? If not → FIX IT.
+✅ 5. STRING AUDIT: Every className="" → is the string properly closed? No line breaks inside quotes? If not → FIX IT.
+✅ 6. EXPORT NAME AUDIT: Every file's "export function X" → every importer uses exactly { X }, same casing. If not → FIX IT.
+✅ 7. ICON AUDIT: All lucide-react icons → are they from the SAFE LIST above? If not → REPLACE with a safe icon.
+✅ 8. PACKAGE AUDIT: Every import from a package → is it in the ALLOWED PACKAGES list (rule 6)? If not → REMOVE IT.
+✅ 9. DEFAULT vs NAMED: If you wrote "export default function X", importers use "import X from". If you wrote "export function X", importers use "import { X } from". NEVER mix these.
 
 ═══════════════════════════════════════════════
 🎮 GAME DEVELOPMENT (When user requests a game)
@@ -417,8 +466,17 @@ REQUIREMENTS:
 - THREE.JS: importmap in index.html required, never bare npm import
 - IMAGES: Analyze attached images and recreate/fix designs accordingly
 - SCROLL ANIMATIONS: Use framer-motion useInView, useScroll, useTransform for scroll-driven animations. Add parallax, staggered reveals, animated counters, and marquee tickers.
-- GAMES: If building a game, use HTML5 Canvas + requestAnimationFrame. Include scoring, levels, sound effects (Web Audio API), particle effects, and multiple game states.`;
-        
+- GAMES: If building a game, use HTML5 Canvas + requestAnimationFrame. Include scoring, levels, sound effects (Web Audio API), particle effects, and multiple game states.
+
+⛔ IMPORT/EXPORT SAFETY (FINAL REMINDER — VIOLATIONS = BROKEN APP):
+- clsx comes from "clsx" package. twMerge comes from "tailwind-merge". NEVER import clsx from tailwind-merge.
+- Every import { X } MUST have a matching export in the target file. Verify before outputting.
+- Use NAMED exports consistently: export function Button() → import { Button }. Do NOT mix named/default.
+- Context hooks (useApp, useCart, etc.) MUST be exported from the file that creates them.
+- Constants: If you export "translations" (lowercase), import "translations" (lowercase). Case MUST match.
+- NEVER import functions that don't exist (e.g., enhancePrompt, formatDate) unless you create them.
+- Run the PRE-SUBMISSION CHECKLIST from system prompt before outputting. One wrong import = app crash.`;
+
         // Add color theme instructions if selected
         if (colorTheme) {
           appendText += `\n\n🎨 COLOR THEME INSTRUCTIONS (MANDATORY):
@@ -501,14 +559,14 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
         const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         const token = authHeader.replace('Bearer ', '');
         const { data: authData } = await supabaseAdmin.auth.getUser(token);
-        
+
         if (authData?.user?.id) {
           const { data: planRow } = await supabaseAdmin
             .from('user_plans')
             .select('plan, subscription_expires_at')
             .eq('user_id', authData.user.id)
             .single();
-          
+
           if (planRow) {
             if (planRow.plan === 'pro' || planRow.plan === 'business') {
               if (planRow.subscription_expires_at && new Date(planRow.subscription_expires_at) <= new Date()) {
