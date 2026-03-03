@@ -477,7 +477,18 @@ export const AdminPanel: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* ══════ MAIN CONTENT (left side) ══════ */}
+      {/* ══════ LEFT SIDEBAR (Desktop) ══════ */}
+      <aside className={`hidden md:flex flex-col flex-shrink-0 border-r border-[#e3e2de] transition-all duration-300 ${sidebarCollapsed ? 'w-[52px]' : 'w-[220px]'}`}>
+        <SidebarInner />
+      </aside>
+
+      {/* ══════ LEFT SIDEBAR (Mobile) ══════ */}
+      <div className={`fixed left-0 top-0 bottom-0 z-50 border-r border-[#e3e2de] shadow-xl transition-transform duration-300 md:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ width: 220 }}>
+        <SidebarInner />
+      </div>
+
+      {/* ══════ MAIN CONTENT ══════ */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Top bar */}
@@ -992,18 +1003,6 @@ export const AdminPanel: React.FC = () => {
           </AnimatePresence>
         </div>
       </div>
-
-      {/* ══════ RIGHT SIDEBAR ══════ */}
-      {/* Mobile: slides in from right */}
-      <div className={`fixed right-0 top-0 bottom-0 z-50 border-l border-[#e3e2de] shadow-xl transition-transform duration-300 md:hidden ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`}
-        style={{ width: 220 }}>
-        <SidebarInner />
-      </div>
-
-      {/* Desktop: always visible on the right */}
-      <aside className={`hidden md:flex flex-col flex-shrink-0 border-l border-[#e3e2de] transition-all duration-300 ${sidebarCollapsed ? 'w-[52px]' : 'w-[220px]'}`}>
-        <SidebarInner />
-      </aside>
 
     </div>
   );
