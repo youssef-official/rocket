@@ -297,26 +297,40 @@ export type Database = {
         }
         Relationships: []
       }
-      oauth_pkce_store: {
+      message_feedback: {
         Row: {
-          code_verifier: string
           created_at: string
+          feedback: string
           id: string
-          state: string
+          message_id: string
+          project_id: string | null
+          user_id: string
         }
         Insert: {
-          code_verifier: string
           created_at?: string
+          feedback: string
           id?: string
-          state: string
+          message_id: string
+          project_id?: string | null
+          user_id: string
         }
         Update: {
-          code_verifier?: string
           created_at?: string
+          feedback?: string
           id?: string
-          state?: string
+          message_id?: string
+          project_id?: string | null
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "message_feedback_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       onboarding_responses: {
         Row: {
