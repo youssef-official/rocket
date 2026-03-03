@@ -1283,7 +1283,7 @@ const App = () => (
               <Route path="/billing" element={<Billing />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/new-vibe-tool" element={<NewVibeTool />} />
-              <Route path="/ai-for-all" element={<Navigate to="/blog/ai-for-all" replace />} />
+              <Route path="/ai-for-all" element={<AiForAll />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/supabase-connect" element={<SupabaseConnect />} />
