@@ -74,7 +74,7 @@
 | **Color Themes** | Choose from 10 color palettes injected into AI generation prompts |
 | **Billing Dashboard** | View plan details, subscription expiry, transaction history |
 | **Mandatory Animations** | AI generates projects with framer-motion parallax, stagger reveals, scroll transforms |
-| **Secrets Management** | Per-project environment variables (API keys) stored securely and passed to generated code |
+
 | **Message Feedback** | Like/dislike AI responses with Points Consumption viewer (site credits + AI tokens) |
 | **AI Gateway** | Free public AI endpoint at `ai-gateway.vivorax.online` — no API key required |
 | **Onboarding Persistence** | User survey data (name, role, company) saved to database and visible in Admin panel |

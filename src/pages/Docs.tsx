@@ -499,29 +499,6 @@ export const Docs: React.FC = () => {
       ],
     },
     {
-      id: 'secrets',
-      title: 'Secrets & API Keys',
-      icon: Lock,
-      content: [
-        {
-          title: 'Project Secrets Management',
-          description: 'Store API keys and environment variables securely per project using the Secrets tab in the editor. Secrets are injected as import.meta.env.VITE_* variables.',
-        },
-        {
-          title: 'How to Use Secrets',
-          description: 'Steps:',
-          steps: [
-            'Open your project in the editor',
-            'Navigate to the "Secrets" tab',
-            'Click "Add Secret" and enter a name (e.g., OPENAI_API_KEY) and value',
-            'The secret is saved and available as import.meta.env.VITE_OPENAI_API_KEY in generated code',
-            'Tell the AI: "Use my OPENAI_API_KEY from env" — it will read it automatically',
-            'Never paste API keys directly in chat — always use the Secrets panel',
-          ],
-        },
-      ],
-    },
-    {
       id: 'feedback',
       title: 'Message Feedback',
       icon: Users,
