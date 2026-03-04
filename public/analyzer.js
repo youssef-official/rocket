@@ -4,7 +4,11 @@
   window.__vivorax_analyzer = true;
 
   var SESSION_KEY = "vx_session";
-  var STORAGE_KEY = "vx_analytics";
+  var FLUSH_KEY = "vx_flush_queue";
+
+  // Read project config injected by the editor/preview
+  var PROJECT_ID = window.__vivorax_project_id || null;
+  var API_BASE = window.__vivorax_api_base || null;
 
   function uuid() {
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
@@ -34,77 +38,91 @@
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
   }
 
-  function loadAnalytics() {
+  function queueEvent(event) {
     try {
-      var data = localStorage.getItem(STORAGE_KEY);
-      return data ? JSON.parse(data) : { sessions: [], pageViews: {}, totalVisits: 0 };
-    } catch (e) {
-      return { sessions: [], pageViews: {}, totalVisits: 0 };
-    }
+      var queue = JSON.parse(localStorage.getItem(FLUSH_KEY) || "[]");
+      queue.push(event);
+      // Keep max 200 queued events
+      if (queue.length > 200) queue = queue.slice(-200);
+      localStorage.setItem(FLUSH_KEY, JSON.stringify(queue));
+    } catch (e) { /* ignore */ }
   }
 
-  function saveAnalytics(data) {
-    // Keep only last 100 sessions to avoid storage overflow
-    if (data.sessions.length > 100) {
-      data.sessions = data.sessions.slice(-100);
+  function flushEvents() {
+    if (!PROJECT_ID || !API_BASE) return;
+    var raw = localStorage.getItem(FLUSH_KEY);
+    if (!raw) return;
+    var events;
+    try { events = JSON.parse(raw); } catch (e) { return; }
+    if (!events || events.length === 0) return;
+
+    // Clear immediately to prevent double-sends
+    localStorage.removeItem(FLUSH_KEY);
+
+    var url = API_BASE + "/functions/v1/track-analytics";
+    var payload = JSON.stringify({ project_id: PROJECT_ID, events: events });
+
+    // Use sendBeacon if available (works on page unload), else fetch
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
+    } else {
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+        keepalive: true,
+      }).catch(function () {
+        // Re-queue on failure
+        try {
+          var existing = JSON.parse(localStorage.getItem(FLUSH_KEY) || "[]");
+          localStorage.setItem(FLUSH_KEY, JSON.stringify(existing.concat(events)));
+        } catch (e) { /* ignore */ }
+      });
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }
 
   function trackPageView() {
     var session = getSession();
     var path = window.location.pathname;
-    var entry = { path: path, time: Date.now() };
-    session.pages.push(entry);
+    session.pages.push({ path: path, time: Date.now() });
     saveSession(session);
 
-    var analytics = loadAnalytics();
-    analytics.pageViews[path] = (analytics.pageViews[path] || 0) + 1;
-    saveAnalytics(analytics);
-  }
-
-  function trackClick(e) {
-    var target = e.target;
-    var tag = target.tagName;
-    var text = (target.innerText || "").substring(0, 50);
-    var session = getSession();
-    if (!session.clicks) session.clicks = [];
-    session.clicks.push({
-      tag: tag,
-      text: text,
-      path: window.location.pathname,
-      time: Date.now(),
+    queueEvent({
+      session_id: session.id,
+      event_type: "pageview",
+      path: path,
+      device: session.device,
+      referrer: session.referrer,
+      country: session.country,
+      screen_w: session.screenW,
+      screen_h: session.screenH,
     });
-    // Keep only last 50 clicks per session
-    if (session.clicks.length > 50) session.clicks = session.clicks.slice(-50);
-    saveSession(session);
   }
 
   function finishSession() {
     var session = getSession();
-    session.end = Date.now();
-    session.duration = Math.round((session.end - session.start) / 1000);
+    var duration = Math.round((Date.now() - session.start) / 1000);
 
-    var analytics = loadAnalytics();
-    analytics.totalVisits = (analytics.totalVisits || 0) + 1;
-    analytics.sessions.push({
-      id: session.id,
-      start: session.start,
-      end: session.end,
-      duration: session.duration,
-      pages: session.pages.length,
+    queueEvent({
+      session_id: session.id,
+      event_type: "session_end",
+      path: session.pages.length > 0 ? session.pages[session.pages.length - 1].path : "/",
       device: session.device,
-      country: session.country,
       referrer: session.referrer,
-      topPages: session.pages.map(function (p) { return p.path; }),
+      country: session.country,
+      screen_w: session.screenW,
+      screen_h: session.screenH,
+      duration: duration,
+      pages_count: session.pages.length,
     });
-    saveAnalytics(analytics);
+
+    flushEvents();
   }
 
   // Track initial page view
   trackPageView();
 
-  // Track navigation changes (SPA)
+  // Track SPA navigation changes
   var lastPath = window.location.pathname;
   setInterval(function () {
     if (window.location.pathname !== lastPath) {
@@ -113,14 +131,15 @@
     }
   }, 500);
 
-  // Track clicks
-  document.addEventListener("click", trackClick, true);
+  // Flush every 30 seconds
+  setInterval(flushEvents, 30000);
 
-  // Save session on leave
+  // Save session + flush on leave
   window.addEventListener("beforeunload", finishSession);
 
-  // Expose read API for the analytics panel
+  // Expose for the analytics panel (fallback)
   window.__vivorax_getAnalytics = function () {
-    return loadAnalytics();
+    return { sessions: [], pageViews: {}, totalVisits: 0 };
   };
 })();
+

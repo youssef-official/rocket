@@ -56,6 +56,62 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_events: {
+        Row: {
+          country: string | null
+          created_at: string
+          device: string | null
+          duration: number | null
+          event_type: string
+          id: string
+          pages_count: number | null
+          path: string | null
+          project_id: string | null
+          referrer: string | null
+          screen_h: number | null
+          screen_w: number | null
+          session_id: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          duration?: number | null
+          event_type?: string
+          id?: string
+          pages_count?: number | null
+          path?: string | null
+          project_id?: string | null
+          referrer?: string | null
+          screen_h?: number | null
+          screen_w?: number | null
+          session_id: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          duration?: number | null
+          event_type?: string
+          id?: string
+          pages_count?: number | null
+          path?: string | null
+          project_id?: string | null
+          referrer?: string | null
+          screen_h?: number | null
+          screen_w?: number | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_categories: {
         Row: {
           created_at: string
