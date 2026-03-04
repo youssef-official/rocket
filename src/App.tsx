@@ -330,7 +330,7 @@ const ProjectEditorRoute = () => {
                   fileBlockMatches.forEach(m => markFile((m[1] ?? m[2] ?? '').trim()));
                 }
               },
-              onComplete: async (response) => {
+              onComplete: async (response, usage) => {
                 if (isCancelled.current) return;
 
                 const { files, fileList, actionsTaken, summary: aiSummary } = parseAIResponse(response);
@@ -417,7 +417,7 @@ const ProjectEditorRoute = () => {
                     queryClient.invalidateQueries({ queryKey: ['userPlan'] });
                     // Save credits used to the assistant message
                     if (assistantId) {
-                      await updateMessage(assistantId, { creditsUsed: creditsToDeduct });
+                      await updateMessage(assistantId, { creditsUsed: creditsToDeduct, tokensUsed: usage?.total_tokens || null });
                     }
                   } catch (e) {
                     console.error('Credit deduction failed:', e);
@@ -768,7 +768,7 @@ const ProjectEditorRoute = () => {
             const fileBlockMatches = Array.from(fullResponse.matchAll(/<FILE\s+[^>]*(?:path|name)=(?:"([^"]+)"|'([^']+)')/gi));
             if (fileBlockMatches.length > 0) fileBlockMatches.forEach(m => markFile((m[1] ?? m[2] ?? '').trim()));
           },
-          onComplete: async (response) => {
+          onComplete: async (response, usage) => {
             if (isCancelled.current) return;
 
             const { files: newFiles, fileList, actionsTaken, deletedFiles, summary: aiSummary } = parseAIResponse(response);
@@ -831,7 +831,7 @@ const ProjectEditorRoute = () => {
                 // Save credits used to the assistant message
                 const totalDeducted = totalCredits; // reservation + remaining
                 if (assistantId) {
-                  await updateMessage(assistantId, { creditsUsed: totalDeducted });
+                  await updateMessage(assistantId, { creditsUsed: totalDeducted, tokensUsed: usage?.total_tokens || null });
                 }
               } catch (e) {
                 console.error('Credit deduction failed:', e);

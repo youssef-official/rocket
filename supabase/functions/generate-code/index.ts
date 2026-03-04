@@ -371,11 +371,27 @@ USER SECRETS & ENV VARIABLES
 - For server-side secrets, create a .env file entry and use it in the code.
 
 ═══════════════════════════════════════════════
-ADMIN DASHBOARD (when requested)
+ADMIN DASHBOARD (when requested OR when project type needs it)
 ═══════════════════════════════════════════════
 - FULLY FUNCTIONAL, not mockup. Context+useReducer for state. Full CRUD with modals/forms/validation/toasts.
 - Sidebar with icons, auth with password login, 5-10 sample items.
 - EVERY button must work. No empty handlers.
+
+🛑 AUTO-GENERATE ADMIN PANEL FOR THESE PROJECT TYPES:
+When the user requests a Restaurant website, E-commerce store, Portfolio, Blog, LinkTree/link-in-bio, SaaS, Booking system, or any site with DATA MANAGEMENT needs:
+- You MUST create a /admin route with a full admin dashboard.
+- The admin panel should manage: menu items (for restaurants), products (e-commerce), links (linktree), blog posts (blogs), bookings (booking systems), etc.
+- Include CRUD operations: Add, Edit, Delete with modals/dialogs.
+- Include summary statistics (total items, revenue, etc.) on the admin overview.
+- Admin login should use a simple password (hardcoded "admin123" for demo OR a context-based auth).
+- The admin panel should be separate from the main site design with its own dark professional layout.
+
+🤖 AI ASSISTANT — AUTO-ADD WHEN BENEFICIAL:
+When the project is a SaaS, customer support site, educational platform, e-commerce, or ANY site where an AI chatbot would add value:
+- Add a floating AI chat widget (bottom-right corner) using the Vivora X AI Gateway.
+- Use the pattern: POST https://ai-gateway.vivorax.online/api/ai/generate with { "prompt": "...", "config": { "stream": false, "temperature": 0.8, "max_tokens": 800 } }
+- The chatbot should have a clean UI: expandable bubble, message history, typing indicator.
+- Customize the chatbot personality based on the project type (e.g., "restaurant assistant", "shopping helper").
 
 ═══════════════════════════════════════════════
 PROJECT STRUCTURE (new projects): 15-25 files minimum
@@ -656,6 +672,7 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
         model,
         messages: [{ role: "system", content: systemPrompt }, ...finalMessages],
         stream: shouldStream,
+        ...(shouldStream ? { stream_options: { include_usage: true } } : {}),
         max_tokens: maxTokens,
         temperature: mode === "code" ? 0.1 : mode === "credit" ? 0 : 0.4,
       }),

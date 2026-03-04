@@ -32,6 +32,7 @@ export interface ChatMessage {
   imageUrls?: string[];
   actionsTaken?: FileActivity[];
   creditsUsed?: number;
+  tokensUsed?: number;
   createdAt: string;
 }
 
