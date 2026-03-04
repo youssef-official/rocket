@@ -61,11 +61,10 @@
 | **Promo Codes** | Public discount codes displayed on pricing plan cards |
 | **PayPal Billing** | Upgrade plans (Free → Pro → Business) |
 | **Email Notifications** | Welcome, plan upgrade, and renewal reminder emails via Resend |
-| **Wallpaper Customization** | 9 premium wallpapers: Space, Light, Nebula, Sunset, Forest, Ocean, Mountains, City Night, Aurora, Desert, Tropical |
-| **Music Player** | Floating draggable music player with playlist, favorites, and persistent playback across all pages |
-| **Preview Games** | Play Tic-Tac-Toe or Snake while waiting for code generation |
+| **Wallpaper Customization** | 9+ premium wallpapers for workspace personalization |
+| **Music Player** | Floating draggable music player with playlist, favorites, and persistent playback |
 | **Code Editor** | Monaco-based editor with Save/Undo/Redo (paid plans only, free = read-only) |
-| **Admin Panel** | User management, AI model config, blog CMS, promo codes, notifications, celebrations |
+| **Admin Panel** | User management, AI model config, blog CMS, promo codes, notifications, feedback viewer, onboarding stats |
 | **Blog System** | Category-based blog with markdown content |
 | **Dark/Light Theme** | System-aware theming with manual override (3-way cycle) |
 | **Image Upload to R2** | Chat images stored on Cloudflare R2 with CDN delivery |
@@ -75,6 +74,11 @@
 | **Color Themes** | Choose from 10 color palettes injected into AI generation prompts |
 | **Billing Dashboard** | View plan details, subscription expiry, transaction history |
 | **Mandatory Animations** | AI generates projects with framer-motion parallax, stagger reveals, scroll transforms |
+| **Secrets Management** | Per-project environment variables (API keys) stored securely and passed to generated code |
+| **Message Feedback** | Like/dislike AI responses with Points Consumption viewer (site credits + AI tokens) |
+| **AI Gateway** | Free public AI endpoint at `ai-gateway.vivorax.online` — no API key required |
+| **Onboarding Persistence** | User survey data (name, role, company) saved to database and visible in Admin panel |
+| **Slow Model Tolerance** | Adaptive timeouts for thinking/reasoning AI models (e.g., Gemini Pro) |
 
 ---
 
@@ -88,7 +92,7 @@
 │   ├── components/
 │   │   ├── auth/                  # Login/signup pages
 │   │   ├── dashboard/             # Projects dashboard
-│   │   ├── editor/                # Code editor, chat, preview, versions
+│   │   ├── editor/                # Code editor, chat, preview, versions, secrets
 │   │   ├── home/                  # Landing page sections
 │   │   ├── pricing/               # PromoCodeSection
 │   │   ├── shared/                # Reusable components (footer, modals, logo, music player, etc.)
@@ -125,7 +129,6 @@
 │       ├── vercel-deploy/         # Vercel deployment API
 │       └── visual-edits/          # AI-powered visual code edits
 │
-├── full.sql                       # Complete DB schema (single file)
 └── public/
     ├── branding.js                # "Built with Vivora X" badge
     ├── wallpapers/                # 9+ premium wallpaper images
@@ -136,7 +139,7 @@
 
 ## 🗃️ Database Schema
 
-### Tables (18 total)
+### Tables
 
 | Table | Purpose |
 |-------|---------|
@@ -158,6 +161,9 @@
 | `ai_model_config` | AI model configuration per plan |
 | `promo_codes` | Discount promo codes with usage tracking |
 | `site_celebrations` | Seasonal celebration overlays |
+| `vivora_deployments` | Cloudflare deployments tracking |
+| `onboarding_responses` | User onboarding survey data |
+| `message_feedback` | AI response like/dislike ratings |
 
 ### Enums
 
@@ -173,6 +179,7 @@
 - Admin operations gated by `has_role()` function
 - Service role used only in edge functions for cross-user operations
 - Image uploads secured via JWT authentication
+- Secrets stored per-project, never exposed in generated code
 
 ---
 
@@ -221,13 +228,7 @@ VITE_SUPABASE_PROJECT_ID=<project-id>
 
 ### 3. Database Setup
 
-Run the full schema on a fresh Supabase project:
-
-```bash
-psql <DATABASE_URL> -f full.sql
-```
-
-Or apply incremental migrations via Supabase CLI:
+Apply migrations via Supabase CLI:
 
 ```bash
 supabase db push
@@ -278,7 +279,7 @@ App runs at `http://localhost:5173`
 | Priority Access | ❌ | ❌ | ✅ |
 | Vercel Deploy | ✅ | ✅ | ✅ |
 
-Credits reset daily at UTC midnight. First project generation costs 2 credits; edits cost 0.5–3 credits based on file count.
+Credits reset daily at UTC midnight. First project generation costs 2 credits; edits cost 0.5–5 credits based on file count.
 
 ---
 
