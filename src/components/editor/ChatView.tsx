@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp, Monitor, AtSign, Download, Copy, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp, Monitor, AtSign, Download, Copy, ThumbsUp, ThumbsDown, Check, Coins } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -237,15 +237,22 @@ const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; conte
               exit={{ opacity: 0, scale: 0.95 }}
               className="absolute bottom-full left-0 mb-1 w-48 bg-card rounded-xl shadow-2xl border border-border overflow-hidden z-50"
             >
-              {creditsUsed !== undefined && (
-                <div className="flex items-center justify-between px-3 py-2.5">
-                  <span className="text-xs text-muted-foreground">Credits Used</span>
-                  <span className="text-xs font-medium text-amber-500">{Number(creditsUsed).toFixed(2)}</span>
+              <div className="px-3 py-2 border-b border-border">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Points Consumption</span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2.5">
+                <div className="flex items-center gap-2">
+                  <Coins className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-xs text-muted-foreground">Site Credits</span>
                 </div>
-              )}
-              <div className="flex items-center justify-between px-3 py-2.5 border-t border-border">
-                <span className="text-xs text-muted-foreground">Message ID</span>
-                <span className="text-[10px] font-mono text-muted-foreground">{messageId.slice(0, 8)}</span>
+                <span className="text-xs font-bold text-amber-500">{creditsUsed !== undefined ? Number(creditsUsed).toFixed(2) : '0.00'}</span>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2.5 border-t border-border/50">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-3.5 h-3.5 text-purple-500" />
+                  <span className="text-xs text-muted-foreground">AI Tokens</span>
+                </div>
+                <span className="text-xs font-bold text-purple-500">~{creditsUsed ? Math.round(Number(creditsUsed) * 1200) : 0}</span>
               </div>
             </motion.div>
           )}
