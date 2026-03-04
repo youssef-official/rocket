@@ -1,75 +1,112 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart2, Users, Eye, Clock, Globe, Activity, RefreshCw, TrendingUp } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-interface AnalyticsData {
-  sessions: Array<{
-    id: string;
-    start: number;
-    end: number;
-    duration: number;
-    pages: number;
-    device: string;
-    country: string;
-    referrer: string;
-    topPages: string[];
-  }>;
-  pageViews: Record<string, number>;
-  totalVisits: number;
+interface AnalyticsEvent {
+  id: string;
+  session_id: string;
+  event_type: string;
+  path: string | null;
+  device: string | null;
+  referrer: string | null;
+  country: string | null;
+  duration: number | null;
+  pages_count: number | null;
+  created_at: string;
 }
 
 interface AnalyticsPanelProps {
+  projectId?: string;
   previewUrl: string | null;
 }
 
-export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ previewUrl }) => {
-  const [data, setData] = useState<AnalyticsData | null>(null);
+export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ projectId, previewUrl }) => {
+  const [events, setEvents] = useState<AnalyticsEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchAnalytics = () => {
+  const fetchAnalytics = async () => {
+    if (!projectId) {
+      setEvents([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    // Try to read from localStorage (analyzer.js stores data there)
     try {
-      const raw = localStorage.getItem('vx_analytics');
-      if (raw) {
-        setData(JSON.parse(raw));
+      const { data, error } = await supabase
+        .from('analytics_events')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false })
+        .limit(1000);
+
+      if (error) {
+        console.error('Analytics fetch error:', error);
+        setEvents([]);
       } else {
-        setData({ sessions: [], pageViews: {}, totalVisits: 0 });
+        setEvents(data || []);
       }
-    } catch {
-      setData({ sessions: [], pageViews: {}, totalVisits: 0 });
+    } catch (e) {
+      console.error('Analytics error:', e);
+      setEvents([]);
     }
     setLoading(false);
   };
 
   useEffect(() => {
     fetchAnalytics();
-    const interval = setInterval(fetchAnalytics, 10000);
+    const interval = setInterval(fetchAnalytics, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [projectId]);
 
   const stats = useMemo(() => {
-    if (!data) return null;
-    const sessions = data.sessions || [];
-    const totalVisits = data.totalVisits || sessions.length;
-    const totalPages = Object.values(data.pageViews || {}).reduce((a, b) => a + b, 0);
+    const pageviews = events.filter(e => e.event_type === 'pageview');
+    const sessions = events.filter(e => e.event_type === 'session_end');
+    
+    // Unique sessions from all events
+    const uniqueSessions = new Set(events.map(e => e.session_id));
+    const totalVisits = uniqueSessions.size;
+    const totalPages = pageviews.length;
+    
     const avgDuration = sessions.length > 0
       ? Math.round(sessions.reduce((a, s) => a + (s.duration || 0), 0) / sessions.length)
       : 0;
+
     const devices: Record<string, number> = {};
     const countries: Record<string, number> = {};
-    sessions.forEach(s => {
-      devices[s.device] = (devices[s.device] || 0) + 1;
-      countries[s.country] = (countries[s.country] || 0) + 1;
+    const pageViewCounts: Record<string, number> = {};
+
+    // Count by unique sessions for devices/countries
+    const sessionDevices = new Map<string, string>();
+    const sessionCountries = new Map<string, string>();
+    
+    events.forEach(e => {
+      if (e.device && !sessionDevices.has(e.session_id)) sessionDevices.set(e.session_id, e.device);
+      if (e.country && !sessionCountries.has(e.session_id)) sessionCountries.set(e.session_id, e.country);
+      if (e.event_type === 'pageview' && e.path) {
+        pageViewCounts[e.path] = (pageViewCounts[e.path] || 0) + 1;
+      }
     });
-    const topPages = Object.entries(data.pageViews || {})
+
+    sessionDevices.forEach(d => { devices[d] = (devices[d] || 0) + 1; });
+    sessionCountries.forEach(c => { countries[c] = (countries[c] || 0) + 1; });
+
+    const topPages = Object.entries(pageViewCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10);
-    const recentSessions = sessions.slice(-20).reverse();
-    return { totalVisits, totalPages, avgDuration, devices, countries, topPages, recentSessions };
-  }, [data]);
 
-  if (loading || !stats) {
+    const recentSessions = sessions.slice(0, 20).map(s => ({
+      id: s.session_id,
+      device: s.device || 'unknown',
+      pages: s.pages_count || 0,
+      duration: s.duration || 0,
+      created_at: s.created_at,
+    }));
+
+    return { totalVisits, totalPages, avgDuration, devices, countries, topPages, recentSessions };
+  }, [events]);
+
+  if (loading) {
     return (
       <div className="h-full flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">

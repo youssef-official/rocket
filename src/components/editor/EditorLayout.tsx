@@ -887,7 +887,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 />
               )}
               {currentView === 'analytics' && !showVisualEdit && (
-                <AnalyticsPanel previewUrl={previewUrl} />
+                <AnalyticsPanel projectId={project.id} previewUrl={previewUrl} />
               )}
 
               {showVisualEdit && (
