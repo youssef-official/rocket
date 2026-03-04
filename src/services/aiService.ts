@@ -661,8 +661,8 @@ async function readSSEStream(
   let fullResponse = '';
   let streamDone = false;
 
-  // Adaptive read timeout: 90 seconds between chunks (thinking models may pause)
-  const READ_TIMEOUT = 90_000;
+  // Adaptive read timeout: 180 seconds between chunks (thinking/reasoning models may pause for a long time)
+  const READ_TIMEOUT = 180_000;
 
   while (!streamDone) {
     const readPromise = reader.read();
@@ -741,6 +741,7 @@ async function readSSEStream(
 }
 
 // Generate short project name (2 words)
+// Uses a generous timeout to support slow/thinking AI models
 export async function generateProjectName(prompt: string): Promise<string> {
   try {
     const msgs = [{ role: 'user', content: `Project: ${prompt}` }];
@@ -750,7 +751,13 @@ export async function generateProjectName(prompt: string): Promise<string> {
       throw new Error(`AI request failed: ${response.status}`);
     }
 
-    const fullResponse = await readSSEStream(response);
+    // Race against a 150s fallback timeout (thinking models can take 60-120s)
+    const streamPromise = readSSEStream(response);
+    const timeoutPromise = new Promise<string>((resolve) =>
+      setTimeout(() => resolve(''), 150_000)
+    );
+
+    const fullResponse = await Promise.race([streamPromise, timeoutPromise]);
 
     const content = fullResponse || 'New Project';
     const cleaned = content.trim().replace(/[^a-zA-Z\s]/g, '').trim();
@@ -828,6 +835,7 @@ export async function generateChatResponse(
 }
 
 // Generate explanation only (for chat display)
+// Uses a generous timeout to support slow/thinking AI models
 export async function generateExplanation(
   prompt: string,
   projectType: 'vite' | 'html',
@@ -839,7 +847,13 @@ export async function generateExplanation(
 
     if (!response.ok) throw new Error(`Status ${response.status}`);
 
-    const fullResponse = await readSSEStream(response);
+    // Race against a 150s fallback timeout (thinking models can take 60-120s)
+    const streamPromise = readSSEStream(response);
+    const timeoutPromise = new Promise<string>((resolve) =>
+      setTimeout(() => resolve("I'll create something amazing for you!"), 150_000)
+    );
+
+    const fullResponse = await Promise.race([streamPromise, timeoutPromise]);
 
     return fullResponse || "I'll create something amazing for you!";
   } catch (error) {
