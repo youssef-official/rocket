@@ -217,6 +217,10 @@ export const AdminPanel: React.FC = () => {
   const [aiKeySecretName, setAiKeySecretName] = useState('VERCEL_AI_API_KEY');
   const [aiTargetPlan, setAiTargetPlan] = useState('all');
   const [savingModel, setSavingModel] = useState(false);
+  const [testingModel, setTestingModel] = useState<string | null>(null);
+  const [testInput, setTestInput] = useState('');
+  const [testOutput, setTestOutput] = useState('');
+  const [testLoading, setTestLoading] = useState(false);
 
   // Inbox
   const [inboxTitle, setInboxTitle] = useState('');
@@ -308,6 +312,8 @@ export const AdminPanel: React.FC = () => {
     openrouter: { url: 'https://openrouter.ai/api/v1/chat/completions',        key: 'OPENROUTER_API_KEY', ph: 'anthropic/claude-sonnet-4' },
     nvidia:     { url: 'https://integrate.api.nvidia.com/v1/chat/completions', key: 'NVIDIA_API_KEY',     ph: 'moonshotai/kimi-k2.5' },
     lovable:    { url: 'https://ai.gateway.lovable.dev/v1/chat/completions',   key: 'LOVABLE_API_KEY',    ph: 'google/gemini-2.5-flash' },
+    google:     { url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', key: 'GOOGLE_AI_STUDIO_KEY', ph: 'gemini-2.5-flash' },
+    custom:     { url: '',                                                      key: '',                   ph: 'your-model-id' },
   };
   const changeProvider = (p: string) => { setAiProvider(p); const d = providerDefs[p]; if (d) { setAiGatewayUrl(d.url); setAiKeySecretName(d.key); setAiModelId(''); } };
   const addAiModel = async () => {
@@ -324,6 +330,20 @@ export const AdminPanel: React.FC = () => {
     await supabase.from('ai_model_config').update({ is_active: !cur }).eq('id', id); await fetchAiMs();
   };
   const deleteAiModel = async (id: string) => { await supabase.from('ai_model_config').delete().eq('id', id); await fetchAiMs(); };
+  const testAiModel = async (model: any) => {
+    if (!testInput.trim()) return;
+    setTestLoading(true); setTestOutput('');
+    try {
+      const resp = await supabase.functions.invoke('generate-code', {
+        body: { mode: 'chat', messages: [{ role: 'user', content: testInput }], userPlan: model.target_plan === 'all' ? 'free' : model.target_plan, userLanguage: 'en' },
+      });
+      if (resp.error) throw new Error(resp.error.message);
+      const text = typeof resp.data === 'string' ? resp.data : JSON.stringify(resp.data);
+      setTestOutput(text.slice(0, 2000));
+    } catch (e: any) {
+      setTestOutput(`Error: ${e.message}`);
+    } finally { setTestLoading(false); }
+  };
   const addPromo = async () => {
     if (!promoCode.trim()) return; setSavingPromo(true);
     await supabase.from('promo_codes').insert({ code: promoCode.toUpperCase().trim(), discount_percent: promoDiscount, target_plan: promoPlan, is_public: promoPublic, max_uses: promoMaxUses ? parseInt(promoMaxUses) : null, expires_at: promoExpires||null, created_by: user?.id });
@@ -878,7 +898,7 @@ export const AdminPanel: React.FC = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
-                            <Field label="Provider"><select value={aiProvider} onChange={e => changeProvider(e.target.value)} className={selectCls}><option value="vercel">Vercel AI</option><option value="openrouter">OpenRouter</option><option value="nvidia">NVIDIA NIM</option><option value="lovable">Lovable AI</option></select></Field>
+                            <Field label="Provider"><select value={aiProvider} onChange={e => changeProvider(e.target.value)} className={selectCls}><option value="vercel">Vercel AI</option><option value="openrouter">OpenRouter</option><option value="nvidia">NVIDIA NIM</option><option value="lovable">Lovable AI</option><option value="google">Google AI Studio</option><option value="custom">Custom Provider</option></select></Field>
                             <Field label="Target Plan"><select value={aiTargetPlan} onChange={e => setAiTargetPlan(e.target.value)} className={selectCls}><option value="all">All Plans</option><option value="free">Free</option><option value="pro">Pro</option><option value="business">Business</option></select></Field>
                           </div>
                           <Field label="Model ID *"><input value={aiModelId} onChange={e => setAiModelId(e.target.value)} className={inputCls} placeholder={providerDefs[aiProvider]?.ph} /></Field>
@@ -914,7 +934,8 @@ export const AdminPanel: React.FC = () => {
                         <THead cols={['Status','Provider','Model ID','Name','Plan','']} />
                         <tbody>
                           {aiModels.map(m => (
-                            <TRow key={m.id}>
+                            <React.Fragment key={m.id}>
+                            <TRow>
                               <TD>
                                 <div className="flex items-center gap-2">
                                   <div className={`w-2 h-2 rounded-full ${m.is_active ? 'bg-[#16a34a]' : 'bg-[#e3e2de]'}`} />
@@ -927,6 +948,10 @@ export const AdminPanel: React.FC = () => {
                               <TD><Tag color="blue">{m.target_plan === 'all' ? 'All' : m.target_plan}</Tag></TD>
                               <TD>
                                 <div className="flex items-center justify-end gap-2">
+                                  <button onClick={() => { setTestingModel(testingModel === m.id ? null : m.id); setTestOutput(''); setTestInput(''); }}
+                                    className="px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[#ede9fe] text-[#5b21b6] hover:bg-[#ddd6fe] transition-all">
+                                    {testingModel === m.id ? 'Close' : 'Test'}
+                                  </button>
                                   <button onClick={() => toggleAiModel(m.id, m.is_active)}
                                     className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all ${m.is_active ? 'bg-[#f7f6f3] text-[#6b6b6b] border border-[#e3e2de] hover:bg-[#f1f0ed]' : 'bg-[#2383e2] text-white hover:bg-[#1a6ec2]'}`}>
                                     {m.is_active ? 'Deactivate' : 'Activate'}
@@ -935,11 +960,43 @@ export const AdminPanel: React.FC = () => {
                                 </div>
                               </TD>
                             </TRow>
-                          ))}
-                        </tbody>
-                      </table>
-                    </Card>
-                  )}
+                            {testingModel === m.id && (
+                              <tr>
+                                <td colSpan={6} className="px-4 py-4 bg-[#f7f6f3] border-b border-[#e3e2de]">
+                                  <div className="space-y-3 max-w-2xl">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Zap size={14} className="text-[#5b21b6]" />
+                                      <span className="text-[12px] font-semibold text-[#191919]">Test: {m.display_name}</span>
+                                      <Tag color="purple">{m.model_id}</Tag>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <input
+                                        value={testInput}
+                                        onChange={e => setTestInput(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && testAiModel(m)}
+                                        className={inputCls + ' flex-1'}
+                                        placeholder="Type a message to test…"
+                                      />
+                                      <button onClick={() => testAiModel(m)} disabled={testLoading || !testInput.trim()}
+                                        className="px-4 py-2 rounded-lg bg-[#5b21b6] text-white text-[12px] font-semibold hover:bg-[#4c1d95] disabled:opacity-50 transition-all flex items-center gap-2">
+                                        {testLoading ? <><RefreshCw size={12} className="animate-spin" /> Testing…</> : <><Send size={12} /> Send</>}
+                                      </button>
+                                    </div>
+                                    {testOutput && (
+                                      <div className="rounded-lg bg-white border border-[#e3e2de] p-3 max-h-48 overflow-y-auto">
+                                        <pre className="text-[12px] text-[#191919] whitespace-pre-wrap font-mono leading-relaxed">{testOutput}</pre>
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </Card>
+                )}
                 </div>
               )}
 

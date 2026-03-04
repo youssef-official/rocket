@@ -415,6 +415,10 @@ const ProjectEditorRoute = () => {
                     const creditsToDeduct = calculateCreditsByFileCount(activities.length, true);
                     await deductPointsAfterGeneration(user.id, localProject.id, `Initial: ${activities.length} files`, creditsToDeduct);
                     queryClient.invalidateQueries({ queryKey: ['userPlan'] });
+                    // Save credits used to the assistant message
+                    if (assistantId) {
+                      await updateMessage(assistantId, { creditsUsed: creditsToDeduct });
+                    }
                   } catch (e) {
                     console.error('Credit deduction failed:', e);
                   }
@@ -824,6 +828,11 @@ const ProjectEditorRoute = () => {
                   await deductPointsAfterGeneration(user.id, localProject.id, `Edit: ${fileList.length} files`, remaining);
                 }
                 queryClient.invalidateQueries({ queryKey: ['userPlan'] });
+                // Save credits used to the assistant message
+                const totalDeducted = totalCredits; // reservation + remaining
+                if (assistantId) {
+                  await updateMessage(assistantId, { creditsUsed: totalDeducted });
+                }
               } catch (e) {
                 console.error('Credit deduction failed:', e);
               }
