@@ -499,20 +499,44 @@ export const Docs: React.FC = () => {
       ],
     },
     {
-      id: 'preview-games',
-      title: 'Preview Games',
-      icon: Zap,
+      id: 'secrets',
+      title: 'Secrets & API Keys',
+      icon: Lock,
       content: [
         {
-          title: 'Play Games While You Wait',
-          description: 'When your project is generating or the preview is loading, you can play mini-games to pass the time.',
+          title: 'Project Secrets Management',
+          description: 'Store API keys and environment variables securely per project using the Secrets tab in the editor. Secrets are injected as import.meta.env.VITE_* variables.',
         },
         {
-          title: 'Available Games',
-          description: 'Two games are available:',
+          title: 'How to Use Secrets',
+          description: 'Steps:',
           steps: [
-            'Tic-Tac-Toe — Play against AI in the classic XO game',
-            'Snake — Control the snake with arrow keys or on-screen buttons',
+            'Open your project in the editor',
+            'Navigate to the "Secrets" tab',
+            'Click "Add Secret" and enter a name (e.g., OPENAI_API_KEY) and value',
+            'The secret is saved and available as import.meta.env.VITE_OPENAI_API_KEY in generated code',
+            'Tell the AI: "Use my OPENAI_API_KEY from env" — it will read it automatically',
+            'Never paste API keys directly in chat — always use the Secrets panel',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'feedback',
+      title: 'Message Feedback',
+      icon: Users,
+      content: [
+        {
+          title: 'Rate AI Responses',
+          description: 'After each AI response, use the Like/Dislike buttons to rate the quality. This helps improve the AI and is visible in the Admin panel.',
+        },
+        {
+          title: 'Points Consumption',
+          description: 'Click the three-dot menu (⋮) on any AI response to see:',
+          steps: [
+            'Site Credits — how many Vivora X credits were deducted',
+            'AI Tokens — estimated token consumption from the AI model (Gemini/OpenRouter)',
+            'This helps you track your usage and optimize prompts for efficiency',
           ],
         },
       ],

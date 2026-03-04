@@ -35,6 +35,7 @@ export async function calculateRequestCredits(_userMessage: string): Promise<num
 }
 
 // Main function to call AI via Supabase Edge Function
+// Supports adaptive timeouts for slow/thinking models
 export async function callingDirectAI(
     mode: 'code' | 'status' | 'explanation' | 'project-name' | 'suggestions' | 'chat' | 'version-name',
     messages: any[],
@@ -47,6 +48,30 @@ export async function callingDirectAI(
 
     if (!supabaseUrl) {
         throw new Error("Missing Supabase URL. Please check your .env file.");
+    }
+
+    // Adaptive timeout based on mode:
+    // - code generation: 5 minutes (thinking models can take a while)
+    // - project-name, version-name, suggestions: 2 minutes
+    // - chat, explanation: 3 minutes
+    const timeoutMs: Record<string, number> = {
+        'code': 300_000,
+        'chat': 180_000,
+        'explanation': 180_000,
+        'project-name': 120_000,
+        'version-name': 120_000,
+        'suggestions': 120_000,
+        'status': 60_000,
+    };
+    const timeout = timeoutMs[mode] || 180_000;
+
+    // Create a combined abort controller for user signal + timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    // If caller provided a signal, chain it
+    if (signal) {
+        signal.addEventListener('abort', () => controller.abort());
     }
 
     // Construct payload with support for images if provided
@@ -66,18 +91,25 @@ export async function callingDirectAI(
         return msg;
     });
 
-    return fetch(`${supabaseUrl}/functions/v1/generate-code`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${anonKey}`
-        },
-        body: JSON.stringify({ 
-            mode, 
-            messages: formattedMessages,
-            userPlan: userPlan || 'free',
-            userLanguage: userLanguage || 'en'
-        }),
-        signal
-    });
+    try {
+        const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${anonKey}`
+            },
+            body: JSON.stringify({ 
+                mode, 
+                messages: formattedMessages,
+                userPlan: userPlan || 'free',
+                userLanguage: userLanguage || 'en'
+            }),
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+    }
 }

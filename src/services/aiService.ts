@@ -661,8 +661,24 @@ async function readSSEStream(
   let fullResponse = '';
   let streamDone = false;
 
+  // Adaptive read timeout: 90 seconds between chunks (thinking models may pause)
+  const READ_TIMEOUT = 90_000;
+
   while (!streamDone) {
-    const { done, value } = await reader.read();
+    const readPromise = reader.read();
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('SSE read timeout — model may still be thinking. Please retry.')), READ_TIMEOUT)
+    );
+
+    let result: ReadableStreamReadResult<Uint8Array>;
+    try {
+      result = await Promise.race([readPromise, timeoutPromise]);
+    } catch (e) {
+      reader.cancel();
+      throw e;
+    }
+
+    const { done, value } = result;
     if (done) break;
 
     textBuffer += decoder.decode(value, { stream: true });
