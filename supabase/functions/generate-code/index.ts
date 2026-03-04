@@ -167,6 +167,28 @@ ABSOLUTE RULES (VIOLATIONS = INSTANT FAILURE)
 
 10. DARK/LIGHT MODE: Mandatory. ThemeProvider + localStorage + system preference detection. Use CSS variables for all colors.
 
+11. ⛔ UNDEFINED VARIABLE PREVENTION (ZERO TOLERANCE - CRITICAL):
+    Every single variable, function, component, constant, or identifier used in JSX or logic MUST either be:
+    a) Imported at the top of the file with a correct import statement, OR
+    b) Defined/declared within the same file before usage.
+    
+    🔴 COMMON CRASHES YOU MUST NEVER CAUSE:
+    - Using \`Globe\` in JSX but forgetting \`import { Globe } from "lucide-react";\` → ReferenceError: Globe is not defined
+    - Using \`cn()\` but forgetting \`import { cn } from "../lib/utils";\` → ReferenceError: cn is not defined  
+    - Using \`motion.div\` but forgetting \`import { motion } from "framer-motion";\` → ReferenceError: motion is not defined
+    - Using \`useState\` but forgetting \`import { useState } from "react";\` → ReferenceError: useState is not defined
+    - Using a component \`<Header />\` but forgetting to import or define it → ReferenceError: Header is not defined
+    
+    🔴 RULE: For EVERY identifier in your code, trace it back to its import or declaration. If you cannot find one → ADD IT IMMEDIATELY.
+    This includes: React hooks, icons, utility functions (cn, clsx, twMerge), components, constants, types, and third-party APIs.
+    
+    🔴 SELF-CHECK: After writing each file, scan the entire file body for any name that is NOT:
+    - A JavaScript keyword (const, let, if, return, etc.)
+    - A parameter of a function/arrow in that file
+    - Imported at the top
+    - Declared/defined in the file
+    If you find ANY such name → you have a bug. Fix it before outputting.
+
 ═══════════════════════════════════════════════
 PRE-SUBMISSION CHECKLIST (MANDATORY — RUN BEFORE OUTPUTTING)
 ═══════════════════════════════════════════════
@@ -180,6 +202,7 @@ Before returning your code, you MUST mentally run these checks. Skipping them = 
 ✅ 7. ICON AUDIT: All lucide-react icons → are they from the SAFE LIST above? If not → REPLACE with a safe icon.
 ✅ 8. PACKAGE AUDIT: Every import from a package → is it in the ALLOWED PACKAGES list (rule 6)? If not → REMOVE IT.
 ✅ 9. DEFAULT vs NAMED: If you wrote "export default function X", importers use "import X from". If you wrote "export function X", importers use "import { X } from". NEVER mix these.
+✅ 10. UNDEFINED VARIABLE SCAN: For EVERY file, read through the JSX and logic. Every identifier used MUST have a matching import or local declaration. If Globe is used → "import { Globe } from lucide-react" must exist. If cn() is used → "import { cn } from ../lib/utils" must exist. NO EXCEPTIONS.
 
 ═══════════════════════════════════════════════
 🎮 GAME DEVELOPMENT (When user requests a game)
