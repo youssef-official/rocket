@@ -75,10 +75,14 @@
 | **Billing Dashboard** | View plan details, subscription expiry, transaction history |
 | **Mandatory Animations** | AI generates projects with framer-motion parallax, stagger reveals, scroll transforms |
 
-| **Message Feedback** | Like/dislike AI responses with Points Consumption viewer (site credits + AI tokens) |
+| **Message Feedback** | Like/dislike AI responses with real token count & credit viewer |
 | **AI Gateway** | Free public AI endpoint at `ai-gateway.vivorax.online` — no API key required |
 | **Onboarding Persistence** | User survey data (name, role, company) saved to database and visible in Admin panel |
 | **Slow Model Tolerance** | Adaptive timeouts for thinking/reasoning AI models (e.g., Gemini Pro) |
+| **Real Analytics** | Live visitor tracking (page views, sessions, devices, regions) injected into every generated project |
+| **Auto Admin Panels** | AI auto-generates admin dashboards for restaurants, e-commerce, linktree, and similar sites |
+| **Auto AI Assistant** | Floating AI chatbot auto-added to SaaS, support, and e-commerce projects |
+| **Google AI Studio** | Admin can configure Google AI Studio and Custom providers with test interface |
 
 ---
 
@@ -125,14 +129,16 @@
 │       ├── paypal-create-order/   # PayPal order creation
 │       ├── scrape-website/        # Website scraping for Clone Design
 │       ├── send-notification-email/ # Email notifications (Resend)
+│       ├── track-analytics/       # Analytics event ingestion (no JWT)
 │       ├── upload-image/          # Image upload to Cloudflare R2
 │       ├── vercel-deploy/         # Vercel deployment API
 │       └── visual-edits/          # AI-powered visual code edits
 │
-└── public/
-    ├── branding.js                # "Built with Vivora X" badge
-    ├── wallpapers/                # 9+ premium wallpaper images
-    └── sounds/                    # UI sound effects
+├── public/
+│     ├── analyzer.js                # Visitor analytics tracking script
+│     ├── branding.js                # "Built with Vivora X" badge
+│     ├── wallpapers/                # 9+ premium wallpaper images
+│     └── sounds/                    # UI sound effects
 ```
 
 ---
@@ -193,6 +199,7 @@
 | `github-push` | POST | JWT | GitHub OAuth flow + file push |
 | `vercel-deploy` | POST | JWT | Vercel project deployment |
 | `admin-data` | GET | JWT+Admin | Fetch admin dashboard data |
+| `track-analytics` | POST | None | Ingest analytics events from generated projects |
 | `upload-image` | POST | JWT | Upload images to Cloudflare R2 |
 | `scrape-website` | POST | JWT | Website scraping for Clone Design |
 | `send-notification-email` | POST | JWT | Email notifications via Resend |

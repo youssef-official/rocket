@@ -648,10 +648,16 @@ export function generateDefaultViteProject(): any[] {
 // 🌊 STREAMING (SSE) - DO NOT DROP PARTIAL LINES
 // ═══════════════════════════════════════════════════════════════════════════════
 
+export interface SSEUsage {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+}
+
 async function readSSEStream(
   response: Response,
   onDelta?: (deltaText: string) => void
-): Promise<string> {
+): Promise<{ text: string; usage: SSEUsage | null }> {
   if (!response.body) throw new Error('No response body');
 
   const reader = response.body.getReader();
@@ -660,6 +666,7 @@ async function readSSEStream(
   let textBuffer = '';
   let fullResponse = '';
   let streamDone = false;
+  let usage: SSEUsage | null = null;
 
   // Adaptive read timeout: 180 seconds between chunks (thinking/reasoning models may pause for a long time)
   const READ_TIMEOUT = 180_000;
@@ -705,6 +712,14 @@ async function readSSEStream(
           fullResponse += content;
           onDelta?.(content);
         }
+        // Capture usage data from the final chunk (OpenAI-compatible format)
+        if (parsed.usage) {
+          usage = {
+            prompt_tokens: parsed.usage.prompt_tokens,
+            completion_tokens: parsed.usage.completion_tokens,
+            total_tokens: parsed.usage.total_tokens,
+          };
+        }
       } catch {
         // JSON can be split across chunks; put it back and wait for more data
         textBuffer = line + '\n' + textBuffer;
@@ -731,13 +746,20 @@ async function readSSEStream(
           fullResponse += content;
           onDelta?.(content);
         }
+        if (parsed.usage) {
+          usage = {
+            prompt_tokens: parsed.usage.prompt_tokens,
+            completion_tokens: parsed.usage.completion_tokens,
+            total_tokens: parsed.usage.total_tokens,
+          };
+        }
       } catch {
         // ignore partial leftovers
       }
     }
   }
 
-  return fullResponse;
+  return { text: fullResponse, usage };
 }
 
 // Generate short project name (2 words)
@@ -752,7 +774,7 @@ export async function generateProjectName(prompt: string): Promise<string> {
     }
 
     // Race against a 150s fallback timeout (thinking models can take 60-120s)
-    const streamPromise = readSSEStream(response);
+    const streamPromise = readSSEStream(response).then(r => r.text);
     const timeoutPromise = new Promise<string>((resolve) =>
       setTimeout(() => resolve(''), 150_000)
     );
@@ -790,7 +812,7 @@ export async function generateSuggestions(projectDescription: string): Promise<S
 
     if (!response.ok) return defaultSuggestions;
 
-    const fullResponse = await readSSEStream(response);
+    const { text: fullResponse } = await readSSEStream(response);
 
     try {
       const jsonMatch = fullResponse.match(/\[[\s\S]*\]/);
@@ -825,7 +847,7 @@ export async function generateChatResponse(
     const response = await callingDirectAI('chat', msgs);
     if (!response.ok) throw new Error(`Status ${response.status}`);
 
-    const fullResponse = await readSSEStream(response);
+    const { text: fullResponse } = await readSSEStream(response);
 
     return fullResponse || "I'm here to help! What would you like to know about your project?";
   } catch (error) {
@@ -847,8 +869,7 @@ export async function generateExplanation(
 
     if (!response.ok) throw new Error(`Status ${response.status}`);
 
-    // Race against a 150s fallback timeout (thinking models can take 60-120s)
-    const streamPromise = readSSEStream(response);
+    const streamPromise = readSSEStream(response).then(r => r.text);
     const timeoutPromise = new Promise<string>((resolve) =>
       setTimeout(() => resolve("I'll create something amazing for you!"), 150_000)
     );
@@ -868,7 +889,7 @@ export async function streamAICodeGeneration(
   projectType: 'vite' | 'html',
   options: {
     onChunk: (chunk: string) => void;
-    onComplete: (fullResponse: string) => void;
+    onComplete: (fullResponse: string, usage?: SSEUsage | null) => void;
     onError?: (error: Error) => void;
     onFileStart?: (fileName: string) => void;
     onStatusUpdate?: (status: string) => void;
@@ -901,8 +922,8 @@ EXISTING PROJECT FILES: [${existingFiles}]
       throw new Error(`AI request failed: ${response.status}`);
     }
 
-    const fullResponse = await readSSEStream(response, options.onChunk);
-    options.onComplete(fullResponse);
+    const { text: fullResponse, usage } = await readSSEStream(response, options.onChunk);
+    options.onComplete(fullResponse, usage);
   } catch (error) {
     console.error('Code generation error:', error);
     if (options.onError) {

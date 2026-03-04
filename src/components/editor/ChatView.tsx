@@ -176,7 +176,7 @@ const normalizePublicImageUrl = (url: string): string => {
 // ═══════════════════════════════════════════════
 // Feedback component for AI messages (like/dislike/copy/token info)
 // ═══════════════════════════════════════════════
-const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; content: string }> = ({ messageId, creditsUsed, content }) => {
+const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; tokensUsed?: number; content: string }> = ({ messageId, creditsUsed, tokensUsed, content }) => {
   const [feedback, setFeedback] = useState<'like' | 'dislike' | null>(null);
   const [copied, setCopied] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -213,6 +213,9 @@ const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; conte
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Calculate estimated tokens from content length if real tokens not available
+  const displayTokens = tokensUsed || (content ? Math.round(content.length / 3.8) : 0);
 
   return (
     <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -252,7 +255,9 @@ const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; conte
                   <Zap className="w-3.5 h-3.5 text-purple-500" />
                   <span className="text-xs text-muted-foreground">AI Tokens</span>
                 </div>
-                <span className="text-xs font-bold text-purple-500">~{creditsUsed ? Math.round(Number(creditsUsed) * 1200) : 0}</span>
+                <span className="text-xs font-bold text-purple-500">
+                  {tokensUsed ? tokensUsed.toLocaleString() : `~${displayTokens.toLocaleString()}`}
+                </span>
               </div>
             </motion.div>
           )}
@@ -1010,7 +1015,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                             animate={{ opacity: 1 }}
                             className="mt-2"
                           >
-                            <MessageFeedback messageId={msg.id} creditsUsed={msg.creditsUsed} content={cleanedContent || msg.content} />
+                            <MessageFeedback messageId={msg.id} creditsUsed={msg.creditsUsed} tokensUsed={msg.tokensUsed} content={cleanedContent || msg.content} />
                             <div className="flex items-center gap-2 py-2.5">
                               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                               <span className="text-sm text-foreground font-medium">{t('chat.readyMessage')}</span>
@@ -1019,7 +1024,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         )}
                         {/* Non-last assistant messages also get feedback */}
                         {!isLastAssistant && !isUser && version && (
-                          <MessageFeedback messageId={msg.id} creditsUsed={msg.creditsUsed} content={cleanedContent || msg.content} />
+                          <MessageFeedback messageId={msg.id} creditsUsed={msg.creditsUsed} tokensUsed={msg.tokensUsed} content={cleanedContent || msg.content} />
                         )}
                       </div>
                     </div>
