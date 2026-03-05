@@ -47,7 +47,7 @@ const LoadingPlaceholder: React.FC<{ status?: string }> = ({ status }) => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full bg-background overflow-auto">
+    <div className="flex flex-col items-center justify-center h-full bg-editor-bg overflow-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -524,8 +524,8 @@ export default defineConfig({
   // Show loading placeholder
   if (isLoading || (sandboxId && !isSandboxReady)) {
     return (
-      <div className="flex flex-col h-full w-full bg-background">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card shrink-0">
+      <div className="flex flex-col h-full w-full bg-editor-bg">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-editor-bg shrink-0">
           <div className="text-sm font-mono text-muted-foreground">{sandboxStatus}</div>
         </div>
         <div className="flex-1 min-h-0">
@@ -537,9 +537,9 @@ export default defineConfig({
 
   // Preview Frame
   return (
-    <div className="flex flex-col h-full w-full bg-background">
+    <div className="flex flex-col h-full w-full bg-editor-bg">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-editor-bg shrink-0">
         <div className="flex items-center gap-2">
 
           <button
