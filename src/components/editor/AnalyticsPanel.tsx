@@ -108,7 +108,7 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ projectId, previ
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center bg-background">
+      <div className="h-full flex items-center justify-center bg-editor-bg">
         <div className="flex flex-col items-center gap-3">
           <Activity className="w-8 h-8 text-muted-foreground animate-pulse" />
           <span className="text-sm text-muted-foreground">Loading analytics...</span>
@@ -130,7 +130,7 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ projectId, previ
   ];
 
   return (
-    <div className="h-full overflow-y-auto bg-background p-4">
+    <div className="h-full overflow-y-auto bg-editor-bg p-4">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <BarChart2 className="w-5 h-5 text-primary" />

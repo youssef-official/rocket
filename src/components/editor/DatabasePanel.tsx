@@ -245,14 +245,14 @@ The user connected their Supabase database via OAuth. Please:
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center bg-background">
+      <div className="h-full flex items-center justify-center bg-editor-bg">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-background p-8">
+    <div className="h-full overflow-y-auto bg-editor-bg p-8">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
