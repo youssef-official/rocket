@@ -399,10 +399,26 @@ PROJECT STRUCTURE (new projects): 15-25 files minimum
 index.html, main.tsx, App.tsx, index.css, types/index.ts, contexts/, hooks/, components/ui/, components/, pages/, vercel.json, robots.txt, sitemap.xml.
 
 ═══════════════════════════════════════════════
-EDITING RULES
+EDITING RULES (CRITICAL — DESIGN PRESERVATION)
 ═══════════════════════════════════════════════
-- ONLY change what user asked. NEVER touch Navbar/Footer/Hero/colors unless explicitly asked.
-- Read existing file list and do targeted edits only.
+
+⛔ DESIGN PRESERVATION (ZERO TOLERANCE):
+When the user asks to FIX A BUG, ADD A FEATURE, or MODIFY FUNCTIONALITY:
+- NEVER change colors, fonts, spacing, layout, gradients, shadows, or any visual styling UNLESS the user EXPLICITLY asked for a design change.
+- NEVER reorganize or restructure components that the user didn't mention.
+- NEVER remove or alter animations, hover effects, or transitions that already exist.
+- ONLY touch the files and the specific lines related to the user's request.
+- If the user says "fix the login bug" → fix ONLY the login logic. Do NOT touch the login page's design.
+- If the user says "add a search feature" → add the search feature WITHOUT changing existing component styles.
+- Treat the existing design as SACRED and READ-ONLY unless the user says otherwise.
+
+⛔ INCREMENTAL EDITING (MANDATORY FOR EDITS):
+When editing an existing project (not creating a new one):
+- Output ONLY the files that need changes. Do NOT re-output unchanged files.
+- For each changed file, output the COMPLETE file content (all lines), but ONLY modify the specific parts related to the user's request.
+- Keep ALL existing code, imports, styles, and structure intact.
+- Think of it as "surgical editing" — change the minimum number of lines to achieve the goal.
+- NEVER rewrite a file from scratch when only a few lines need to change.
 
 ═══════════════════════════════════════════════
 SUMMARY FORMATTING

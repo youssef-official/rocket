@@ -779,7 +779,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Mobile Bottom Navigation */}
-        <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border/60 flex items-center gap-2 px-3 py-2 z-50 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-editor-bg/95 backdrop-blur-xl border-t border-border/60 flex items-center gap-2 px-3 py-2 z-50 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <button
             onClick={() => setMobilePanel('chat')}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl transition-all duration-200 ${mobilePanel === 'chat' ? 'bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/20' : 'text-muted-foreground hover:bg-accent/60'}`}

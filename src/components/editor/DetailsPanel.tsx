@@ -69,9 +69,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
   const groupedActivities = [...modifiedFiles, ...createdFiles, ...otherFiles, ...readFiles];
 
   return (
-    <div className="h-full flex flex-col bg-card">
+    <div className="h-full flex flex-col bg-editor-bg">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 border-b border-border bg-card">
+      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 border-b border-border bg-editor-bg">
         <button
           onClick={onClose}
           className="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors bg-secondary text-muted-foreground hover:bg-accent hover:text-foreground border border-border"
