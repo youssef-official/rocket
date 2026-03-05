@@ -46,6 +46,9 @@ a, button, [role='button'], input[type='submit'], input[type='button'], .cursor-
     
     --radius: 0.75rem;
     
+    /* Editor-specific surfaces */
+    --editor-bg: 0 0% 100%;
+
     /* Custom tokens */
     --success: 142 76% 36%;
     --warning: 38 92% 50%;
@@ -76,6 +79,9 @@ a, button, [role='button'], input[type='submit'], input[type='button'], .cursor-
     /* Dark mode - Deep charcoal with blue accents */
     --background: 240 6% 10%;
     --foreground: 0 0% 95%;
+    
+    /* Editor-specific surfaces */
+    --editor-bg: 0 0% 10.6%;
     
     --card: 240 5% 13%;
     --card-foreground: 0 0% 95%;
