@@ -478,9 +478,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   // Visual Edit mode is now integrated into the main layout below
 
   return (
-    <div className="h-screen flex flex-col bg-background" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="h-screen flex flex-col bg-editor-bg" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header - Bolt Style */}
-      <header className={`h-14 flex items-center justify-between px-3 md:px-4 bg-card border-b border-border/60 ${isRTL ? 'flex-row-reverse' : ''}`}>
+      <header className={`h-14 flex items-center justify-between px-3 md:px-4 bg-editor-bg border-b border-border/60 ${isRTL ? 'flex-row-reverse' : ''}`}>
         {/* Left Section */}
         <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
           <button onClick={handleLogoClick} className="hover:opacity-80 transition-all duration-200 hover:scale-105">

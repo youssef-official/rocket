@@ -875,7 +875,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const maxVersionNumber = versions.length > 0 ? Math.max(...versions.map(v => v.versionNumber)) : 0;
 
   return (
-    <div className="relative w-full h-full flex flex-col overflow-hidden bg-card">
+    <div className="relative w-full h-full flex flex-col overflow-hidden bg-editor-bg">
       {/* Messages Area */}
       <div ref={containerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-5 min-h-0">
         {showEmptyState ? (
@@ -1073,7 +1073,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
       {/* Input Area */}
       <div
-        className={`shrink-0 p-4 pt-2 pb-[env(safe-area-inset-bottom,24px)] md:pb-4 border-t bg-card border-border transition-colors ${isDragging ? 'bg-primary/5' : ''}`}
+        className={`shrink-0 p-4 pt-2 pb-[env(safe-area-inset-bottom,24px)] md:pb-4 border-t bg-editor-bg border-border transition-colors ${isDragging ? 'bg-primary/5' : ''}`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
