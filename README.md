@@ -31,6 +31,7 @@
 │  │  github-push · vercel-deploy         │           │
 │  │  visual-edits · admin-data           │           │
 │  │  paypal-* · upload-image             │           │
+│  │  track-analytics · scrape-website    │           │
 │  └──────────────────────────────────────┘           │
 └────────────────────┬────────────────────────────────┘
                      │
@@ -47,7 +48,7 @@
 
 | Feature | Description |
 |---------|-------------|
-| **AI Code Generation** | Stream code from AI models (Gemini, OpenRouter) with real-time file detection |
+| **AI Code Generation** | Stream code from AI models (Gemini, OpenRouter) with real-time file detection and `stream_options: { include_usage: true }` for real token tracking |
 | **Awwwards-Level Design** | Generated projects follow premium design standards with serif fonts, parallax, and motion |
 | **Clone Design** | Enter any website URL — Vivora X scrapes & recreates it as a React project (all plans) |
 | **Multimodal Image Analysis** | Upload up to 5 images per prompt for design reference & analysis |
@@ -74,15 +75,16 @@
 | **Color Themes** | Choose from 10 color palettes injected into AI generation prompts |
 | **Billing Dashboard** | View plan details, subscription expiry, transaction history |
 | **Mandatory Animations** | AI generates projects with framer-motion parallax, stagger reveals, scroll transforms |
-
 | **Message Feedback** | Like/dislike AI responses with real token count & credit viewer |
 | **AI Gateway** | Free public AI endpoint at `ai-gateway.vivorax.online` — no API key required |
 | **Onboarding Persistence** | User survey data (name, role, company) saved to database and visible in Admin panel |
 | **Slow Model Tolerance** | Adaptive timeouts for thinking/reasoning AI models (e.g., Gemini Pro) |
-| **Real Analytics** | Live visitor tracking (page views, sessions, devices, regions) injected into every generated project |
+| **Real Analytics** | Live visitor tracking (page views, sessions, devices, regions) injected into every generated project via `analyzer.js` |
 | **Auto Admin Panels** | AI auto-generates admin dashboards for restaurants, e-commerce, linktree, and similar sites |
 | **Auto AI Assistant** | Floating AI chatbot auto-added to SaaS, support, and e-commerce projects |
 | **Google AI Studio** | Admin can configure Google AI Studio and Custom providers with test interface |
+| **Real Token Tracking** | Actual AI token usage from SSE `usage` object displayed per message (no fake numbers) |
+| **Zero-Tolerance Imports** | Pre-submission scan ensures every identifier has a verified import — prevents `ReferenceError` crashes |
 
 ---
 
@@ -96,7 +98,7 @@
 │   ├── components/
 │   │   ├── auth/                  # Login/signup pages
 │   │   ├── dashboard/             # Projects dashboard
-│   │   ├── editor/                # Code editor, chat, preview, versions, secrets
+│   │   ├── editor/                # Code editor, chat, preview, versions, analytics
 │   │   ├── home/                  # Landing page sections
 │   │   ├── pricing/               # PromoCodeSection
 │   │   ├── shared/                # Reusable components (footer, modals, logo, music player, etc.)
@@ -106,8 +108,8 @@
 │   │   └── LanguageContext.tsx     # i18n translations (8 languages + RTL)
 │   ├── hooks/                     # Custom React hooks
 │   ├── services/
-│   │   ├── aiService.ts           # AI streaming + response parsing
-│   │   ├── directAiService.ts     # Direct AI API calls + credits
+│   │   ├── aiService.ts           # AI streaming + response parsing + real token extraction
+│   │   ├── directAiService.ts     # Direct AI API calls + file-count credit algorithm
 │   │   ├── creditService.ts       # Credit management
 │   │   ├── paypalService.ts       # PayPal integration
 │   │   ├── versionNameService.ts  # AI-generated version names
@@ -119,7 +121,8 @@
 │
 ├── supabase/
 │   ├── config.toml                # Supabase project config
-│   ├── migrations/                # Incremental SQL migrations
+│   ├── migrations/
+│   │   └── full.sql               # Complete schema (single source of truth)
 │   └── functions/
 │       ├── admin-data/            # Admin dashboard data endpoint
 │       ├── generate-code/         # Main AI code generation (SSE streaming)
@@ -129,13 +132,13 @@
 │       ├── paypal-create-order/   # PayPal order creation
 │       ├── scrape-website/        # Website scraping for Clone Design
 │       ├── send-notification-email/ # Email notifications (Resend)
-│       ├── track-analytics/       # Analytics event ingestion (no JWT)
+│       ├── track-analytics/       # Analytics event ingestion (no JWT required)
 │       ├── upload-image/          # Image upload to Cloudflare R2
 │       ├── vercel-deploy/         # Vercel deployment API
 │       └── visual-edits/          # AI-powered visual code edits
 │
 ├── public/
-│     ├── analyzer.js                # Visitor analytics tracking script
+│     ├── analyzer.js                # Visitor analytics tracking script (injected into generated projects)
 │     ├── branding.js                # "Built with Vivora X" badge
 │     ├── wallpapers/                # 9+ premium wallpaper images
 │     └── sounds/                    # UI sound effects
@@ -168,13 +171,26 @@
 | `promo_codes` | Discount promo codes with usage tracking |
 | `site_celebrations` | Seasonal celebration overlays |
 | `vivora_deployments` | Cloudflare deployments tracking |
-| `onboarding_responses` | User onboarding survey data |
+| `supabase_connections` | User Supabase OAuth tokens |
+| `analytics_events` | Real-time visitor analytics (page views, sessions, devices, countries) |
+| `onboarding_responses` | User onboarding survey data (name, role, company) |
 | `message_feedback` | AI response like/dislike ratings |
 
 ### Enums
 
 - `plan_type`: free, pro, business
 - `app_role`: admin, moderator, user
+
+### Key Functions
+
+| Function | Purpose |
+|----------|---------|
+| `has_role(_user_id, _role)` | Security definer check for admin/moderator access |
+| `handle_new_user()` | Auto-creates profile on signup |
+| `handle_new_user_plan()` | Auto-creates free plan on signup |
+| `check_and_reset_user_credits(p_user_id)` | Daily credit reset + expired plan downgrade |
+| `delete_project_cascade(p_project_id)` | Cascading project delete (messages, versions, analytics, feedback) |
+| `reset_daily_credits()` | Bulk daily credit reset for all users |
 
 ---
 
@@ -185,7 +201,8 @@
 - Admin operations gated by `has_role()` function
 - Service role used only in edge functions for cross-user operations
 - Image uploads secured via JWT authentication
-- Secrets stored per-project, never exposed in generated code
+- Analytics ingestion open (no JWT) for generated project tracking
+- Zero-tolerance import validation prevents runtime crashes in generated code
 
 ---
 
@@ -193,7 +210,7 @@
 
 | Function | Method | Auth | Description |
 |----------|--------|------|-------------|
-| `generate-code` | POST | JWT | AI code generation with SSE streaming |
+| `generate-code` | POST | JWT | AI code generation with SSE streaming + real token usage |
 | `modal-proxy` | POST | Anon | Provisions Modal sandbox containers |
 | `visual-edits` | POST | JWT | AI-powered visual code modifications |
 | `github-push` | POST | JWT | GitHub OAuth flow + file push |
@@ -219,8 +236,6 @@
 
 ```bash
 npm install
-# or
-bun install
 ```
 
 ### 2. Environment Variables
@@ -235,7 +250,7 @@ VITE_SUPABASE_PROJECT_ID=<project-id>
 
 ### 3. Database Setup
 
-Apply migrations via Supabase CLI:
+Apply the full schema:
 
 ```bash
 supabase db push
@@ -259,8 +274,6 @@ supabase db push
 
 ```bash
 npm run dev
-# or
-bun dev
 ```
 
 App runs at `http://localhost:5173`
@@ -274,17 +287,6 @@ App runs at `http://localhost:5173`
 | **Free** | $0 | 3 | 0 |
 | **Pro** | $15/mo | 5 | 150 |
 | **Business** | $29/mo | 10 | 400 |
-
-### Features by Plan
-
-| Feature | Free | Pro | Business |
-|---------|------|-----|----------|
-| Clone Design | ✅ | ✅ | ✅ |
-| Image Upload | ❌ | ✅ | ✅ |
-| ZIP Export | ❌ | ✅ | ✅ |
-| Code Editing | ❌ | ✅ | ✅ |
-| Priority Access | ❌ | ❌ | ✅ |
-| Vercel Deploy | ✅ | ✅ | ✅ |
 
 Credits reset daily at UTC midnight. First project generation costs 2 credits; edits cost 0.5–5 credits based on file count.
 
