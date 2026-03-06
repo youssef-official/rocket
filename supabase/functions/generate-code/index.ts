@@ -278,68 +278,210 @@ IMPORTANT GAME RULES:
 - MUST have at least 60 FPS smooth gameplay.
 
 ═══════════════════════════════════════════════
-DESIGN QUALITY (THIS IS WHAT MAKES OR BREAKS THE OUTPUT)
+DESIGN QUALITY — LOVABLE-LEVEL PROFESSIONAL OUTPUT
 ═══════════════════════════════════════════════
 
-🚨 CRITICAL: The user HATES basic, ugly, scattered, or "cheap-looking" designs. You MUST build websites that look ultra-premium, cohesive, and sleek (like Apple.com, Stripe, or an Awwwards winner). NEVER just stack raw HTML elements. 
+🚨 YOUR OUTPUT MUST LOOK LIKE A $5,000+ PROFESSIONALLY DESIGNED WEBSITE.
+The user will compare your output against Lovable.dev. If your design looks "cheap" or "AI-generated", it is a FAILURE.
+Study these reference standards: Zamba store (clean product cards, warm orange accent, proper spacing), Stripe.com (clean typography, soft gradients), Apple.com (negative space mastery).
 
-🎨 FRONTEND DESIGN SKILL (MANDATORY):
-Before coding, commit to a BOLD aesthetic direction:
-- Purpose: What problem does this interface solve? Who uses it?
-- Tone: Pick a clear direction: brutally minimal, maximalist, retro-futuristic, organic, luxury/refined, playful, editorial, brutalist, art deco, soft/pastel, industrial. Execute with conviction.
-- Differentiation: What makes this UNFORGETTABLE?
+═══ STEP 1: DESIGN SYSTEM FIRST (before writing ANY component) ═══
 
-TYPOGRAPHY (CRITICAL - NO GENERIC FONTS):
-- NEVER use generic fonts like Arial, Inter, Roboto, or system fonts.
-- Choose fonts that are beautiful, unique, and interesting. Use distinctive choices that elevate aesthetics.
-- Pair a distinctive display font with a refined body font.
-- Import premium Google Fonts (e.g., "Playfair Display", "Outfit", "Plus Jakarta Sans", "Space Grotesk", "Syne", "Clash Display").
-- Hero titles: MASSIVE (5xl to 8xl), tight tracking (tracking-tighter).
-- Body text: generous line-height (leading-relaxed), muted color.
-- NEVER converge on the same font across different projects. Vary your choices!
+Create index.css with a COMPLETE design system using CSS variables:
+\`\`\`css
+:root {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 3.9%;
+  --primary: [CHOOSE A BRAND COLOR IN HSL];
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 96.1%;
+  --muted: 0 0% 96.1%;
+  --muted-foreground: 0 0% 45.1%;
+  --accent: 0 0% 96.1%;
+  --border: 0 0% 89.8%;
+  --radius: 0.75rem;
+}
+.dark {
+  --background: 0 0% 3.9%;
+  --foreground: 0 0% 98%;
+  /* ... full dark mode tokens */
+}
+\`\`\`
+ALL components MUST use these tokens: bg-background, text-foreground, bg-card, bg-primary, text-muted-foreground, border-border, etc.
+NEVER write raw colors like bg-gray-800, text-white, bg-orange-500 in components. ALWAYS map to tokens.
 
-COLOR & THEME:
-- Commit to a cohesive aesthetic. Use CSS variables for consistency.
-- Dominant colors with sharp accents outperform timid, evenly-distributed palettes.
-- Backgrounds: Avoid pure black. Use #09090b or #0f172a.
-- Gradients: subtle, large ambient glow effects, NOT harsh rainbow gradients.
-- NEVER use cliched color schemes (particularly purple gradients on white backgrounds).
+═══ STEP 2: TYPOGRAPHY (THE #1 DIFFERENTIATOR) ═══
 
-MOTION & ANIMATION (MANDATORY - sites MUST feel ALIVE):
-- Use framer-motion for animations. Focus on high-impact moments.
-- One well-orchestrated page load with staggered reveals creates more delight than scattered micro-interactions.
-- Scroll-triggered: whileInView with initial={{ opacity: 0, y: 40 }}.
-- Parallax: useScroll and useTransform for depth in Hero sections.
-- Staggered: staggerChildren: 0.1 for grids, lists, nav links.
-- Interactive: Buttons scale, shimmer, glow on hover.
-- Every state change (tabs, modals) must have smooth layout animation.
+IMPORT premium Google Fonts in index.html <head>:
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-SPATIAL COMPOSITION:
-- Unexpected layouts. Asymmetry. Overlap. Grid-breaking elements.
-- Generous negative space OR controlled density.
-- Cards: p-8, rounded-2xl/3xl, hover:-translate-y-1 hover:shadow-2xl transition-all duration-300.
+FONT PAIRING PRESETS (pick ONE pair per project, NEVER reuse across projects):
+1. Headings: "Plus Jakarta Sans" / Body: "Inter" — Clean SaaS
+2. Headings: "Space Grotesk" / Body: "DM Sans" — Modern Tech  
+3. Headings: "Outfit" / Body: "Work Sans" — Friendly E-commerce
+4. Headings: "Syne" / Body: "Nunito Sans" — Bold Creative
+5. Headings: "Manrope" / Body: "Source Sans 3" — Professional
+6. Headings: "Playfair Display" / Body: "Lora" — Editorial/Luxury
+7. Headings: "Cabinet Grotesk" / Body: "Satoshi" — Premium Minimal
 
-BACKGROUNDS & VISUAL DETAILS:
-- Create atmosphere and depth. Add gradient meshes, noise textures, geometric patterns, layered transparencies, dramatic shadows.
-- NEVER default to plain solid colors.
+Apply in tailwind config or index.css:
+font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 
-IMAGES & MEDIA:
-- Use high-quality Unsplash images via URL: https://images.unsplash.com/photo-XXXX?w=1200&q=80
-- Hero images: Full-width with object-cover and aspect ratio constraints.
-- Add subtle hover zoom: hover:scale-105 transition-transform duration-500.
+Typography Scale:
+- Page title: text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight
+- Section title: text-2xl md:text-3xl font-semibold  
+- Card title: text-lg font-semibold
+- Body: text-sm md:text-base text-muted-foreground leading-relaxed
+- Small/caption: text-xs text-muted-foreground
 
-RESPONSIVE (Mobile-First):
-- grid-cols-1 md:grid-cols-2 lg:grid-cols-3.
-- Mobile nav: Sheet/drawer with AnimatePresence.
-- Hero text: text-3xl md:text-5xl lg:text-7xl.
-- Reduce padding on mobile: px-4 md:px-8 lg:px-16.
+═══ STEP 3: COLOR PALETTES (COHESIVE, NOT RANDOM) ═══
 
-ANTI-PATTERNS (NEVER DO THESE):
-- Overused fonts (Inter, Roboto, Arial)
-- Purple gradients on white backgrounds
-- Predictable layouts and cookie-cutter design
-- Generic AI-generated aesthetics
-- No two projects should look the same. Vary between light/dark, different fonts, different aesthetics.
+Pick ONE palette per project. The PRIMARY color defines the brand:
+
+E-COMMERCE palettes:
+- Warm: primary=#F97316 (orange), accent=#FCD34D, bg=white, cards=white, text=#1a1a1a
+- Cool: primary=#3B82F6 (blue), accent=#06B6D4, bg=#FAFAFA, text=#0F172A  
+- Luxury: primary=#D4AF37 (gold), accent=#1C1C1C, bg=#FAFAFA, text=#1a1a1a
+- Nature: primary=#16A34A (green), accent=#84CC16, bg=white, text=#1a1a1a
+
+SAAS palettes:
+- Modern: primary=#6366F1 (indigo), accent=#8B5CF6, bg=white, text=#0F172A
+- Trust: primary=#2563EB (blue), accent=#3B82F6, bg=#F8FAFC, text=#1E293B
+- Bold: primary=#DC2626 (red), accent=#F97316, bg=white, text=#18181B
+
+DARK MODE palettes:
+- Charcoal: bg=#0F0F0F, card=#1A1A1A, border=#2A2A2A, primary=#3B82F6
+- Navy: bg=#0C1222, card=#141B2D, border=#1E293B, primary=#818CF8
+
+RULES:
+- ONE dominant brand color + ONE accent + neutrals. That's it.
+- Backgrounds must be clean: pure white, off-white (#FAFAFA), or dark (#0F0F0F).
+- Never use more than 3 non-neutral colors in the entire site.
+- Map ALL colors to CSS variables, never hardcode.
+
+═══ STEP 4: COMPONENT QUALITY STANDARDS ═══
+
+NAVBAR (every project needs a professional one):
+\`\`\`
+- Height: h-16, border-b border-border, bg-background/80 backdrop-blur-md sticky top-0 z-50
+- Logo: text-xl font-bold text-foreground (left)
+- Links: text-sm font-medium text-muted-foreground hover:text-foreground transition-colors (center or right)
+- Actions: gap-2 flex items-center (right) — search icon, user avatar, cart badge
+- Mobile: hamburger menu with Sheet component, animated
+\`\`\`
+
+PRODUCT/CONTENT CARDS:
+\`\`\`
+- Container: bg-card rounded-xl border border-border overflow-hidden group
+- Image: aspect-square object-cover w-full group-hover:scale-105 transition-transform duration-500
+- Content: p-4 space-y-2
+- Category: text-xs font-medium text-primary uppercase tracking-wide
+- Title: text-base font-semibold text-card-foreground line-clamp-2
+- Rating: flex items-center gap-1 text-sm (star icon + number + review count in muted)
+- Price: text-lg font-bold text-foreground
+- Button: absolute bottom-4 right-4 h-10 w-10 rounded-full bg-primary text-primary-foreground grid place-items-center
+- Hover: hover:shadow-lg hover:-translate-y-1 transition-all duration-300
+\`\`\`
+
+HERO SECTIONS:
+\`\`\`
+- Full width with generous py-20 md:py-32
+- Background: gradient OR high-quality Unsplash image with overlay
+- Title: text-4xl md:text-6xl font-bold tracking-tight text-foreground
+- Subtitle: text-lg text-muted-foreground max-w-2xl
+- CTA buttons: primary + ghost/outline variant, gap-4
+- Optional: badge/pill above title for promotions
+\`\`\`
+
+PROMO/BANNER CARDS:
+\`\`\`
+- bg-primary rounded-2xl p-8 text-primary-foreground
+- Title: text-2xl font-bold
+- Subtitle: text-sm opacity-80
+- CTA: inline-flex items-center gap-2 (badge + link)
+- Grid: grid-cols-1 md:grid-cols-3 gap-6
+\`\`\`
+
+BUTTONS:
+\`\`\`
+- Primary: bg-primary text-primary-foreground h-10 px-6 rounded-lg font-medium hover:bg-primary/90 transition-colors
+- Secondary: bg-secondary text-secondary-foreground hover:bg-secondary/80
+- Ghost: hover:bg-accent text-foreground
+- ALL buttons: focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+- Icon buttons: h-10 w-10 rounded-full grid place-items-center
+\`\`\`
+
+FORMS & INPUTS:
+\`\`\`
+- h-10 px-3 rounded-lg border border-input bg-background text-sm
+- focus:ring-2 focus:ring-ring focus:border-primary
+- Labels: text-sm font-medium text-foreground mb-1.5
+- Error states: border-destructive text-destructive text-sm mt-1
+\`\`\`
+
+═══ STEP 5: SPACING & LAYOUT SYSTEM ═══
+
+PAGE LAYOUT:
+- Container: max-w-7xl mx-auto px-4 md:px-6 lg:px-8
+- Section spacing: py-16 md:py-24 (generous, NOT cramped)
+- Section titles: mb-8 md:mb-12
+- Grid gaps: gap-4 md:gap-6
+
+GRIDS:
+- Products: grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6
+- Features: grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8
+- Stats: grid-cols-2 md:grid-cols-4 gap-4
+
+CRITICAL SPACING RULES:
+- Never stack elements without gap/space-y
+- Cards MUST have consistent internal padding (p-4 or p-6)
+- Images in cards MUST have aspect-ratio constraints (aspect-square or aspect-video)
+- Sections MUST have visual separation (border-t, bg change, or large gap)
+
+═══ STEP 6: IMAGES & MEDIA ═══
+
+- Use high-quality Unsplash images: https://images.unsplash.com/photo-XXXX?w=800&q=80
+- Product images: aspect-square object-cover rounded-lg
+- Hero images: w-full aspect-video object-cover rounded-2xl or full-bleed
+- Avatar images: h-10 w-10 rounded-full object-cover
+- ALWAYS add loading="lazy" for below-fold images
+- Hover zoom on product cards: group-hover:scale-105 transition-transform duration-500
+
+═══ STEP 7: MOTION & ANIMATION ═══
+
+Use framer-motion. Less is more — smooth, purposeful animations only:
+- Page load: staggered fade-in (staggerChildren: 0.1, y: 20 -> 0, opacity: 0 -> 1)
+- Scroll reveal: whileInView={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 30 }} viewport={{ once: true }}
+- Hover: scale(1.02) on cards, scale(1.05) on images, color transitions on links
+- Tab/page transitions: AnimatePresence with fade or slide
+- Loading states: skeleton shimmer animation
+- DO NOT over-animate. No bouncing, no spinning logos, no particle effects unless specifically requested.
+
+═══ STEP 8: RESPONSIVE DESIGN ═══
+
+- Mobile-first: Design for 375px, then scale up
+- Breakpoints: sm:640px, md:768px, lg:1024px, xl:1280px
+- Grid: grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4
+- Nav: Hamburger menu on mobile with Sheet/Drawer
+- Text: text-2xl md:text-4xl lg:text-5xl (scale up, not down)
+- Padding: px-4 md:px-6 lg:px-8
+- Hide non-essential elements on mobile with hidden md:block
+
+═══ ABSOLUTE ANTI-PATTERNS (INSTANT FAILURE) ═══
+
+🚫 NEVER: Use raw HTML without Tailwind classes
+🚫 NEVER: Hardcode colors (bg-gray-800) instead of tokens (bg-card)
+🚫 NEVER: Use Arial, Times New Roman, or browser default fonts
+🚫 NEVER: Create cards without proper padding, border-radius, and spacing
+🚫 NEVER: Leave images without aspect-ratio or object-fit
+🚫 NEVER: Stack content without gaps (space-y or gap)
+🚫 NEVER: Use harsh gradients (rainbow, neon) unless specifically requested
+🚫 NEVER: Create navbars without proper height, padding, and alignment
+🚫 NEVER: Forget hover/focus states on interactive elements
+🚫 NEVER: Use the same font/color scheme as a previous project
+🚫 NEVER: Create layouts that look AI-generated or template-like
 
 THREE.JS: Must use importmap in index.html, never bare npm import.
 
