@@ -654,9 +654,17 @@ export interface SSEUsage {
   total_tokens?: number;
 }
 
+export interface AgentStepEvent {
+  step: 'planning' | 'generating' | 'validating' | 'fixing' | 'streaming' | 'done' | 'error';
+  message?: string;
+  confidence?: number;
+  issues_count?: number;
+}
+
 async function readSSEStream(
   response: Response,
-  onDelta?: (deltaText: string) => void
+  onDelta?: (deltaText: string) => void,
+  onAgentStep?: (event: AgentStepEvent) => void
 ): Promise<{ text: string; usage: SSEUsage | null }> {
   if (!response.body) throw new Error('No response body');
 
@@ -707,12 +715,18 @@ async function readSSEStream(
 
       try {
         const parsed = JSON.parse(jsonStr);
+
+        // Handle agent step events (from the agent loop)
+        if (parsed.step && onAgentStep) {
+          onAgentStep(parsed as AgentStepEvent);
+          continue;
+        }
+
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) {
           fullResponse += content;
           onDelta?.(content);
         }
-        // Capture usage data from the final chunk (OpenAI-compatible format)
         if (parsed.usage) {
           usage = {
             prompt_tokens: parsed.usage.prompt_tokens,
@@ -741,6 +755,10 @@ async function readSSEStream(
 
       try {
         const parsed = JSON.parse(jsonStr);
+        if (parsed.step && onAgentStep) {
+          onAgentStep(parsed as AgentStepEvent);
+          continue;
+        }
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) {
           fullResponse += content;
@@ -893,6 +911,7 @@ export async function streamAICodeGeneration(
     onError?: (error: Error) => void;
     onFileStart?: (fileName: string) => void;
     onStatusUpdate?: (status: string) => void;
+    onAgentStep?: (event: AgentStepEvent) => void;
     signal?: AbortSignal;
   },
   existingFiles?: string,
@@ -922,7 +941,16 @@ EXISTING PROJECT FILES: [${existingFiles}]
       throw new Error(`AI request failed: ${response.status}`);
     }
 
-    const { text: fullResponse, usage } = await readSSEStream(response, options.onChunk);
+    const { text: fullResponse, usage } = await readSSEStream(
+      response,
+      options.onChunk,
+      (event) => {
+        options.onAgentStep?.(event);
+        if (event.message) {
+          options.onStatusUpdate?.(event.message);
+        }
+      }
+    );
     options.onComplete(fullResponse, usage);
   } catch (error) {
     console.error('Code generation error:', error);

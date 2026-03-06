@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bookmark, Loader2, Pencil, FileOutput, Eye, Trash2, Image as ImageIcon, ChevronRight, CheckCircle2, Sparkles, Package, RotateCcw } from 'lucide-react';
+import { Bookmark, Loader2, Pencil, FileOutput, Eye, Trash2, Image as ImageIcon, CheckCircle2, Sparkles, RotateCcw, Search, Code, Shield, Settings } from 'lucide-react';
 import type { ProjectVersion } from '@/hooks/useVersions';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -20,6 +20,9 @@ interface VersionCardNewProps {
   isLatestVersion: boolean;
   isLive?: boolean;
   liveStatus?: string;
+  agentStep?: 'planning' | 'generating' | 'validating' | 'fixing' | 'streaming' | 'done' | 'error';
+  agentConfidence?: number;
+  agentIssuesCount?: number;
 }
 
 const getActionMeta = (action: string) => {
@@ -33,6 +36,14 @@ const getActionMeta = (action: string) => {
   }
 };
 
+const AGENT_STAGES = [
+  { key: 'planning', icon: Search, label: { en: 'Planning', ar: 'تخطيط' } },
+  { key: 'generating', icon: Code, label: { en: 'Generating', ar: 'توليد' } },
+  { key: 'validating', icon: Shield, label: { en: 'Validating', ar: 'مراجعة' } },
+  { key: 'fixing', icon: Settings, label: { en: 'Fixing', ar: 'إصلاح' } },
+  { key: 'streaming', icon: FileOutput, label: { en: 'Streaming', ar: 'إرسال' } },
+] as const;
+
 export const VersionCardNew: React.FC<VersionCardNewProps> = ({
   version,
   isActive,
@@ -43,8 +54,12 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
   isLatestVersion,
   isLive = false,
   liveStatus,
+  agentStep,
+  agentConfidence,
+  agentIssuesCount,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isAr = (language as string) === 'ar';
 
   const currentActivity = isLive
     ? [...activities].reverse().find(a => a.status === 'editing') || activities[activities.length - 1]
@@ -53,10 +68,12 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
   const actionMeta = currentActivity ? getActionMeta(currentActivity.action) : null;
   const CurrentIcon = actionMeta?.Icon || null;
 
-  // Count activities by type for the completed card
   const editCount = activities.filter(a => a.action === 'edited').length;
   const createCount = activities.filter(a => a.action === 'created').length;
   const totalChanges = editCount + createCount;
+
+  const stageOrder = AGENT_STAGES.map(s => s.key);
+  const currentStageIdx = agentStep ? stageOrder.indexOf(agentStep as typeof stageOrder[number]) : -1;
 
   return (
     <motion.div
@@ -70,7 +87,6 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
     >
       <AnimatePresence mode="wait">
         {isLive ? (
-          /* ── Live generation state ── */
           <motion.div
             key="live"
             initial={{ opacity: 0 }}
@@ -78,6 +94,76 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
           >
+            {/* Agent Stage Progress */}
+            {agentStep && agentStep !== 'done' && agentStep !== 'error' && (
+              <div className="px-4 pt-3 pb-1">
+                <div className="flex items-center gap-1.5">
+                  {AGENT_STAGES.map((stage, idx) => {
+                    const isCompleted = idx < currentStageIdx;
+                    const isCurrent = idx === currentStageIdx;
+                    const StageIcon = stage.icon;
+                    return (
+                      <motion.div
+                        key={stage.key}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="flex items-center gap-1"
+                      >
+                        <div
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
+                            isCurrent
+                              ? 'bg-primary/20 ring-1 ring-primary/40'
+                              : isCompleted
+                                ? 'bg-emerald-500/15'
+                                : 'bg-secondary/60'
+                          }`}
+                          title={isAr ? stage.label.ar : stage.label.en}
+                        >
+                          {isCompleted ? (
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          ) : isCurrent ? (
+                            <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                          ) : (
+                            <StageIcon className="w-3 h-3 text-muted-foreground/40" />
+                          )}
+                        </div>
+                        {idx < AGENT_STAGES.length - 1 && (
+                          <div className={`w-3 h-0.5 rounded-full ${
+                            isCompleted ? 'bg-emerald-400/40' : 'bg-border'
+                          }`} />
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center justify-between mt-1.5">
+                  <motion.span
+                    key={agentStep}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-[10px] font-semibold text-primary uppercase tracking-wider"
+                  >
+                    {isAr
+                      ? AGENT_STAGES.find(s => s.key === agentStep)?.label.ar
+                      : AGENT_STAGES.find(s => s.key === agentStep)?.label.en}
+                  </motion.span>
+                  {agentStep === 'validating' && agentConfidence !== undefined && (
+                    <span className={`text-[10px] font-bold tabular-nums ${
+                      agentConfidence >= 85 ? 'text-emerald-400' : 'text-amber-400'
+                    }`}>
+                      {agentConfidence}%
+                    </span>
+                  )}
+                  {agentStep === 'fixing' && agentIssuesCount !== undefined && (
+                    <span className="text-[10px] font-medium text-amber-400 tabular-nums">
+                      {agentIssuesCount} {isAr ? 'مشكلة' : 'issues'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="px-4 py-3.5 bg-secondary/40">
               {currentActivity && CurrentIcon && actionMeta ? (
                 <div className="flex items-center gap-3">
@@ -112,14 +198,15 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
                   <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
                   </div>
-                  <span className="text-xs text-muted-foreground font-medium">Generating...</span>
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {liveStatus || (isAr ? 'جاري التوليد...' : 'Generating...')}
+                  </span>
                 </div>
               )}
-              {liveStatus && (
+              {liveStatus && !agentStep && (
                 <p className="text-[11px] text-muted-foreground/70 mt-2 truncate pl-10">{liveStatus}</p>
               )}
             </div>
-            {/* Details button during live */}
             <div className="px-3 py-2.5 border-t border-border/50">
               <button
                 onClick={() => onShowDetails?.(version, activities)}
@@ -137,7 +224,6 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
           >
-            {/* Header */}
             <div className="flex items-center gap-3 px-4 py-3.5 bg-secondary/30">
               <motion.div
                 initial={{ scale: 0 }}
@@ -164,7 +250,6 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
                   </p>
                 )}
               </div>
-              {/* Rollback */}
               {!isLatestVersion && onRollback && (
                 <button
                   onClick={(e) => {
@@ -178,8 +263,6 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
                 </button>
               )}
             </div>
-
-            {/* Action buttons */}
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}

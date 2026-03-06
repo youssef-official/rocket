@@ -32,6 +32,9 @@ interface GenerationPhase {
   stepFiles?: Record<number, string[]>;
   status?: string;
   summary?: string;
+  agentStep?: 'planning' | 'generating' | 'validating' | 'fixing' | 'streaming' | 'done' | 'error';
+  agentConfidence?: number;
+  agentIssuesCount?: number;
 }
 
 // Message with associated version and activities
@@ -979,6 +982,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
                                   isLatestVersion={true}
                                   isLive={true}
                                   liveStatus={generationPhase?.status || statusMessage}
+                                  agentStep={generationPhase?.agentStep}
+                                  agentConfidence={generationPhase?.agentConfidence}
+                                  agentIssuesCount={generationPhase?.agentIssuesCount}
                                 />
                               </div>
                             )}
@@ -1061,6 +1067,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         isLatestVersion={true}
                         isLive={true}
                         liveStatus={generationPhase?.status || statusMessage}
+                        agentStep={generationPhase?.agentStep}
+                        agentConfidence={generationPhase?.agentConfidence}
+                        agentIssuesCount={generationPhase?.agentIssuesCount}
                       />
                     )}
                   </div>

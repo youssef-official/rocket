@@ -53,6 +53,9 @@ interface GenerationPhase {
   thinkingTime?: number;
   plan?: string[];
   completedSteps?: number[];
+  agentStep?: 'planning' | 'generating' | 'validating' | 'fixing' | 'streaming' | 'done' | 'error';
+  agentConfidence?: number;
+  agentIssuesCount?: number;
   currentStep?: number;
   stepFiles?: Record<number, string[]>;
   status?: string;
@@ -484,6 +487,16 @@ const ProjectEditorRoute = () => {
               onStatusUpdate: (status) => {
                 if (isCancelled.current) return;
                 setStatusMessage(status);
+              },
+              onAgentStep: (event) => {
+                if (isCancelled.current) return;
+                setGenerationPhase(prev => prev ? {
+                  ...prev,
+                  agentStep: event.step,
+                  agentConfidence: event.confidence ?? prev.agentConfidence,
+                  agentIssuesCount: event.issues_count ?? prev.agentIssuesCount,
+                  message: event.message || prev.message,
+                } : null);
               },
             },
             undefined,
@@ -947,6 +960,16 @@ const ProjectEditorRoute = () => {
           onStatusUpdate: (status) => {
             if (isCancelled.current) return;
             setStatusMessage(status);
+          },
+          onAgentStep: (event) => {
+            if (isCancelled.current) return;
+            setGenerationPhase(prev => prev ? {
+              ...prev,
+              agentStep: event.step,
+              agentConfidence: event.confidence ?? prev.agentConfidence,
+              agentIssuesCount: event.issues_count ?? prev.agentIssuesCount,
+              message: event.message || prev.message,
+            } : null);
           },
         },
         existingFilesList.join(', '),
