@@ -871,6 +871,7 @@ async function runAgentLoop(
 
         // Stream code generation live — chunks forwarded to client in real-time
         let generatedCode = await agentCallStreaming(opts, systemPrompt, genMessages, controller, encoder, 65000, 0.1);
+        const originalGeneratedCode = generatedCode;
 
         // ── STEP 3-5: VALIDATE → FIX loop ──
         let confidence = 0;
