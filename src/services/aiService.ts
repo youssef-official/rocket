@@ -654,9 +654,17 @@ export interface SSEUsage {
   total_tokens?: number;
 }
 
+export interface AgentStepEvent {
+  step: 'planning' | 'generating' | 'validating' | 'fixing' | 'streaming' | 'done' | 'error';
+  message?: string;
+  confidence?: number;
+  issues_count?: number;
+}
+
 async function readSSEStream(
   response: Response,
-  onDelta?: (deltaText: string) => void
+  onDelta?: (deltaText: string) => void,
+  onAgentStep?: (event: AgentStepEvent) => void
 ): Promise<{ text: string; usage: SSEUsage | null }> {
   if (!response.body) throw new Error('No response body');
 
@@ -707,12 +715,18 @@ async function readSSEStream(
 
       try {
         const parsed = JSON.parse(jsonStr);
+
+        // Handle agent step events (from the agent loop)
+        if (parsed.step && onAgentStep) {
+          onAgentStep(parsed as AgentStepEvent);
+          continue;
+        }
+
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) {
           fullResponse += content;
           onDelta?.(content);
         }
-        // Capture usage data from the final chunk (OpenAI-compatible format)
         if (parsed.usage) {
           usage = {
             prompt_tokens: parsed.usage.prompt_tokens,
