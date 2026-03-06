@@ -963,19 +963,19 @@ async function runAgentLoop(
           }
         }
 
-        // ── STEP 6: STREAM final code via SSE ──
-        controller.enqueue(encoder.encode(sseEvent({
-          step: "streaming", message: userLanguage === "ar" ? "جاري إرسال الكود النهائي..." : "Streaming final code..."
-        })));
-
-        // Stream the generated code in SSE chunks matching the existing format
-        const CHUNK_SIZE = 200;
-        for (let i = 0; i < generatedCode.length; i += CHUNK_SIZE) {
-          const chunk = generatedCode.slice(i, i + CHUNK_SIZE);
-          const sseChunk = {
-            choices: [{ delta: { content: chunk } }],
-          };
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(sseChunk)}\n\n`));
+        // ── STEP 6: FINALIZE ──
+        // Code was already streamed live during generation (step 2).
+        // If fixes were applied, stream only the patched delta.
+        if (generatedCode !== originalGeneratedCode) {
+          controller.enqueue(encoder.encode(sseEvent({
+            step: "streaming", message: userLanguage === "ar" ? "جاري إرسال الإصلاحات..." : "Streaming fixes..."
+          })));
+          // Re-stream the entire fixed code so the client gets the corrected version
+          const CHUNK_SIZE = 200;
+          for (let i = 0; i < generatedCode.length; i += CHUNK_SIZE) {
+            const chunk = generatedCode.slice(i, i + CHUNK_SIZE);
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`));
+          }
         }
 
         // Send done markers
