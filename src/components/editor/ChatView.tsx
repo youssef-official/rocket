@@ -32,6 +32,9 @@ interface GenerationPhase {
   stepFiles?: Record<number, string[]>;
   status?: string;
   summary?: string;
+  agentStep?: 'planning' | 'generating' | 'validating' | 'fixing' | 'streaming' | 'done' | 'error';
+  agentConfidence?: number;
+  agentIssuesCount?: number;
 }
 
 // Message with associated version and activities
