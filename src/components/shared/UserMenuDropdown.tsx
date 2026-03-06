@@ -30,6 +30,13 @@ const WALLPAPERS = [
   { id: 'city-night', label: 'City Night', src: '/wallpapers/city-night.jpg' },
   { id: 'desert', label: 'Desert', src: '/wallpapers/desert.jpg' },
   { id: 'tropical', label: 'Tropical', src: '/wallpapers/tropical.jpg' },
+  { id: 'gradient-purple', label: 'Purple Flow', src: '/wallpapers/gradient-purple.jpg' },
+  { id: 'zen-garden', label: 'Zen Garden', src: '/wallpapers/zen-garden.jpg' },
+  { id: 'cyberpunk', label: 'Cyberpunk', src: '/wallpapers/cyberpunk.jpg' },
+  { id: 'northern-lights', label: 'Northern Lights', src: '/wallpapers/northern-lights.jpg' },
+  { id: 'cozy-cafe', label: 'Cozy Café', src: '/wallpapers/cozy-cafe.jpg' },
+  { id: 'black-gold', label: 'Black & Gold', src: '/wallpapers/black-gold.jpg' },
+  { id: 'starry-night', label: 'Starry Night', src: '/wallpapers/starry-night.jpg' },
 ];
 
 // Export for use in HomePage
@@ -194,7 +201,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          <div className="w-72 bg-[#1a1a2e]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
+          <div className="w-72 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-5rem)] overflow-y-auto bg-[#1a1a2e]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/40">
             {/* User Info */}
             <div className="p-4 border-b border-white/[0.06]">
               <p className={`text-sm font-semibold text-white truncate ${isRTL ? 'text-right' : ''}`}>{user.displayName || user.email}</p>
@@ -346,7 +353,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
               >
                 <Settings2 className="w-4 h-4" />
-                {t('common.settings')}
+                Settings
               </button>
 
               <div className="my-1 mx-3 border-t border-white/[0.06]" />
