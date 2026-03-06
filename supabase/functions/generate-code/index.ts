@@ -852,7 +852,7 @@ async function runAgentLoop(
 
         console.log("[agent] Plan:", JSON.stringify(plan));
 
-        // ── STEP 2: GENERATE ──
+        // ── STEP 2: GENERATE (live streaming to client) ──
         controller.enqueue(encoder.encode(sseEvent({
           step: "generating", message: userLanguage === "ar" ? "جاري توليد الكود..." : "Generating code..."
         })));
@@ -869,7 +869,8 @@ async function runAgentLoop(
           };
         }
 
-        let generatedCode = await agentCall(opts, systemPrompt, genMessages, 65000, 0.1);
+        // Stream code generation live — chunks forwarded to client in real-time
+        let generatedCode = await agentCallStreaming(opts, systemPrompt, genMessages, controller, encoder, 65000, 0.1);
 
         // ── STEP 3-5: VALIDATE → FIX loop ──
         let confidence = 0;
