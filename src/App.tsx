@@ -53,6 +53,9 @@ interface GenerationPhase {
   thinkingTime?: number;
   plan?: string[];
   completedSteps?: number[];
+  agentStep?: 'planning' | 'generating' | 'validating' | 'fixing' | 'streaming' | 'done';
+  agentConfidence?: number;
+  agentIssuesCount?: number;
   currentStep?: number;
   stepFiles?: Record<number, string[]>;
   status?: string;
