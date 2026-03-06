@@ -755,6 +755,10 @@ async function readSSEStream(
 
       try {
         const parsed = JSON.parse(jsonStr);
+        if (parsed.step && onAgentStep) {
+          onAgentStep(parsed as AgentStepEvent);
+          continue;
+        }
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) {
           fullResponse += content;
@@ -907,6 +911,7 @@ export async function streamAICodeGeneration(
     onError?: (error: Error) => void;
     onFileStart?: (fileName: string) => void;
     onStatusUpdate?: (status: string) => void;
+    onAgentStep?: (event: AgentStepEvent) => void;
     signal?: AbortSignal;
   },
   existingFiles?: string,
@@ -936,7 +941,16 @@ EXISTING PROJECT FILES: [${existingFiles}]
       throw new Error(`AI request failed: ${response.status}`);
     }
 
-    const { text: fullResponse, usage } = await readSSEStream(response, options.onChunk);
+    const { text: fullResponse, usage } = await readSSEStream(
+      response,
+      options.onChunk,
+      (event) => {
+        options.onAgentStep?.(event);
+        if (event.message) {
+          options.onStatusUpdate?.(event.message);
+        }
+      }
+    );
     options.onComplete(fullResponse, usage);
   } catch (error) {
     console.error('Code generation error:', error);
