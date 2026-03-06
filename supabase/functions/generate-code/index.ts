@@ -68,6 +68,64 @@ Examples: "Hero Section Update", "Dark Mode Added", "Mobile Navigation Fix"`;
 
 const STATUS_PROMPT = `Generate ONE ultra-short status (Max 4 words). No emojis. No punctuation.`;
 
+// ═══════════════════════════════════════════════
+// AGENT LOOP PROMPTS (used only for mode === "code")
+// ═══════════════════════════════════════════════
+
+const AGENT_PLANNER_PROMPT = `You are a senior software architect. Analyze the user's request and return a JSON plan.
+🌍 LANGUAGE RULE: If USER_LANGUAGE is set, write all human-readable text in that language.
+
+Return ONLY valid JSON (no markdown fences, no extra text):
+{
+  "goal": "one-sentence summary of what to build",
+  "subtasks": ["step 1", "step 2", ...],
+  "files_needed": ["src/App.tsx", "src/components/Hero.tsx", ...],
+  "complexity": "low" | "medium" | "high",
+  "requires_fix_pass": true | false
+}
+
+Rules:
+- Be specific about which files to create/modify
+- List subtasks in execution order
+- Set requires_fix_pass=true for complex multi-file projects
+- complexity=high when 6+ files or complex state management`;
+
+const AGENT_VALIDATOR_PROMPT = `You are a strict code reviewer. Review the generated code for bugs and issues.
+🌍 LANGUAGE RULE: If USER_LANGUAGE is set, write issue descriptions in that language.
+
+Return ONLY valid JSON (no markdown fences, no extra text):
+{
+  "confidence": 0-100,
+  "issues": [
+    { "file": "path/to/file", "line_hint": "near what code", "severity": "critical"|"warning", "description": "what's wrong" }
+  ],
+  "needs_fix": true | false,
+  "fix_instructions": "specific instructions for fixing the issues"
+}
+
+Check for these CRITICAL issues:
+1. Missing imports (any identifier used but not imported/declared)
+2. Broken exports (import { X } but file exports default, or vice versa)
+3. Missing context providers (useXxx() used but Provider not in component tree)
+4. Unterminated strings or template literals
+5. Undefined variables or functions
+6. Wrong package imports (e.g., clsx from "tailwind-merge")
+7. Missing files referenced by imports
+8. Mismatched export/import names (case-sensitive)
+
+confidence < 85 means needs_fix MUST be true.
+If no issues found, return confidence: 95, needs_fix: false, issues: [].`;
+
+const AGENT_FIXER_PROMPT = `You are a code fixer. You receive generated code and a list of issues. Fix ONLY the broken parts.
+🌍 LANGUAGE RULE: If USER_LANGUAGE is set, write all UI text in that language.
+
+Rules:
+- Return ONLY the changed <FILE path="...">...</FILE> blocks
+- Do NOT return files that don't need changes
+- Keep all existing logic intact — only fix the specific issues
+- After fixing, add <ACTIONS> and <SUMMARY> tags as usual
+- NEVER introduce new bugs while fixing old ones`;
+
 const CODE_GENERATION_PROMPT = `You are VIVORA X, an elite Full-Stack Engineer creating AWARD-WINNING, PORTFOLIO-GRADE web apps AND games.
 
 ═══════════════════════════════════════════════
@@ -651,6 +709,218 @@ function appendTextToMessageContent(
   return content;
 }
 
+// ═══════════════════════════════════════════════
+// AGENT LOOP — multi-step plan → generate → validate → fix
+// ═══════════════════════════════════════════════
+
+interface AgentCallOptions {
+  model: string;
+  gatewayUrl: string;
+  authToken: string;
+}
+
+async function agentCall(
+  opts: AgentCallOptions,
+  systemPrompt: string,
+  messages: any[],
+  maxTokens = 4000,
+  temperature = 0.2,
+): Promise<string> {
+  const res = await fetch(opts.gatewayUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${opts.authToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: opts.model,
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      stream: false,
+      max_tokens: maxTokens,
+      temperature,
+    }),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Agent sub-call failed (${res.status}): ${t}`);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content ?? "";
+}
+
+function sseEvent(data: Record<string, unknown>): string {
+  return `data: ${JSON.stringify(data)}\n\n`;
+}
+
+async function runAgentLoop(
+  opts: AgentCallOptions,
+  systemPrompt: string,
+  finalMessages: any[],
+  userLanguage: string,
+): Promise<ReadableStream> {
+  const encoder = new TextEncoder();
+  const MAX_FIX_ITERATIONS = 2;
+
+  return new ReadableStream({
+    async start(controller) {
+      try {
+        // ── STEP 1: PLAN ──
+        controller.enqueue(encoder.encode(sseEvent({
+          step: "planning", message: userLanguage === "ar" ? "جاري التخطيط وتحليل المطلوب..." : "Planning and analyzing the request..."
+        })));
+
+        let plan: any = {};
+        try {
+          const planRaw = await agentCall(opts, AGENT_PLANNER_PROMPT, finalMessages, 4000, 0.3);
+          const jsonMatch = planRaw.match(/\{[\s\S]*\}/);
+          plan = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+        } catch (e) {
+          console.warn("[agent] Planner failed, continuing without plan:", e);
+          plan = { goal: "generate code", subtasks: [], files_needed: [], complexity: "medium", requires_fix_pass: true };
+        }
+
+        console.log("[agent] Plan:", JSON.stringify(plan));
+
+        // ── STEP 2: GENERATE ──
+        controller.enqueue(encoder.encode(sseEvent({
+          step: "generating", message: userLanguage === "ar" ? "جاري توليد الكود..." : "Generating code..."
+        })));
+
+        const planInjection = `\n\n[AGENT PLAN — follow this structure]\nGoal: ${plan.goal || "fulfill request"}\nSubtasks: ${(plan.subtasks || []).join(", ")}\nFiles needed: ${(plan.files_needed || []).join(", ")}\nComplexity: ${plan.complexity || "medium"}\n`;
+
+        // Inject plan into last user message
+        const genMessages = [...finalMessages];
+        const lastUserIdx = genMessages.findLastIndex((m: any) => m.role === "user");
+        if (lastUserIdx >= 0) {
+          genMessages[lastUserIdx] = {
+            ...genMessages[lastUserIdx],
+            content: appendTextToMessageContent(genMessages[lastUserIdx].content, planInjection),
+          };
+        }
+
+        let generatedCode = await agentCall(opts, systemPrompt, genMessages, 65000, 0.1);
+
+        // ── STEP 3-5: VALIDATE → FIX loop ──
+        let confidence = 0;
+        for (let iteration = 0; iteration < MAX_FIX_ITERATIONS; iteration++) {
+          controller.enqueue(encoder.encode(sseEvent({
+            step: "validating",
+            message: userLanguage === "ar"
+              ? `جاري مراجعة الكود (محاولة ${iteration + 1})...`
+              : `Validating code (pass ${iteration + 1})...`,
+          })));
+
+          let validation: any = { confidence: 95, needs_fix: false, issues: [] };
+          try {
+            const valRaw = await agentCall(
+              opts,
+              AGENT_VALIDATOR_PROMPT,
+              [{ role: "user", content: `Review this generated code:\n\n${generatedCode}` }],
+              4000,
+              0.1,
+            );
+            const jsonMatch = valRaw.match(/\{[\s\S]*\}/);
+            validation = jsonMatch ? JSON.parse(jsonMatch[0]) : validation;
+          } catch (e) {
+            console.warn("[agent] Validator failed, assuming OK:", e);
+          }
+
+          confidence = validation.confidence ?? 95;
+          console.log(`[agent] Validation pass ${iteration + 1}: confidence=${confidence}, issues=${(validation.issues || []).length}`);
+
+          controller.enqueue(encoder.encode(sseEvent({
+            step: "validating",
+            message: userLanguage === "ar"
+              ? `الثقة: ${confidence}%`
+              : `Confidence: ${confidence}%`,
+            confidence,
+          })));
+
+          if (confidence >= 85 && !validation.needs_fix) {
+            console.log("[agent] Code passed validation, skipping fix.");
+            break;
+          }
+
+          // ── FIX ──
+          const issuesCount = (validation.issues || []).length;
+          controller.enqueue(encoder.encode(sseEvent({
+            step: "fixing",
+            message: userLanguage === "ar"
+              ? `جاري إصلاح ${issuesCount} مشكلة...`
+              : `Fixing ${issuesCount} issue(s)...`,
+            issues_count: issuesCount,
+          })));
+
+          try {
+            const fixResult = await agentCall(
+              opts,
+              AGENT_FIXER_PROMPT,
+              [
+                { role: "user", content: `Original code:\n${generatedCode}\n\nIssues found:\n${JSON.stringify(validation.issues)}\n\nFix instructions: ${validation.fix_instructions || "Fix all issues listed above."}` },
+              ],
+              65000,
+              0.1,
+            );
+
+            // Merge fixed files back into generated code
+            const fixedFileRegex = /<FILE\s+path="([^"]+)">([\s\S]*?)<\/FILE>/gi;
+            let match;
+            let mergedCode = generatedCode;
+            while ((match = fixedFileRegex.exec(fixResult)) !== null) {
+              const [fullBlock, filePath, fileContent] = match;
+              const existingPattern = new RegExp(
+                `<FILE\\s+path="${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}">[\\s\\S]*?</FILE>`,
+                'gi'
+              );
+              if (existingPattern.test(mergedCode)) {
+                mergedCode = mergedCode.replace(existingPattern, fullBlock);
+              } else {
+                // New file from fixer — append before ACTIONS/SUMMARY
+                const insertPoint = mergedCode.search(/<ACTIONS>/i);
+                if (insertPoint > -1) {
+                  mergedCode = mergedCode.slice(0, insertPoint) + fullBlock + "\n" + mergedCode.slice(insertPoint);
+                } else {
+                  mergedCode += "\n" + fullBlock;
+                }
+              }
+            }
+            generatedCode = mergedCode;
+          } catch (e) {
+            console.warn("[agent] Fixer failed, using last version:", e);
+            break;
+          }
+        }
+
+        // ── STEP 6: STREAM final code via SSE ──
+        controller.enqueue(encoder.encode(sseEvent({
+          step: "streaming", message: userLanguage === "ar" ? "جاري إرسال الكود النهائي..." : "Streaming final code..."
+        })));
+
+        // Stream the generated code in SSE chunks matching the existing format
+        const CHUNK_SIZE = 200;
+        for (let i = 0; i < generatedCode.length; i += CHUNK_SIZE) {
+          const chunk = generatedCode.slice(i, i + CHUNK_SIZE);
+          const sseChunk = {
+            choices: [{ delta: { content: chunk } }],
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(sseChunk)}\n\n`));
+        }
+
+        // Send done markers
+        controller.enqueue(encoder.encode(sseEvent({ step: "done" })));
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      } catch (err) {
+        console.error("[agent] Agent loop error:", err);
+        const errorMsg = err instanceof Error ? err.message : "Agent loop failed";
+        controller.enqueue(encoder.encode(sseEvent({ step: "error", message: errorMsg })));
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      }
+    },
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -842,6 +1112,20 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
 
     const authToken = Deno.env.get(apiKeySecretName) || Deno.env.get("VERCEL_AI_API_KEY") || LOVABLE_API_KEY;
 
+    // ═══════════════════════════════════════════════
+    // AGENT LOOP for code mode — multi-step generation
+    // ═══════════════════════════════════════════════
+    if (mode === "code") {
+      const agentOpts: AgentCallOptions = { model, gatewayUrl, authToken };
+      const agentStream = await runAgentLoop(agentOpts, systemPrompt, finalMessages, userLanguage || "en");
+      return new Response(agentStream, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
+
+    // ═══════════════════════════════════════════════
+    // ALL OTHER MODES — original behavior unchanged
+    // ═══════════════════════════════════════════════
     const response = await fetch(gatewayUrl, {
       method: "POST",
       headers: {
@@ -854,7 +1138,7 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
         stream: shouldStream,
         ...(shouldStream ? { stream_options: { include_usage: true } } : {}),
         max_tokens: maxTokens,
-        temperature: mode === "code" ? 0.1 : mode === "credit" ? 0 : 0.4,
+        temperature: mode === "credit" ? 0 : 0.4,
       }),
     });
 
