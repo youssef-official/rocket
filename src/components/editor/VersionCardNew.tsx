@@ -59,7 +59,7 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
   agentIssuesCount,
 }) => {
   const { t, language } = useLanguage();
-  const isAr = language === 'ar';
+  const isAr = (language as string) === 'ar';
 
   const currentActivity = isLive
     ? [...activities].reverse().find(a => a.status === 'editing') || activities[activities.length - 1]
