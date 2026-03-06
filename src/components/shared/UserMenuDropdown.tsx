@@ -322,10 +322,27 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                 Billing
               </button>
 
-              {/* Settings */}
+              {/* Account Settings (modal) */}
+              {onSettingsClick && (
+                <button
+                  type="button"
+                  onClick={handleSettings}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
+                >
+                  <Settings2 className="w-4 h-4" />
+                  Account Settings
+                </button>
+              )}
+
+              {/* Settings Page */}
               <button
                 type="button"
-                onClick={handleSettings}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowMenu(false);
+                  navigate('/settings');
+                }}
                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
               >
                 <Settings2 className="w-4 h-4" />
