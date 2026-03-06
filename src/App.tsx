@@ -488,6 +488,16 @@ const ProjectEditorRoute = () => {
                 if (isCancelled.current) return;
                 setStatusMessage(status);
               },
+              onAgentStep: (event) => {
+                if (isCancelled.current) return;
+                setGenerationPhase(prev => prev ? {
+                  ...prev,
+                  agentStep: event.step,
+                  agentConfidence: event.confidence ?? prev.agentConfidence,
+                  agentIssuesCount: event.issues_count ?? prev.agentIssuesCount,
+                  message: event.message || prev.message,
+                } : null);
+              },
             },
             undefined,
             language
@@ -950,6 +960,16 @@ const ProjectEditorRoute = () => {
           onStatusUpdate: (status) => {
             if (isCancelled.current) return;
             setStatusMessage(status);
+          },
+          onAgentStep: (event) => {
+            if (isCancelled.current) return;
+            setGenerationPhase(prev => prev ? {
+              ...prev,
+              agentStep: event.step,
+              agentConfidence: event.confidence ?? prev.agentConfidence,
+              agentIssuesCount: event.issues_count ?? prev.agentIssuesCount,
+              message: event.message || prev.message,
+            } : null);
           },
         },
         existingFilesList.join(', '),
