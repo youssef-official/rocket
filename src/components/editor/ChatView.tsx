@@ -982,6 +982,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
                                   isLatestVersion={true}
                                   isLive={true}
                                   liveStatus={generationPhase?.status || statusMessage}
+                                  agentStep={generationPhase?.agentStep}
+                                  agentConfidence={generationPhase?.agentConfidence}
+                                  agentIssuesCount={generationPhase?.agentIssuesCount}
                                 />
                               </div>
                             )}
@@ -1064,6 +1067,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         isLatestVersion={true}
                         isLive={true}
                         liveStatus={generationPhase?.status || statusMessage}
+                        agentStep={generationPhase?.agentStep}
+                        agentConfidence={generationPhase?.agentConfidence}
+                        agentIssuesCount={generationPhase?.agentIssuesCount}
                       />
                     )}
                   </div>
