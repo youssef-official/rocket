@@ -748,6 +748,77 @@ async function agentCall(
   return data.choices?.[0]?.message?.content ?? "";
 }
 
+// Streaming variant — forwards SSE chunks to the client controller in real-time
+async function agentCallStreaming(
+  opts: AgentCallOptions,
+  systemPrompt: string,
+  messages: any[],
+  controller: ReadableStreamDefaultController<Uint8Array>,
+  encoder: TextEncoder,
+  maxTokens = 65000,
+  temperature = 0.1,
+): Promise<string> {
+  const res = await fetch(opts.gatewayUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${opts.authToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: opts.model,
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      stream: true,
+      max_tokens: maxTokens,
+      temperature,
+    }),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Agent streaming call failed (${res.status}): ${t}`);
+  }
+
+  if (!res.body) throw new Error("No response body from streaming call");
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let fullText = "";
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+
+    let newlineIdx: number;
+    while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
+      let line = buffer.slice(0, newlineIdx);
+      buffer = buffer.slice(newlineIdx + 1);
+
+      if (line.endsWith("\r")) line = line.slice(0, -1);
+      if (!line.startsWith("data: ")) continue;
+
+      const payload = line.slice(6).trim();
+      if (payload === "[DONE]") continue;
+
+      try {
+        const parsed = JSON.parse(payload);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) {
+          fullText += content;
+          // Forward chunk to client in real-time
+          const sseChunk = { choices: [{ delta: { content } }] };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(sseChunk)}\n\n`));
+        }
+      } catch {
+        // partial JSON, skip
+      }
+    }
+  }
+
+  return fullText;
+}
+
 function sseEvent(data: Record<string, unknown>): string {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
@@ -781,7 +852,7 @@ async function runAgentLoop(
 
         console.log("[agent] Plan:", JSON.stringify(plan));
 
-        // ── STEP 2: GENERATE ──
+        // ── STEP 2: GENERATE (live streaming to client) ──
         controller.enqueue(encoder.encode(sseEvent({
           step: "generating", message: userLanguage === "ar" ? "جاري توليد الكود..." : "Generating code..."
         })));
@@ -798,7 +869,9 @@ async function runAgentLoop(
           };
         }
 
-        let generatedCode = await agentCall(opts, systemPrompt, genMessages, 65000, 0.1);
+        // Stream code generation live — chunks forwarded to client in real-time
+        let generatedCode = await agentCallStreaming(opts, systemPrompt, genMessages, controller, encoder, 65000, 0.1);
+        const originalGeneratedCode = generatedCode;
 
         // ── STEP 3-5: VALIDATE → FIX loop ──
         let confidence = 0;
@@ -891,19 +964,19 @@ async function runAgentLoop(
           }
         }
 
-        // ── STEP 6: STREAM final code via SSE ──
-        controller.enqueue(encoder.encode(sseEvent({
-          step: "streaming", message: userLanguage === "ar" ? "جاري إرسال الكود النهائي..." : "Streaming final code..."
-        })));
-
-        // Stream the generated code in SSE chunks matching the existing format
-        const CHUNK_SIZE = 200;
-        for (let i = 0; i < generatedCode.length; i += CHUNK_SIZE) {
-          const chunk = generatedCode.slice(i, i + CHUNK_SIZE);
-          const sseChunk = {
-            choices: [{ delta: { content: chunk } }],
-          };
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(sseChunk)}\n\n`));
+        // ── STEP 6: FINALIZE ──
+        // Code was already streamed live during generation (step 2).
+        // If fixes were applied, stream only the patched delta.
+        if (generatedCode !== originalGeneratedCode) {
+          controller.enqueue(encoder.encode(sseEvent({
+            step: "streaming", message: userLanguage === "ar" ? "جاري إرسال الإصلاحات..." : "Streaming fixes..."
+          })));
+          // Re-stream the entire fixed code so the client gets the corrected version
+          const CHUNK_SIZE = 200;
+          for (let i = 0; i < generatedCode.length; i += CHUNK_SIZE) {
+            const chunk = generatedCode.slice(i, i + CHUNK_SIZE);
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`));
+          }
         }
 
         // Send done markers
