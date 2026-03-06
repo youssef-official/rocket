@@ -43,6 +43,13 @@ const WALLPAPERS = [
   { id: 'city-night', label: 'City Night', src: '/wallpapers/city-night.jpg' },
   { id: 'desert', label: 'Desert', src: '/wallpapers/desert.jpg' },
   { id: 'tropical', label: 'Tropical', src: '/wallpapers/tropical.jpg' },
+  { id: 'gradient-purple', label: 'Purple Flow', src: '/wallpapers/gradient-purple.jpg' },
+  { id: 'zen-garden', label: 'Zen Garden', src: '/wallpapers/zen-garden.jpg' },
+  { id: 'cyberpunk', label: 'Cyberpunk', src: '/wallpapers/cyberpunk.jpg' },
+  { id: 'northern-lights', label: 'Northern Lights', src: '/wallpapers/northern-lights.jpg' },
+  { id: 'cozy-cafe', label: 'Cozy Café', src: '/wallpapers/cozy-cafe.jpg' },
+  { id: 'black-gold', label: 'Black & Gold', src: '/wallpapers/black-gold.jpg' },
+  { id: 'starry-night', label: 'Starry Night', src: '/wallpapers/starry-night.jpg' },
 ];
 
 const Settings: React.FC = () => {
