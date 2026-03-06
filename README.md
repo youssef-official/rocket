@@ -27,8 +27,8 @@
 │  └──────────┘ └──────────┘ └──────────┘            │
 │  ┌──────────────────────────────────────┐           │
 │  │         Edge Functions (Deno)        │           │
-│  │  generate-code · modal-proxy         │           │
-│  │  github-push · vercel-deploy         │           │
+│  │  generate-code (Agent Loop)          │           │
+│  │  modal-proxy · github-push           │           │
 │  │  visual-edits · admin-data           │           │
 │  │  paypal-* · upload-image             │           │
 │  │  track-analytics · scrape-website    │           │
@@ -48,6 +48,8 @@
 
 | Feature | Description |
 |---------|-------------|
+| **AI Agent Loop** | Multi-step code generation: Plan → Generate → Validate → Fix → Stream. Auto-validates with confidence scoring and self-healing (up to 2 fix iterations) |
+| **Live Agent Progress** | Real-time visual tracking of agent steps (planning, generating, validating, fixing) with confidence scores and issue counts in the version card |
 | **AI Code Generation** | Stream code from AI models (Gemini, OpenRouter) with real-time file detection and `stream_options: { include_usage: true }` for real token tracking |
 | **Awwwards-Level Design** | Generated projects follow premium design standards with serif fonts, parallax, and motion |
 | **Clone Design** | Enter any website URL — Vivora X scrapes & recreates it as a React project (all plans) |
@@ -62,7 +64,7 @@
 | **Promo Codes** | Public discount codes displayed on pricing plan cards |
 | **PayPal Billing** | Upgrade plans (Free → Pro → Business) |
 | **Email Notifications** | Welcome, plan upgrade, and renewal reminder emails via Resend |
-| **Wallpaper Customization** | 9+ premium wallpapers for workspace personalization |
+| **Wallpaper Customization** | 18+ premium wallpapers (Aurora, Space, Cyberpunk, Zen Garden, Northern Lights, Black & Gold, and more) |
 | **Music Player** | Floating draggable music player with playlist, favorites, and persistent playback |
 | **Code Editor** | Monaco-based editor with Save/Undo/Redo (paid plans only, free = read-only) |
 | **Admin Panel** | User management, AI model config, blog CMS, promo codes, notifications, feedback viewer, onboarding stats |
@@ -88,6 +90,41 @@
 
 ---
 
+## 🤖 AI Agent Loop
+
+The `generate-code` edge function uses a multi-step agent architecture for the `mode === "code"` path:
+
+```
+┌──────────┐    ┌───────────┐    ┌───────────┐    ┌─────────┐    ┌────────┐
+│  PLAN    │ →  │ GENERATE  │ →  │ VALIDATE  │ →  │  FIX    │ →  │ STREAM │
+│ (JSON)   │    │ (Stream)  │    │ (Score)   │    │ (Patch) │    │ (SSE)  │
+└──────────┘    └───────────┘    └───────────┘    └─────────┘    └────────┘
+                                       ↑               │
+                                       └───────────────┘
+                                      (max 2 iterations)
+```
+
+### Agent Steps
+
+1. **PLAN** — Analyzes the request, returns JSON with `goal`, `subtasks[]`, `files_needed[]`, `complexity`
+2. **GENERATE** — Streams full code with the plan injected into system context
+3. **VALIDATE** — Reviews generated code for missing imports, broken exports, undefined variables; returns `confidence: 0-100`
+4. **FIX** — If `confidence < 85`, patches only broken `<FILE>` blocks (up to 2 iterations)
+5. **STREAM** — Final validated code streamed to frontend via SSE
+
+### SSE Progress Events
+
+```json
+{ "step": "planning", "message": "Analyzing request..." }
+{ "step": "generating", "message": "Writing code..." }
+{ "step": "validating", "message": "Reviewing...", "confidence": 92 }
+{ "step": "fixing", "message": "Patching issues...", "issues_count": 2 }
+{ "step": "stream", "content": "...chunk..." }
+{ "step": "done" }
+```
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -108,7 +145,7 @@
 │   │   └── LanguageContext.tsx     # i18n translations (8 languages + RTL)
 │   ├── hooks/                     # Custom React hooks
 │   ├── services/
-│   │   ├── aiService.ts           # AI streaming + response parsing + real token extraction
+│   │   ├── aiService.ts           # AI streaming + response parsing + agent step events
 │   │   ├── directAiService.ts     # Direct AI API calls + file-count credit algorithm
 │   │   ├── creditService.ts       # Credit management
 │   │   ├── paypalService.ts       # PayPal integration
@@ -125,7 +162,7 @@
 │   │   └── full.sql               # Complete schema (single source of truth)
 │   └── functions/
 │       ├── admin-data/            # Admin dashboard data endpoint
-│       ├── generate-code/         # Main AI code generation (SSE streaming)
+│       ├── generate-code/         # AI Agent Loop (Plan → Generate → Validate → Fix → Stream)
 │       ├── github-push/           # GitHub OAuth + repo push
 │       ├── modal-proxy/           # Modal sandbox provisioning
 │       ├── paypal-capture-order/  # PayPal order capture + plan upgrade
@@ -138,9 +175,9 @@
 │       └── visual-edits/          # AI-powered visual code edits
 │
 ├── public/
-│     ├── analyzer.js                # Visitor analytics tracking script (injected into generated projects)
+│     ├── analyzer.js                # Visitor analytics tracking script
 │     ├── branding.js                # "Built with Vivora X" badge
-│     ├── wallpapers/                # 9+ premium wallpaper images
+│     ├── wallpapers/                # 18+ premium wallpaper images
 │     └── sounds/                    # UI sound effects
 ```
 
@@ -210,7 +247,7 @@
 
 | Function | Method | Auth | Description |
 |----------|--------|------|-------------|
-| `generate-code` | POST | JWT | AI code generation with SSE streaming + real token usage |
+| `generate-code` | POST | JWT | AI Agent Loop: Plan → Generate → Validate → Fix → Stream (SSE) |
 | `modal-proxy` | POST | Anon | Provisions Modal sandbox containers |
 | `visual-edits` | POST | JWT | AI-powered visual code modifications |
 | `github-push` | POST | JWT | GitHub OAuth flow + file push |
@@ -300,7 +337,7 @@ Credits reset daily at UTC midnight. First project generation costs 2 credits; e
 | Styling | Tailwind CSS, shadcn/ui, Framer Motion |
 | State | React Query, React Context |
 | Backend | Supabase (Postgres, Auth, Edge Functions, Storage) |
-| AI | Gemini (via AI Gateway), OpenRouter |
+| AI | Gemini (via AI Gateway), OpenRouter — Agent Loop Architecture |
 | Code Editor | Monaco Editor |
 | Sandbox | Modal (containerized preview) |
 | Image Storage | Cloudflare R2 + CDN |
