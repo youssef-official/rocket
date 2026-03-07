@@ -64,8 +64,8 @@
 | **Promo Codes** | Public discount codes displayed on pricing plan cards |
 | **PayPal Billing** | Upgrade plans (Free → Pro → Business) |
 | **Email Notifications** | Welcome, plan upgrade, and renewal reminder emails via Resend |
-| **Wallpaper Customization** | 18+ premium wallpapers (Aurora, Space, Cyberpunk, Zen Garden, Northern Lights, Black & Gold, and more) |
-| **Music Player** | Floating draggable music player with playlist, favorites, and persistent playback |
+| **Wallpaper Customization** | 25+ premium wallpapers (Aurora, Sakura, Volcanic, Neon Tokyo, Deep Ocean, Lavender, Rose Gold, Alpine Dawn, and more) |
+| **Music Player** | Professional floating music player with cloud-synced playlists, interactive timeline seek bar, touch-draggable positioning, and vinyl animation |
 | **Code Editor** | Monaco-based editor with Save/Undo/Redo (paid plans only, free = read-only) |
 | **Admin Panel** | User management, AI model config, blog CMS, promo codes, notifications, feedback viewer, onboarding stats |
 | **Blog System** | Category-based blog with markdown content |
