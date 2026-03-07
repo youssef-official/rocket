@@ -77,14 +77,17 @@ function useCloudPlaylist() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setSyncing(true);
-      await supabase.from('user_playlists').upsert({
-        user_id: user.id,
-        tracks: t as unknown as Record<string, unknown>[],
-        current_index: idx,
-        volume: vol,
-        repeat_mode: rep,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' });
+      await supabase.from('user_playlists').upsert(
+        {
+          user_id: user.id,
+          tracks: JSON.parse(JSON.stringify(t)),
+          current_index: idx,
+          volume: vol,
+          repeat_mode: rep,
+          updated_at: new Date().toISOString(),
+        } as any,
+        { onConflict: 'user_id' }
+      );
       setSynced(true);
       setSyncing(false);
     }, 1500);
