@@ -37,6 +37,13 @@ const WALLPAPERS = [
   { id: 'cozy-cafe', label: 'Cozy Café', src: '/wallpapers/cozy-cafe.jpg' },
   { id: 'black-gold', label: 'Black & Gold', src: '/wallpapers/black-gold.jpg' },
   { id: 'starry-night', label: 'Starry Night', src: '/wallpapers/starry-night.jpg' },
+  { id: 'volcanic', label: 'Volcanic', src: '/wallpapers/volcanic.jpg' },
+  { id: 'sakura', label: 'Sakura', src: '/wallpapers/sakura.jpg' },
+  { id: 'deep-ocean', label: 'Deep Ocean', src: '/wallpapers/deep-ocean.jpg' },
+  { id: 'neon-tokyo', label: 'Neon Tokyo', src: '/wallpapers/neon-tokyo.jpg' },
+  { id: 'lavender', label: 'Lavender', src: '/wallpapers/lavender.jpg' },
+  { id: 'rose-gold', label: 'Rose Gold', src: '/wallpapers/rose-gold.jpg' },
+  { id: 'alpine-dawn', label: 'Alpine Dawn', src: '/wallpapers/alpine-dawn.jpg' },
 ];
 
 // Export for use in HomePage
