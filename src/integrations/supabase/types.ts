@@ -836,6 +836,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_playlists: {
+        Row: {
+          created_at: string
+          current_index: number
+          id: string
+          repeat_mode: boolean
+          title: string
+          tracks: Json
+          updated_at: string
+          user_id: string
+          volume: number
+        }
+        Insert: {
+          created_at?: string
+          current_index?: number
+          id?: string
+          repeat_mode?: boolean
+          title?: string
+          tracks?: Json
+          updated_at?: string
+          user_id: string
+          volume?: number
+        }
+        Update: {
+          created_at?: string
+          current_index?: number
+          id?: string
+          repeat_mode?: boolean
+          title?: string
+          tracks?: Json
+          updated_at?: string
+          user_id?: string
+          volume?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
