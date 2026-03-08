@@ -41,7 +41,8 @@ export async function callingDirectAI(
     messages: any[],
     signal?: AbortSignal,
     userPlan?: string,
-    userLanguage?: string
+    userLanguage?: string,
+    colorTheme?: { name: string; colors: string[] } | null
 ): Promise<Response> {
     const supabaseUrl = getSupabaseUrl();
     const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -50,10 +51,6 @@ export async function callingDirectAI(
         throw new Error("Missing Supabase URL. Please check your .env file.");
     }
 
-    // Adaptive timeout based on mode:
-    // - code generation: 5 minutes (thinking models can take a while)
-    // - project-name, version-name, suggestions: 2 minutes
-    // - chat, explanation: 3 minutes
     const timeoutMs: Record<string, number> = {
         'code': 300_000,
         'chat': 180_000,
@@ -65,16 +62,13 @@ export async function callingDirectAI(
     };
     const timeout = timeoutMs[mode] || 180_000;
 
-    // Create a combined abort controller for user signal + timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    // If caller provided a signal, chain it
     if (signal) {
         signal.addEventListener('abort', () => controller.abort());
     }
 
-    // Construct payload with support for images if provided
     const formattedMessages = messages.map(msg => {
         if (msg.role === 'user' && msg.imageUrls && Array.isArray(msg.imageUrls)) {
             return {
@@ -92,18 +86,23 @@ export async function callingDirectAI(
     });
 
     try {
+        const body: any = { 
+            mode, 
+            messages: formattedMessages,
+            userPlan: userPlan || 'free',
+            userLanguage: userLanguage || 'en'
+        };
+        if (colorTheme) {
+            body.colorTheme = colorTheme;
+        }
+
         const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${anonKey}`
             },
-            body: JSON.stringify({ 
-                mode, 
-                messages: formattedMessages,
-                userPlan: userPlan || 'free',
-                userLanguage: userLanguage || 'en'
-            }),
+            body: JSON.stringify(body),
             signal: controller.signal
         });
         clearTimeout(timeoutId);

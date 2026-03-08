@@ -500,7 +500,13 @@ const ProjectEditorRoute = () => {
               },
             },
             undefined,
-            language
+            language,
+            (() => {
+              try {
+                const t = sessionStorage.getItem(`project_color_theme_${localProject.id}`);
+                return t ? JSON.parse(t) : null;
+              } catch { return null; }
+            })()
           );
         } catch (error) {
           if (isCancelled.current) return;
@@ -973,7 +979,13 @@ const ProjectEditorRoute = () => {
           },
         },
         existingFilesList.join(', '),
-        language
+        language,
+        (() => {
+          try {
+            const t = sessionStorage.getItem(`project_color_theme_${localProject.id}`);
+            return t ? JSON.parse(t) : null;
+          } catch { return null; }
+        })()
       );
     } catch (error) {
       if (isCancelled.current) return;
@@ -1170,6 +1182,13 @@ const AppContent = () => {
       if (normalizedImageUrls.length > 0) {
         sessionStorage.setItem(`project_image_${newProject.id}`, normalizedImageUrls.join(','));
       }
+    }
+
+    // Transfer pending color theme to project-specific key
+    const pendingTheme = sessionStorage.getItem('vivora_pending_color_theme');
+    if (pendingTheme) {
+      sessionStorage.setItem(`project_color_theme_${newProject.id}`, pendingTheme);
+      sessionStorage.removeItem('vivora_pending_color_theme');
     }
 
     // Navigate to project page
