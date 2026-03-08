@@ -1258,58 +1258,67 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
     }
 
     // ═══════════════════════════════════════════════
-    // ALL OTHER MODES — original behavior unchanged
+    // ALL OTHER MODES — with failover on 402/403
     // ═══════════════════════════════════════════════
-    const response = await fetch(gatewayUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "system", content: systemPrompt }, ...finalMessages],
-        stream: shouldStream,
-        ...(shouldStream ? { stream_options: { include_usage: true } } : {}),
-        max_tokens: maxTokens,
-        temperature: mode === "credit" ? 0 : 0.4,
-      }),
-    });
+    const primaryOpts: AgentCallOptions = { model, gatewayUrl, authToken };
+    const fallbackProviders = buildFallbackChain(primaryOpts);
 
-    if (!response.ok) {
+    for (const provider of fallbackProviders) {
+      const response = await fetch(provider.gatewayUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${provider.authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          messages: [{ role: "system", content: systemPrompt }, ...finalMessages],
+          stream: shouldStream,
+          ...(shouldStream ? { stream_options: { include_usage: true } } : {}),
+          max_tokens: maxTokens,
+          temperature: mode === "credit" ? 0 : 0.4,
+        }),
+      });
+
+      if (response.status === 402 || response.status === 403) {
+        console.warn(`[failover-other] ${provider.name} returned ${response.status}, trying next...`);
+        continue;
+      }
+
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
-          status: 429,
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (!response.ok) {
+        const t = await response.text();
+        console.error("AI gateway error:", response.status, t);
+        return new Response(JSON.stringify({ error: "AI gateway error" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (provider.name !== "primary") console.log(`[failover-other] Used ${provider.name} for mode=${mode}`);
+
+      // For credit mode, return JSON directly
+      if (!shouldStream) {
+        const data = await response.json();
+        const content =
+          data.choices?.[0]?.message?.content ??
+          '{"credits":1,"reason":"default","estimated_files":5,"complexity":"medium"}';
+        return new Response(content, {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required, please add funds." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
 
-    // For credit mode, return JSON directly
-    if (!shouldStream) {
-      const data = await response.json();
-      const content =
-        data.choices?.[0]?.message?.content ??
-        '{"credits":1,"reason":"default","estimated_files":5,"complexity":"medium"}';
-      return new Response(content, {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    return new Response(JSON.stringify({ error: "All AI providers unavailable (402/403). Please check API credits." }), {
+      status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("generate-code error:", e);
