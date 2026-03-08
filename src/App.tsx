@@ -1289,45 +1289,57 @@ import Billing from "@/pages/Billing";
 import SupabaseCallbackPage from "@/pages/SupabaseCallback";
 import GetStarted from "@/pages/GetStarted";
 
+const LayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { layout } = useLayout();
+  if (layout === 'macos') {
+    return <MacLayout>{children}</MacLayout>;
+  }
+  return <>{children}</>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
       <AuthProvider>
-        <TooltipProvider>
-          <ThemeInitializer />
-          <FloatingMusicPlayer />
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<AuthPage onSuccess={() => {
-                const onboardingDone = localStorage.getItem('onboarding_completed');
-                window.location.href = onboardingDone ? '/' : '/get-started';
-              }} />} />
-              <Route path="/dashboard" element={<DashboardRoute />} />
-              <Route path="/projects/:id" element={<ProjectEditorRoute />} />
-              <Route path="/projects/:id/settings" element={<ProjectSettings />} />
-              <Route path="/view/:projectId" element={<ProjectView />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/docs" element={<Docs />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/billing" element={<Billing />} />
-              <Route path="/admin" element={<AdminPanel />} />
-              <Route path="/new-vibe-tool" element={<NewVibeTool />} />
-              <Route path="/ai-for-all" element={<AiForAll />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:slug" element={<BlogPost />} />
-              <Route path="/supabase-connect" element={<SupabaseConnect />} />
-              <Route path="/supabase-callback" element={<SupabaseCallbackPage />} />
-              <Route path="/about" element={<AboutUs />} />
-              <Route path="/get-started" element={<GetStarted />} />
-              <Route path="/" element={<AppContent />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <LayoutProvider>
+          <TooltipProvider>
+            <ThemeInitializer />
+            <FloatingMusicPlayer />
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <LayoutWrapper>
+                <Routes>
+                  <Route path="/login" element={<AuthPage onSuccess={() => {
+                    const onboardingDone = localStorage.getItem('onboarding_completed');
+                    window.location.href = onboardingDone ? '/' : '/get-started';
+                  }} />} />
+                  <Route path="/dashboard" element={<DashboardRoute />} />
+                  <Route path="/projects/:id" element={<ProjectEditorRoute />} />
+                  <Route path="/projects/:id/settings" element={<ProjectSettings />} />
+                  <Route path="/view/:projectId" element={<ProjectView />} />
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/docs" element={<Docs />} />
+                  <Route path="/faq" element={<FAQ />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/billing" element={<Billing />} />
+                  <Route path="/admin" element={<AdminPanel />} />
+                  <Route path="/new-vibe-tool" element={<NewVibeTool />} />
+                  <Route path="/ai-for-all" element={<AiForAll />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/blog/:slug" element={<BlogPost />} />
+                  <Route path="/supabase-connect" element={<SupabaseConnect />} />
+                  <Route path="/supabase-callback" element={<SupabaseCallbackPage />} />
+                  <Route path="/about" element={<AboutUs />} />
+                  <Route path="/get-started" element={<GetStarted />} />
+                  <Route path="/" element={<AppContent />} />
+                </Routes>
+              </LayoutWrapper>
+            </BrowserRouter>
+          </TooltipProvider>
+        </LayoutProvider>
       </AuthProvider>
     </LanguageProvider>
   </QueryClientProvider>
