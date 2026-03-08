@@ -1181,9 +1181,9 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-    let model = "google/gemini-3-flash";
-    let gatewayUrl = "https://ai-gateway.vercel.sh/v1/chat/completions";
-    let apiKeySecretName = "VERCEL_AI_API_KEY";
+    let model = "google/gemini-3-flash-preview";
+    let gatewayUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+    let apiKeySecretName = "LOVABLE_API_KEY";
 
     // SECURITY: Verify user's actual plan from database
     let verifiedPlan = 'free';
