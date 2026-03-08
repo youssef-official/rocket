@@ -1062,7 +1062,7 @@ export const AdminPanel: React.FC = () => {
                           {tab==='users'&&['','Email','Name','Joined'].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
                           {tab==='plans'&&['User','Plan','Daily','Used Today','Total','Expires'].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
                           {tab==='transactions'&&['User','Credits','Model','Type','Date'].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
-                          {tab==='projects'&&['Name','Type','Status','Created'].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
+                          {tab==='projects'&&['Name','Owner','Type','Status','Created',''].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
                         </tr>
                       </thead>
                       <tbody>
