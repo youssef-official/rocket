@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Settings2, LogOut, Moon, Sun, Monitor, Coins, Crown, Sparkles, ImageIcon, Music } from 'lucide-react';
+import { User as UserIcon, Settings2, LogOut, Moon, Sun, Monitor, Coins, Crown, Sparkles, ImageIcon, Music, LayoutGrid } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '@/types';
 import { useThemePreference } from '@/hooks/useThemePreference';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useLayout, type LayoutMode } from '@/contexts/LayoutContext';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
 import { LanguageSelector } from './LanguageSelector';
 import { Progress } from '@/components/ui/progress';
