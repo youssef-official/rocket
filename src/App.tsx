@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useParams, useNavigate, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
+import { LayoutProvider, useLayout } from "@/contexts/LayoutContext";
+import { MacLayout } from "@/components/macos/MacLayout";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { HomePage } from "@/components/home/HomePage";
 import { EditorLayout } from "@/components/editor/EditorLayout";
