@@ -979,7 +979,13 @@ const ProjectEditorRoute = () => {
           },
         },
         existingFilesList.join(', '),
-        language
+        language,
+        (() => {
+          try {
+            const t = sessionStorage.getItem(`project_color_theme_${localProject.id}`);
+            return t ? JSON.parse(t) : null;
+          } catch { return null; }
+        })()
       );
     } catch (error) {
       if (isCancelled.current) return;
