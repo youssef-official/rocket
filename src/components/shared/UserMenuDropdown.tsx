@@ -93,6 +93,45 @@ const WallpaperSelector: React.FC = () => {
   );
 };
 
+const LayoutSelector: React.FC = () => {
+  const { layout, setLayout } = useLayout();
+  const [open, setOpen] = useState(false);
+
+  const options: { id: LayoutMode; label: string }[] = [
+    { id: 'classic', label: 'Classic' },
+    { id: 'macos', label: 'macOS' },
+  ];
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(!open); }}
+        className="w-full flex items-center justify-between px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer"
+      >
+        <div className="flex items-center gap-2.5">
+          <LayoutGrid className="w-4 h-4" />
+          Layout
+        </div>
+        <span className="text-[11px] text-white/40 bg-white/[0.06] px-2 py-0.5 rounded-md capitalize">{layout}</span>
+      </button>
+      {open && (
+        <div className="mt-1 p-1.5 bg-white/[0.06] rounded-xl border border-white/[0.08] space-y-0.5">
+          {options.map(opt => (
+            <button
+              key={opt.id}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLayout(opt.id); setOpen(false); }}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${layout === opt.id ? 'bg-violet-500/20 text-violet-300' : 'text-white/60 hover:bg-white/[0.04]'}`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOut, onUpgradeClick, onSettingsClick }) => {
   const [showMenu, setShowMenu] = useState(false);
   const { theme, cycleTheme } = useThemePreference();
