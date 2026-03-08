@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { X, MessageSquare, Code, Eye, User, Calendar, ChevronDown, ChevronRight, FileCode, Loader2 } from 'lucide-react';
+import { PreviewView } from '@/components/editor/PreviewView';
 import type { ProjectFile } from '@/types';
 
 interface AdminProjectViewerProps {
