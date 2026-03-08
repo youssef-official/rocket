@@ -14,6 +14,7 @@ import {
   RefreshCw, Settings, LogOut,
 } from 'lucide-react';
 import { AdminBlogEditor } from '@/components/admin/AdminBlogEditor';
+import { AdminProjectViewer } from '@/components/admin/AdminProjectViewer';
 import { toast } from '@/hooks/use-toast';
 
 /* ================================================================
@@ -255,6 +256,9 @@ export const AdminPanel: React.FC = () => {
 
   // Feedback
   const [feedbackData, setFeedbackData] = useState<any[]>([]);
+
+  // Project Viewer
+  const [viewingProjectId, setViewingProjectId] = useState<string | null>(null);
 
   /* — Fetch — */
   useEffect(() => {
@@ -1055,21 +1059,36 @@ export const AdminPanel: React.FC = () => {
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="border-b border-[#e3e2de] bg-[#f7f6f3]">
-                          {tab==='users'&&['','Email','Name','Joined'].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
+                          {tab==='users'&&['','Email','Name','Joined','Projects'].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
                           {tab==='plans'&&['User','Plan','Daily','Used Today','Total','Expires'].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
                           {tab==='transactions'&&['User','Credits','Model','Type','Date'].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
-                          {tab==='projects'&&['Name','Type','Status','Created'].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
+                          {tab==='projects'&&['Name','Owner','Type','Status','Created',''].map(h=><th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold text-[#9b9a97] uppercase tracking-wider">{h}</th>)}
                         </tr>
                       </thead>
                       <tbody>
-                        {tab==='users'&&data.users.filter(u=>!searchQuery||JSON.stringify(u).toLowerCase().includes(searchQuery.toLowerCase())).map((u:any)=>(
+                        {tab==='users'&&data.users.filter(u=>!searchQuery||JSON.stringify(u).toLowerCase().includes(searchQuery.toLowerCase())).map((u:any)=>{
+                          const userProjects = data.projects.filter((p:any) => p.user_id === u.user_id);
+                          return (
                           <TRow key={u.id}>
                             <TD><div className="w-7 h-7 rounded-full bg-[#dbeafe] flex items-center justify-center text-[10px] font-bold text-[#1e40af]">{(u.email||'?')[0].toUpperCase()}</div></TD>
                             <TD className="text-[#6b6b6b]">{u.email||'—'}</TD>
                             <TD className="font-medium text-[#191919]">{u.display_name||'—'}</TD>
                             <TD>{new Date(u.created_at).toLocaleDateString()}</TD>
+                            <TD>
+                              {userProjects.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {userProjects.slice(0, 3).map((p:any) => (
+                                    <button key={p.id} onClick={() => setViewingProjectId(p.id)}
+                                      className="px-2 py-1 rounded text-[10px] font-semibold bg-[#dcfce7] text-[#166534] hover:bg-[#bbf7d0] transition-colors truncate max-w-[100px]" title={p.name}>
+                                      {p.name}
+                                    </button>
+                                  ))}
+                                  {userProjects.length > 3 && <span className="text-[10px] text-[#9b9a97] self-center">+{userProjects.length - 3}</span>}
+                                </div>
+                              ) : <span className="text-[11px] text-[#c4c3bf]">—</span>}
+                            </TD>
                           </TRow>
-                        ))}
+                        );})}
                         {tab==='plans'&&data.plans.filter(p=>!searchQuery||JSON.stringify(p).toLowerCase().includes(searchQuery.toLowerCase())).map((p:any)=>(
                           <TRow key={p.id}>
                             <TD className="font-mono text-[#9b9a97]">{p.user_id?.slice(0,8)}</TD>
@@ -1089,14 +1108,23 @@ export const AdminPanel: React.FC = () => {
                             <TD>{new Date(t.created_at).toLocaleString()}</TD>
                           </TRow>
                         ))}
-                        {tab==='projects'&&data.projects.filter(p=>!searchQuery||JSON.stringify(p).toLowerCase().includes(searchQuery.toLowerCase())).map((p:any)=>(
+                        {tab==='projects'&&data.projects.filter(p=>!searchQuery||JSON.stringify(p).toLowerCase().includes(searchQuery.toLowerCase())).map((p:any)=>{
+                          const ownerProfile = data.users.find((u:any) => u.user_id === p.user_id);
+                          return (
                           <TRow key={p.id}>
                             <TD className="font-medium text-[#191919]">{p.name}</TD>
+                            <TD className="text-[#9b9a97]">{ownerProfile?.display_name || ownerProfile?.email || p.user_id?.slice(0,8)}</TD>
                             <TD className="capitalize text-[#9b9a97]">{p.project_type}</TD>
                             <TD><Tag color={p.is_published?'green':'gray'}>{p.is_published?'Published':'Draft'}</Tag></TD>
                             <TD>{new Date(p.created_at).toLocaleDateString()}</TD>
+                            <TD>
+                              <button onClick={() => setViewingProjectId(p.id)}
+                                className="px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[#dbeafe] text-[#1e40af] hover:bg-[#bfdbfe] transition-all flex items-center gap-1.5">
+                                <Eye size={12} /> View
+                              </button>
+                            </TD>
                           </TRow>
-                        ))}
+                        );})}
                       </tbody>
                     </table>
                   </Card>
@@ -1108,6 +1136,10 @@ export const AdminPanel: React.FC = () => {
         </div>
       </div>
 
+      {/* Project Viewer Modal */}
+      {viewingProjectId && (
+        <AdminProjectViewer projectId={viewingProjectId} onClose={() => setViewingProjectId(null)} />
+      )}
     </div>
   );
 };
