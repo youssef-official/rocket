@@ -1,36 +1,115 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Home, FolderOpen, Settings, CreditCard, FileText, HelpCircle,
-  Sparkles, Info, Newspaper, DollarSign, Shield, Wrench,
-  Globe, Music, Image, Terminal
+  Folder, FileText, HelpCircle, Sparkles, Info, Newspaper,
+  DollarSign, Shield, Wrench, Globe, Music, Terminal, Compass,
+  CreditCard, Settings, LayoutGrid
 } from 'lucide-react';
+
+// macOS-style app icon component
+const MacAppIcon: React.FC<{
+  gradient: string;
+  children: React.ReactNode;
+  size?: number;
+}> = ({ gradient, children, size = 64 }) => (
+  <div
+    className="relative rounded-[22%] flex items-center justify-center shadow-lg"
+    style={{
+      width: size,
+      height: size,
+      background: gradient,
+      boxShadow: '0 4px 20px -4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2)',
+    }}
+  >
+    {/* Inner shadow overlay */}
+    <div className="absolute inset-0 rounded-[22%]" style={{
+      background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 50%)',
+    }} />
+    {children}
+  </div>
+);
 
 export interface DesktopApp {
   id: string;
-  icon: React.ElementType;
+  icon: React.ReactNode;
   label: string;
   path: string;
-  color: string;
 }
 
+// Create realistic macOS-style app icons
 export const DESKTOP_APPS: DesktopApp[] = [
-  { id: 'home', icon: Home, label: 'Vivora X', path: '/__mac_app__', color: 'from-blue-500 to-indigo-600' },
-  { id: 'dashboard', icon: FolderOpen, label: 'Projects', path: '/dashboard', color: 'from-cyan-400 to-blue-500' },
-  { id: 'settings', icon: Settings, label: 'Settings', path: '/settings', color: 'from-zinc-400 to-zinc-600' },
-  { id: 'billing', icon: CreditCard, label: 'Billing', path: '/billing', color: 'from-green-400 to-emerald-600' },
-  { id: 'pricing', icon: DollarSign, label: 'Pricing', path: '/pricing', color: 'from-yellow-400 to-orange-500' },
-  { id: 'docs', icon: FileText, label: 'Docs', path: '/docs', color: 'from-purple-400 to-purple-600' },
-  { id: 'blog', icon: Newspaper, label: 'Blog', path: '/blog', color: 'from-pink-400 to-rose-500' },
-  { id: 'faq', icon: HelpCircle, label: 'FAQ', path: '/faq', color: 'from-amber-400 to-orange-500' },
-  { id: 'ai', icon: Sparkles, label: 'AI for All', path: '/ai-for-all', color: 'from-violet-400 to-purple-600' },
-  { id: 'about', icon: Info, label: 'About', path: '/about', color: 'from-teal-400 to-cyan-600' },
-  { id: 'admin', icon: Shield, label: 'Admin', path: '/admin', color: 'from-red-400 to-red-600' },
-  { id: 'privacy', icon: Globe, label: 'Privacy', path: '/privacy', color: 'from-sky-400 to-blue-500' },
-  { id: 'terms', icon: FileText, label: 'Terms', path: '/terms', color: 'from-slate-400 to-slate-600' },
-  { id: 'vibe', icon: Wrench, label: 'Vibe Tool', path: '/new-vibe-tool', color: 'from-fuchsia-400 to-pink-600' },
-  { id: 'terminal', icon: Terminal, label: 'Terminal', path: '/__terminal__', color: 'from-neutral-700 to-neutral-900' },
-  { id: 'music', icon: Music, label: 'Music', path: '/__music__', color: 'from-rose-500 to-pink-600' },
+  {
+    id: 'dashboard',
+    icon: <MacAppIcon gradient="linear-gradient(180deg, #1E90FF 0%, #0066CC 100%)"><Folder className="w-8 h-8 text-white drop-shadow" /></MacAppIcon>,
+    label: 'Projects',
+    path: '/dashboard',
+  },
+  {
+    id: 'settings',
+    icon: <MacAppIcon gradient="linear-gradient(180deg, #6B6B6B 0%, #3D3D3D 100%)"><Settings className="w-8 h-8 text-white drop-shadow" /></MacAppIcon>,
+    label: 'Settings',
+    path: '/settings',
+  },
+  {
+    id: 'billing',
+    icon: <MacAppIcon gradient="linear-gradient(180deg, #34C759 0%, #248A3D 100%)"><CreditCard className="w-8 h-8 text-white drop-shadow" /></MacAppIcon>,
+    label: 'Billing',
+    path: '/billing',
+  },
+  {
+    id: 'pricing',
+    icon: <MacAppIcon gradient="linear-gradient(180deg, #FF9500 0%, #CC7700 100%)"><DollarSign className="w-8 h-8 text-white drop-shadow" /></MacAppIcon>,
+    label: 'Pricing',
+    path: '/pricing',
+  },
+  {
+    id: 'docs',
+    icon: <MacAppIcon gradient="linear-gradient(180deg, #AF52DE 0%, #8944AB 100%)"><FileText className="w-8 h-8 text-white drop-shadow" /></MacAppIcon>,
+    label: 'Docs',
+    path: '/docs',
+  },
+  {
+    id: 'blog',
+    icon: <MacAppIcon gradient="linear-gradient(180deg, #FF2D55 0%, #CC2244 100%)"><Newspaper className="w-8 h-8 text-white drop-shadow" /></MacAppIcon>,
+    label: 'Blog',
+    path: '/blog',
+  },
+  {
+    id: 'faq',
+    icon: <MacAppIcon gradient="linear-gradient(180deg, #FFCC00 0%, #CC9900 100%)"><HelpCircle className="w-8 h-8 text-white drop-shadow" /></MacAppIcon>,
+    label: 'FAQ',
+    path: '/faq',
+  },
+  {
+    id: 'ai',
+    icon: <MacAppIcon gradient="linear-gradient(180deg, #BF5AF2 0%, #9944CC 100%)"><Sparkles className="w-8 h-8 text-white drop-shadow" /></MacAppIcon>,
+    label: 'AI for All',
+    path: '/ai-for-all',
+  },
+  {
+    id: 'about',
+    icon: <MacAppIcon gradient="linear-gradient(180deg, #30B0C7 0%, #248A9D 100%)"><Info className="w-8 h-8 text-white drop-shadow" /></MacAppIcon>,
+    label: 'About',
+    path: '/about',
+  },
+  {
+    id: 'admin',
+    icon: <MacAppIcon gradient="linear-gradient(180deg, #FF3B30 0%, #CC2F26 100%)"><Shield className="w-8 h-8 text-white drop-shadow" /></MacAppIcon>,
+    label: 'Admin',
+    path: '/admin',
+  },
+  {
+    id: 'terminal',
+    icon: <MacAppIcon gradient="linear-gradient(180deg, #1C1C1E 0%, #000000 100%)"><Terminal className="w-8 h-8 text-white drop-shadow" /></MacAppIcon>,
+    label: 'Terminal',
+    path: '/__terminal__',
+  },
+  {
+    id: 'music',
+    icon: <MacAppIcon gradient="linear-gradient(180deg, #FA2D48 0%, #A01832 100%)"><Music className="w-8 h-8 text-white drop-shadow" /></MacAppIcon>,
+    label: 'Music',
+    path: '/__music__',
+  },
 ];
 
 interface MacDesktopProps {
@@ -40,8 +119,6 @@ interface MacDesktopProps {
 export const MacDesktop: React.FC<MacDesktopProps> = ({ onOpenApp }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
-  const [selectionBox, setSelectionBox] = useState<{ startX: number; startY: number; x: number; y: number } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -54,63 +131,26 @@ export const MacDesktop: React.FC<MacDesktopProps> = ({ onOpenApp }) => {
     setSelectedId(null);
   }, []);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    // Only start selection if clicking on the desktop itself
-    if ((e.target as HTMLElement).closest('[data-app-icon]')) return;
-    setSelectionBox({ startX: e.clientX, startY: e.clientY, x: e.clientX, y: e.clientY });
-    setIsDragging(true);
-  }, []);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging || !selectionBox) return;
-    setSelectionBox(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
-  }, [isDragging, selectionBox]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-    setSelectionBox(null);
-  }, []);
-
-  const getSelectionRect = () => {
-    if (!selectionBox) return null;
-    return {
-      left: Math.min(selectionBox.startX, selectionBox.x),
-      top: Math.min(selectionBox.startY, selectionBox.y),
-      width: Math.abs(selectionBox.x - selectionBox.startX),
-      height: Math.abs(selectionBox.y - selectionBox.startY),
-    };
-  };
-
-  const selRect = getSelectionRect();
-
   return (
     <div
       className="w-full h-full relative select-none"
       onClick={handleDesktopClick}
       onContextMenu={handleContextMenu}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
     >
-      {/* Desktop icons grid - right aligned like macOS */}
-      <div className="absolute top-4 right-4 flex flex-col flex-wrap-reverse items-end gap-1 max-h-[calc(100vh-120px)]"
-        style={{ writingMode: 'vertical-lr' }}
-      >
+      {/* Desktop icons grid - top right like macOS */}
+      <div className="absolute top-3 right-3 grid gap-1" style={{ gridTemplateColumns: 'repeat(auto-fill, 90px)', direction: 'rtl' }}>
         {DESKTOP_APPS.map((app, i) => {
-          const Icon = app.icon;
           const isSelected = selectedId === app.id;
 
           return (
             <motion.div
               key={app.id}
               data-app-icon
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.03, type: 'spring', stiffness: 300, damping: 20 }}
-              style={{ writingMode: 'horizontal-tb' }}
-              className={`flex flex-col items-center gap-1 p-2 rounded-lg cursor-default transition-colors w-[76px] ${
-                isSelected ? 'bg-white/20' : 'hover:bg-white/10'
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.02, type: 'spring', stiffness: 300 }}
+              className={`flex flex-col items-center gap-1.5 p-2 rounded-lg cursor-default transition-all w-[88px] ${
+                isSelected ? 'bg-white/25 ring-2 ring-white/40' : 'hover:bg-white/10'
               }`}
               onClick={(e) => {
                 e.stopPropagation();
@@ -122,10 +162,15 @@ export const MacDesktop: React.FC<MacDesktopProps> = ({ onOpenApp }) => {
                 onOpenApp(app);
               }}
             >
-              <div className={`w-12 h-12 rounded-[12px] bg-gradient-to-br ${app.color} flex items-center justify-center shadow-lg`}>
-                <Icon className="w-6 h-6 text-white drop-shadow" />
+              <div className="transform transition-transform hover:scale-105">
+                {app.icon}
               </div>
-              <span className="text-[11px] text-white font-medium text-center leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] line-clamp-2">
+              <span
+                className={`text-[11px] text-center leading-tight font-medium line-clamp-2 px-1 py-0.5 rounded ${
+                  isSelected ? 'bg-[#0066CC] text-white' : 'text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]'
+                }`}
+                style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}
+              >
                 {app.label}
               </span>
             </motion.div>
@@ -133,27 +178,10 @@ export const MacDesktop: React.FC<MacDesktopProps> = ({ onOpenApp }) => {
         })}
       </div>
 
-      {/* Selection box */}
-      {selRect && selRect.width > 5 && selRect.height > 5 && (
-        <div
-          className="fixed border border-white/40 bg-white/10 rounded-sm pointer-events-none z-50"
-          style={{
-            left: selRect.left,
-            top: selRect.top,
-            width: selRect.width,
-            height: selRect.height,
-          }}
-        />
-      )}
-
       {/* Context menu */}
       <AnimatePresence>
         {contextMenu && (
-          <MacContextMenu
-            x={contextMenu.x}
-            y={contextMenu.y}
-            onClose={() => setContextMenu(null)}
-          />
+          <MacContextMenu x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)} />
         )}
       </AnimatePresence>
     </div>
@@ -161,64 +189,56 @@ export const MacDesktop: React.FC<MacDesktopProps> = ({ onOpenApp }) => {
 };
 
 // ─── Context Menu ───────────────────────────────────────
-interface MacContextMenuProps {
-  x: number;
-  y: number;
-  onClose: () => void;
-}
-
-const MacContextMenu: React.FC<MacContextMenuProps> = ({ x, y, onClose }) => {
+const MacContextMenu: React.FC<{ x: number; y: number; onClose: () => void }> = ({ x, y, onClose }) => {
   const items = [
     { label: 'New Folder', shortcut: '⇧⌘N' },
     { label: 'Get Info', shortcut: '⌘I' },
     { type: 'separator' as const },
-    { label: 'Change Desktop Background...', action: () => {
-      window.dispatchEvent(new CustomEvent('vivora-open-wallpaper-picker'));
-      onClose();
-    }},
-    { label: 'Use Stacks', checked: false },
+    { label: 'Change Desktop Background...' },
+    { label: 'Use Stacks' },
     { type: 'separator' as const },
     { label: 'Sort By', submenu: true },
-    { label: 'Clean Up', shortcut: '' },
-    { label: 'Clean Up By', submenu: true },
+    { label: 'Clean Up' },
     { type: 'separator' as const },
     { label: 'Show View Options', shortcut: '⌘J' },
   ];
 
-  // Adjust position if near edge
-  const adjustedX = Math.min(x, window.innerWidth - 220);
-  const adjustedY = Math.min(y, window.innerHeight - 300);
+  const adjustedX = Math.min(x, window.innerWidth - 230);
+  const adjustedY = Math.min(y, window.innerHeight - 280);
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.1 }}
-      className="fixed z-[9999] w-[220px] py-1 rounded-lg bg-[#2a2a2a]/95 backdrop-blur-2xl border border-white/[0.12] shadow-2xl shadow-black/50"
-      style={{ left: adjustedX, top: adjustedY, fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}
+      transition={{ duration: 0.08 }}
+      className="fixed z-[9999] w-[230px] py-1.5 rounded-lg overflow-hidden"
+      style={{
+        left: adjustedX,
+        top: adjustedY,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif',
+        background: 'rgba(40,40,40,0.95)',
+        backdropFilter: 'blur(30px)',
+        boxShadow: '0 10px 40px -10px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.1)',
+      }}
       onClick={(e) => e.stopPropagation()}
     >
       {items.map((item, i) => {
         if ('type' in item && item.type === 'separator') {
-          return <div key={i} className="my-1 mx-2 border-t border-white/[0.08]" />;
+          return <div key={i} className="my-1.5 mx-2 border-t border-white/[0.1]" />;
         }
         return (
           <button
             key={i}
-            onClick={() => {
-              if ('action' in item && item.action) item.action();
-              else onClose();
-            }}
-            className="w-full flex items-center justify-between px-3 py-[3px] text-[13px] text-white/90 hover:bg-[#3b82f6] hover:text-white rounded-[4px] mx-1 transition-colors"
-            style={{ width: 'calc(100% - 8px)' }}
+            onClick={onClose}
+            className="w-full flex items-center justify-between px-3 py-[5px] text-[13px] text-white/90 hover:bg-[#0066CC] transition-colors"
           >
             <span>{item.label}</span>
             {'shortcut' in item && item.shortcut && (
-              <span className="text-[11px] text-white/30">{item.shortcut}</span>
+              <span className="text-[11px] text-white/40">{item.shortcut}</span>
             )}
             {'submenu' in item && item.submenu && (
-              <span className="text-white/30 text-[10px]">▶</span>
+              <span className="text-white/40">▶</span>
             )}
           </button>
         );
