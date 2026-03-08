@@ -14,6 +14,7 @@ import {
   RefreshCw, Settings, LogOut,
 } from 'lucide-react';
 import { AdminBlogEditor } from '@/components/admin/AdminBlogEditor';
+import { AdminProjectViewer } from '@/components/admin/AdminProjectViewer';
 import { toast } from '@/hooks/use-toast';
 
 /* ================================================================
