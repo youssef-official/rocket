@@ -1347,6 +1347,7 @@ const App = () => (
               <Route path="/" element={<AppContent />} />
             </Routes>
           </BrowserRouter>
+          </MaintenanceScreen>
         </TooltipProvider>
       </AuthProvider>
     </LanguageProvider>
