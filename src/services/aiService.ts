@@ -915,7 +915,8 @@ export async function streamAICodeGeneration(
     signal?: AbortSignal;
   },
   existingFiles?: string,
-  userLanguage?: string
+  userLanguage?: string,
+  colorTheme?: { name: string; colors: string[] } | null
 ) {
   try {
     let finalMessages = [...messages];
@@ -935,7 +936,7 @@ EXISTING PROJECT FILES: [${existingFiles}]
       }
     }
 
-    const response = await callingDirectAI('code', finalMessages, options.signal, undefined, userLanguage);
+    const response = await callingDirectAI('code', finalMessages, options.signal, undefined, userLanguage, colorTheme);
 
     if (!response.ok) {
       throw new Error(`AI request failed: ${response.status}`);
