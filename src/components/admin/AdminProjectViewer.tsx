@@ -236,23 +236,14 @@ export const AdminProjectViewer: React.FC<AdminProjectViewerProps> = ({ projectI
           </div>
         )}
 
-        {/* Preview Tab - iframe with sandboxed HTML */}
+        {/* Preview Tab */}
         {activeTab === 'preview' && (
-          <div className="h-full flex items-center justify-center p-6">
-            <div className="bg-white rounded-xl border border-[#e3e2de] p-8 text-center max-w-md">
-              <Eye size={32} className="text-[#c4c3bf] mx-auto mb-3" />
-              <p className="text-[14px] font-semibold text-[#191919] mb-2">Preview</p>
-              <p className="text-[12px] text-[#9b9a97] mb-4">
-                View this project's live preview by checking the code tab for the full source. 
-                The project has {fileKeys.length} files and is {project?.is_published ? 'published' : 'a draft'}.
-              </p>
-              {project?.vercel_url && (
-                <a href={project.vercel_url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#2383e2] text-white rounded-lg text-[12px] font-semibold hover:bg-[#1a6ec2] transition-colors">
-                  <Eye size={13} /> Open Live Site
-                </a>
-              )}
-            </div>
+          <div className="h-full">
+            <PreviewView
+              files={files}
+              projectType={project?.project_type || 'vite'}
+              projectId={projectId}
+            />
           </div>
         )}
       </div>
