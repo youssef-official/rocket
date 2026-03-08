@@ -710,7 +710,7 @@ function appendTextToMessageContent(
 }
 
 // ═══════════════════════════════════════════════
-// AGENT LOOP — multi-step plan → generate → validate → fix
+// FAILOVER PROVIDER CHAIN
 // ═══════════════════════════════════════════════
 
 interface AgentCallOptions {
@@ -719,6 +719,42 @@ interface AgentCallOptions {
   authToken: string;
 }
 
+interface FallbackProvider {
+  name: string;
+  model: string;
+  gatewayUrl: string;
+  authToken: string;
+}
+
+function buildFallbackChain(primary: AgentCallOptions): FallbackProvider[] {
+  const chain: FallbackProvider[] = [
+    { name: "primary", model: primary.model, gatewayUrl: primary.gatewayUrl, authToken: primary.authToken },
+  ];
+  const openrouterKey = Deno.env.get("OPENROUTER_API_KEY");
+  if (openrouterKey) {
+    chain.push({
+      name: "openrouter",
+      model: "google/gemini-2.5-flash",
+      gatewayUrl: "https://openrouter.ai/api/v1/chat/completions",
+      authToken: openrouterKey,
+    });
+  }
+  const googleKey = Deno.env.get("GOOGLE_AI_STUDIO_KEY");
+  if (googleKey) {
+    chain.push({
+      name: "google-ai-studio",
+      model: "gemini-2.5-flash",
+      gatewayUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      authToken: googleKey,
+    });
+  }
+  return chain;
+}
+
+// ═══════════════════════════════════════════════
+// AGENT LOOP — multi-step plan → generate → validate → fix
+// ═══════════════════════════════════════════════
+
 async function agentCall(
   opts: AgentCallOptions,
   systemPrompt: string,
@@ -726,26 +762,43 @@ async function agentCall(
   maxTokens = 4000,
   temperature = 0.2,
 ): Promise<string> {
-  const res = await fetch(opts.gatewayUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${opts.authToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: opts.model,
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
-      stream: false,
-      max_tokens: maxTokens,
-      temperature,
-    }),
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Agent sub-call failed (${res.status}): ${t}`);
+  const providers = buildFallbackChain(opts);
+  for (const provider of providers) {
+    try {
+      const res = await fetch(provider.gatewayUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${provider.authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
+          stream: false,
+          max_tokens: maxTokens,
+          temperature,
+        }),
+      });
+      if (res.status === 402 || res.status === 403) {
+        console.warn(`[failover] ${provider.name} returned ${res.status}, trying next...`);
+        continue;
+      }
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(`Agent sub-call failed (${res.status}): ${t}`);
+      }
+      const data = await res.json();
+      if (provider.name !== "primary") console.log(`[failover] Used ${provider.name} successfully`);
+      return data.choices?.[0]?.message?.content ?? "";
+    } catch (e: any) {
+      if (e.message?.includes("402") || e.message?.includes("403")) {
+        console.warn(`[failover] ${provider.name} error, trying next...`);
+        continue;
+      }
+      throw e;
+    }
   }
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "";
+  throw new Error("All AI providers failed (402/403). Please check API credits.");
 }
 
 // Streaming variant — forwards SSE chunks to the client controller in real-time
