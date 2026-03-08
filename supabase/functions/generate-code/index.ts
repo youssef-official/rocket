@@ -811,65 +811,73 @@ async function agentCallStreaming(
   maxTokens = 65000,
   temperature = 0.1,
 ): Promise<string> {
-  const res = await fetch(opts.gatewayUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${opts.authToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: opts.model,
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
-      stream: true,
-      max_tokens: maxTokens,
-      temperature,
-    }),
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Agent streaming call failed (${res.status}): ${t}`);
-  }
-
-  if (!res.body) throw new Error("No response body from streaming call");
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let fullText = "";
-  let buffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-
-    let newlineIdx: number;
-    while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
-      let line = buffer.slice(0, newlineIdx);
-      buffer = buffer.slice(newlineIdx + 1);
-
-      if (line.endsWith("\r")) line = line.slice(0, -1);
-      if (!line.startsWith("data: ")) continue;
-
-      const payload = line.slice(6).trim();
-      if (payload === "[DONE]") continue;
-
-      try {
-        const parsed = JSON.parse(payload);
-        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-        if (content) {
-          fullText += content;
-          // Forward chunk to client in real-time
-          const sseChunk = { choices: [{ delta: { content } }] };
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(sseChunk)}\n\n`));
-        }
-      } catch {
-        // partial JSON, skip
+  const providers = buildFallbackChain(opts);
+  for (const provider of providers) {
+    try {
+      const res = await fetch(provider.gatewayUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${provider.authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
+          stream: true,
+          max_tokens: maxTokens,
+          temperature,
+        }),
+      });
+      if (res.status === 402 || res.status === 403) {
+        console.warn(`[failover-stream] ${provider.name} returned ${res.status}, trying next...`);
+        continue;
       }
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(`Agent streaming call failed (${res.status}): ${t}`);
+      }
+      if (!res.body) throw new Error("No response body from streaming call");
+
+      if (provider.name !== "primary") console.log(`[failover-stream] Using ${provider.name}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let newlineIdx: number;
+        while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIdx);
+          buffer = buffer.slice(newlineIdx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(payload);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              fullText += content;
+              const sseChunk = { choices: [{ delta: { content } }] };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(sseChunk)}\n\n`));
+            }
+          } catch { /* partial JSON */ }
+        }
+      }
+      return fullText;
+    } catch (e: any) {
+      if (e.message?.includes("402") || e.message?.includes("403")) {
+        console.warn(`[failover-stream] ${provider.name} error, trying next...`);
+        continue;
+      }
+      throw e;
     }
   }
-
-  return fullText;
+  throw new Error("All AI providers failed (402/403). Please check API credits.");
 }
 
 function sseEvent(data: Record<string, unknown>): string {
