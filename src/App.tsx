@@ -1306,11 +1306,14 @@ import Billing from "@/pages/Billing";
 import SupabaseCallbackPage from "@/pages/SupabaseCallback";
 import GetStarted from "@/pages/GetStarted";
 
+import { MaintenanceScreen } from "@/components/shared/MaintenanceScreen";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
       <AuthProvider>
         <TooltipProvider>
+          <MaintenanceScreen>
           <ThemeInitializer />
           <FloatingMusicPlayer />
           <Toaster />
@@ -1344,6 +1347,7 @@ const App = () => (
               <Route path="/" element={<AppContent />} />
             </Routes>
           </BrowserRouter>
+          </MaintenanceScreen>
         </TooltipProvider>
       </AuthProvider>
     </LanguageProvider>

@@ -612,12 +612,36 @@ export const AdminPanel: React.FC = () => {
                     </Card>
                   </div>
 
+                  {/* Maintenance Mode */}
+                  {(() => {
+                    const mc = celebrations.find(c => c.name === 'maintenance');
+                    return mc ? (
+                      <Card className={mc.is_active ? '!border-[#ef4444]' : ''}>
+                        <div className="p-5 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${mc.is_active ? 'bg-[#fee2e2]' : 'bg-[#f7f6f3]'}`}>
+                              <span className="text-xl">🔧</span>
+                            </div>
+                            <div>
+                              <p className="text-[14px] font-bold text-[#191919]">Maintenance Mode</p>
+                              <p className="text-[11px] text-[#9b9a97]">{mc.is_active ? 'Site is currently down for all users' : 'Site is live and accessible'}</p>
+                            </div>
+                          </div>
+                          <button onClick={() => toggleCeleb(mc.id, mc.is_active)}
+                            className={`px-4 py-2 rounded-lg text-[12px] font-bold transition-all ${mc.is_active ? 'bg-[#16a34a] text-white hover:bg-[#15803d]' : 'bg-[#ef4444] text-white hover:bg-[#dc2626]'}`}>
+                            {mc.is_active ? '✓ Go Live' : '⚠ Enable Maintenance'}
+                          </button>
+                        </div>
+                      </Card>
+                    ) : null;
+                  })()}
+
                   {/* Active Celebrations */}
-                  {celebrations.some(c => c.is_active) && (
+                  {celebrations.some(c => c.is_active && c.name !== 'maintenance') && (
                     <Card>
                       <CardHead title="Active Celebrations" />
                       <div className="p-4 flex flex-wrap gap-2">
-                        {celebrations.filter(c => c.is_active).map(c => (
+                        {celebrations.filter(c => c.is_active && c.name !== 'maintenance').map(c => (
                           <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#fef9c3] border border-[#fde047]">
                             <span className="text-lg">{c.config?.emoji || '🎉'}</span>
                             <span className="text-[12px] font-semibold text-[#713f12]">{c.config?.label || c.name}</span>
