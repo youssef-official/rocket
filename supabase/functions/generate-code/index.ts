@@ -1181,9 +1181,9 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-    let model = "google/gemini-3-flash";
-    let gatewayUrl = "https://ai-gateway.vercel.sh/v1/chat/completions";
-    let apiKeySecretName = "VERCEL_AI_API_KEY";
+    let model = "google/gemini-3-flash-preview";
+    let gatewayUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+    let apiKeySecretName = "LOVABLE_API_KEY";
 
     // SECURITY: Verify user's actual plan from database
     let verifiedPlan = 'free';
@@ -1244,7 +1244,7 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
       console.warn("[generate-code] Failed to fetch model config, using defaults:", cfgErr);
     }
 
-    const authToken = Deno.env.get(apiKeySecretName) || Deno.env.get("VERCEL_AI_API_KEY") || LOVABLE_API_KEY;
+    const authToken = Deno.env.get(apiKeySecretName) || Deno.env.get("LOVABLE_API_KEY") || LOVABLE_API_KEY;
 
     // ═══════════════════════════════════════════════
     // AGENT LOOP for code mode — multi-step generation
