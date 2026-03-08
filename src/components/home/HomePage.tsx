@@ -394,6 +394,12 @@ export const HomePage: React.FC<HomePageProps> = ({
       // It will be retrieved by the editor and sent only to the AI model
       setIsSubmitting(true);
       localStorage.removeItem('vivora_home_prompt');
+      // Store selected color theme for the generation pipeline
+      if (selectedTheme) {
+        sessionStorage.setItem('vivora_pending_color_theme', JSON.stringify(selectedTheme));
+      } else {
+        sessionStorage.removeItem('vivora_pending_color_theme');
+      }
       onStartBuilding(prompt, projectType, undefined, urls.length > 0 ? urls : undefined);
     }
   };
