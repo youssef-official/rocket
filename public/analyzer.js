@@ -62,23 +62,21 @@
     var url = API_BASE + "/functions/v1/track-analytics";
     var payload = JSON.stringify({ project_id: PROJECT_ID, events: events });
 
-    // Use sendBeacon if available (works on page unload), else fetch
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon(url, new Blob([payload], { type: "application/json" }));
-    } else {
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: payload,
-        keepalive: true,
-      }).catch(function () {
-        // Re-queue on failure
-        try {
-          var existing = JSON.parse(localStorage.getItem(FLUSH_KEY) || "[]");
-          localStorage.setItem(FLUSH_KEY, JSON.stringify(existing.concat(events)));
-        } catch (e) { /* ignore */ }
-      });
-    }
+    // Use fetch without credentials to avoid CORS issues with wildcard origin
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+      keepalive: true,
+      mode: "cors",
+      credentials: "omit",
+    }).catch(function () {
+      // Re-queue on failure
+      try {
+        var existing = JSON.parse(localStorage.getItem(FLUSH_KEY) || "[]");
+        localStorage.setItem(FLUSH_KEY, JSON.stringify(existing.concat(events)));
+      } catch (e) { /* ignore */ }
+    });
   }
 
   function trackPageView() {
