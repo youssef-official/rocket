@@ -1244,7 +1244,7 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
       console.warn("[generate-code] Failed to fetch model config, using defaults:", cfgErr);
     }
 
-    const authToken = Deno.env.get(apiKeySecretName) || Deno.env.get("VERCEL_AI_API_KEY") || LOVABLE_API_KEY;
+    const authToken = Deno.env.get(apiKeySecretName) || Deno.env.get("LOVABLE_API_KEY") || LOVABLE_API_KEY;
 
     // ═══════════════════════════════════════════════
     // AGENT LOOP for code mode — multi-step generation
