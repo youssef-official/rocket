@@ -1093,14 +1093,23 @@ export const AdminPanel: React.FC = () => {
                             <TD>{new Date(t.created_at).toLocaleString()}</TD>
                           </TRow>
                         ))}
-                        {tab==='projects'&&data.projects.filter(p=>!searchQuery||JSON.stringify(p).toLowerCase().includes(searchQuery.toLowerCase())).map((p:any)=>(
+                        {tab==='projects'&&data.projects.filter(p=>!searchQuery||JSON.stringify(p).toLowerCase().includes(searchQuery.toLowerCase())).map((p:any)=>{
+                          const ownerProfile = data.users.find((u:any) => u.user_id === p.user_id);
+                          return (
                           <TRow key={p.id}>
                             <TD className="font-medium text-[#191919]">{p.name}</TD>
+                            <TD className="text-[#9b9a97]">{ownerProfile?.display_name || ownerProfile?.email || p.user_id?.slice(0,8)}</TD>
                             <TD className="capitalize text-[#9b9a97]">{p.project_type}</TD>
                             <TD><Tag color={p.is_published?'green':'gray'}>{p.is_published?'Published':'Draft'}</Tag></TD>
                             <TD>{new Date(p.created_at).toLocaleDateString()}</TD>
+                            <TD>
+                              <button onClick={() => setViewingProjectId(p.id)}
+                                className="px-3 py-1.5 rounded-md text-[11px] font-semibold bg-[#dbeafe] text-[#1e40af] hover:bg-[#bfdbfe] transition-all flex items-center gap-1.5">
+                                <Eye size={12} /> View
+                              </button>
+                            </TD>
                           </TRow>
-                        ))}
+                        );})}
                       </tbody>
                     </table>
                   </Card>
