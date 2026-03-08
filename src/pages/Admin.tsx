@@ -1121,6 +1121,10 @@ export const AdminPanel: React.FC = () => {
         </div>
       </div>
 
+      {/* Project Viewer Modal */}
+      {viewingProjectId && (
+        <AdminProjectViewer projectId={viewingProjectId} onClose={() => setViewingProjectId(null)} />
+      )}
     </div>
   );
 };
