@@ -677,14 +677,21 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
-  // Render Thinking Indicator
+  // Render Thinking Indicator — shows when generating & no version card yet
   const renderThinkingIndicator = () => {
-    if (!generationPhase || generationPhase.phase !== 'thinking') return null;
+    // Show thinking when: phase is 'thinking' OR generating with no file activities yet (e.g. explanation/name generation)
+    const isThinkingPhase = generationPhase?.phase === 'thinking';
+    const isGeneratingWithoutFiles = isGenerating && fileActivities.length === 0;
+    
+    if (!isThinkingPhase && !isGeneratingWithoutFiles) return null;
+    // Hide once version card appears (fileActivities > 0)
+    if (fileActivities.length > 0) return null;
 
     return (
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
         className="flex items-center gap-3 py-3"
       >
         <div className="relative">
@@ -698,8 +705,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
           />
         </div>
         <span className="text-sm font-semibold text-foreground/70 tabular-nums">
-          {generationPhase.thinkingTime || 0}s
+          {generationPhase?.thinkingTime || 0}s
         </span>
+        <Loader2 className="w-3.5 h-3.5 animate-spin text-yellow-400/60" />
       </motion.div>
     );
   };
