@@ -710,7 +710,7 @@ function appendTextToMessageContent(
 }
 
 // ═══════════════════════════════════════════════
-// AGENT LOOP — multi-step plan → generate → validate → fix
+// FAILOVER PROVIDER CHAIN
 // ═══════════════════════════════════════════════
 
 interface AgentCallOptions {
@@ -719,6 +719,42 @@ interface AgentCallOptions {
   authToken: string;
 }
 
+interface FallbackProvider {
+  name: string;
+  model: string;
+  gatewayUrl: string;
+  authToken: string;
+}
+
+function buildFallbackChain(primary: AgentCallOptions): FallbackProvider[] {
+  const chain: FallbackProvider[] = [
+    { name: "primary", model: primary.model, gatewayUrl: primary.gatewayUrl, authToken: primary.authToken },
+  ];
+  const openrouterKey = Deno.env.get("OPENROUTER_API_KEY");
+  if (openrouterKey) {
+    chain.push({
+      name: "openrouter",
+      model: "google/gemini-2.5-flash",
+      gatewayUrl: "https://openrouter.ai/api/v1/chat/completions",
+      authToken: openrouterKey,
+    });
+  }
+  const googleKey = Deno.env.get("GOOGLE_AI_STUDIO_KEY");
+  if (googleKey) {
+    chain.push({
+      name: "google-ai-studio",
+      model: "gemini-2.5-flash",
+      gatewayUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      authToken: googleKey,
+    });
+  }
+  return chain;
+}
+
+// ═══════════════════════════════════════════════
+// AGENT LOOP — multi-step plan → generate → validate → fix
+// ═══════════════════════════════════════════════
+
 async function agentCall(
   opts: AgentCallOptions,
   systemPrompt: string,
@@ -726,26 +762,43 @@ async function agentCall(
   maxTokens = 4000,
   temperature = 0.2,
 ): Promise<string> {
-  const res = await fetch(opts.gatewayUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${opts.authToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: opts.model,
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
-      stream: false,
-      max_tokens: maxTokens,
-      temperature,
-    }),
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Agent sub-call failed (${res.status}): ${t}`);
+  const providers = buildFallbackChain(opts);
+  for (const provider of providers) {
+    try {
+      const res = await fetch(provider.gatewayUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${provider.authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
+          stream: false,
+          max_tokens: maxTokens,
+          temperature,
+        }),
+      });
+      if (res.status === 402 || res.status === 403) {
+        console.warn(`[failover] ${provider.name} returned ${res.status}, trying next...`);
+        continue;
+      }
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(`Agent sub-call failed (${res.status}): ${t}`);
+      }
+      const data = await res.json();
+      if (provider.name !== "primary") console.log(`[failover] Used ${provider.name} successfully`);
+      return data.choices?.[0]?.message?.content ?? "";
+    } catch (e: any) {
+      if (e.message?.includes("402") || e.message?.includes("403")) {
+        console.warn(`[failover] ${provider.name} error, trying next...`);
+        continue;
+      }
+      throw e;
+    }
   }
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "";
+  throw new Error("All AI providers failed (402/403). Please check API credits.");
 }
 
 // Streaming variant — forwards SSE chunks to the client controller in real-time
@@ -758,65 +811,73 @@ async function agentCallStreaming(
   maxTokens = 65000,
   temperature = 0.1,
 ): Promise<string> {
-  const res = await fetch(opts.gatewayUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${opts.authToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: opts.model,
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
-      stream: true,
-      max_tokens: maxTokens,
-      temperature,
-    }),
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Agent streaming call failed (${res.status}): ${t}`);
-  }
-
-  if (!res.body) throw new Error("No response body from streaming call");
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let fullText = "";
-  let buffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-
-    let newlineIdx: number;
-    while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
-      let line = buffer.slice(0, newlineIdx);
-      buffer = buffer.slice(newlineIdx + 1);
-
-      if (line.endsWith("\r")) line = line.slice(0, -1);
-      if (!line.startsWith("data: ")) continue;
-
-      const payload = line.slice(6).trim();
-      if (payload === "[DONE]") continue;
-
-      try {
-        const parsed = JSON.parse(payload);
-        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-        if (content) {
-          fullText += content;
-          // Forward chunk to client in real-time
-          const sseChunk = { choices: [{ delta: { content } }] };
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(sseChunk)}\n\n`));
-        }
-      } catch {
-        // partial JSON, skip
+  const providers = buildFallbackChain(opts);
+  for (const provider of providers) {
+    try {
+      const res = await fetch(provider.gatewayUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${provider.authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
+          stream: true,
+          max_tokens: maxTokens,
+          temperature,
+        }),
+      });
+      if (res.status === 402 || res.status === 403) {
+        console.warn(`[failover-stream] ${provider.name} returned ${res.status}, trying next...`);
+        continue;
       }
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(`Agent streaming call failed (${res.status}): ${t}`);
+      }
+      if (!res.body) throw new Error("No response body from streaming call");
+
+      if (provider.name !== "primary") console.log(`[failover-stream] Using ${provider.name}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let newlineIdx: number;
+        while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIdx);
+          buffer = buffer.slice(newlineIdx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(payload);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              fullText += content;
+              const sseChunk = { choices: [{ delta: { content } }] };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(sseChunk)}\n\n`));
+            }
+          } catch { /* partial JSON */ }
+        }
+      }
+      return fullText;
+    } catch (e: any) {
+      if (e.message?.includes("402") || e.message?.includes("403")) {
+        console.warn(`[failover-stream] ${provider.name} error, trying next...`);
+        continue;
+      }
+      throw e;
     }
   }
-
-  return fullText;
+  throw new Error("All AI providers failed (402/403). Please check API credits.");
 }
 
 function sseEvent(data: Record<string, unknown>): string {
@@ -1197,58 +1258,67 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
     }
 
     // ═══════════════════════════════════════════════
-    // ALL OTHER MODES — original behavior unchanged
+    // ALL OTHER MODES — with failover on 402/403
     // ═══════════════════════════════════════════════
-    const response = await fetch(gatewayUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "system", content: systemPrompt }, ...finalMessages],
-        stream: shouldStream,
-        ...(shouldStream ? { stream_options: { include_usage: true } } : {}),
-        max_tokens: maxTokens,
-        temperature: mode === "credit" ? 0 : 0.4,
-      }),
-    });
+    const primaryOpts: AgentCallOptions = { model, gatewayUrl, authToken };
+    const fallbackProviders = buildFallbackChain(primaryOpts);
 
-    if (!response.ok) {
+    for (const provider of fallbackProviders) {
+      const response = await fetch(provider.gatewayUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${provider.authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          messages: [{ role: "system", content: systemPrompt }, ...finalMessages],
+          stream: shouldStream,
+          ...(shouldStream ? { stream_options: { include_usage: true } } : {}),
+          max_tokens: maxTokens,
+          temperature: mode === "credit" ? 0 : 0.4,
+        }),
+      });
+
+      if (response.status === 402 || response.status === 403) {
+        console.warn(`[failover-other] ${provider.name} returned ${response.status}, trying next...`);
+        continue;
+      }
+
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
-          status: 429,
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (!response.ok) {
+        const t = await response.text();
+        console.error("AI gateway error:", response.status, t);
+        return new Response(JSON.stringify({ error: "AI gateway error" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (provider.name !== "primary") console.log(`[failover-other] Used ${provider.name} for mode=${mode}`);
+
+      // For credit mode, return JSON directly
+      if (!shouldStream) {
+        const data = await response.json();
+        const content =
+          data.choices?.[0]?.message?.content ??
+          '{"credits":1,"reason":"default","estimated_files":5,"complexity":"medium"}';
+        return new Response(content, {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required, please add funds." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
 
-    // For credit mode, return JSON directly
-    if (!shouldStream) {
-      const data = await response.json();
-      const content =
-        data.choices?.[0]?.message?.content ??
-        '{"credits":1,"reason":"default","estimated_files":5,"complexity":"medium"}';
-      return new Response(content, {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    return new Response(JSON.stringify({ error: "All AI providers unavailable (402/403). Please check API credits." }), {
+      status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("generate-code error:", e);
