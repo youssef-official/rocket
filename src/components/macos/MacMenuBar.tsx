@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Wifi, BatteryFull, Volume2, Search, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { Wifi, BatteryFull, Volume2, Search } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const AppleLogo = () => (
   <svg className="w-3.5 h-3.5" viewBox="0 0 17 21" fill="currentColor">
@@ -8,7 +8,11 @@ const AppleLogo = () => (
   </svg>
 );
 
-export const MacMenuBar: React.FC = () => {
+interface MacMenuBarProps {
+  activeApp?: string;
+}
+
+export const MacMenuBar: React.FC<MacMenuBarProps> = ({ activeApp = 'Finder' }) => {
   const [time, setTime] = useState('');
   const [date, setDate] = useState('');
 
@@ -19,35 +23,34 @@ export const MacMenuBar: React.FC = () => {
       setDate(now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
     };
     update();
-    const interval = setInterval(update, 30000);
+    const interval = setInterval(update, 10000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[9997] h-[26px] flex items-center justify-between px-3 bg-black/30 backdrop-blur-2xl text-white text-[13px] font-normal select-none"
-      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif', fontWeight: 500 }}
+    <div
+      className="fixed top-0 left-0 right-0 z-[9997] h-[26px] flex items-center justify-between px-4 bg-black/25 backdrop-blur-2xl text-white text-[13px] select-none"
+      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif' }}
     >
       {/* Left */}
       <div className="flex items-center gap-5">
-        <button className="flex items-center opacity-90 hover:opacity-100 transition-opacity">
+        <button className="flex items-center opacity-90 hover:opacity-100 transition-opacity px-1 py-0.5 rounded hover:bg-white/10">
           <AppleLogo />
         </button>
-        <span className="font-bold text-[13px] opacity-95">Vivora X</span>
-        <div className="flex items-center gap-4 text-[13px] opacity-70">
-          <span className="hover:opacity-100 cursor-default transition-opacity">File</span>
-          <span className="hover:opacity-100 cursor-default transition-opacity">Edit</span>
-          <span className="hover:opacity-100 cursor-default transition-opacity">View</span>
-          <span className="hover:opacity-100 cursor-default transition-opacity">Window</span>
-          <span className="hover:opacity-100 cursor-default transition-opacity">Help</span>
+        <span className="font-semibold text-[13px] text-white/95">{activeApp}</span>
+        <div className="flex items-center gap-4 text-[13px] text-white/60 font-normal">
+          {['File', 'Edit', 'View', 'Window', 'Help'].map(m => (
+            <span key={m} className="hover:bg-white/10 px-1.5 py-0.5 rounded cursor-default transition-colors">{m}</span>
+          ))}
         </div>
       </div>
 
       {/* Right */}
-      <div className="flex items-center gap-3 text-[12px] opacity-75">
-        <BatteryFull className="w-[18px] h-[18px]" />
-        <Wifi className="w-3.5 h-3.5" />
-        <Search className="w-3.5 h-3.5" />
-        <span className="font-medium">{date} {time}</span>
+      <div className="flex items-center gap-2.5 text-[12px] text-white/70">
+        <div className="hover:bg-white/10 p-1 rounded transition-colors"><BatteryFull className="w-[18px] h-[12px]" /></div>
+        <div className="hover:bg-white/10 p-1 rounded transition-colors"><Wifi className="w-3.5 h-3.5" /></div>
+        <div className="hover:bg-white/10 p-1 rounded transition-colors"><Search className="w-3.5 h-3.5" /></div>
+        <span className="font-medium text-white/60 px-1">{date} {time}</span>
       </div>
     </div>
   );
