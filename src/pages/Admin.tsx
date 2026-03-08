@@ -257,6 +257,9 @@ export const AdminPanel: React.FC = () => {
   // Feedback
   const [feedbackData, setFeedbackData] = useState<any[]>([]);
 
+  // Project Viewer
+  const [viewingProjectId, setViewingProjectId] = useState<string | null>(null);
+
   /* — Fetch — */
   useEffect(() => {
     if (authLoading) return;
