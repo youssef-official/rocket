@@ -305,6 +305,9 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                 <span className="text-[11px] text-white/40 bg-white/[0.06] px-2 py-0.5 rounded-md">{getThemeLabel()}</span>
               </button>
 
+              {/* Layout */}
+              <LayoutSelector />
+
               {/* Wallpaper */}
               <WallpaperSelector />
 
