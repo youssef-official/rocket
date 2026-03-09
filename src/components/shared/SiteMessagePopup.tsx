@@ -27,9 +27,20 @@ export const SiteMessagePopup: React.FC = () => {
   const [messages, setMessages] = useState<SiteMessage[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
+  const [pathname, setPathname] = useState(window.location.pathname);
+
   useEffect(() => {
     fetchMessages();
-  }, [user]);
+    
+    // Check pathname periodically since we're outside of Router context in App.tsx
+    const interval = setInterval(() => {
+      if (window.location.pathname !== pathname) {
+        setPathname(window.location.pathname);
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [user, pathname]);
 
   const fetchMessages = async () => {
     // Get active messages
@@ -83,15 +94,15 @@ export const SiteMessagePopup: React.FC = () => {
   const msg = visible[0];
   const style = categoryStyles[msg.category] || categoryStyles.info;
 
-  const isLoginPage = window.location.pathname === '/login';
+  const isLoginPage = pathname === '/login';
 
   return (
     <AnimatePresence>
       <motion.div
         key={msg.id}
-        initial={{ opacity: 0, y: -20, scale: 0.95 }}
+        initial={{ opacity: 0, y: isLoginPage ? 20 : -20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -20, scale: 0.95 }}
+        exit={{ opacity: 0, y: isLoginPage ? 20 : -20, scale: 0.95 }}
         className={`fixed ${isLoginPage ? 'bottom-4 md:top-6' : 'top-4 md:top-6'} left-1/2 -translate-x-1/2 z-[9999] w-[92vw] max-w-md pointer-events-none`}
       >
         <div
