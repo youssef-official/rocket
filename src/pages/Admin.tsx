@@ -11,7 +11,7 @@ import {
   Gift, Star, Eye, EyeOff, Copy, Check,
   ChevronLeft, ChevronRight, Menu,
   Activity, Zap, ClipboardList, Shield,
-  RefreshCw, Settings, LogOut,
+  RefreshCw, Settings, LogOut, MessageCircle, Coins,
 } from 'lucide-react';
 import { AdminBlogEditor } from '@/components/admin/AdminBlogEditor';
 import { AdminProjectViewer } from '@/components/admin/AdminProjectViewer';
