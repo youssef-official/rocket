@@ -424,6 +424,7 @@ export const AdminPanel: React.FC = () => {
     finally { setEpLoading(false); }
   };
 
+  const activeByPlan = useMemo(() => {
     const m: Record<string, any> = {};
     aiModels.filter(x => x.is_active).forEach(x => { m[x.target_plan] = x; });
     return m;
