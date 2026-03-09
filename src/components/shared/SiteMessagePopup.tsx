@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { X, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,75 +26,105 @@ export const SiteMessagePopup: React.FC = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<SiteMessage[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
-  const [pathname, setPathname] = useState(window.location.pathname);
-
+  // Use a single effect to handle both data fetching and path monitoring
   useEffect(() => {
     fetchMessages();
-    
-    // Check pathname periodically since we're outside of Router context in App.tsx
-    const interval = setInterval(() => {
-      if (window.location.pathname !== pathname) {
-        setPathname(window.location.pathname);
+
+    // Monitor path changes manually since we are outside of Router context in App.tsx
+    const handleLocationChange = () => {
+      if (window.location.pathname !== currentPath) {
+        setCurrentPath(window.location.pathname);
       }
-    }, 1000);
+    };
+
+    // Listen for common navigation events
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('pushState', handleLocationChange);
+    window.addEventListener('replaceState', handleLocationChange);
     
-    return () => clearInterval(interval);
-  }, [user, pathname]);
+    // Fallback interval for safety
+    const interval = setInterval(handleLocationChange, 1000);
+
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('pushState', handleLocationChange);
+      window.removeEventListener('replaceState', handleLocationChange);
+      clearInterval(interval);
+    };
+  }, [user, currentPath]);
 
   const fetchMessages = async () => {
-    // Get active messages
-    const { data: msgs } = await supabase
-      .from('site_messages' as any)
-      .select('*')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false });
+    try {
+      const { data: msgs, error } = await supabase
+        .from('site_messages' as any)
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
 
-    if (!msgs || msgs.length === 0) return;
-
-    // Filter expired
-    const now = new Date();
-    const active = (msgs as any[]).filter((m: any) => !m.expires_at || new Date(m.expires_at) > now);
-
-    // Get dismissed
-    if (user) {
-      const { data: dismissed } = await supabase
-        .from('user_dismissed_messages' as any)
-        .select('message_id')
-        .eq('user_id', user.id);
-      if (dismissed) {
-        setDismissedIds(new Set((dismissed as any[]).map((d: any) => d.message_id)));
+      if (error || !msgs || msgs.length === 0) {
+        setMessages([]);
+        return;
       }
-    } else {
-      // Use localStorage for non-auth users
-      const stored = localStorage.getItem('dismissed_site_messages');
-      if (stored) setDismissedIds(new Set(JSON.parse(stored)));
-    }
 
-    setMessages(active);
+      const now = new Date();
+      const active = (msgs as any[]).filter((m: any) => !m.expires_at || new Date(m.expires_at) > now);
+
+      if (user) {
+        const { data: dismissed } = await supabase
+          .from('user_dismissed_messages' as any)
+          .select('message_id')
+          .eq('user_id', user.id);
+        if (dismissed) {
+          setDismissedIds(new Set((dismissed as any[]).map((d: any) => d.message_id)));
+        }
+      } else {
+        const stored = localStorage.getItem('dismissed_site_messages');
+        if (stored) {
+          try {
+            setDismissedIds(new Set(JSON.parse(stored)));
+          } catch (e) {
+            console.error('Error parsing dismissed messages:', e);
+          }
+        }
+      }
+
+      setMessages(active);
+    } catch (err) {
+      console.error('Error fetching messages:', err);
+    }
   };
 
   const dismiss = async (msgId: string) => {
-    setDismissedIds(prev => new Set([...prev, msgId]));
+    setDismissedIds(prev => {
+      const next = new Set(prev);
+      next.add(msgId);
+      return next;
+    });
 
     if (user) {
       await supabase.from('user_dismissed_messages' as any).insert({ user_id: user.id, message_id: msgId } as any);
     } else {
       const stored = localStorage.getItem('dismissed_site_messages');
       const ids = stored ? JSON.parse(stored) : [];
-      ids.push(msgId);
-      localStorage.setItem('dismissed_site_messages', JSON.stringify(ids));
+      if (!ids.includes(msgId)) {
+        ids.push(msgId);
+        localStorage.setItem('dismissed_site_messages', JSON.stringify(ids));
+      }
     }
   };
 
-  const visible = messages.filter(m => !dismissedIds.has(m.id));
-  if (visible.length === 0) return null;
+  const visibleMessages = useMemo(() => 
+    messages.filter(m => !dismissedIds.has(m.id)), 
+    [messages, dismissedIds]
+  );
 
-  // Show only the latest one
-  const msg = visible[0];
+  if (visibleMessages.length === 0) return null;
+
+  const msg = visibleMessages[0];
   const style = categoryStyles[msg.category] || categoryStyles.info;
-
-  const isLoginPage = pathname === '/login';
+  const isLoginPage = currentPath === '/login';
 
   return (
     <AnimatePresence>

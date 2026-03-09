@@ -393,3 +393,28 @@ a, button, [role='button'], input[type='submit'], input[type='button'], .cursor-
 .sp-preview-actions {
   display: none !important;
 }
+
+/* Site Message Popup Position Logic */
+.site-message-container {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Default: Top */
+.site-message-container {
+  top: 1rem;
+}
+
+@media (min-width: 768px) {
+  .site-message-container {
+    top: 1.5rem;
+  }
+}
+
+/* When on login page, move to bottom on mobile only */
+body:has(form button[type="submit"]:contains("Sign In")),
+body:has(h1:contains("Welcome back")),
+body:has(h1:contains("Create account")) {
+  /* This is a CSS-only attempt to detect login page based on content */
+}
+
+/* Since :contains is not standard CSS, we'll use a simpler approach in the component but with safer classes */
