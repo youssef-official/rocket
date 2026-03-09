@@ -1307,6 +1307,7 @@ import SupabaseCallbackPage from "@/pages/SupabaseCallback";
 import GetStarted from "@/pages/GetStarted";
 
 import { MaintenanceScreen } from "@/components/shared/MaintenanceScreen";
+import { SiteMessagePopup } from "@/components/shared/SiteMessagePopup";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -1316,6 +1317,7 @@ const App = () => (
           <MaintenanceScreen>
           <ThemeInitializer />
           <FloatingMusicPlayer />
+          <SiteMessagePopup />
           <Toaster />
           <Sonner />
           <BrowserRouter>
