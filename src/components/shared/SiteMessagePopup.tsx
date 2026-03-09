@@ -12,6 +12,7 @@ interface SiteMessage {
   link_url: string | null;
   icon: string | null;
   created_at: string;
+  expires_at: string | null;
 }
 
 const categoryStyles: Record<string, { bg: string; border: string; iconBg: string; titleColor: string }> = {
@@ -25,26 +26,23 @@ const categoryStyles: Record<string, { bg: string; border: string; iconBg: strin
 export const SiteMessagePopup: React.FC = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<SiteMessage[]>([]);
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  // We remove the dismissedIds state to make it appear always until it expires
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [isDismissedSession, setIsDismissedSession] = useState(false);
 
-  // Use a single effect to handle both data fetching and path monitoring
   useEffect(() => {
     fetchMessages();
 
-    // Monitor path changes manually since we are outside of Router context in App.tsx
     const handleLocationChange = () => {
       if (window.location.pathname !== currentPath) {
         setCurrentPath(window.location.pathname);
       }
     };
 
-    // Listen for common navigation events
     window.addEventListener('popstate', handleLocationChange);
     window.addEventListener('pushState', handleLocationChange);
     window.addEventListener('replaceState', handleLocationChange);
     
-    // Fallback interval for safety
     const interval = setInterval(handleLocationChange, 1000);
 
     return () => {
@@ -71,58 +69,21 @@ export const SiteMessagePopup: React.FC = () => {
       const now = new Date();
       const active = (msgs as any[]).filter((m: any) => !m.expires_at || new Date(m.expires_at) > now);
 
-      if (user) {
-        const { data: dismissed } = await supabase
-          .from('user_dismissed_messages' as any)
-          .select('message_id')
-          .eq('user_id', user.id);
-        if (dismissed) {
-          setDismissedIds(new Set((dismissed as any[]).map((d: any) => d.message_id)));
-        }
-      } else {
-        const stored = localStorage.getItem('dismissed_site_messages');
-        if (stored) {
-          try {
-            setDismissedIds(new Set(JSON.parse(stored)));
-          } catch (e) {
-            console.error('Error parsing dismissed messages:', e);
-          }
-        }
-      }
-
       setMessages(active);
     } catch (err) {
       console.error('Error fetching messages:', err);
     }
   };
 
-  const dismiss = async (msgId: string) => {
-    setDismissedIds(prev => {
-      const next = new Set(prev);
-      next.add(msgId);
-      return next;
-    });
-
-    if (user) {
-      await supabase.from('user_dismissed_messages' as any).insert({ user_id: user.id, message_id: msgId } as any);
-    } else {
-      const stored = localStorage.getItem('dismissed_site_messages');
-      const ids = stored ? JSON.parse(stored) : [];
-      if (!ids.includes(msgId)) {
-        ids.push(msgId);
-        localStorage.setItem('dismissed_site_messages', JSON.stringify(ids));
-      }
-    }
+  const dismiss = () => {
+    // We only dismiss for the current session/page load if user clicks X
+    // But it will reappear on next visit/refresh as requested
+    setIsDismissedSession(true);
   };
 
-  const visibleMessages = useMemo(() => 
-    messages.filter(m => !dismissedIds.has(m.id)), 
-    [messages, dismissedIds]
-  );
+  if (messages.length === 0 || isDismissedSession) return null;
 
-  if (visibleMessages.length === 0) return null;
-
-  const msg = visibleMessages[0];
+  const msg = messages[0];
   const style = categoryStyles[msg.category] || categoryStyles.info;
   const isLoginPage = currentPath === '/login';
 
@@ -130,37 +91,42 @@ export const SiteMessagePopup: React.FC = () => {
     <AnimatePresence>
       <motion.div
         key={msg.id}
-        initial={{ opacity: 0, y: isLoginPage ? 20 : -20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: isLoginPage ? 20 : -20, scale: 0.95 }}
-        className={`fixed ${isLoginPage ? 'bottom-4 md:top-6' : 'top-4 md:top-6'} left-1/2 -translate-x-1/2 z-[9999] w-[92vw] max-w-md pointer-events-none`}
+        initial={{ opacity: 0, y: isLoginPage ? 20 : -20, x: '-50%', scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, x: '-50%', scale: 1 }}
+        exit={{ opacity: 0, y: isLoginPage ? 20 : -20, x: '-50%', scale: 0.95 }}
+        className={`fixed ${isLoginPage ? 'bottom-6' : 'top-6'} left-1/2 z-[9999] w-[92vw] max-w-[400px] pointer-events-none`}
+        style={{ transform: 'translateX(-50%)' }}
       >
         <div
-          className="rounded-2xl shadow-2xl p-4 md:p-5 relative overflow-hidden pointer-events-auto backdrop-blur-sm"
-          style={{ background: `${style.bg}ee`, border: `2px solid ${style.border}` }}
+          className="rounded-2xl shadow-2xl p-4 md:p-5 relative overflow-hidden pointer-events-auto backdrop-blur-md"
+          style={{ 
+            background: `${style.bg}f2`, 
+            border: `1.5px solid ${style.border}`,
+            boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)'
+          }}
         >
           {/* Close */}
           <button
-            onClick={() => dismiss(msg.id)}
-            className="absolute top-2 right-2 md:top-3 md:right-3 w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors touch-manipulation"
+            onClick={dismiss}
+            className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors touch-manipulation z-10"
           >
-            <X size={16} style={{ color: style.titleColor }} />
+            <X size={18} style={{ color: style.titleColor }} />
           </button>
 
           {/* Icon + Title */}
-          <div className="flex items-start gap-3 pr-8">
+          <div className="flex items-start gap-3.5 pr-6">
             <div
-              className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-lg md:text-xl flex-shrink-0"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 shadow-sm"
               style={{ background: style.iconBg }}
             >
               {msg.icon || '📢'}
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-[14px] md:text-[15px] font-bold leading-tight" style={{ color: style.titleColor }}>
+              <h3 className="text-[15px] font-bold leading-tight mb-1" style={{ color: style.titleColor }}>
                 {msg.title}
               </h3>
               {msg.body && (
-                <p className="text-[12px] md:text-[13px] mt-1 md:mt-1.5 leading-relaxed line-clamp-3 md:line-clamp-none" style={{ color: `${style.titleColor}cc` }}>
+                <p className="text-[13px] leading-relaxed opacity-90" style={{ color: style.titleColor }}>
                   {msg.body}
                 </p>
               )}
@@ -169,10 +135,10 @@ export const SiteMessagePopup: React.FC = () => {
                   href={msg.link_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 mt-3 text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-all hover:opacity-80"
+                  className="inline-flex items-center gap-1.5 mt-3 text-[12px] font-bold px-3.5 py-2 rounded-lg transition-all hover:opacity-80 active:scale-95 shadow-sm"
                   style={{ background: style.border, color: style.titleColor }}
                 >
-                  فتح الرابط <ExternalLink size={12} />
+                  فتح الرابط <ExternalLink size={13} />
                 </a>
               )}
             </div>
