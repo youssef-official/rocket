@@ -470,8 +470,10 @@ export const AdminPanel: React.FC = () => {
       { key: 'ai-models',    label: 'AI Models',      icon: Cpu,       count: aiModels.length },
       { key: 'promo-codes',  label: 'Promo Codes',    icon: Gift,      count: promoCodes.length },
       { key: 'celebrations', label: 'Celebrations',   icon: Star },
+      { key: 'extra-points', label: 'Extra Points',   icon: Coins },
     ]},
     { group: 'Content', items: [
+      { key: 'messages',  label: 'Messages',      icon: MessageCircle, count: siteMessages.length },
       { key: 'templates', label: 'Templates',     icon: Package,   count: templates.length },
       { key: 'inbox',     label: 'Notifications', icon: Megaphone, count: notifications.length },
       { key: 'blog',      label: 'Blog',          icon: BookOpen },
