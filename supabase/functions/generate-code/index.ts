@@ -726,10 +726,14 @@ interface FallbackProvider {
   authToken: string;
 }
 
-function buildFallbackChain(primary: AgentCallOptions): FallbackProvider[] {
+function buildFallbackChain(primary: AgentCallOptions, dbFallback?: FallbackProvider | null): FallbackProvider[] {
   const chain: FallbackProvider[] = [
     { name: "primary", model: primary.model, gatewayUrl: primary.gatewayUrl, authToken: primary.authToken },
   ];
+  // DB-configured fallback takes priority
+  if (dbFallback) {
+    chain.push(dbFallback);
+  }
   const openrouterKey = Deno.env.get("OPENROUTER_API_KEY");
   if (openrouterKey) {
     chain.push({
