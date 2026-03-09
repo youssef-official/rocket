@@ -83,6 +83,8 @@ export const SiteMessagePopup: React.FC = () => {
   const msg = visible[0];
   const style = categoryStyles[msg.category] || categoryStyles.info;
 
+  const isLoginPage = window.location.pathname === '/login';
+
   return (
     <AnimatePresence>
       <motion.div
@@ -90,34 +92,34 @@ export const SiteMessagePopup: React.FC = () => {
         initial={{ opacity: 0, y: -20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -20, scale: 0.95 }}
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] w-[90vw] max-w-md"
+        className={`fixed ${isLoginPage ? 'bottom-4 md:top-6' : 'top-4 md:top-6'} left-1/2 -translate-x-1/2 z-[9999] w-[92vw] max-w-md pointer-events-none`}
       >
         <div
-          className="rounded-2xl shadow-2xl p-5 relative overflow-hidden"
-          style={{ background: style.bg, border: `2px solid ${style.border}` }}
+          className="rounded-2xl shadow-2xl p-4 md:p-5 relative overflow-hidden pointer-events-auto backdrop-blur-sm"
+          style={{ background: `${style.bg}ee`, border: `2px solid ${style.border}` }}
         >
           {/* Close */}
           <button
             onClick={() => dismiss(msg.id)}
-            className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors"
+            className="absolute top-2 right-2 md:top-3 md:right-3 w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors touch-manipulation"
           >
             <X size={16} style={{ color: style.titleColor }} />
           </button>
 
           {/* Icon + Title */}
-          <div className="flex items-start gap-3 pr-6">
+          <div className="flex items-start gap-3 pr-8">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+              className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-lg md:text-xl flex-shrink-0"
               style={{ background: style.iconBg }}
             >
               {msg.icon || '📢'}
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-[15px] font-bold leading-tight" style={{ color: style.titleColor }}>
+              <h3 className="text-[14px] md:text-[15px] font-bold leading-tight" style={{ color: style.titleColor }}>
                 {msg.title}
               </h3>
               {msg.body && (
-                <p className="text-[13px] mt-1.5 leading-relaxed" style={{ color: `${style.titleColor}cc` }}>
+                <p className="text-[12px] md:text-[13px] mt-1 md:mt-1.5 leading-relaxed line-clamp-3 md:line-clamp-none" style={{ color: `${style.titleColor}cc` }}>
                   {msg.body}
                 </p>
               )}
