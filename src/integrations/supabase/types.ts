@@ -668,6 +668,48 @@ export type Database = {
         }
         Relationships: []
       }
+      site_messages: {
+        Row: {
+          body: string | null
+          category: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          link_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          link_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          link_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       supabase_connections: {
         Row: {
           access_token: string
@@ -733,6 +775,35 @@ export type Database = {
           sort_order?: number | null
         }
         Relationships: []
+      }
+      user_dismissed_messages: {
+        Row: {
+          dismissed_at: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          dismissed_at?: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          dismissed_at?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_dismissed_messages_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "site_messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_integrations: {
         Row: {

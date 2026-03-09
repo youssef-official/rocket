@@ -11,7 +11,7 @@ import {
   Gift, Star, Eye, EyeOff, Copy, Check,
   ChevronLeft, ChevronRight, Menu,
   Activity, Zap, ClipboardList, Shield,
-  RefreshCw, Settings, LogOut,
+  RefreshCw, Settings, LogOut, MessageCircle, Coins,
 } from 'lucide-react';
 import { AdminBlogEditor } from '@/components/admin/AdminBlogEditor';
 import { AdminProjectViewer } from '@/components/admin/AdminProjectViewer';
@@ -27,7 +27,7 @@ interface AdminData {
 type TabKey =
   | 'dashboard' | 'users' | 'plans' | 'transactions' | 'projects'
   | 'inbox' | 'templates' | 'blog' | 'ai-models' | 'promo-codes'
-  | 'celebrations' | 'onboarding' | 'feedback';
+  | 'celebrations' | 'onboarding' | 'feedback' | 'messages' | 'extra-points';
 
 /* ================================================================
    DESIGN SYSTEM
@@ -257,6 +257,22 @@ export const AdminPanel: React.FC = () => {
   // Feedback
   const [feedbackData, setFeedbackData] = useState<any[]>([]);
 
+  // Site Messages
+  const [siteMessages, setSiteMessages] = useState<any[]>([]);
+  const [smTitle, setSmTitle] = useState('');
+  const [smBody, setSmBody] = useState('');
+  const [smCategory, setSmCategory] = useState('info');
+  const [smLink, setSmLink] = useState('');
+  const [smIcon, setSmIcon] = useState('📢');
+  const [smExpires, setSmExpires] = useState('');
+  const [savingSm, setSavingSm] = useState(false);
+
+  // Extra Points
+  const [epPlan, setEpPlan] = useState('all');
+  const [epPoints, setEpPoints] = useState(5);
+  const [epUnlimited, setEpUnlimited] = useState(false);
+  const [epLoading, setEpLoading] = useState(false);
+
   // Project Viewer
   const [viewingProjectId, setViewingProjectId] = useState<string | null>(null);
 
@@ -287,13 +303,14 @@ export const AdminPanel: React.FC = () => {
     refreshAll();
   }, [user, authLoading, navigate]);
 
-  const refreshAll = () => { fetchNotifs(); fetchTpls(); fetchAiMs(); fetchPromos(); fetchCelebs(); fetchFeedback(); };
+  const refreshAll = () => { fetchNotifs(); fetchTpls(); fetchAiMs(); fetchPromos(); fetchCelebs(); fetchFeedback(); fetchSiteMessages(); };
   const fetchNotifs = async () => { const { data: d } = await supabase.from('inbox_notifications').select('*').order('created_at', { ascending: false }); if (d) setNotifications(d); };
   const fetchTpls   = async () => { const { data: d } = await supabase.from('templates').select('*').order('sort_order', { ascending: true }); if (d) setTemplates(d); };
   const fetchAiMs   = async () => { const { data: d } = await supabase.from('ai_model_config').select('*').order('created_at', { ascending: false }); if (d) setAiModels(d); };
   const fetchPromos = async () => { const { data: d } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false }); if (d) setPromoCodes(d); };
   const fetchCelebs = async () => { const { data: d } = await supabase.from('site_celebrations').select('*').order('name'); if (d) setCelebrations(d); };
   const fetchFeedback = async () => { const { data: d } = await supabase.from('message_feedback').select('*').order('created_at', { ascending: false }).limit(100); if (d) setFeedbackData(d); };
+  const fetchSiteMessages = async () => { const { data: d } = await supabase.from('site_messages' as any).select('*').order('created_at', { ascending: false }); if (d) setSiteMessages(d as any[]); };
 
   /* — Handlers — */
   const sendNotif = async () => {
@@ -362,6 +379,51 @@ export const AdminPanel: React.FC = () => {
     await fetchCelebs(); toast({ title: `${cur ? 'Deactivated' : 'Activated'} ✓` });
   };
 
+  // Site Messages handlers
+  const addSiteMessage = async () => {
+    if (!smTitle.trim()) return; setSavingSm(true);
+    await supabase.from('site_messages' as any).insert({
+      title: smTitle, body: smBody || null, category: smCategory,
+      link_url: smLink || null, icon: smIcon || '📢',
+      expires_at: smExpires || null, created_by: user?.id, is_active: true
+    } as any);
+    setSmTitle(''); setSmBody(''); setSmCategory('info'); setSmLink(''); setSmIcon('📢'); setSmExpires('');
+    await fetchSiteMessages(); setSavingSm(false); toast({ title: 'Message created ✓' });
+  };
+  const deleteSiteMessage = async (id: string) => { await supabase.from('site_messages' as any).delete().eq('id', id); await fetchSiteMessages(); };
+  const toggleSiteMessage = async (id: string, cur: boolean) => {
+    await supabase.from('site_messages' as any).update({ is_active: !cur } as any).eq('id', id);
+    await fetchSiteMessages(); toast({ title: `${cur ? 'Deactivated' : 'Activated'} ✓` });
+  };
+
+  // Extra Points handler
+  const applyExtraPoints = async () => {
+    setEpLoading(true);
+    try {
+      const { data: sd } = await supabase.auth.getSession();
+      const { data: result, error: err } = await supabase.functions.invoke('admin-extra-points', {
+        headers: { Authorization: `Bearer ${sd?.session?.access_token}` },
+        body: { action: 'add_points', target_plan: epPlan, points: epPoints, unlimited: epUnlimited },
+      });
+      if (err) throw new Error(err.message);
+      toast({ title: `Updated ${result?.updated || 0} users ✓` });
+    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+    finally { setEpLoading(false); }
+  };
+  const resetPoints = async () => {
+    setEpLoading(true);
+    try {
+      const { data: sd } = await supabase.auth.getSession();
+      const { data: result, error: err } = await supabase.functions.invoke('admin-extra-points', {
+        headers: { Authorization: `Bearer ${sd?.session?.access_token}` },
+        body: { action: 'reset_points', target_plan: epPlan },
+      });
+      if (err) throw new Error(err.message);
+      toast({ title: `Reset ${result?.updated || 0} users to defaults ✓` });
+    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+    finally { setEpLoading(false); }
+  };
+
   const activeByPlan = useMemo(() => {
     const m: Record<string, any> = {};
     aiModels.filter(x => x.is_active).forEach(x => { m[x.target_plan] = x; });
@@ -408,8 +470,10 @@ export const AdminPanel: React.FC = () => {
       { key: 'ai-models',    label: 'AI Models',      icon: Cpu,       count: aiModels.length },
       { key: 'promo-codes',  label: 'Promo Codes',    icon: Gift,      count: promoCodes.length },
       { key: 'celebrations', label: 'Celebrations',   icon: Star },
+      { key: 'extra-points', label: 'Extra Points',   icon: Coins },
     ]},
     { group: 'Content', items: [
+      { key: 'messages',  label: 'Messages',      icon: MessageCircle, count: siteMessages.length },
       { key: 'templates', label: 'Templates',     icon: Package,   count: templates.length },
       { key: 'inbox',     label: 'Notifications', icon: Megaphone, count: notifications.length },
       { key: 'blog',      label: 'Blog',          icon: BookOpen },
@@ -1143,6 +1207,130 @@ export const AdminPanel: React.FC = () => {
                       </table>
                     </Card>
                   )}
+                </div>
+              )}
+
+              {/* ══ MESSAGES ══ */}
+              {tab === 'messages' && (
+                <div className="space-y-5">
+                  <div>
+                    <h2 className="text-[20px] font-bold text-[#191919]">رسائل الموقع — Site Messages</h2>
+                    <p className="text-[13px] text-[#9b9a97] mt-0.5">Popup messages shown to all users when they visit the site</p>
+                  </div>
+                  <Card>
+                    <CardHead title="Create Message" />
+                    <div className="p-5 space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <Field label="Title *"><input value={smTitle} onChange={e => setSmTitle(e.target.value)} className={inputCls} placeholder="Message title…" /></Field>
+                        <Field label="Category">
+                          <select value={smCategory} onChange={e => setSmCategory(e.target.value)} className={selectCls}>
+                            <option value="info">ℹ️ Info</option>
+                            <option value="competition">🏆 Competition / مسابقة</option>
+                            <option value="celebration">🎉 Celebration / فرحة</option>
+                            <option value="apology">🙏 Apology / اعتذار</option>
+                            <option value="issue">⚠️ Issue / مشكلة</option>
+                          </select>
+                        </Field>
+                        <Field label="Icon/Emoji"><input value={smIcon} onChange={e => setSmIcon(e.target.value)} className={inputCls} placeholder="📢" /></Field>
+                      </div>
+                      <Field label="Body" col><textarea value={smBody} onChange={e => setSmBody(e.target.value)} className={`${textareaCls} h-20`} placeholder="Message body…" /></Field>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Field label="Link URL (optional)"><input value={smLink} onChange={e => setSmLink(e.target.value)} className={inputCls} placeholder="https://…" /></Field>
+                        <Field label="Expires At (optional)"><input type="datetime-local" value={smExpires} onChange={e => setSmExpires(e.target.value)} className={inputCls} /></Field>
+                      </div>
+                      <Btn onClick={addSiteMessage} disabled={!smTitle.trim()} loading={savingSm}><Plus size={12} /> Create Message</Btn>
+                    </div>
+                  </Card>
+                  {!siteMessages.length ? <Empty icon={MessageCircle} title="No messages yet" desc="Create a message to show a popup to all site visitors" /> : (
+                    <Card>
+                      <table className="w-full border-collapse">
+                        <THead cols={['Status','Icon','Title','Category','Expires','Created','']} />
+                        <tbody>
+                          {siteMessages.map((m: any) => (
+                            <TRow key={m.id}>
+                              <TD>
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-2 h-2 rounded-full ${m.is_active ? 'bg-[#16a34a]' : 'bg-[#e3e2de]'}`} />
+                                  <span className="text-[12px]">{m.is_active ? 'Active' : 'Off'}</span>
+                                </div>
+                              </TD>
+                              <TD><span className="text-lg">{m.icon || '📢'}</span></TD>
+                              <TD className="font-medium text-[#191919]">{m.title}</TD>
+                              <TD><Tag color={m.category === 'celebration' ? 'orange' : m.category === 'competition' ? 'blue' : m.category === 'apology' ? 'red' : m.category === 'issue' ? 'orange' : 'green'}>{m.category}</Tag></TD>
+                              <TD>{m.expires_at ? new Date(m.expires_at).toLocaleString() : '∞'}</TD>
+                              <TD>{new Date(m.created_at).toLocaleDateString()}</TD>
+                              <TD>
+                                <div className="flex items-center justify-end gap-2">
+                                  <button onClick={() => toggleSiteMessage(m.id, m.is_active)}
+                                    className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all ${m.is_active ? 'bg-[#f7f6f3] text-[#6b6b6b] border border-[#e3e2de]' : 'bg-[#2383e2] text-white'}`}>
+                                    {m.is_active ? 'Deactivate' : 'Activate'}
+                                  </button>
+                                  <IconBtn onClick={() => deleteSiteMessage(m.id)} danger><Trash2 size={13} /></IconBtn>
+                                </div>
+                              </TD>
+                            </TRow>
+                          ))}
+                        </tbody>
+                      </table>
+                    </Card>
+                  )}
+                </div>
+              )}
+
+              {/* ══ EXTRA POINTS ══ */}
+              {tab === 'extra-points' && (
+                <div className="space-y-5">
+                  <div>
+                    <h2 className="text-[20px] font-bold text-[#191919]">نقاط إضافية — Extra Points</h2>
+                    <p className="text-[13px] text-[#9b9a97] mt-0.5">Add bonus daily credits to users by plan category</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <Card>
+                      <CardHead title="Grant Extra Points" />
+                      <div className="p-5 space-y-4">
+                        <Field label="Target Plan">
+                          <select value={epPlan} onChange={e => setEpPlan(e.target.value)} className={selectCls}>
+                            <option value="all">🌍 All Plans</option>
+                            <option value="free">🆓 Free</option>
+                            <option value="pro">⭐ Pro</option>
+                            <option value="business">💎 Business</option>
+                          </select>
+                        </Field>
+                        <Field label="Points to Add">
+                          <input type="number" value={epPoints} onChange={e => setEpPoints(Number(e.target.value))} min={1} max={1000} className={inputCls} disabled={epUnlimited} placeholder="5" />
+                        </Field>
+                        <label className="flex items-center gap-2.5 cursor-pointer">
+                          <input type="checkbox" checked={epUnlimited} onChange={e => setEpUnlimited(e.target.checked)} className="w-4 h-4 rounded border-[#e3e2de] accent-[#2383e2]" />
+                          <span className="text-[13px] text-[#6b6b6b] font-medium">♾️ Unlimited Credits</span>
+                        </label>
+                        <div className="flex gap-2 pt-2">
+                          <Btn onClick={applyExtraPoints} loading={epLoading}><Zap size={12} /> {epUnlimited ? 'Set Unlimited' : `Add ${epPoints} Points`}</Btn>
+                          <Btn onClick={resetPoints} loading={epLoading} variant="danger"><RefreshCw size={12} /> Reset to Defaults</Btn>
+                        </div>
+                      </div>
+                    </Card>
+                    <div className="space-y-3">
+                      <div className="rounded-lg bg-[#f0fdf4] border border-[#bbf7d0] p-4">
+                        <p className="text-[11px] font-semibold text-[#166534] uppercase tracking-wide mb-1.5">How it works</p>
+                        <p className="text-[12px] text-[#6b6b6b] leading-relaxed">Adding points increases the daily credit limit for all users in the selected plan. This takes effect immediately.</p>
+                      </div>
+                      <div className="rounded-lg bg-[#fef3c7] border border-[#fde68a] p-4">
+                        <p className="text-[11px] font-semibold text-[#92400e] uppercase tracking-wide mb-1.5">Reset to Defaults</p>
+                        <p className="text-[12px] text-[#6b6b6b] leading-relaxed">Free = 3/day, Pro = 5/day, Business = 10/day. This reverts any extra points or unlimited status.</p>
+                      </div>
+                      <div className="rounded-lg bg-[#ede9fe] border border-[#c4b5fd] p-4">
+                        <p className="text-[11px] font-semibold text-[#5b21b6] uppercase tracking-wide mb-1.5">Plan Defaults</p>
+                        <div className="space-y-1.5 mt-2">
+                          {[{ plan: 'Free', credits: 3, color: '#2383e2' }, { plan: 'Pro', credits: 5, color: '#9065b0' }, { plan: 'Business', credits: 10, color: '#e03e3e' }].map(p => (
+                            <div key={p.plan} className="flex justify-between items-center">
+                              <span className="text-[12px] text-[#6b6b6b]">{p.plan}</span>
+                              <span className="text-[12px] font-bold" style={{ color: p.color }}>{p.credits} credits/day</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
