@@ -927,7 +927,7 @@ export const AdminPanel: React.FC = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
-                            <Field label="Provider"><select value={aiProvider} onChange={e => changeProvider(e.target.value)} className={selectCls}><option value="vercel">Vercel AI</option><option value="openrouter">OpenRouter</option><option value="nvidia">NVIDIA NIM</option><option value="lovable">Lovable AI</option><option value="google">Google AI Studio</option><option value="custom">Custom Provider</option></select></Field>
+                            <Field label="Provider"><select value={aiProvider} onChange={e => changeProvider(e.target.value)} className={selectCls}><option value="vercel">Vercel AI</option><option value="openrouter">OpenRouter</option><option value="nvidia">NVIDIA NIM</option><option value="lovable">Lovable AI</option><option value="google">Google AI Studio</option><option value="mistral">Mistral AI</option><option value="custom">Custom Provider</option></select></Field>
                             <Field label="Target Plan"><select value={aiTargetPlan} onChange={e => setAiTargetPlan(e.target.value)} className={selectCls}><option value="all">All Plans</option><option value="free">Free</option><option value="pro">Pro</option><option value="business">Business</option></select></Field>
                           </div>
                           <Field label="Model ID *"><input value={aiModelId} onChange={e => setAiModelId(e.target.value)} className={inputCls} placeholder={providerDefs[aiProvider]?.ph} /></Field>
