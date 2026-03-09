@@ -257,6 +257,22 @@ export const AdminPanel: React.FC = () => {
   // Feedback
   const [feedbackData, setFeedbackData] = useState<any[]>([]);
 
+  // Site Messages
+  const [siteMessages, setSiteMessages] = useState<any[]>([]);
+  const [smTitle, setSmTitle] = useState('');
+  const [smBody, setSmBody] = useState('');
+  const [smCategory, setSmCategory] = useState('info');
+  const [smLink, setSmLink] = useState('');
+  const [smIcon, setSmIcon] = useState('📢');
+  const [smExpires, setSmExpires] = useState('');
+  const [savingSm, setSavingSm] = useState(false);
+
+  // Extra Points
+  const [epPlan, setEpPlan] = useState('all');
+  const [epPoints, setEpPoints] = useState(5);
+  const [epUnlimited, setEpUnlimited] = useState(false);
+  const [epLoading, setEpLoading] = useState(false);
+
   // Project Viewer
   const [viewingProjectId, setViewingProjectId] = useState<string | null>(null);
 
