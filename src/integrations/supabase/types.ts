@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           display_name: string
+          fallback_model_id: string | null
           gateway_url: string
           id: string
           is_active: boolean
@@ -33,6 +34,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           display_name?: string
+          fallback_model_id?: string | null
           gateway_url?: string
           id?: string
           is_active?: boolean
@@ -46,6 +48,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           display_name?: string
+          fallback_model_id?: string | null
           gateway_url?: string
           id?: string
           is_active?: boolean
@@ -54,7 +57,15 @@ export type Database = {
           target_plan?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_model_config_fallback_model_id_fkey"
+            columns: ["fallback_model_id"]
+            isOneToOne: false
+            referencedRelation: "ai_model_config"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       analytics_events: {
         Row: {
