@@ -317,6 +317,7 @@ export const AdminPanel: React.FC = () => {
     nvidia:     { url: 'https://integrate.api.nvidia.com/v1/chat/completions', key: 'NVIDIA_API_KEY',     ph: 'moonshotai/kimi-k2.5' },
     lovable:    { url: 'https://ai.gateway.lovable.dev/v1/chat/completions',   key: 'LOVABLE_API_KEY',    ph: 'google/gemini-2.5-flash' },
     google:     { url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', key: 'GOOGLE_AI_STUDIO_KEY', ph: 'gemini-2.5-flash' },
+    mistral:    { url: 'https://api.mistral.ai/v1/chat/completions',           key: 'MISTRAL_API_KEY',    ph: 'mistral-large-2512' },
     custom:     { url: '',                                                      key: '',                   ph: 'your-model-id' },
   };
   const changeProvider = (p: string) => { setAiProvider(p); const d = providerDefs[p]; if (d) { setAiGatewayUrl(d.url); setAiKeySecretName(d.key); setAiModelId(''); } };
