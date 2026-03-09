@@ -1,0 +1,1 @@
+ALTER TABLE public.ai_model_config ADD COLUMN fallback_model_id uuid REFERENCES public.ai_model_config(id) ON DELETE SET NULL DEFAULT NULL;

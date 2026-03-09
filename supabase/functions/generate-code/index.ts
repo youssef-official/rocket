@@ -726,10 +726,14 @@ interface FallbackProvider {
   authToken: string;
 }
 
-function buildFallbackChain(primary: AgentCallOptions): FallbackProvider[] {
+function buildFallbackChain(primary: AgentCallOptions, dbFallback?: FallbackProvider | null): FallbackProvider[] {
   const chain: FallbackProvider[] = [
     { name: "primary", model: primary.model, gatewayUrl: primary.gatewayUrl, authToken: primary.authToken },
   ];
+  // DB-configured fallback takes priority
+  if (dbFallback) {
+    chain.push(dbFallback);
+  }
   const openrouterKey = Deno.env.get("OPENROUTER_API_KEY");
   if (openrouterKey) {
     chain.push({
@@ -1184,6 +1188,7 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
     let model = "google/gemini-3-flash-preview";
     let gatewayUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
     let apiKeySecretName = "LOVABLE_API_KEY";
+    let dbFallbackProvider: FallbackProvider | null = null;
 
     // SECURITY: Verify user's actual plan from database
     let verifiedPlan = 'free';
@@ -1221,7 +1226,7 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
 
     try {
       const configRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/ai_model_config?is_active=eq.true&or=(target_plan.eq.${verifiedPlan},target_plan.eq.all)`,
+        `${SUPABASE_URL}/rest/v1/ai_model_config?is_active=eq.true&or=(target_plan.eq.${verifiedPlan},target_plan.eq.all)&select=*`,
         {
           headers: {
             "apikey": SUPABASE_SERVICE_ROLE_KEY,
@@ -1238,6 +1243,33 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
           gatewayUrl = cfg.gateway_url;
           apiKeySecretName = cfg.api_key_secret_name;
           console.log(`[generate-code] Using model: ${model} (provider: ${cfg.provider}, target: ${cfg.target_plan}, verified: ${verifiedPlan})`);
+
+          // Fetch DB-configured fallback model
+          if (cfg.fallback_model_id) {
+            const fbRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/ai_model_config?id=eq.${cfg.fallback_model_id}&select=*`,
+              {
+                headers: {
+                  "apikey": SUPABASE_SERVICE_ROLE_KEY,
+                  "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                },
+              }
+            );
+            if (fbRes.ok) {
+              const fbConfigs = await fbRes.json();
+              if (fbConfigs && fbConfigs.length > 0) {
+                const fb = fbConfigs[0];
+                const fbToken = Deno.env.get(fb.api_key_secret_name) || Deno.env.get("LOVABLE_API_KEY") || LOVABLE_API_KEY;
+                dbFallbackProvider = {
+                  name: `db-fallback(${fb.display_name})`,
+                  model: fb.model_id,
+                  gatewayUrl: fb.gateway_url,
+                  authToken: fbToken,
+                };
+                console.log(`[generate-code] DB fallback configured: ${fb.display_name} (${fb.model_id})`);
+              }
+            }
+          }
         }
       }
     } catch (cfgErr) {
@@ -1261,7 +1293,7 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
     // ALL OTHER MODES — with failover on 402/403
     // ═══════════════════════════════════════════════
     const primaryOpts: AgentCallOptions = { model, gatewayUrl, authToken };
-    const fallbackProviders = buildFallbackChain(primaryOpts);
+    const fallbackProviders = buildFallbackChain(primaryOpts, dbFallbackProvider);
 
     for (const provider of fallbackProviders) {
       const response = await fetch(provider.gatewayUrl, {
