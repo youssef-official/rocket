@@ -303,13 +303,14 @@ export const AdminPanel: React.FC = () => {
     refreshAll();
   }, [user, authLoading, navigate]);
 
-  const refreshAll = () => { fetchNotifs(); fetchTpls(); fetchAiMs(); fetchPromos(); fetchCelebs(); fetchFeedback(); };
+  const refreshAll = () => { fetchNotifs(); fetchTpls(); fetchAiMs(); fetchPromos(); fetchCelebs(); fetchFeedback(); fetchSiteMessages(); };
   const fetchNotifs = async () => { const { data: d } = await supabase.from('inbox_notifications').select('*').order('created_at', { ascending: false }); if (d) setNotifications(d); };
   const fetchTpls   = async () => { const { data: d } = await supabase.from('templates').select('*').order('sort_order', { ascending: true }); if (d) setTemplates(d); };
   const fetchAiMs   = async () => { const { data: d } = await supabase.from('ai_model_config').select('*').order('created_at', { ascending: false }); if (d) setAiModels(d); };
   const fetchPromos = async () => { const { data: d } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false }); if (d) setPromoCodes(d); };
   const fetchCelebs = async () => { const { data: d } = await supabase.from('site_celebrations').select('*').order('name'); if (d) setCelebrations(d); };
   const fetchFeedback = async () => { const { data: d } = await supabase.from('message_feedback').select('*').order('created_at', { ascending: false }).limit(100); if (d) setFeedbackData(d); };
+  const fetchSiteMessages = async () => { const { data: d } = await supabase.from('site_messages' as any).select('*').order('created_at', { ascending: false }); if (d) setSiteMessages(d as any[]); };
 
   /* — Handlers — */
   const sendNotif = async () => {
