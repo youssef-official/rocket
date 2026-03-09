@@ -1293,7 +1293,7 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
     // ALL OTHER MODES — with failover on 402/403
     // ═══════════════════════════════════════════════
     const primaryOpts: AgentCallOptions = { model, gatewayUrl, authToken };
-    const fallbackProviders = buildFallbackChain(primaryOpts);
+    const fallbackProviders = buildFallbackChain(primaryOpts, dbFallbackProvider);
 
     for (const provider of fallbackProviders) {
       const response = await fetch(provider.gatewayUrl, {
