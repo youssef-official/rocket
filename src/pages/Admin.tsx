@@ -379,7 +379,51 @@ export const AdminPanel: React.FC = () => {
     await fetchCelebs(); toast({ title: `${cur ? 'Deactivated' : 'Activated'} ✓` });
   };
 
-  const activeByPlan = useMemo(() => {
+  // Site Messages handlers
+  const addSiteMessage = async () => {
+    if (!smTitle.trim()) return; setSavingSm(true);
+    await supabase.from('site_messages' as any).insert({
+      title: smTitle, body: smBody || null, category: smCategory,
+      link_url: smLink || null, icon: smIcon || '📢',
+      expires_at: smExpires || null, created_by: user?.id, is_active: true
+    } as any);
+    setSmTitle(''); setSmBody(''); setSmCategory('info'); setSmLink(''); setSmIcon('📢'); setSmExpires('');
+    await fetchSiteMessages(); setSavingSm(false); toast({ title: 'Message created ✓' });
+  };
+  const deleteSiteMessage = async (id: string) => { await supabase.from('site_messages' as any).delete().eq('id', id); await fetchSiteMessages(); };
+  const toggleSiteMessage = async (id: string, cur: boolean) => {
+    await supabase.from('site_messages' as any).update({ is_active: !cur } as any).eq('id', id);
+    await fetchSiteMessages(); toast({ title: `${cur ? 'Deactivated' : 'Activated'} ✓` });
+  };
+
+  // Extra Points handler
+  const applyExtraPoints = async () => {
+    setEpLoading(true);
+    try {
+      const { data: sd } = await supabase.auth.getSession();
+      const { data: result, error: err } = await supabase.functions.invoke('admin-extra-points', {
+        headers: { Authorization: `Bearer ${sd?.session?.access_token}` },
+        body: { action: 'add_points', target_plan: epPlan, points: epPoints, unlimited: epUnlimited },
+      });
+      if (err) throw new Error(err.message);
+      toast({ title: `Updated ${result?.updated || 0} users ✓` });
+    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+    finally { setEpLoading(false); }
+  };
+  const resetPoints = async () => {
+    setEpLoading(true);
+    try {
+      const { data: sd } = await supabase.auth.getSession();
+      const { data: result, error: err } = await supabase.functions.invoke('admin-extra-points', {
+        headers: { Authorization: `Bearer ${sd?.session?.access_token}` },
+        body: { action: 'reset_points', target_plan: epPlan },
+      });
+      if (err) throw new Error(err.message);
+      toast({ title: `Reset ${result?.updated || 0} users to defaults ✓` });
+    } catch (e: any) { toast({ title: 'Error', description: e.message, variant: 'destructive' }); }
+    finally { setEpLoading(false); }
+  };
+
     const m: Record<string, any> = {};
     aiModels.filter(x => x.is_active).forEach(x => { m[x.target_plan] = x; });
     return m;
