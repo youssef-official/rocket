@@ -27,7 +27,7 @@ interface AdminData {
 type TabKey =
   | 'dashboard' | 'users' | 'plans' | 'transactions' | 'projects'
   | 'inbox' | 'templates' | 'blog' | 'ai-models' | 'promo-codes'
-  | 'celebrations' | 'onboarding' | 'feedback';
+  | 'celebrations' | 'onboarding' | 'feedback' | 'messages' | 'extra-points';
 
 /* ================================================================
    DESIGN SYSTEM
