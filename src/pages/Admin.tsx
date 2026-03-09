@@ -960,7 +960,7 @@ export const AdminPanel: React.FC = () => {
                   {!aiModels.length ? <Empty icon={Cpu} title="No models configured" /> : (
                     <Card>
                       <table className="w-full border-collapse">
-                        <THead cols={['Status','Provider','Model ID','Name','Plan','']} />
+                        <THead cols={['Status','Provider','Model ID','Name','Plan','Fallback','']} />
                         <tbody>
                           {aiModels.map(m => (
                             <React.Fragment key={m.id}>
@@ -975,6 +975,23 @@ export const AdminPanel: React.FC = () => {
                               <TD className="font-mono text-[#9b9a97]">{m.model_id}</TD>
                               <TD className="font-medium text-[#191919]">{m.display_name}</TD>
                               <TD><Tag color="blue">{m.target_plan === 'all' ? 'All' : m.target_plan}</Tag></TD>
+                              <TD>
+                                <select
+                                  value={(m as any).fallback_model_id || ''}
+                                  onChange={async (e) => {
+                                    const val = e.target.value || null;
+                                    await supabase.from('ai_model_config').update({ fallback_model_id: val } as any).eq('id', m.id);
+                                    await fetchAiMs();
+                                    toast({ title: 'Fallback updated ✓' });
+                                  }}
+                                  className="px-2 py-1 bg-white border border-[#e3e2de] rounded text-[11px] text-[#6b6b6b] outline-none focus:border-[#2383e2] max-w-[140px]"
+                                >
+                                  <option value="">None</option>
+                                  {aiModels.filter(x => x.id !== m.id).map(x => (
+                                    <option key={x.id} value={x.id}>{x.display_name} ({x.provider})</option>
+                                  ))}
+                                </select>
+                              </TD>
                               <TD>
                                 <div className="flex items-center justify-end gap-2">
                                   <button onClick={() => { setTestingModel(testingModel === m.id ? null : m.id); setTestOutput(''); setTestInput(''); }}
@@ -991,7 +1008,7 @@ export const AdminPanel: React.FC = () => {
                             </TRow>
                             {testingModel === m.id && (
                               <tr>
-                                <td colSpan={6} className="px-4 py-4 bg-[#f7f6f3] border-b border-[#e3e2de]">
+                                <td colSpan={7} className="px-4 py-4 bg-[#f7f6f3] border-b border-[#e3e2de]">
                                   <div className="space-y-3 max-w-2xl">
                                     <div className="flex items-center gap-2 mb-2">
                                       <Zap size={14} className="text-[#5b21b6]" />
@@ -1026,6 +1043,64 @@ export const AdminPanel: React.FC = () => {
                     </table>
                   </Card>
                 )}
+
+                  {/* ══ FALLBACK MODELS OVERVIEW ══ */}
+                  <Card>
+                    <CardHead title="النماذج الاحتياطية — Fallback Models" sub="Automatic failover when primary model fails" />
+                    <div className="p-5">
+                      {aiModels.filter(m => m.is_active).length === 0 ? (
+                        <p className="text-[13px] text-[#9b9a97] text-center py-6">No active models configured yet</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {aiModels.filter(m => m.is_active).map(m => {
+                            const fb = aiModels.find(x => x.id === (m as any).fallback_model_id);
+                            return (
+                              <div key={m.id} className="flex items-center gap-3 p-4 rounded-xl border border-[#e3e2de] bg-[#fafaf9] hover:bg-[#f7f6f3] transition-colors">
+                                {/* Primary */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#16a34a]" />
+                                    <span className="text-[12px] font-bold text-[#191919]">{m.display_name}</span>
+                                    <Tag color="blue">{m.target_plan === 'all' ? 'All' : m.target_plan}</Tag>
+                                  </div>
+                                  <p className="text-[11px] text-[#9b9a97] font-mono truncate">{m.provider} / {m.model_id}</p>
+                                </div>
+
+                                {/* Arrow */}
+                                <div className="flex flex-col items-center gap-0.5 px-2">
+                                  <ArrowRight size={16} className={fb ? 'text-[#2383e2]' : 'text-[#e3e2de]'} />
+                                  <span className="text-[9px] font-semibold text-[#9b9a97] uppercase">Fallback</span>
+                                </div>
+
+                                {/* Fallback */}
+                                <div className="flex-1 min-w-0">
+                                  {fb ? (
+                                    <div>
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]" />
+                                        <span className="text-[12px] font-bold text-[#191919]">{fb.display_name}</span>
+                                      </div>
+                                      <p className="text-[11px] text-[#9b9a97] font-mono truncate">{fb.provider} / {fb.model_id}</p>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2.5 h-2.5 rounded-full bg-[#e3e2de]" />
+                                      <span className="text-[12px] text-[#c4c3bf] italic">No fallback set</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <div className="mt-4 rounded-lg bg-[#fef3c7] border border-[#fde68a] p-3">
+                        <p className="text-[11px] text-[#92400e] leading-relaxed">
+                          <strong>How it works:</strong> When the primary model returns an error (500, 502, 429), the system automatically retries with the configured fallback model. Set fallbacks from the table above using the "Fallback" dropdown.
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
                 </div>
               )}
 
