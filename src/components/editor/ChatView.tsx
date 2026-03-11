@@ -291,6 +291,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onShowDetails,
   waitingForTest = false,
   projectFiles = {},
+  clarifyQuestions,
+  onClarifyComplete,
+  onDismissClarify,
 }) => {
   const { t } = useLanguage();
   const { userPlan } = useUserPlan();
@@ -308,6 +311,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [referencedFiles, setReferencedFiles] = useState<string[]>([]);
   const [atMenuIndex, setAtMenuIndex] = useState(0);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [clarifyAnswers, setClarifyAnswers] = useState<Record<number, string>>({});
+  const [customAnswerIndex, setCustomAnswerIndex] = useState<number | null>(null);
+  const [customAnswerText, setCustomAnswerText] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
