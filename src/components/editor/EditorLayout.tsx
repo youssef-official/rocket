@@ -70,6 +70,9 @@ interface EditorLayoutProps {
   currentVersion?: number | null;
   isChatMode?: boolean;
   suggestions?: Suggestion[];
+  clarifyQuestions?: { question: string; options: string[] }[] | null;
+  onClarifyComplete?: (answers: Record<number, string>) => void;
+  onDismissClarify?: () => void;
 }
 
 export const EditorLayout: React.FC<EditorLayoutProps> = ({
