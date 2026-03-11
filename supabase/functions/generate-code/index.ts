@@ -1266,14 +1266,14 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
           ? 100
           : mode === "suggestions"
             ? 800
-            : mode === "credit"
-              ? 200
+            : mode === "credit" || mode === "clarify"
+              ? 500
               : mode === "explanation"
                 ? 2000
                 : 8000;
 
-    // Use non-streaming for credit mode (need JSON response)
-    const shouldStream = mode !== "credit";
+    // Use non-streaming for credit and clarify modes (need JSON response)
+    const shouldStream = mode !== "credit" && mode !== "clarify";
 
     // ═══════════════════════════════════════════════════════════════════
     // DYNAMIC MODEL CONFIG FROM DATABASE (SERVER-SIDE PLAN VERIFICATION)
