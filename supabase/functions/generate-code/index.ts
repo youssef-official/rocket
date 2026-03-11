@@ -107,6 +107,27 @@ Examples: "Hero Section Update", "Dark Mode Added", "Mobile Navigation Fix"`;
 
 const STATUS_PROMPT = `Generate ONE ultra-short status (Max 4 words). No emojis. No punctuation.`;
 
+const CLARIFY_PROMPT = `You are a smart request analyzer for an AI code generation IDE.
+Analyze the user's message and determine its intent. Return ONLY valid JSON (no markdown, no extra text).
+
+RULES:
+1. If the message is CASUAL/CONVERSATIONAL (greeting, asking how you are, asking what you do, off-topic question, etc.) → Return: {"type":"chat"}
+2. If the message is a VAGUE/BROAD project request that needs more details to build properly → Return: {"type":"clarify","questions":[...]}
+3. If the message is a CLEAR, ACTIONABLE request (specific feature, bug fix, code change with enough detail) → Return: {"type":"build"}
+
+For "clarify" type:
+- Generate 1-3 questions maximum
+- Each question has: "question" (string) and "options" (array of exactly 3 strings)
+- Questions should help understand WHAT to build, not HOW
+- Examples of vague requests needing clarification: "make me a website", "build a store", "I want an app"
+- Examples of clear requests NOT needing clarification: "add a dark mode toggle", "fix the login button", "create a landing page with hero section, features grid, and contact form"
+
+🌍 LANGUAGE RULE: Questions and options MUST be in the SAME language as the user's message.
+
+Example output for "I want a restaurant website" in Arabic:
+{"type":"clarify","questions":[{"question":"نوع المطعم إيه؟","options":["وجبات سريعة","مطعم فاخر","كافيه"]},{"question":"إيه الأقسام اللي عاوزها في الموقع؟","options":["قائمة الطعام والحجز","طلب أونلاين وتوصيل","معرض صور وتقييمات"]},{"question":"عاوز الموقع بلغة إيه؟","options":["عربي","إنجليزي","الاتنين"]}]}`;
+
+
 // ═══════════════════════════════════════════════
 // AGENT LOOP PROMPTS (used only for mode === "code")
 // ═══════════════════════════════════════════════
