@@ -771,6 +771,8 @@ function getPromptForMode(mode: string): string {
       return VERSION_NAME_PROMPT;
     case "credit":
       return CREDIT_PROMPT;
+    case "clarify":
+      return CLARIFY_PROMPT;
     default:
       return CODE_GENERATION_PROMPT;
   }
