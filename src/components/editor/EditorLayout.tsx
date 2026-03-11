@@ -931,6 +931,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 onShowDetails={handleShowDetails}
                 waitingForTest={waitingForTest}
                 projectFiles={project?.files || {}}
+                clarifyQuestions={clarifyQuestions}
+                onClarifyComplete={onClarifyComplete}
+                onDismissClarify={onDismissClarify}
               />
             )}
 
