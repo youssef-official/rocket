@@ -1234,7 +1234,7 @@ Derive darker/lighter shades from these base colors for backgrounds and text.`;
     }
 
     // Inject language into explanation, suggestions, chat, version-name modes
-    const languageModes = ["explanation", "suggestions", "chat", "version-name"];
+    const languageModes = ["explanation", "suggestions", "chat", "version-name", "clarify"];
     if (languageModes.includes(mode) && userLanguage && messages.length > 0) {
       const lastIdx = messages.findLastIndex((m: any) => m.role === "user");
       if (lastIdx >= 0) {
