@@ -1035,6 +1035,34 @@ const ProjectEditorRoute = () => {
     }
   }, [localProject, messages, updateProject, addMessage]);
 
+  // Handle clarify complete - user answered all questions
+  const handleClarifyComplete = useCallback((answers: Record<number, string>) => {
+    if (!pendingClarifyPrompt) return;
+
+    // Build enhanced prompt with Q&A context
+    const qaContext = clarifyQuestions?.map((q, i) => 
+      `Q: ${q.question}\nA: ${answers[i] || 'N/A'}`
+    ).join('\n') || '';
+
+    const enhancedPrompt = `${pendingClarifyPrompt}\n\n[User Preferences]\n${qaContext}`;
+
+    // Clear clarify state
+    setClarifyQuestions(null);
+    setPendingClarifyPrompt(null);
+    const savedImageUrl = pendingClarifyImageUrl;
+    setPendingClarifyImageUrl(undefined);
+
+    // Re-send as a build request (skip clarify this time)
+    // We add a marker so clarify is skipped
+    handleSendMessage(`${enhancedPrompt}\n\n[Referenced Files: skip-clarify]`, false, savedImageUrl);
+  }, [pendingClarifyPrompt, pendingClarifyImageUrl, clarifyQuestions, handleSendMessage]);
+
+  const handleDismissClarify = useCallback(() => {
+    setClarifyQuestions(null);
+    setPendingClarifyPrompt(null);
+    setPendingClarifyImageUrl(undefined);
+  }, []);
+
   const handleUpdateProject = useCallback((updates: Partial<ProjectData>) => {
     if (!localProject) return;
 
