@@ -1131,6 +1131,9 @@ const ProjectEditorRoute = () => {
       currentVersion={currentVersion}
       isChatMode={isChatMode}
       suggestions={suggestions}
+      clarifyQuestions={clarifyQuestions}
+      onClarifyComplete={handleClarifyComplete}
+      onDismissClarify={handleDismissClarify}
     />
   );
 };
