@@ -734,10 +734,15 @@ async function readSSEStream(
             total_tokens: parsed.usage.total_tokens,
           };
         }
-      } catch {
+      } catch (parseErr) {
         // JSON can be split across chunks; put it back and wait for more data
-        textBuffer = line + '\n' + textBuffer;
-        break;
+        // But only if it looks like incomplete JSON (starts with { or [)
+        if (jsonStr.startsWith('{') || jsonStr.startsWith('[')) {
+          textBuffer = line + '\n' + textBuffer;
+          break;
+        }
+        // Otherwise log and skip malformed lines
+        console.warn('[readSSEStream] Failed to parse SSE line:', jsonStr.slice(0, 100), parseErr);
       }
     }
   }
@@ -771,8 +776,11 @@ async function readSSEStream(
             total_tokens: parsed.usage.total_tokens,
           };
         }
-      } catch {
-        // ignore partial leftovers
+      } catch (parseErr) {
+        // ignore partial leftovers, but log for debugging
+        if (jsonStr.length > 0 && jsonStr.length < 500) {
+          console.warn('[readSSEStream] Final flush parse error:', jsonStr.slice(0, 100), parseErr);
+        }
       }
     }
   }
@@ -993,27 +1001,37 @@ export async function clarifyRequest(
     const response = await callingDirectAI('clarify', msgs, undefined, undefined, userLanguage);
     if (!response.ok) return { type: 'build' }; // Default to build on error
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || data;
+    // Use readSSEStream to properly handle SSE format
+    const { text: fullResponse } = await readSSEStream(response);
     
     // Parse JSON from response
     let result: ClarifyResult;
-    if (typeof content === 'string') {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (typeof fullResponse === 'string' && fullResponse.trim()) {
+      // Try to extract JSON object from the response
+      const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        result = JSON.parse(jsonMatch[0]);
+        try {
+          result = JSON.parse(jsonMatch[0]);
+        } catch (parseErr) {
+          console.error('Failed to parse clarify JSON:', parseErr);
+          return { type: 'build' };
+        }
       } else {
+        console.warn('No JSON found in clarify response:', fullResponse.slice(0, 100));
         return { type: 'build' };
       }
     } else {
-      result = content;
+      console.warn('Empty clarify response');
+      return { type: 'build' };
     }
 
     // Validate
     if (!result.type || !['chat', 'clarify', 'build'].includes(result.type)) {
+      console.warn('Invalid clarify result type:', result.type);
       return { type: 'build' };
     }
     if (result.type === 'clarify' && (!result.questions || result.questions.length === 0)) {
+      console.warn('Clarify type but no questions provided');
       return { type: 'build' };
     }
 
