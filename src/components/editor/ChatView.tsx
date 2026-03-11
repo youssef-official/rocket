@@ -1241,6 +1241,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </div>
         )}
 
+        {/* Clarifying Questions */}
+        {renderClarifyQuestions()}
+
         {/* Suggestions */}
         {renderSuggestions()}
 
