@@ -70,6 +70,9 @@ interface EditorLayoutProps {
   currentVersion?: number | null;
   isChatMode?: boolean;
   suggestions?: Suggestion[];
+  clarifyQuestions?: { question: string; options: string[] }[] | null;
+  onClarifyComplete?: (answers: Record<number, string>) => void;
+  onDismissClarify?: () => void;
 }
 
 export const EditorLayout: React.FC<EditorLayoutProps> = ({
@@ -90,6 +93,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   currentVersion,
   isChatMode = false,
   suggestions = [],
+  clarifyQuestions,
+  onClarifyComplete,
+  onDismissClarify,
 }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -840,6 +846,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     onShowDetails={handleShowDetails}
                     waitingForTest={waitingForTest}
                     projectFiles={project?.files || {}}
+                    clarifyQuestions={clarifyQuestions}
+                    onClarifyComplete={onClarifyComplete}
+                    onDismissClarify={onDismissClarify}
                   />
                 </div>
 
@@ -922,6 +931,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 onShowDetails={handleShowDetails}
                 waitingForTest={waitingForTest}
                 projectFiles={project?.files || {}}
+                clarifyQuestions={clarifyQuestions}
+                onClarifyComplete={onClarifyComplete}
+                onDismissClarify={onDismissClarify}
               />
             )}
 

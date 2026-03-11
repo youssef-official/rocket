@@ -63,6 +63,9 @@ interface ChatViewProps {
   onShowDetails?: (version: ProjectVersion, activities: FileActivity[]) => void;
   waitingForTest?: boolean;
   projectFiles?: Record<string, { content: string }>;
+  clarifyQuestions?: { question: string; options: string[] }[] | null;
+  onClarifyComplete?: (answers: Record<number, string>) => void;
+  onDismissClarify?: () => void;
 }
 
 // Get file icon based on extension
@@ -288,6 +291,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onShowDetails,
   waitingForTest = false,
   projectFiles = {},
+  clarifyQuestions,
+  onClarifyComplete,
+  onDismissClarify,
 }) => {
   const { t } = useLanguage();
   const { userPlan } = useUserPlan();
@@ -305,6 +311,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [referencedFiles, setReferencedFiles] = useState<string[]>([]);
   const [atMenuIndex, setAtMenuIndex] = useState(0);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [clarifyAnswers, setClarifyAnswers] = useState<Record<number, string>>({});
+  const [customAnswerIndex, setCustomAnswerIndex] = useState<number | null>(null);
+  const [customAnswerText, setCustomAnswerText] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -814,8 +823,135 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   };
 
+  // Render Clarifying Questions
+  const renderClarifyQuestions = () => {
+    if (!clarifyQuestions || clarifyQuestions.length === 0) return null;
+
+    const allAnswered = clarifyQuestions.every((_, i) => clarifyAnswers[i] !== undefined);
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-3 space-y-3"
+      >
+        {clarifyQuestions.map((q, qIdx) => (
+          <motion.div
+            key={qIdx}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: qIdx * 0.1 }}
+            className="bg-secondary/60 border border-border/50 rounded-2xl p-3.5"
+          >
+            <p className="text-sm font-medium text-foreground mb-2.5">{q.question}</p>
+            <div className="flex flex-wrap gap-2">
+              {q.options.map((opt, oIdx) => (
+                <button
+                  key={oIdx}
+                  type="button"
+                  onClick={() => {
+                    setClarifyAnswers(prev => ({ ...prev, [qIdx]: opt }));
+                    setCustomAnswerIndex(null);
+                  }}
+                  className={`px-3.5 py-1.5 text-xs font-medium rounded-full border transition-all ${
+                    clarifyAnswers[qIdx] === opt
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                      : 'bg-card text-muted-foreground border-border hover:border-primary/30 hover:text-foreground'
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  if (customAnswerIndex === qIdx) {
+                    setCustomAnswerIndex(null);
+                  } else {
+                    setCustomAnswerIndex(qIdx);
+                    setCustomAnswerText('');
+                  }
+                }}
+                className={`px-3.5 py-1.5 text-xs font-medium rounded-full border transition-all ${
+                  customAnswerIndex === qIdx || (clarifyAnswers[qIdx] && !q.options.includes(clarifyAnswers[qIdx]))
+                    ? 'bg-accent text-foreground border-primary/30'
+                    : 'bg-card text-muted-foreground border-border hover:border-primary/30 hover:text-foreground'
+                }`}
+              >
+                {t('common.other') || 'Something else...'}
+              </button>
+            </div>
+            {customAnswerIndex === qIdx && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  value={customAnswerText}
+                  onChange={(e) => setCustomAnswerText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && customAnswerText.trim()) {
+                      setClarifyAnswers(prev => ({ ...prev, [qIdx]: customAnswerText.trim() }));
+                      setCustomAnswerIndex(null);
+                      setCustomAnswerText('');
+                    }
+                  }}
+                  placeholder={t('chat.typeAnswer') || 'Type your answer...'}
+                  className="flex-1 px-3 py-1.5 text-xs bg-background border border-border rounded-xl outline-none focus:border-primary/40 text-foreground placeholder:text-muted-foreground/50"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (customAnswerText.trim()) {
+                      setClarifyAnswers(prev => ({ ...prev, [qIdx]: customAnswerText.trim() }));
+                      setCustomAnswerIndex(null);
+                      setCustomAnswerText('');
+                    }
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-xl"
+                >
+                  {t('common.confirm') || 'OK'}
+                </button>
+              </motion.div>
+            )}
+          </motion.div>
+        ))}
+
+        {/* Submit / Dismiss buttons */}
+        <div className="flex gap-2">
+          {allAnswered && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              type="button"
+              onClick={() => {
+                onClarifyComplete?.(clarifyAnswers);
+                setClarifyAnswers({});
+                setCustomAnswerIndex(null);
+              }}
+              className="flex-1 py-2.5 text-sm font-semibold bg-primary text-primary-foreground rounded-xl shadow-md shadow-primary/20 hover:shadow-lg transition-all"
+            >
+              {t('common.submit') || 'Submit'}
+            </motion.button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              onDismissClarify?.();
+              setClarifyAnswers({});
+              setCustomAnswerIndex(null);
+            }}
+            className="px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground bg-secondary rounded-xl transition-colors"
+          >
+            {t('common.skip') || 'Skip'}
+          </button>
+        </div>
+      </motion.div>
+    );
+  };
+
   // Render Suggestions
   const renderSuggestions = () => {
+    if (clarifyQuestions && clarifyQuestions.length > 0) return null; // Hide suggestions when clarify is active
     if (suggestions.length === 0 || isGenerating) return null;
     const displaySuggestions = suggestions.slice(0, 3);
     return (
@@ -1104,6 +1240,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
             </div>
           </div>
         )}
+
+        {/* Clarifying Questions */}
+        {renderClarifyQuestions()}
 
         {/* Suggestions */}
         {renderSuggestions()}

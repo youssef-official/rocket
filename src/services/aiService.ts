@@ -968,4 +968,60 @@ export function stopGeneration() {
   // Implementation handled via AbortController in calling components
 }
 
+// Clarify request - analyzes user message to determine intent
+export interface ClarifyQuestion {
+  question: string;
+  options: string[];
+}
+
+export interface ClarifyResult {
+  type: 'chat' | 'clarify' | 'build';
+  questions?: ClarifyQuestion[];
+}
+
+export async function clarifyRequest(
+  prompt: string,
+  conversationHistory: Array<{ role: string; content: string }>,
+  userLanguage?: string
+): Promise<ClarifyResult> {
+  try {
+    const msgs = [
+      ...conversationHistory.slice(-6).map(m => ({ role: m.role, content: m.content })),
+      { role: 'user', content: prompt }
+    ];
+
+    const response = await callingDirectAI('clarify', msgs, undefined, undefined, userLanguage);
+    if (!response.ok) return { type: 'build' }; // Default to build on error
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || data;
+    
+    // Parse JSON from response
+    let result: ClarifyResult;
+    if (typeof content === 'string') {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        result = JSON.parse(jsonMatch[0]);
+      } else {
+        return { type: 'build' };
+      }
+    } else {
+      result = content;
+    }
+
+    // Validate
+    if (!result.type || !['chat', 'clarify', 'build'].includes(result.type)) {
+      return { type: 'build' };
+    }
+    if (result.type === 'clarify' && (!result.questions || result.questions.length === 0)) {
+      return { type: 'build' };
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Clarify request error:', error);
+    return { type: 'build' }; // Default to build on any error
+  }
+}
+
 export { deductPointsAfterGeneration };
