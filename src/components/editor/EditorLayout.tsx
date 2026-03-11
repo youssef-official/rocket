@@ -93,6 +93,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   currentVersion,
   isChatMode = false,
   suggestions = [],
+  clarifyQuestions,
+  onClarifyComplete,
+  onDismissClarify,
 }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
