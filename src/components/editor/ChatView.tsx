@@ -63,6 +63,9 @@ interface ChatViewProps {
   onShowDetails?: (version: ProjectVersion, activities: FileActivity[]) => void;
   waitingForTest?: boolean;
   projectFiles?: Record<string, { content: string }>;
+  clarifyQuestions?: { question: string; options: string[] }[] | null;
+  onClarifyComplete?: (answers: Record<number, string>) => void;
+  onDismissClarify?: () => void;
 }
 
 // Get file icon based on extension
