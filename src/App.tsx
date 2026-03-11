@@ -558,6 +558,45 @@ const ProjectEditorRoute = () => {
     // Get the selected model from sessionStorage
     const savedModelId = sessionStorage.getItem(`project_model_${localProject.id}`) || 'rok-fast';
 
+    // AUTO-DETECT: Call clarify mode to determine intent before code gen
+    const isAutoFix = content.startsWith('[AUTO-FIX]');
+    const hasReferencedFiles = content.includes('[Referenced Files:');
+    const shouldSkipClarify = isAutoFix || hasReferencedFiles || imageUrls.length > 0 || isChatOnly;
+
+    if (!shouldSkipClarify) {
+      try {
+        const { clarifyRequest } = await import('@/services/aiService');
+        const clarifyResult = await clarifyRequest(content, messages, language);
+
+        if (clarifyResult.type === 'chat') {
+          await addMessage('user', content, imageUrl);
+          setIsChatMode(true);
+          setIsGenerating(true);
+          setStatusMessage(t('chat.thinking'));
+          try {
+            const { generateChatResponse } = await import('@/services/aiService');
+            const response = await generateChatResponse(content, messages);
+            addMessage('assistant', response);
+          } catch (error) {
+            addMessage('assistant', "I'm here to help!");
+          }
+          setIsGenerating(false);
+          setStatusMessage('');
+          return;
+        }
+
+        if (clarifyResult.type === 'clarify' && clarifyResult.questions && clarifyResult.questions.length > 0) {
+          await addMessage('user', content, imageUrl);
+          setClarifyQuestions(clarifyResult.questions);
+          setPendingClarifyPrompt(content);
+          setPendingClarifyImageUrl(imageUrl);
+          return;
+        }
+      } catch (e) {
+        console.error('Clarify failed, proceeding with build:', e);
+      }
+    }
+
     // For build mode, check credits BEFORE saving message
     if (!isChatOnly && user) {
       const { checkCreditsAvailable } = await import('@/services/creditService');
@@ -568,7 +607,6 @@ const ProjectEditorRoute = () => {
         return;
       }
 
-      // Reserve credits to prevent concurrent requests from double-spending
       try {
         const { deductCredits } = await import('@/services/creditService');
         const reservation = await deductCredits(user.id, localProject.id, 'Credit reservation (pending)', 0.5);
@@ -583,21 +621,18 @@ const ProjectEditorRoute = () => {
       }
     }
 
-    // Credits verified (or chat mode) - NOW save the message
+    // Save the message
     await addMessage('user', content, imageUrl);
 
-    // If chat-only mode, just respond conversationally without code generation
+    // If chat-only mode, respond conversationally
     if (isChatOnly) {
       setIsChatMode(true);
       setIsGenerating(true);
       setStatusMessage(t('chat.thinking'));
-
       try {
         const { generateChatResponse } = await import('@/services/aiService');
         const response = await generateChatResponse(content, messages);
         addMessage('assistant', response);
-
-        // Deduct 1.5 credits for plan mode (or whatever remains)
         if (user) {
           try {
             const { deductCredits } = await import('@/services/creditService');
@@ -610,7 +645,6 @@ const ProjectEditorRoute = () => {
       } catch (error) {
         addMessage('assistant', "I'm here to help! Ask me anything about your project or web development.");
       }
-
       setIsGenerating(false);
       setStatusMessage('');
       return;
