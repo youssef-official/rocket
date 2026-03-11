@@ -37,7 +37,7 @@ export async function calculateRequestCredits(_userMessage: string): Promise<num
 // Main function to call AI via Supabase Edge Function
 // Supports adaptive timeouts for slow/thinking models
 export async function callingDirectAI(
-    mode: 'code' | 'status' | 'explanation' | 'project-name' | 'suggestions' | 'chat' | 'version-name',
+    mode: 'code' | 'status' | 'explanation' | 'project-name' | 'suggestions' | 'chat' | 'version-name' | 'clarify',
     messages: any[],
     signal?: AbortSignal,
     userPlan?: string,
