@@ -80,6 +80,9 @@ const ProjectEditorRoute = () => {
   const [hasStartedGeneration, setHasStartedGeneration] = useState(false);
   const [isChatMode, setIsChatMode] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [clarifyQuestions, setClarifyQuestions] = useState<{ question: string; options: string[] }[] | null>(null);
+  const [pendingClarifyPrompt, setPendingClarifyPrompt] = useState<string | null>(null);
+  const [pendingClarifyImageUrl, setPendingClarifyImageUrl] = useState<string | undefined>(undefined);
   const isCancelled = useRef(false);
   const lastAssistantMessageId = useRef<string | null>(null);
 
