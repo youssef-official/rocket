@@ -523,7 +523,7 @@ const ProjectEditorRoute = () => {
                 } : null);
               },
             },
-            undefined,
+            templateFileList.join(', '),
             language,
             (() => {
               try {
