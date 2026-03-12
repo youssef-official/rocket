@@ -296,8 +296,20 @@ const ProjectEditorRoute = () => {
 
           // Credits will be deducted AFTER generation completes (in onComplete)
 
-          // Build prompt with safety rules + clone data (hidden from chat)
-          let userPrompt = `${prompt}\n\n[STRICT RULE: Every component used MUST be imported. If you use <AnimatePresence>, you MUST add: import { motion, AnimatePresence } from "framer-motion"; at the top of the file. NO EXCEPTIONS.]`;
+          // Build prompt with safety rules + template context + clone data (hidden from chat)
+          let userPrompt = `${prompt}
+
+[TEMPLATE PROJECT]: This project already has a base Vite + React + TypeScript + Tailwind + shadcn/ui template with these files: [${templateFileList.join(', ')}]
+⚠️ CRITICAL RULES:
+- DO NOT regenerate config files (package.json, vite.config.ts, tsconfig.json, postcss.config.js) unless you need to add new dependencies.
+- DO NOT regenerate UI components (src/components/ui/*) - they already exist. Just import and use them.
+- MODIFY src/App.tsx to add your routes and imports.
+- MODIFY src/pages/Index.tsx to build the main page.
+- MODIFY src/index.css to add your design tokens and custom styles.
+- MODIFY tailwind.config.ts if you need custom theme extensions.
+- CREATE new pages in src/pages/ and new components in src/components/.
+- Only output <FILE> blocks for files you CREATE or MODIFY.
+- Every component used MUST be imported. If you use <AnimatePresence>, you MUST add: import { motion, AnimatePresence } from "framer-motion"; at the top of the file. NO EXCEPTIONS.`;
           if (cloneData) {
             userPrompt += `\n\n---\n[CLONE DESIGN SOURCE - ${cloneData.url}]\nHere is the source code of the website I want to clone/replicate the design of:\n\`\`\`html\n${cloneData.html}\n\`\`\``;
           }
