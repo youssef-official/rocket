@@ -565,6 +565,7 @@ const ProjectEditorRoute = () => {
 
     if (!shouldSkipClarify) {
       // Show user message IMMEDIATELY (don't wait for clarify)
+      const userMsgAlreadyAdded = true;
       await addMessage('user', content, imageUrl);
       setIsGenerating(true);
       setStatusMessage(t('chat.thinking'));
