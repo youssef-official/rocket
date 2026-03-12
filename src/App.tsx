@@ -163,6 +163,14 @@ const ProjectEditorRoute = () => {
         setHasStartedGeneration(true);
         isCancelled.current = false;
 
+        // Load template files as the project base
+        const templateFiles = getTemplateFiles();
+        const templateFileList = getTemplateFileList();
+
+        // Set template files as the initial project files
+        await updateProject(localProject.id, { files: templateFiles });
+        setLocalProject(prev => prev ? { ...prev, files: templateFiles } : null);
+
         const prompt = localProject.description || '';
 
         // Get the selected model from sessionStorage
