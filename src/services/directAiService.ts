@@ -54,7 +54,7 @@ export async function callingDirectAI(
     const timeoutMs: Record<string, number> = {
         'code': 300_000,
         'chat': 180_000,
-        'clarify': 30_000,
+        'clarify': 60_000,
         'explanation': 180_000,
         'project-name': 120_000,
         'version-name': 120_000,
