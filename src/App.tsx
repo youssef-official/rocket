@@ -553,6 +553,7 @@ const ProjectEditorRoute = () => {
       ? imageUrl.split(',').map((u) => normalizePublicImageUrl(u)).filter(Boolean)
       : [];
 
+    let userMessageAlreadySaved = false;
     isCancelled.current = false;
 
     // Get the selected model from sessionStorage
@@ -564,15 +565,18 @@ const ProjectEditorRoute = () => {
     const shouldSkipClarify = isAutoFix || hasReferencedFiles || imageUrls.length > 0 || isChatOnly;
 
     if (!shouldSkipClarify) {
+      // Show user message IMMEDIATELY (don't wait for clarify)
+      await addMessage('user', content, imageUrl);
+      userMessageAlreadySaved = true;
+      setIsGenerating(true);
+      setStatusMessage(t('chat.thinking'));
+
       try {
         const { clarifyRequest } = await import('@/services/aiService');
         const clarifyResult = await clarifyRequest(content, messages, language);
 
         if (clarifyResult.type === 'chat') {
-          await addMessage('user', content, imageUrl);
           setIsChatMode(true);
-          setIsGenerating(true);
-          setStatusMessage(t('chat.thinking'));
           try {
             const { generateChatResponse } = await import('@/services/aiService');
             const response = await generateChatResponse(content, messages);
@@ -586,14 +590,21 @@ const ProjectEditorRoute = () => {
         }
 
         if (clarifyResult.type === 'clarify' && clarifyResult.questions && clarifyResult.questions.length > 0) {
-          await addMessage('user', content, imageUrl);
+          setIsGenerating(false);
+          setStatusMessage('');
           setClarifyQuestions(clarifyResult.questions);
           setPendingClarifyPrompt(content);
           setPendingClarifyImageUrl(imageUrl);
           return;
         }
+
+        // type === 'build' → fall through to code generation below
+        setIsGenerating(false);
+        setStatusMessage('');
       } catch (e) {
         console.error('Clarify failed, proceeding with build:', e);
+        setIsGenerating(false);
+        setStatusMessage('');
       }
     }
 
@@ -621,8 +632,10 @@ const ProjectEditorRoute = () => {
       }
     }
 
-    // Save the message
-    await addMessage('user', content, imageUrl);
+    // Save the message (skip if already saved during clarify)
+    if (!userMessageAlreadySaved) {
+      await addMessage('user', content, imageUrl);
+    }
 
     // If chat-only mode, respond conversationally
     if (isChatOnly) {
