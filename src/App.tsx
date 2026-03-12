@@ -553,6 +553,7 @@ const ProjectEditorRoute = () => {
       ? imageUrl.split(',').map((u) => normalizePublicImageUrl(u)).filter(Boolean)
       : [];
 
+    let userMessageAlreadySaved = false;
     isCancelled.current = false;
 
     // Get the selected model from sessionStorage
