@@ -632,8 +632,10 @@ const ProjectEditorRoute = () => {
       }
     }
 
-    // Save the message
-    await addMessage('user', content, imageUrl);
+    // Save the message (skip if already saved during clarify)
+    if (!userMessageAlreadySaved) {
+      await addMessage('user', content, imageUrl);
+    }
 
     // If chat-only mode, respond conversationally
     if (isChatOnly) {
