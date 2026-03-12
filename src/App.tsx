@@ -29,6 +29,7 @@ import {
   type Suggestion
 } from "@/services/aiService";
 import { calculateRequestCredits } from "@/services/directAiService";
+import { getTemplateFiles, getTemplateFileList } from "@/services/templateService";
 import type { ProjectData, ChatMessage, ProjectFile } from "@/types";
 import { toast } from "@/hooks/use-toast";
 
