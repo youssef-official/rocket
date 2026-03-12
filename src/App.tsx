@@ -564,15 +564,17 @@ const ProjectEditorRoute = () => {
     const shouldSkipClarify = isAutoFix || hasReferencedFiles || imageUrls.length > 0 || isChatOnly;
 
     if (!shouldSkipClarify) {
+      // Show user message IMMEDIATELY (don't wait for clarify)
+      await addMessage('user', content, imageUrl);
+      setIsGenerating(true);
+      setStatusMessage(t('chat.thinking'));
+
       try {
         const { clarifyRequest } = await import('@/services/aiService');
         const clarifyResult = await clarifyRequest(content, messages, language);
 
         if (clarifyResult.type === 'chat') {
-          await addMessage('user', content, imageUrl);
           setIsChatMode(true);
-          setIsGenerating(true);
-          setStatusMessage(t('chat.thinking'));
           try {
             const { generateChatResponse } = await import('@/services/aiService');
             const response = await generateChatResponse(content, messages);
@@ -586,14 +588,21 @@ const ProjectEditorRoute = () => {
         }
 
         if (clarifyResult.type === 'clarify' && clarifyResult.questions && clarifyResult.questions.length > 0) {
-          await addMessage('user', content, imageUrl);
+          setIsGenerating(false);
+          setStatusMessage('');
           setClarifyQuestions(clarifyResult.questions);
           setPendingClarifyPrompt(content);
           setPendingClarifyImageUrl(imageUrl);
           return;
         }
+
+        // type === 'build' → fall through to code generation below
+        setIsGenerating(false);
+        setStatusMessage('');
       } catch (e) {
         console.error('Clarify failed, proceeding with build:', e);
+        setIsGenerating(false);
+        setStatusMessage('');
       }
     }
 
