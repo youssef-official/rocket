@@ -174,11 +174,16 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   }, [isGenerating, t]);
 
   // Auto-create version when generation completes - WITH actions_taken
+  // IMPORTANT: Only create version when generationPhase is 'complete' to avoid
+  // premature version creation during clarify/thinking phases
   useEffect(() => {
     const wasGenerating = prevIsGenerating.current;
     const nowNotGenerating = !isGenerating;
 
-    if (wasGenerating && nowNotGenerating && project?.files && !versionCreatedForSession.current && !isChatMode) {
+    // Guard: only save version if generation actually completed (not just clarify/chat phases)
+    const generationActuallyCompleted = generationPhase?.phase === 'complete';
+
+    if (wasGenerating && nowNotGenerating && generationActuallyCompleted && project?.files && !versionCreatedForSession.current && !isChatMode) {
       const hasFiles = Object.keys(project.files).length > 0;
       const hasMessages = messages.length > 0;
 
