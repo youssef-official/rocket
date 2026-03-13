@@ -255,7 +255,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
 
     prevIsGenerating.current = isGenerating;
-  }, [isGenerating, messages, project?.files, project?.description, project?.name, createVersion, versions.length, isChatMode, runMigrations]);
+  }, [isGenerating, messages, project?.files, project?.description, project?.name, createVersion, versions.length, isChatMode, runMigrations, generationPhase]);
 
   // Handle test completion - save pending version
   const handleTestComplete = useCallback(async (passed: boolean) => {
