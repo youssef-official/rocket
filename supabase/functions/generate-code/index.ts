@@ -372,6 +372,8 @@ Before returning your code, you MUST mentally run these checks. Skipping them = 
 ✅ 8. PACKAGE AUDIT: Every import from a package → is it in the ALLOWED PACKAGES list (rule 6)? If not → REMOVE IT.
 ✅ 9. DEFAULT vs NAMED: If you wrote "export default function X", importers use "import X from". If you wrote "export function X", importers use "import { X } from". NEVER mix these.
 ✅ 10. UNDEFINED VARIABLE SCAN: For EVERY file, read through the JSX and logic. Every identifier used MUST have a matching import or local declaration. If Globe is used → "import { Globe } from lucide-react" must exist. If cn() is used → "import { cn } from ../lib/utils" must exist. NO EXCEPTIONS.
+✅ 11. CONFIG FILES: For NEW projects, verify tsconfig.node.json, tsconfig.json, tsconfig.app.json, and lib/utils.ts are ALL included in the output. Missing tsconfig.node.json = Vite cannot start.
+✅ 12. cn() USAGE AUDIT: Search EVERY file for "cn(" — if found, verify "import { cn } from" exists at the top. If missing → ADD IT. This is the #1 runtime crash.
 
 ═══════════════════════════════════════════════
 🎮 GAME DEVELOPMENT (When user requests a game)
@@ -712,6 +714,57 @@ When the project is a SaaS, customer support site, educational platform, e-comme
 PROJECT STRUCTURE (new projects): 15-25 files minimum
 ═══════════════════════════════════════════════
 index.html, main.tsx, App.tsx, index.css, types/index.ts, contexts/, hooks/, components/ui/, components/, pages/, vercel.json, robots.txt, sitemap.xml.
+
+12. ⛔ MANDATORY CONFIG FILES (ZERO TOLERANCE — VITE BUILD CRASH PREVENTION):
+    Every new project MUST include these config files to prevent Vite build failures:
+    
+    a) tsconfig.node.json — MUST ALWAYS be generated for Vite projects:
+       \`\`\`json
+       {
+         "compilerOptions": {
+           "target": "ES2022",
+           "lib": ["ES2023"],
+           "module": "ESNext",
+           "skipLibCheck": true,
+           "moduleResolution": "bundler",
+           "allowImportingTsExtensions": true,
+           "isolatedModules": true,
+           "moduleDetection": "force",
+           "noEmit": true,
+           "strict": true,
+           "noUnusedLocals": false,
+           "noUnusedParameters": false,
+           "noFallthroughCasesInSwitch": true
+         },
+         "include": ["vite.config.ts"]
+       }
+       \`\`\`
+       Without this file, Vite CANNOT scan dependencies and the app will NOT start.
+    
+    b) tsconfig.json — MUST reference tsconfig.node.json:
+       \`\`\`json
+       {
+         "files": [],
+         "references": [
+           { "path": "./tsconfig.app.json" },
+           { "path": "./tsconfig.node.json" }
+         ]
+       }
+       \`\`\`
+    
+    c) tsconfig.app.json — MUST exist for source files.
+    
+    d) lib/utils.ts — MUST ALWAYS be created with the cn() utility:
+       \`\`\`typescript
+       import { clsx, type ClassValue } from "clsx";
+       import { twMerge } from "tailwind-merge";
+       export function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
+       \`\`\`
+       ANY file that uses cn() MUST import it: import { cn } from "../lib/utils";
+       NEVER use cn() without importing it. This is the #1 runtime crash.
+
+    🔴 MISSING tsconfig.node.json = "Failed to scan for dependencies" = APP DOES NOT START
+    🔴 MISSING lib/utils.ts or missing cn import = "ReferenceError: cn is not defined" = APP CRASHES
 
 ═══════════════════════════════════════════════
 EDITING RULES (CRITICAL — DESIGN PRESERVATION)
