@@ -372,6 +372,8 @@ Before returning your code, you MUST mentally run these checks. Skipping them = 
 ✅ 8. PACKAGE AUDIT: Every import from a package → is it in the ALLOWED PACKAGES list (rule 6)? If not → REMOVE IT.
 ✅ 9. DEFAULT vs NAMED: If you wrote "export default function X", importers use "import X from". If you wrote "export function X", importers use "import { X } from". NEVER mix these.
 ✅ 10. UNDEFINED VARIABLE SCAN: For EVERY file, read through the JSX and logic. Every identifier used MUST have a matching import or local declaration. If Globe is used → "import { Globe } from lucide-react" must exist. If cn() is used → "import { cn } from ../lib/utils" must exist. NO EXCEPTIONS.
+✅ 11. CONFIG FILES: For NEW projects, verify tsconfig.node.json, tsconfig.json, tsconfig.app.json, and lib/utils.ts are ALL included in the output. Missing tsconfig.node.json = Vite cannot start.
+✅ 12. cn() USAGE AUDIT: Search EVERY file for "cn(" — if found, verify "import { cn } from" exists at the top. If missing → ADD IT. This is the #1 runtime crash.
 
 ═══════════════════════════════════════════════
 🎮 GAME DEVELOPMENT (When user requests a game)
