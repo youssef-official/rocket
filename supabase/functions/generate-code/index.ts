@@ -477,9 +477,9 @@ Create index.css with a COMPLETE design system using CSS variables:
 ALL components MUST use these tokens: bg-background, text-foreground, bg-card, bg-primary, text-muted-foreground, border-border, etc.
 NEVER write raw colors like bg-gray-800, text-white, bg-orange-500 in components. ALWAYS map to tokens.
 
-═══ STEP 2: TYPOGRAPHY (THE #1 DIFFERENTIATOR) ═══
+═══ STEP 2: TYPOGRAPHY (THE #1 DIFFERENTIATOR — PREMIUM FONTS MANDATORY) ═══
 
-IMPORT premium Google Fonts in index.html <head>:
+IMPORT premium Google Fonts in index.html <head>. ALWAYS use at least 2 fonts (heading + body):
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 FONT PAIRING PRESETS (pick ONE pair per project, NEVER reuse across projects):
@@ -488,18 +488,33 @@ FONT PAIRING PRESETS (pick ONE pair per project, NEVER reuse across projects):
 3. Headings: "Outfit" / Body: "Work Sans" — Friendly E-commerce
 4. Headings: "Syne" / Body: "Nunito Sans" — Bold Creative
 5. Headings: "Manrope" / Body: "Source Sans 3" — Professional
-6. Headings: "Playfair Display" / Body: "Lora" — Editorial/Luxury
-7. Headings: "Cabinet Grotesk" / Body: "Satoshi" — Premium Minimal
+6. Headings: "Playfair Display" / Body: "Lora" — Editorial/Luxury (SERIF — use for blogs, magazines, portfolios)
+7. Headings: "Cormorant Garamond" / Body: "Libre Baskerville" — Classic Editorial (elegant serif pairing)
+8. Headings: "DM Serif Display" / Body: "DM Sans" — Premium Blog/Magazine
+9. Headings: "Fraunces" / Body: "Commissioner" — Modern Serif + Clean Sans
+10. Headings: "Bodoni Moda" / Body: "Nunito" — High Fashion/Luxury
+11. Headings: "Instrument Serif" / Body: "Instrument Sans" — Refined Modern
+12. Headings: "Crimson Pro" / Body: "Montserrat" — Academic/Literary
+13. Headings: "Clash Display" / Body: "Satoshi" — Premium Minimal
+
+🔴 PREMIUM DESIGN STANDARD: Your output must look like a $10,000+ website designed by a top agency.
+Study these design references:
+- SERIF HEADINGS with SANS-SERIF body = instant premium feel (like the reference: large serif heading "Journey Through Life's Spectrum" with clean sans body text)
+- Large, bold headings with generous letter-spacing and line-height
+- Muted, sophisticated color palettes (cream, charcoal, warm grays, deep blacks)
+- Generous whitespace and breathing room between sections
+- Professional image compositions with rounded corners and subtle overlays
 
 Apply in tailwind config or index.css:
 font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 
-Typography Scale:
+Typography Scale (MUST follow for premium output):
+- Hero title: text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-[1.1]
 - Page title: text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight
 - Section title: text-2xl md:text-3xl font-semibold  
-- Card title: text-lg font-semibold
-- Body: text-sm md:text-base text-muted-foreground leading-relaxed
-- Small/caption: text-xs text-muted-foreground
+- Card title: text-lg md:text-xl font-semibold
+- Body: text-base md:text-lg text-muted-foreground leading-relaxed
+- Small/caption: text-sm text-muted-foreground
 
 ═══ STEP 3: COLOR PALETTES (COHESIVE, NOT RANDOM) ═══
 
