@@ -491,4 +491,278 @@ const TokenCard: React.FC<{
   </Card>
 );
 
+
+// ─── Profile + AI Provider Section ───
+const ProfileAndAISection: React.FC<{ isRTL: boolean }> = ({ isRTL }) => {
+  const { user } = useAuth();
+  const [settings, setSettings] = useState<AISettings>(() => getAISettings());
+  const [showKey, setShowKey] = useState(false);
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [newModel, setNewModel] = useState('');
+  const [newProvider, setNewProvider] = useState({ id: '', label: '', baseUrl: '', model: '' });
+  const [showAddProvider, setShowAddProvider] = useState(false);
+
+  const allProviders = [...BUILTIN_PROVIDERS, ...(settings.customProviders || [])];
+  const preset = allProviders.find(p => p.id === settings.providerId) || allProviders[0];
+  const builtinModels = preset?.models || [];
+  const extraModels = settings.customModels?.[settings.providerId] || [];
+
+  const selectProvider = (id: string) => {
+    const p = allProviders.find(x => x.id === id);
+    if (!p) return;
+    setSettings(s => ({
+      ...s,
+      providerId: id,
+      baseUrl: p.baseUrl || s.baseUrl,
+      apiKey: s.apiKeys?.[id] ?? '',
+      model: p.models[0] || (s.customModels?.[id]?.[0] ?? ''),
+    }));
+  };
+
+  const updateApiKey = (val: string) => {
+    setSettings(s => ({
+      ...s,
+      apiKey: val,
+      apiKeys: { ...(s.apiKeys || {}), [s.providerId]: val },
+    }));
+  };
+
+  const addModel = () => {
+    const m = newModel.trim();
+    if (!m) return;
+    setSettings(s => {
+      const cur = s.customModels?.[s.providerId] || [];
+      if (cur.includes(m) || (preset?.models || []).includes(m)) return s;
+      return { ...s, customModels: { ...(s.customModels || {}), [s.providerId]: [...cur, m] }, model: m };
+    });
+    setNewModel('');
+  };
+
+  const removeCustomModel = (m: string) => {
+    setSettings(s => ({
+      ...s,
+      customModels: { ...(s.customModels || {}), [s.providerId]: (s.customModels?.[s.providerId] || []).filter(x => x !== m) },
+      model: s.model === m ? (preset?.models[0] || '') : s.model,
+    }));
+  };
+
+  const addProvider = () => {
+    const id = newProvider.id.trim().toLowerCase().replace(/\s+/g, '-');
+    if (!id || !newProvider.label.trim() || !newProvider.baseUrl.trim()) {
+      toast({ title: 'Missing fields', description: 'ID, label, and base URL are required.', variant: 'destructive' });
+      return;
+    }
+    if (allProviders.some(p => p.id === id)) {
+      toast({ title: 'Provider exists', description: 'Pick a unique ID.', variant: 'destructive' });
+      return;
+    }
+    const p: AIProviderPreset = {
+      id, label: newProvider.label.trim(), baseUrl: newProvider.baseUrl.trim(),
+      models: newProvider.model.trim() ? [newProvider.model.trim()] : [], custom: true,
+    };
+    setSettings(s => ({ ...s, customProviders: [...(s.customProviders || []), p] }));
+    setNewProvider({ id: '', label: '', baseUrl: '', model: '' });
+    setShowAddProvider(false);
+  };
+
+  const removeCustomProvider = (id: string) => {
+    setSettings(s => ({
+      ...s,
+      customProviders: (s.customProviders || []).filter(p => p.id !== id),
+      providerId: s.providerId === id ? 'openrouter' : s.providerId,
+    }));
+  };
+
+  const handleSave = () => {
+    if (!settings.baseUrl.trim()) {
+      toast({ title: 'Base URL required', variant: 'destructive' }); return;
+    }
+    if (!settings.model.trim()) {
+      toast({ title: 'Model required', variant: 'destructive' }); return;
+    }
+    saveAISettings(settings);
+    if (displayName !== user?.displayName) setLocalProfile({ displayName });
+    toast({ title: 'Saved', description: 'AI provider and profile updated.' });
+  };
+
+  return (
+    <>
+      <div className={`flex items-center gap-3 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+          <Sparkles className="w-4 h-4 text-emerald-400" />
+        </div>
+        <h2 className="text-xl font-bold text-white font-serif">AI Provider · Profile</h2>
+      </div>
+
+      {/* Profile */}
+      <Card className="bg-white/[0.03] border-white/[0.06] mb-4">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <UserIcon className="w-4 h-4 text-white/50" />
+            <CardTitle className="text-sm text-white/80">Your name</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name"
+            className="bg-white/[0.03] border-white/[0.08] text-white/80" />
+        </CardContent>
+      </Card>
+
+      {/* Provider Picker */}
+      <Card className="bg-white/[0.03] border-white/[0.06] mb-4">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm text-white/80">AI Provider</CardTitle>
+          <CardDescription className="text-white/30">Choose a provider or add your own</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {allProviders.map(p => (
+              <div key={p.id} className="relative group">
+                <button type="button" onClick={() => selectProvider(p.id)}
+                  className={`w-full px-3 py-2.5 rounded-lg text-xs font-medium border transition-all text-left ${
+                    settings.providerId === p.id
+                      ? 'bg-violet-500/15 border-violet-500/40 text-white'
+                      : 'bg-white/[0.02] border-white/[0.06] text-white/60 hover:bg-white/[0.04]'
+                  }`}>
+                  {p.label}
+                </button>
+                {p.custom && (
+                  <button type="button" onClick={() => removeCustomProvider(p.id)}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button type="button" onClick={() => setShowAddProvider(!showAddProvider)}
+              className="px-3 py-2.5 rounded-lg text-xs font-medium border border-dashed border-white/[0.12] text-white/50 hover:bg-white/[0.04] hover:text-white/80 flex items-center justify-center gap-1.5">
+              <Plus className="w-3.5 h-3.5" /> Add Provider
+            </button>
+          </div>
+
+          {preset?.notes && <p className="text-[11px] text-amber-400/80">⚠ {preset.notes}</p>}
+
+          {showAddProvider && (
+            <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <Input value={newProvider.id} onChange={e => setNewProvider(p => ({ ...p, id: e.target.value }))}
+                  placeholder="id (e.g. my-provider)" className="text-xs bg-white/[0.03] border-white/[0.08] text-white/80" />
+                <Input value={newProvider.label} onChange={e => setNewProvider(p => ({ ...p, label: e.target.value }))}
+                  placeholder="Display label" className="text-xs bg-white/[0.03] border-white/[0.08] text-white/80" />
+              </div>
+              <Input value={newProvider.baseUrl} onChange={e => setNewProvider(p => ({ ...p, baseUrl: e.target.value }))}
+                placeholder="Base URL (https://api.example.com/v1)" className="text-xs font-mono bg-white/[0.03] border-white/[0.08] text-white/80" />
+              <Input value={newProvider.model} onChange={e => setNewProvider(p => ({ ...p, model: e.target.value }))}
+                placeholder="Default model id (optional)" className="text-xs font-mono bg-white/[0.03] border-white/[0.08] text-white/80" />
+              <div className="flex justify-end gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setShowAddProvider(false)}>Cancel</Button>
+                <Button size="sm" onClick={addProvider}>Add</Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Base URL + API Key */}
+      <Card className="bg-white/[0.03] border-white/[0.06] mb-4">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm text-white/80">Connection</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <label className="text-[11px] text-white/40 mb-1 block">Base URL</label>
+            <Input value={settings.baseUrl} onChange={e => setSettings(s => ({ ...s, baseUrl: e.target.value }))}
+              placeholder="https://api.openai.com/v1" className="text-xs font-mono bg-white/[0.03] border-white/[0.08] text-white/80" />
+          </div>
+          <div>
+            <label className="text-[11px] text-white/40 mb-1 block">API Key</label>
+            <div className="relative">
+              <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
+              <Input type={showKey ? 'text' : 'password'} value={settings.apiKey}
+                onChange={e => updateApiKey(e.target.value)}
+                placeholder="sk-..." className="pl-9 pr-10 text-xs font-mono bg-white/[0.03] border-white/[0.08] text-white/80" />
+              <button type="button" onClick={() => setShowKey(!showKey)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                {showKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+            <p className="text-[10px] text-white/30 mt-1">Stored locally in your browser only.</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Models */}
+      <Card className="bg-white/[0.03] border-white/[0.06] mb-4">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm text-white/80">Model</CardTitle>
+          <CardDescription className="text-white/30">Pick a built-in model or add your own</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {builtinModels.length > 0 && (
+            <div>
+              <p className="text-[11px] uppercase tracking-wider text-white/40 mb-2">Presets</p>
+              <div className="flex flex-wrap gap-1.5">
+                {builtinModels.map(m => (
+                  <button key={m} type="button" onClick={() => setSettings(s => ({ ...s, model: m }))}
+                    className={`px-2.5 py-1.5 rounded-md text-[11px] font-mono border transition-all ${
+                      settings.model === m
+                        ? 'bg-violet-500/15 border-violet-500/40 text-white'
+                        : 'bg-white/[0.02] border-white/[0.06] text-white/60 hover:bg-white/[0.04]'}`}>
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {extraModels.length > 0 && (
+            <div>
+              <p className="text-[11px] uppercase tracking-wider text-white/40 mb-2">Your models</p>
+              <div className="flex flex-wrap gap-1.5">
+                {extraModels.map(m => (
+                  <div key={m} className="flex items-center gap-1">
+                    <button type="button" onClick={() => setSettings(s => ({ ...s, model: m }))}
+                      className={`px-2.5 py-1.5 rounded-md text-[11px] font-mono border transition-all ${
+                        settings.model === m
+                          ? 'bg-emerald-500/15 border-emerald-500/40 text-white'
+                          : 'bg-white/[0.02] border-white/[0.06] text-white/60 hover:bg-white/[0.04]'}`}>
+                      {m}
+                    </button>
+                    <button type="button" onClick={() => removeCustomModel(m)}
+                      className="p-1 text-white/30 hover:text-red-400">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-1">
+            <Input value={newModel} onChange={e => setNewModel(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addModel()}
+              placeholder="Add a model id (e.g. gpt-4o)" className="text-xs font-mono bg-white/[0.03] border-white/[0.08] text-white/80" />
+            <Button size="sm" onClick={addModel} disabled={!newModel.trim()} className="gap-1">
+              <Plus className="w-3.5 h-3.5" /> Add
+            </Button>
+          </div>
+
+          <div>
+            <label className="text-[11px] text-white/40 mb-1 block">Active model</label>
+            <Input value={settings.model} onChange={e => setSettings(s => ({ ...s, model: e.target.value }))}
+              placeholder="model id" className="text-xs font-mono bg-white/[0.03] border-white/[0.08] text-white/80" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={handleSave} className="gap-1.5 bg-violet-500 hover:bg-violet-600">
+          <Check className="w-4 h-4" /> Save AI & Profile
+        </Button>
+      </div>
+    </>
+  );
+};
+
 export default Settings;
+
