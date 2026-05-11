@@ -547,21 +547,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <Code2 className="w-3.5 h-3.5" />
             <span>{t('editor.code')}</span>
           </button>
-          <button
-            onClick={() => setCurrentView('database')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'database' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
-          >
-            <Database className="w-3.5 h-3.5" />
-            <span>DB</span>
-          </button>
-          <button
-            onClick={() => setCurrentView('analytics')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'analytics' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
-          >
-            <BarChart2 className="w-3.5 h-3.5" />
-            <span>Analytics</span>
-          </button>
-
         </div>
 
         {/* Right Section */}
@@ -577,27 +562,26 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </button>
 
           {/* GitHub - hidden on mobile */}
-          <motion.button
-            onClick={() => setShowGitHubPush(true)}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
+          <a
+            href="https://github.com"
+            target="_blank"
+            rel="noopener noreferrer"
             className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-border/60 bg-secondary/60 hover:bg-secondary text-foreground text-sm font-semibold transition-all duration-200 shadow-sm"
-            title="Push to GitHub"
+            title="Open on GitHub"
           >
             <img src={githubLogo} alt="GitHub" className="w-4 h-4 dark:invert" />
             <span className="hidden lg:inline">GitHub</span>
-          </motion.button>
+          </a>
 
           {/* Publish */}
-          <motion.button
-            onClick={() => setShowVercelDialog(true)}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            className={`flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 shadow-md shadow-primary/20 ${isRTL ? 'flex-row-reverse' : ''}`}
+          <button
+            onClick={handleDownload}
+            disabled={!project || Object.keys(project.files).length === 0}
+            className={`flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 shadow-md shadow-primary/20 disabled:opacity-50 ${isRTL ? 'flex-row-reverse' : ''}`}
           >
             <Rocket className="w-3.5 h-3.5" />
             {t('editor.publish')}
-          </motion.button>
+          </button>
 
           {/* User Menu */}
           <div className="relative">
