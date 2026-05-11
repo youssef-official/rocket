@@ -1,0 +1,2 @@
+INSERT INTO public.ai_model_config (display_name, model_id, provider, gateway_url, api_key_secret_name, target_plan, is_active)
+VALUES ('Gemini 3 Flash (Lovable)', 'google/gemini-3-flash-preview', 'lovable', 'https://ai.gateway.lovable.dev/v1/chat/completions', 'LOVABLE_API_KEY', 'all', true);
