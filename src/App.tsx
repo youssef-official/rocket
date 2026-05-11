@@ -23,6 +23,7 @@ import {
   type Suggestion,
 } from "@/services/aiService";
 import type { ProjectData, ChatMessage, ProjectFile } from "@/types";
+import { toast } from "@/hooks/use-toast";
 
 const queryClient = new QueryClient();
 
