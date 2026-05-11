@@ -1131,9 +1131,6 @@ EXISTING PROJECT FILES: [${existingFiles}]
         throw new Error(`AI ${fallbackResponse.status}: ${body.slice(0, 300) || fallbackResponse.statusText}`);
       }
       const { text: fallbackText } = await readSSEStream(fallbackResponse);
-      if (!fallbackText.trim()) {
-        throw new Error('AI provider returned an empty response. The selected provider/model may not support the current streaming format.');
-      }
       options.onComplete(fallbackText, usage);
       return;
     }
