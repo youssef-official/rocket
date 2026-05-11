@@ -1,271 +1,165 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-    X, Loader2, Key, Eye, EyeOff, ExternalLink, Shield, Unplug, CheckCircle2, Link2
-} from 'lucide-react';
+import { X, Key, Sparkles, Save, ExternalLink, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useIntegrations } from '@/hooks/useIntegrations';
-import vercelLogo from '@/assets/logos/vercel.svg';
-import githubLogo from '@/assets/logos/github.svg';
+import { useAuth, setLocalProfile } from '@/contexts/AuthContext';
+import {
+  PROVIDER_PRESETS, getAISettings, saveAISettings, getAvailableModels, type AISettings
+} from '@/services/aiSettings';
+import { toast } from '@/hooks/use-toast';
 
-interface SettingsModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-}
+interface SettingsModalProps { isOpen: boolean; onClose: () => void; }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-    const { user } = useAuth();
-    const { t, isRTL } = useLanguage();
-    const {
-        integrations,
-        loading,
-        saveVercelToken,
-        saveGitHubToken,
-        disconnectVercel,
-        disconnectGitHub,
-    } = useIntegrations();
+  const { user } = useAuth();
+  const { isRTL } = useLanguage();
 
-    const [vercelToken, setVercelToken] = useState('');
-    const [githubToken, setGitHubToken] = useState('');
-    const [savingVercel, setSavingVercel] = useState(false);
-    const [savingGitHub, setSavingGitHub] = useState(false);
-    const [showVercelToken, setShowVercelToken] = useState(false);
-    const [showGitHubToken, setShowGitHubToken] = useState(false);
+  const [settings, setSettings] = useState<AISettings>(() => getAISettings());
+  const [showKey, setShowKey] = useState(false);
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [customModel, setCustomModel] = useState('');
 
-    const handleSaveVercel = async () => {
-        if (!vercelToken.trim()) return;
-        setSavingVercel(true);
-        const success = await saveVercelToken(vercelToken.trim());
-        setSavingVercel(false);
-        if (success) setVercelToken('');
-    };
+  useEffect(() => { if (isOpen) setSettings(getAISettings()); }, [isOpen]);
+  useEffect(() => { setDisplayName(user?.displayName || ''); }, [user]);
 
-    const handleSaveGitHub = async () => {
-        if (!githubToken.trim()) return;
-        setSavingGitHub(true);
-        const success = await saveGitHubToken(githubToken.trim());
-        setSavingGitHub(false);
-        if (success) setGitHubToken('');
-    };
+  const preset = PROVIDER_PRESETS.find(p => p.id === settings.providerId) || PROVIDER_PRESETS[0];
+  const models = getAvailableModels(settings.providerId);
 
-    return (
-        <AnimatePresence>
-            {isOpen && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-                    onClick={onClose}
-                >
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-md" />
+  const handleSelectProvider = (id: string) => {
+    const p = PROVIDER_PRESETS.find(x => x.id === id);
+    if (!p) return;
+    setSettings(s => ({
+      ...s,
+      providerId: id,
+      baseUrl: p.baseUrl || s.baseUrl,
+      model: p.models[0] || s.model,
+    }));
+  };
 
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.96, y: 16 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.96, y: 16 }}
-                        transition={{ duration: 0.2, ease: 'easeOut' }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="relative w-full max-w-xl max-h-[85vh] overflow-hidden rounded-2xl shadow-2xl bg-card border border-border"
-                        dir={isRTL ? 'rtl' : 'ltr'}
-                    >
-                        {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background/50">
-                            <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
-                                    <Shield className="w-4 h-4 text-primary" />
-                                </div>
-                                <div>
-                                    <h2 className="text-base font-bold text-foreground">Account Settings</h2>
-                                    <p className="text-xs text-muted-foreground">{user?.email}</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={onClose}
-                                className="p-2 rounded-lg transition-colors text-muted-foreground hover:bg-secondary hover:text-foreground"
-                            >
-                                <X className="w-4.5 h-4.5" />
-                            </button>
-                        </div>
+  const handleSave = () => {
+    if (!settings.apiKey.trim() && settings.providerId !== 'custom') {
+      toast({ title: 'API Key required', description: 'Enter your provider API key.', variant: 'destructive' });
+      return;
+    }
+    if (!settings.baseUrl.trim()) {
+      toast({ title: 'Base URL required', description: 'Enter the API base URL.', variant: 'destructive' });
+      return;
+    }
+    if (!settings.model.trim()) {
+      toast({ title: 'Model required', description: 'Choose or type a model name.', variant: 'destructive' });
+      return;
+    }
+    saveAISettings(settings);
+    if (displayName !== user?.displayName) setLocalProfile({ displayName });
+    toast({ title: 'Saved', description: 'AI provider settings updated.' });
+    onClose();
+  };
 
-                        {/* Content */}
-                        <div className="px-6 py-5 overflow-y-auto max-h-[calc(85vh-72px)] no-scrollbar">
-                            {loading ? (
-                                <div className="flex items-center justify-center py-16">
-                                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {/* Section Label */}
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Link2 className="w-3.5 h-3.5 text-muted-foreground" />
-                                        <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Integrations</span>
-                                    </div>
-
-                                    {/* Vercel */}
-                                    <IntegrationCard
-                                        logo={vercelLogo}
-                                        name="Vercel"
-                                        description="Deploy your projects to Vercel with one click"
-                                        connected={!!integrations?.vercel_connected}
-                                        username={integrations?.vercel_username}
-                                        tokenValue={vercelToken}
-                                        onTokenChange={setVercelToken}
-                                        onSave={handleSaveVercel}
-                                        onDisconnect={disconnectVercel}
-                                        saving={savingVercel}
-                                        showToken={showVercelToken}
-                                        onToggleShow={() => setShowVercelToken(!showVercelToken)}
-                                        placeholder="Enter your Vercel Access Token"
-                                        helpUrl="https://vercel.com/account/tokens"
-                                        helpText="Get your token"
-                                        logoInvert
-                                    />
-
-                                    {/* GitHub */}
-                                    <IntegrationCard
-                                        logo={githubLogo}
-                                        name="GitHub"
-                                        description="Push your projects to GitHub repositories"
-                                        connected={!!integrations?.github_connected}
-                                        username={integrations?.github_username}
-                                        tokenValue={githubToken}
-                                        onTokenChange={setGitHubToken}
-                                        onSave={handleSaveGitHub}
-                                        onDisconnect={disconnectGitHub}
-                                        saving={savingGitHub}
-                                        showToken={showGitHubToken}
-                                        onToggleShow={() => setShowGitHubToken(!showGitHubToken)}
-                                        placeholder="Enter your GitHub Personal Access Token"
-                                        helpUrl="https://github.com/settings/tokens/new"
-                                        helpText="Create a token"
-                                        logoInvert
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
-    );
-};
-
-// ─── Integration Card ─────────────────────────────────────────────────────────
-const IntegrationCard: React.FC<{
-    logo: string;
-    name: string;
-    description: string;
-    connected: boolean;
-    username?: string | null;
-    tokenValue: string;
-    onTokenChange: (val: string) => void;
-    onSave: () => void;
-    onDisconnect: () => Promise<boolean>;
-    saving: boolean;
-    showToken: boolean;
-    onToggleShow: () => void;
-    placeholder: string;
-    helpUrl: string;
-    helpText: string;
-    logoInvert?: boolean;
-}> = ({ logo, name, description, connected, username, tokenValue, onTokenChange, onSave, onDisconnect, saving, showToken, onToggleShow, placeholder, helpUrl, helpText, logoInvert }) => {
-    const [disconnecting, setDisconnecting] = useState(false);
-
-    const handleDisconnect = async () => {
-        setDisconnecting(true);
-        await onDisconnect();
-        setDisconnecting(false);
-    };
-
-    return (
-        <div className="rounded-xl overflow-hidden transition-colors bg-secondary/60 border border-border">
-            {/* Card Header */}
-            <div className={`flex items-center gap-3.5 px-4 py-3.5 ${connected ? 'border-b border-border' : ''}`}>
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-accent border border-border">
-                    <img src={logo} alt={name} className={`w-5 h-5 ${logoInvert ? 'dark:invert' : ''}`} />
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}
+        >
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-md" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 16 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl bg-card border border-border"
+            dir={isRTL ? 'rtl' : 'ltr'}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
+                  <Sparkles className="w-4 h-4 text-primary" />
                 </div>
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold text-foreground">{name}</h3>
-                        {connected && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-500/10 text-green-500 border border-green-500/20">
-                                <CheckCircle2 className="w-2.5 h-2.5" />
-                                Connected
-                            </span>
-                        )}
-                    </div>
-                    <p className="text-[12px] mt-0.5 text-muted-foreground">{description}</p>
+                <div>
+                  <h2 className="text-base font-bold text-foreground">Settings</h2>
+                  <p className="text-xs text-muted-foreground">AI provider · Profile</p>
                 </div>
+              </div>
+              <button onClick={onClose} className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {connected ? (
-                /* Connected State */
-                <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground">
-                            {username?.[0]?.toUpperCase() || name[0]}
-                        </div>
-                        <div>
-                            <p className="text-[13px] font-medium text-foreground/90">{username}</p>
-                            <p className="text-[11px] text-muted-foreground">Connected via Token</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleDisconnect}
-                        disabled={disconnecting}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors text-destructive bg-destructive/8 border border-destructive/15 hover:bg-destructive/15"
-                    >
-                        {disconnecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Unplug className="w-3 h-3" />}
-                        Disconnect
-                    </button>
-                </div>
-            ) : (
-                /* Disconnected State - Token Input */
-                <div className="px-4 pb-4 pt-1 space-y-3">
-                    <div className="relative">
-                        <Input
-                            type={showToken ? 'text' : 'password'}
-                            value={tokenValue}
-                            onChange={(e) => onTokenChange(e.target.value)}
-                            placeholder={placeholder}
-                            className="h-10 text-[13px] pr-10 rounded-lg font-mono bg-background border-border text-foreground"
-                            onKeyDown={(e) => e.key === 'Enter' && onSave()}
-                        />
-                        <button
-                            type="button"
-                            onClick={onToggleShow}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors text-muted-foreground hover:text-foreground"
-                        >
-                            {showToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </button>
-                    </div>
+            <div className="px-6 py-5 overflow-y-auto max-h-[calc(90vh-72px)] space-y-5">
+              {/* Profile */}
+              <section>
+                <label className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Your name</label>
+                <Input value={displayName} onChange={e => setDisplayName(e.target.value)} className="mt-2" placeholder="Your name" />
+              </section>
 
-                    <div className="flex items-center justify-between">
-                        <a
-                            href={helpUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-[11px] font-medium transition-colors text-primary hover:text-primary/80"
-                        >
-                            <ExternalLink className="w-3 h-3" />
-                            {helpText}
-                        </a>
-                        <Button
-                            onClick={onSave}
-                            disabled={saving || !tokenValue.trim()}
-                            size="sm"
-                            className="h-8 px-4 rounded-lg text-[12px] font-semibold gap-1.5"
-                        >
-                            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Key className="w-3 h-3" />}
-                            Connect
-                        </Button>
-                    </div>
+              {/* Provider */}
+              <section>
+                <label className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">AI Provider</label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {PROVIDER_PRESETS.map(p => (
+                    <button key={p.id} type="button" onClick={() => handleSelectProvider(p.id)}
+                      className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-all text-left ${settings.providerId === p.id ? 'bg-primary/10 border-primary/40 text-foreground' : 'bg-secondary/50 border-border text-muted-foreground hover:bg-secondary'}`}>
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
-            )}
-        </div>
-    );
+                {preset.notes && <p className="text-[11px] text-amber-500 mt-2">⚠ {preset.notes}</p>}
+              </section>
+
+              {/* Base URL */}
+              <section>
+                <label className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Base URL</label>
+                <Input value={settings.baseUrl} onChange={e => setSettings(s => ({ ...s, baseUrl: e.target.value }))}
+                  placeholder="https://api.openai.com/v1" className="mt-2 font-mono text-xs" />
+              </section>
+
+              {/* API Key */}
+              <section>
+                <label className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">API Key</label>
+                <div className="relative mt-2">
+                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input type={showKey ? 'text' : 'password'} value={settings.apiKey}
+                    onChange={e => setSettings(s => ({ ...s, apiKey: e.target.value }))}
+                    placeholder="sk-..." className="pl-9 pr-10 font-mono text-xs" />
+                  <button type="button" onClick={() => setShowKey(!showKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    {showKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">Stored locally in your browser only.</p>
+              </section>
+
+              {/* Model */}
+              <section>
+                <label className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Model</label>
+                {models.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {models.map(m => (
+                      <button key={m} type="button" onClick={() => setSettings(s => ({ ...s, model: m }))}
+                        className={`px-2.5 py-1.5 rounded-md text-[11px] font-mono border transition-all ${settings.model === m ? 'bg-primary/15 border-primary/40 text-foreground' : 'bg-secondary/50 border-border text-muted-foreground hover:bg-secondary'}`}>
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2 mt-2">
+                  <Input value={settings.model} onChange={e => setSettings(s => ({ ...s, model: e.target.value }))}
+                    placeholder="Or type any model id" className="font-mono text-xs" />
+                </div>
+              </section>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="ghost" onClick={onClose}>Cancel</Button>
+                <Button onClick={handleSave} className="gap-1.5">
+                  <Save className="w-3.5 h-3.5" /> Save
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 };
