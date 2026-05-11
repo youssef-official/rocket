@@ -585,6 +585,63 @@ const ProfileAndAISection: React.FC<{ isRTL: boolean }> = ({ isRTL }) => {
     toast({ title: 'Saved', description: 'AI provider and profile updated.' });
   };
 
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string; latencyMs?: number; reply?: string } | null>(null);
+
+  const handleTest = async () => {
+    setTestResult(null);
+    const baseUrl = (settings.baseUrl || '').replace(/\/+$/, '');
+    if (!baseUrl) { setTestResult({ ok: false, message: 'Base URL is required.' }); return; }
+    if (!settings.apiKey.trim()) { setTestResult({ ok: false, message: 'API key is required.' }); return; }
+    if (!settings.model.trim()) { setTestResult({ ok: false, message: 'Model id is required.' }); return; }
+
+    setTesting(true);
+    const started = performance.now();
+    try {
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 30000);
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${settings.apiKey}`,
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'Vivora Local',
+        },
+        body: JSON.stringify({
+          model: settings.model,
+          messages: [
+            { role: 'system', content: 'You are a connection test. Reply with the single word: OK.' },
+            { role: 'user', content: 'ping' },
+          ],
+          stream: false,
+          max_tokens: 16,
+        }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timeout);
+      const latencyMs = Math.round(performance.now() - started);
+      const text = await res.text();
+      let data: any = null;
+      try { data = JSON.parse(text); } catch {}
+      if (!res.ok) {
+        const msg = data?.error?.message || data?.message || text.slice(0, 300) || `HTTP ${res.status}`;
+        setTestResult({ ok: false, message: `HTTP ${res.status} — ${msg}`, latencyMs });
+        return;
+      }
+      const reply = data?.choices?.[0]?.message?.content
+        ?? data?.choices?.[0]?.delta?.content
+        ?? '(empty response)';
+      setTestResult({ ok: true, message: 'Connection successful', latencyMs, reply: typeof reply === 'string' ? reply : JSON.stringify(reply) });
+    } catch (e: any) {
+      const latencyMs = Math.round(performance.now() - started);
+      const msg = e?.name === 'AbortError' ? 'Request timed out after 30s' : (e?.message || 'Network error (CORS / unreachable host)');
+      setTestResult({ ok: false, message: msg, latencyMs });
+    } finally {
+      setTesting(false);
+    }
+  };
+
   return (
     <>
       <div className={`flex items-center gap-3 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
