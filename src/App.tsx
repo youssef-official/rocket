@@ -114,6 +114,22 @@ const ProjectEditorRoute = () => {
           onChunk: c => { full += c; setStreamingContent(full); },
           onComplete: async (response) => {
             const { files, fileList, actionsTaken, summary } = parseAIResponse(response);
+            if (Object.keys(files).length === 0) {
+              const preview = response.trim().slice(0, 300);
+              toast({
+                title: 'Code generation failed',
+                description: preview || 'The AI provider returned a response without any files. Check your model/provider settings.',
+                variant: 'destructive'
+              });
+              await updateMessage(assistantId, {
+                content: explanation || '',
+                actionsTaken: actionsTaken || [],
+              });
+              setIsGenerating(false);
+              setStreamingContent('');
+              setGenerationPhase(null);
+              return;
+            }
             const finalFiles = Object.keys(files).length > 0 ? { ...localProject.files, ...files } : localProject.files;
             await updateProject(localProject.id, { files: finalFiles, generationStatus: 'complete' });
             setLocalProject(prev => prev ? { ...prev, files: finalFiles } : null);
@@ -154,6 +170,17 @@ const ProjectEditorRoute = () => {
         onChunk: c => { full += c; setStreamingContent(full); },
         onComplete: async (resp) => {
           const { files, actionsTaken, summary } = parseAIResponse(resp);
+          if (!isChatOnly && Object.keys(files).length === 0) {
+            toast({
+              title: 'AI error',
+              description: resp.trim().slice(0, 300) || 'The AI provider returned a response without any files.',
+              variant: 'destructive'
+            });
+            setIsGenerating(false);
+            setStreamingContent('');
+            setGenerationPhase(null);
+            return;
+          }
           if (Object.keys(files).length > 0 && !isChatOnly) {
             const finalFiles = { ...localProject.files, ...files };
             await updateProject(localProject.id, { files: finalFiles });
