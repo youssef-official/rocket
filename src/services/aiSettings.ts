@@ -51,6 +51,7 @@ const DEFAULTS: AISettings = {
   customProviders: [],
   customModels: {},
   apiKeys: {},
+  corsProxy: '',
 };
 
 export function getAISettings(): AISettings {
