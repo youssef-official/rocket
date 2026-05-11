@@ -11,10 +11,6 @@ import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
 
-import { VercelDeployDialog } from './IntegrationDialogs';
-import { GitHubPushDialog } from './GitHubPushDialog';
-import { DatabasePanel } from './DatabasePanel';
-import { AnalyticsPanel } from './AnalyticsPanel';
 import { DetailsPanel } from './DetailsPanel';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,9 +21,6 @@ import { supabase } from '@/integrations/supabase/client';
 import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
-import { useAutoMigration } from '@/hooks/useAutoMigration';
-// CreditWarningBanner removed
 
 interface FileActivity {
   name: string;
@@ -100,9 +93,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
-  const { userPlan, getRemainingCredits } = useUserPlan();
-  const { runMigrations } = useAutoMigration(project?.id || null);
-  const [currentView, setCurrentView] = useState<'code' | 'preview' | 'database' | 'details' | 'analytics'>('preview');
+  const runMigrations = (_files: any) => {};
+  const [currentView, setCurrentView] = useState<'code' | 'preview' | 'details'>('preview');
   const [detailsVersion, setDetailsVersion] = useState<{ version: ProjectVersion; activities: any[] } | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -116,8 +108,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [showHomeDialog, setShowHomeDialog] = useState(false);
   const showVisualEdit = false;
   // GitHub removed - Vercel only
-  const [showVercelDialog, setShowVercelDialog] = useState(false);
-  const [showGitHubPush, setShowGitHubPush] = useState(false);
   const [gitHubRepoName, setGitHubRepoName] = useState('');
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [renameValue, setRenameValue] = useState('');
@@ -557,21 +547,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <Code2 className="w-3.5 h-3.5" />
             <span>{t('editor.code')}</span>
           </button>
-          <button
-            onClick={() => setCurrentView('database')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'database' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
-          >
-            <Database className="w-3.5 h-3.5" />
-            <span>DB</span>
-          </button>
-          <button
-            onClick={() => setCurrentView('analytics')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'analytics' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
-          >
-            <BarChart2 className="w-3.5 h-3.5" />
-            <span>Analytics</span>
-          </button>
-
         </div>
 
         {/* Right Section */}
@@ -587,27 +562,26 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </button>
 
           {/* GitHub - hidden on mobile */}
-          <motion.button
-            onClick={() => setShowGitHubPush(true)}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
+          <a
+            href="https://github.com"
+            target="_blank"
+            rel="noopener noreferrer"
             className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-border/60 bg-secondary/60 hover:bg-secondary text-foreground text-sm font-semibold transition-all duration-200 shadow-sm"
-            title="Push to GitHub"
+            title="Open on GitHub"
           >
             <img src={githubLogo} alt="GitHub" className="w-4 h-4 dark:invert" />
             <span className="hidden lg:inline">GitHub</span>
-          </motion.button>
+          </a>
 
           {/* Publish */}
-          <motion.button
-            onClick={() => setShowVercelDialog(true)}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            className={`flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 shadow-md shadow-primary/20 ${isRTL ? 'flex-row-reverse' : ''}`}
+          <button
+            onClick={handleDownload}
+            disabled={!project || Object.keys(project.files).length === 0}
+            className={`flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 shadow-md shadow-primary/20 disabled:opacity-50 ${isRTL ? 'flex-row-reverse' : ''}`}
           >
             <Rocket className="w-3.5 h-3.5" />
             {t('editor.publish')}
-          </motion.button>
+          </button>
 
           {/* User Menu */}
           <div className="relative">
@@ -663,32 +637,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                       </div>
                     </div>
 
-                    {/* Credits */}
-                    {userPlan && (
-                      <div className="px-4 py-3 border-b border-border/40 bg-accent/30">
-                        <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <Coins className="w-3.5 h-3.5 text-yellow-500" />
-                            <span className="text-xs font-semibold text-foreground">Credits</span>
-                          </div>
-                          <span className="text-xs font-bold text-yellow-500">
-                            {getRemainingCredits().total.toFixed(1)}
-                          </span>
-                        </div>
-                        <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full transition-all duration-500"
-                            style={{
-                              width: `${Math.min(100, (getRemainingCredits().total / ((userPlan.dailyCredits + (PLAN_CONFIG[userPlan.plan]?.monthlyCredits ?? 0)) || 5)) * 100)}%`
-                            }}
-                          />
-                        </div>
-                        <div className={`flex items-center justify-between mt-1.5 text-[11px] text-muted-foreground ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <span>Daily: {getRemainingCredits().daily.toFixed(1)}</span>
-                          <span>Monthly: {getRemainingCredits().monthly.toFixed(1)}</span>
-                        </div>
-                      </div>
-                    )}
 
                     <div className="p-1.5">
                       <button
@@ -853,11 +801,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   onUpdateFile={handleUpdateFile}
                 />
               </div>
-              {/* Database Tab */}
-              {currentView === 'database' && !showVisualEdit && (
-                <DatabasePanel projectId={project?.id || null} onSendMessage={onSendMessage} projectFiles={project?.files} />
-              )}
-              {/* Details Tab - use live fileActivities during generation */}
+              {/* Details Tab */}
               {currentView === 'details' && !showVisualEdit && detailsVersion && (
                 <DetailsPanel
                   version={detailsVersion.version}
@@ -865,9 +809,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   onClose={() => setCurrentView('preview')}
                   isGenerating={isGenerating}
                 />
-              )}
-              {currentView === 'analytics' && !showVisualEdit && (
-                <AnalyticsPanel projectId={project.id} previewUrl={previewUrl} />
               )}
 
             </div>
@@ -916,30 +857,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         )}
       </div>
 
-      {/* Integration Dialogs */}
-      <VercelDeployDialog
-        open={showVercelDialog}
-        onOpenChange={setShowVercelDialog}
-        projectName={project?.name || 'untitled-project'}
-        projectFiles={project?.files || {}}
-        onDeployed={(url) => {
-          setDeployedUrl(url);
-        }}
-        onSendErrorToChat={(errorLog) => {
-          onSendMessage(`[AUTO-FIX] The deployment to Vercel failed. Please analyze the error log and fix any issues in the code:\n\n${errorLog}`, false);
-        }}
-        projectId={project?.id || null}
-        existingVercelUrl={project?.vercelUrl || deployedUrl || null}
-      />
-
-      <GitHubPushDialog
-        open={showGitHubPush}
-        onOpenChange={setShowGitHubPush}
-        projectName={project?.name || 'untitled-project'}
-        projectFiles={project?.files || {}}
-        projectId={project?.id || null}
-        existingRepoUrl={project?.githubRepoUrl || null}
-      />
 
       {/* Rename Dialog */}
       <AnimatePresence>

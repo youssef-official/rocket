@@ -1,4 +1,10 @@
-import { callingDirectAI, deductPointsAfterGeneration } from './directAiService';
+import { callAI, type AIMode } from './aiClient';
+const callingDirectAI = (
+  mode: AIMode, messages: any[], signal?: AbortSignal,
+  _userPlan?: string, userLanguage?: string,
+  colorTheme?: { name: string; colors: string[] } | null
+) => callAI(mode, messages, { signal, userLanguage, colorTheme, stream: true });
+const deductPointsAfterGeneration = async (..._args: any[]) => ({ creditsDeducted: 0, success: true });
 
 // Re-export types
 export interface ChatMessage {

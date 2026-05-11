@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useIntegrations } from '@/hooks/useIntegrations';
+const useIntegrations = () => ({ integrations: null as any, loading: false, saveVercelToken: async (_t: string) => false, saveGitHubToken: async (_t: string) => false, disconnectVercel: async () => false, disconnectGitHub: async () => false });
 import { useThemePreference } from '@/hooks/useThemePreference';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
 import vercelLogo from '@/assets/logos/vercel.svg';

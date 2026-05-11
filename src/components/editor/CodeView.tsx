@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Editor, { type Monaco } from '@monaco-editor/react';
 import { ChevronRight, ChevronDown, File, Folder, FileCode, FileJson, FileText, Loader2, CheckCircle2, Hash, Image, Settings2, Lock, Save, Undo2, Redo2 } from 'lucide-react';
 import type { ProjectFile } from '@/types';
-import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
+const useUserPlan = () => ({ userPlan: { plan: 'business' as const } });
+const PLAN_CONFIG: any = { business: { features: { codeEditing: true } }, free: { features: { codeEditing: true } } };
 
 // GitHub Dark inspired Monaco theme
 const defineGitHubDarkTheme = (monaco: Monaco) => {

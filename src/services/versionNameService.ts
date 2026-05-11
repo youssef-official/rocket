@@ -1,4 +1,5 @@
-import { callingDirectAI } from './directAiService';
+import { callAI } from './aiClient';
+const callingDirectAI = (mode: any, messages: any[]) => callAI(mode, messages, { stream: true });
 
 // Generate AI-powered version names based on changes made
 export async function generateVersionName(

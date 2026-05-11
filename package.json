@@ -14,6 +14,7 @@
     "deploy:modal": "cd backend && modal deploy main.py"
   },
   "dependencies": {
+    "@codesandbox/sandpack-react": "^2.20.0",
     "@hookform/resolvers": "^3.10.0",
     "@lovable.dev/cloud-auth-js": "^1.0.0",
     "@monaco-editor/react": "^4.7.0",
