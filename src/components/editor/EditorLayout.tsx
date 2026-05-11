@@ -801,11 +801,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   onUpdateFile={handleUpdateFile}
                 />
               </div>
-              {/* Database Tab */}
-              {currentView === 'database' && !showVisualEdit && (
-                <DatabasePanel projectId={project?.id || null} onSendMessage={onSendMessage} projectFiles={project?.files} />
-              )}
-              {/* Details Tab - use live fileActivities during generation */}
+              {/* Details Tab */}
               {currentView === 'details' && !showVisualEdit && detailsVersion && (
                 <DetailsPanel
                   version={detailsVersion.version}
@@ -813,9 +809,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   onClose={() => setCurrentView('preview')}
                   isGenerating={isGenerating}
                 />
-              )}
-              {currentView === 'analytics' && !showVisualEdit && (
-                <AnalyticsPanel projectId={project.id} previewUrl={previewUrl} />
               )}
 
             </div>
