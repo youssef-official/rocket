@@ -2,8 +2,10 @@ import { callAI, type AIMode } from './aiClient';
 const callingDirectAI = (
   mode: AIMode, messages: any[], signal?: AbortSignal,
   _userPlan?: string, userLanguage?: string,
-  colorTheme?: { name: string; colors: string[] } | null
-) => callAI(mode, messages, { signal, userLanguage, colorTheme, stream: true });
+  colorTheme?: { name: string; colors: string[] } | null,
+  stream: boolean = true,
+  maxTokens?: number,
+) => callAI(mode, messages, { signal, userLanguage, colorTheme, stream, maxTokens });
 const deductPointsAfterGeneration = async (..._args: any[]) => ({ creditsDeducted: 0, success: true });
 
 // Re-export types
@@ -1040,7 +1042,7 @@ EXISTING PROJECT FILES: [${existingFiles}]
       }
     }
 
-    const response = await callingDirectAI('code', finalMessages, options.signal, undefined, userLanguage, colorTheme);
+    const response = await callingDirectAI('code', finalMessages, options.signal, undefined, userLanguage, colorTheme, true, 8192);
 
     if (!response.ok) {
       const body = await response.text().catch(() => '');
@@ -1058,7 +1060,17 @@ EXISTING PROJECT FILES: [${existingFiles}]
       }
     );
     if (!fullResponse.trim()) {
-      throw new Error('AI provider returned an empty response. The selected provider/model may not support the current streaming format.');
+      const fallbackResponse = await callingDirectAI('code', finalMessages, options.signal, undefined, userLanguage, colorTheme, false, 8192);
+      if (!fallbackResponse.ok) {
+        const body = await fallbackResponse.text().catch(() => '');
+        throw new Error(`AI ${fallbackResponse.status}: ${body.slice(0, 300) || fallbackResponse.statusText}`);
+      }
+      const { text: fallbackText } = await readSSEStream(fallbackResponse);
+      if (!fallbackText.trim()) {
+        throw new Error('AI provider returned an empty response. The selected provider/model may not support the current streaming format.');
+      }
+      options.onComplete(fallbackText, usage);
+      return;
     }
     options.onComplete(fullResponse, usage);
   } catch (error) {

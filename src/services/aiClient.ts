@@ -57,6 +57,7 @@ export interface AICallOptions {
   userLanguage?: string;
   colorTheme?: { name: string; colors: string[] } | null;
   stream?: boolean;
+  maxTokens?: number;
 }
 
 /**
@@ -110,6 +111,9 @@ export async function callAI(
     messages: [{ role: 'system', content: systemPrompt }, ...formatted],
     stream,
   };
+  if (typeof options.maxTokens === 'number') {
+    body.max_tokens = options.maxTokens;
+  }
 
   const targetUrl = `${baseUrl}/chat/completions`;
   const finalUrl = toProxiedUrl(targetUrl);
