@@ -11,10 +11,6 @@ import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
 
-import { VercelDeployDialog } from './IntegrationDialogs';
-import { GitHubPushDialog } from './GitHubPushDialog';
-import { DatabasePanel } from './DatabasePanel';
-import { AnalyticsPanel } from './AnalyticsPanel';
 import { DetailsPanel } from './DetailsPanel';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,9 +21,6 @@ import { supabase } from '@/integrations/supabase/client';
 import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
-import { useAutoMigration } from '@/hooks/useAutoMigration';
-// CreditWarningBanner removed
 
 interface FileActivity {
   name: string;
@@ -100,9 +93,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
-  const { userPlan, getRemainingCredits } = useUserPlan();
-  const { runMigrations } = useAutoMigration(project?.id || null);
-  const [currentView, setCurrentView] = useState<'code' | 'preview' | 'database' | 'details' | 'analytics'>('preview');
+  const runMigrations = (_files: any) => {};
+  const [currentView, setCurrentView] = useState<'code' | 'preview' | 'details'>('preview');
   const [detailsVersion, setDetailsVersion] = useState<{ version: ProjectVersion; activities: any[] } | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -116,8 +108,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [showHomeDialog, setShowHomeDialog] = useState(false);
   const showVisualEdit = false;
   // GitHub removed - Vercel only
-  const [showVercelDialog, setShowVercelDialog] = useState(false);
-  const [showGitHubPush, setShowGitHubPush] = useState(false);
   const [gitHubRepoName, setGitHubRepoName] = useState('');
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [renameValue, setRenameValue] = useState('');
