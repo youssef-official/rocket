@@ -235,6 +235,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<HomeRoute />} />
               <Route path="/projects/:id" element={<ProjectEditorRoute />} />
+              <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<HomeRoute />} />
             </Routes>
             <FloatingMusicPlayer />
