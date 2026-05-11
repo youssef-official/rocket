@@ -812,7 +812,35 @@ const ProfileAndAISection: React.FC<{ isRTL: boolean }> = ({ isRTL }) => {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
+      {testResult && (
+        <div className={`mb-3 p-3 rounded-lg border text-xs flex items-start gap-2 ${
+          testResult.ok
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+            : 'bg-red-500/10 border-red-500/30 text-red-200'
+        }`}>
+          {testResult.ok
+            ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+            : <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />}
+          <div className="flex-1 min-w-0">
+            <p className="font-medium">
+              {testResult.ok ? 'Success' : 'Test failed'}
+              {typeof testResult.latencyMs === 'number' && (
+                <span className="ml-2 opacity-60">· {testResult.latencyMs}ms</span>
+              )}
+            </p>
+            <p className="opacity-80 break-words whitespace-pre-wrap mt-0.5">{testResult.message}</p>
+            {testResult.reply && (
+              <p className="opacity-70 mt-1 font-mono">Reply: {testResult.reply}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-end gap-2">
+        <Button onClick={handleTest} disabled={testing} variant="outline" className="gap-1.5 border-white/10 text-white/80 hover:bg-white/[0.06]">
+          {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+          {testing ? 'Testing…' : 'Test connection'}
+        </Button>
         <Button onClick={handleSave} className="gap-1.5 bg-violet-500 hover:bg-violet-600">
           <Check className="w-4 h-4" /> Save AI & Profile
         </Button>
