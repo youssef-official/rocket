@@ -128,6 +128,7 @@ const ProjectEditorRoute = () => {
           },
           onError: err => {
             console.error('Generation error:', err);
+            toast({ title: 'Code generation failed', description: (err as any)?.message || 'Unknown error', variant: 'destructive' });
             setIsGenerating(false);
             setGenerationPhase(null);
           },
