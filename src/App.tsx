@@ -94,7 +94,14 @@ const ProjectEditorRoute = () => {
       }).catch(() => {});
 
       let explanation = '';
-      try { explanation = await generateExplanation(prompt, localProject.projectType, language); } catch {}
+      try {
+        explanation = await generateExplanation(prompt, localProject.projectType, language);
+      } catch (e: any) {
+        toast({ title: 'AI provider error', description: e?.message || 'Failed to reach AI provider. Check Settings.', variant: 'destructive' });
+        setIsGenerating(false);
+        setGenerationPhase(null);
+        return;
+      }
       const assistantId = crypto.randomUUID();
       await addMessage('assistant', explanation || `**${t('chat.generating')}**`, undefined, undefined, undefined, assistantId);
 
