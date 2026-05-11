@@ -374,6 +374,11 @@ const Settings: React.FC = () => {
           </Card>
         </motion.div>
 
+        {/* ═══ Profile + AI Provider ═══ */}
+        <motion.div variants={sectionVariants} initial="hidden" animate="visible" transition={{ delay: 0.05 }}>
+          <ProfileAndAISection isRTL={isRTL} />
+        </motion.div>
+
         {/* ═══ Integrations ═══ */}
         <motion.div variants={sectionVariants} initial="hidden" animate="visible" transition={{ delay: 0.1 }}>
           <div className={`flex items-center gap-3 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
