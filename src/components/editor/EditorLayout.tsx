@@ -637,32 +637,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                       </div>
                     </div>
 
-                    {/* Credits */}
-                    {userPlan && (
-                      <div className="px-4 py-3 border-b border-border/40 bg-accent/30">
-                        <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <Coins className="w-3.5 h-3.5 text-yellow-500" />
-                            <span className="text-xs font-semibold text-foreground">Credits</span>
-                          </div>
-                          <span className="text-xs font-bold text-yellow-500">
-                            {getRemainingCredits().total.toFixed(1)}
-                          </span>
-                        </div>
-                        <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full transition-all duration-500"
-                            style={{
-                              width: `${Math.min(100, (getRemainingCredits().total / ((userPlan.dailyCredits + (PLAN_CONFIG[userPlan.plan]?.monthlyCredits ?? 0)) || 5)) * 100)}%`
-                            }}
-                          />
-                        </div>
-                        <div className={`flex items-center justify-between mt-1.5 text-[11px] text-muted-foreground ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <span>Daily: {getRemainingCredits().daily.toFixed(1)}</span>
-                          <span>Monthly: {getRemainingCredits().monthly.toFixed(1)}</span>
-                        </div>
-                      </div>
-                    )}
 
                     <div className="p-1.5">
                       <button
