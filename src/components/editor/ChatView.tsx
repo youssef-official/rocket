@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp, Monitor, AtSign, Download, Copy, ThumbsUp, ThumbsDown, Check, Coins } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { supabase } from '@/integrations/supabase/client';
+// Local-only build — no Supabase. Feedback persisted in localStorage.
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
 import type { ProjectVersion } from '@/hooks/useVersions';
@@ -188,11 +188,13 @@ const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; token
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const FEEDBACK_KEY = `vivora_feedback_${messageId}`;
+
   useEffect(() => {
-    // Load existing feedback from supabase
-    supabase.from('message_feedback').select('feedback').eq('message_id', messageId).maybeSingle().then(({ data }) => {
-      if (data?.feedback) setFeedback(data.feedback as 'like' | 'dislike');
-    });
+    try {
+      const v = localStorage.getItem(FEEDBACK_KEY);
+      if (v === 'like' || v === 'dislike') setFeedback(v);
+    } catch {}
   }, [messageId]);
 
   useEffect(() => {
@@ -201,17 +203,13 @@ const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; token
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
-  const handleFeedback = async (type: 'like' | 'dislike') => {
+  const handleFeedback = (type: 'like' | 'dislike') => {
     const newFeedback = feedback === type ? null : type;
     setFeedback(newFeedback);
     try {
-      if (newFeedback) {
-        await supabase.from('message_feedback').upsert({ message_id: messageId, user_id: (await supabase.auth.getUser()).data.user?.id || '', feedback: newFeedback, project_id: null }, { onConflict: 'message_id,user_id' });
-      } else {
-        const userId = (await supabase.auth.getUser()).data.user?.id;
-        if (userId) await supabase.from('message_feedback').delete().eq('message_id', messageId).eq('user_id', userId);
-      }
-    } catch (e) { console.error('Feedback error:', e); }
+      if (newFeedback) localStorage.setItem(FEEDBACK_KEY, newFeedback);
+      else localStorage.removeItem(FEEDBACK_KEY);
+    } catch {}
   };
 
   const handleCopy = async () => {
@@ -297,7 +295,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
 }) => {
   const { t } = useLanguage();
   const { userPlan } = useUserPlan();
-  const isPaidPlan = userPlan?.plan && userPlan.plan !== 'free';
+  // Local-only build: every feature is unlocked.
+  const isPaidPlan = true;
   const [input, setInput] = useState(() => localStorage.getItem('vivora_chat_input') || '');
   const [expandedActivities, setExpandedActivities] = useState<Record<string, boolean>>({});
   const [isChatMode, setIsChatMode] = useState(false);

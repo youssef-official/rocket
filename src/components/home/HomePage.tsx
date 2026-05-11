@@ -16,7 +16,7 @@ import { toast } from '@/hooks/use-toast';
 import { useThemePreference } from '@/hooks/useThemePreference';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 import lightHeroBg from '@/assets/light-hero-bg.jpg';
-import { supabase } from '@/integrations/supabase/client';
+// Local-only build — no Supabase. Images use object URLs / data URLs; Clone uses public CORS.
 
 interface Project {
   id: string;
@@ -55,7 +55,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   const { t, isRTL, language } = useLanguage();
   const { theme } = useThemePreference();
   const { userPlan, shouldShowUpgradeBanner, canUsePrivateProjects, getRemainingCredits } = useUserPlan();
-  const isPaidPlan = userPlan?.plan && userPlan.plan !== 'free';
+  const isPaidPlan = true;
 
   // Wallpaper selection (listens for changes from UserMenuDropdown)
   const [wallpaperId, setWallpaperId] = useState(() => localStorage.getItem('vivora_wallpaper') || 'space');
@@ -246,32 +246,16 @@ export const HomePage: React.FC<HomePageProps> = ({
     return `https://${trimmed.replace(/^\/+/, '')}`;
   }, []);
 
-  const uploadFileToR2 = useCallback(async (file: File) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-image`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: formData,
-        }
-      );
-      if (res.ok) {
-        const result = await res.json();
-        return normalizePublicImageUrl(result.url || '');
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }, [normalizePublicImageUrl]);
+  // Local-only: convert image to a data URL so the AI vision step can read it
+  // without any backend storage.
+  const uploadFileToR2 = useCallback(async (file: File): Promise<string | null> => {
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }, []);
 
   const uploadImmediately = useCallback((files: File[]) => {
     const newEntries = files.map(file => ({
@@ -331,33 +315,33 @@ export const HomePage: React.FC<HomePageProps> = ({
   const handleCloneDesign = async () => {
     if (!cloneUrl.trim()) return;
     setCloneLoading(true);
+    const target = normalizePublicImageUrl(cloneUrl.trim());
+    // Try a few CORS-friendly proxies, falling back to a "URL only" attachment
+    const proxies = [
+      (u: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+      (u: string) => `https://r.jina.ai/${u}`,
+      (u: string) => `https://cors.isomorphic-git.org/${u}`,
+    ];
+    let html: string | null = null;
+    for (const buildUrl of proxies) {
+      try {
+        const res = await fetch(buildUrl(target), { method: 'GET' });
+        if (!res.ok) continue;
+        const text = await res.text();
+        if (text && text.length > 200) { html = text; break; }
+      } catch { /* try next */ }
+    }
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-website`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ url: cloneUrl.trim() }),
-        }
-      );
-      if (!res.ok) throw new Error('Scrape failed');
-      const result = await res.json();
-      if (result.html) {
-        setCloneAttachment({ url: cloneUrl.trim(), html: result.html });
-        setShowCloneInput(false);
-        setCloneUrl('');
-        toast({ title: 'Design cloned!', description: `Source code from ${cloneUrl.trim()} attached.` });
+      if (html) {
+        setCloneAttachment({ url: target, html });
+        toast({ title: 'Design cloned!', description: `Source from ${target} attached.` });
       } else {
-        throw new Error('No HTML returned');
+        // Graceful fallback — attach just the URL so the AI can still reference it.
+        setCloneAttachment({ url: target, html: '' });
+        toast({ title: 'Attached URL only', description: 'Could not fetch HTML (CORS). The AI will work from the URL.' });
       }
-    } catch {
-      toast({ title: 'Clone failed', description: 'Could not scrape the website. Please try again.', variant: 'destructive' });
+      setShowCloneInput(false);
+      setCloneUrl('');
     } finally {
       setCloneLoading(false);
     }

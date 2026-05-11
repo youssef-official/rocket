@@ -379,42 +379,7 @@ const Settings: React.FC = () => {
           <ProfileAndAISection isRTL={isRTL} />
         </motion.div>
 
-        {/* ═══ Integrations ═══ */}
-        <motion.div variants={sectionVariants} initial="hidden" animate="visible" transition={{ delay: 0.1 }}>
-          <div className={`flex items-center gap-3 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
-              <SettingsIcon className="w-4 h-4 text-blue-400" />
-            </div>
-            <h2 className="text-xl font-bold text-white font-serif">{t('footer.integrations')}</h2>
-          </div>
-
-          <div className="space-y-4">
-            <TokenCard
-              logo={vercelLogo} name="Vercel" description="Deploy your projects to Vercel"
-              connected={!!integrations?.vercel_connected} username={integrations?.vercel_username}
-              tokenValue={vercelToken} onTokenChange={setVercelToken}
-              onSave={handleSaveVercel} onDisconnect={disconnectVercel}
-              saving={savingVercel} showToken={showVercelToken}
-              onToggleShow={() => setShowVercelToken(!showVercelToken)}
-              placeholder="Enter your Vercel Access Token"
-              helpUrl="https://vercel.com/account/tokens"
-              helpText="Get token → Vercel Settings → Tokens"
-              isRTL={isRTL}
-            />
-            <TokenCard
-              logo={githubLogo} name="GitHub" description="Push your projects to GitHub"
-              connected={!!integrations?.github_connected} username={integrations?.github_username}
-              tokenValue={githubToken} onTokenChange={setGitHubToken}
-              onSave={handleSaveGitHub} onDisconnect={disconnectGitHub}
-              saving={savingGitHub} showToken={showGitHubToken}
-              onToggleShow={() => setShowGitHubToken(!showGitHubToken)}
-              placeholder="Enter your GitHub Personal Access Token"
-              helpUrl="https://github.com/settings/tokens/new"
-              helpText="Get token → GitHub Settings → Developer settings → Tokens"
-              isRTL={isRTL}
-            />
-          </div>
-        </motion.div>
+        {/* Integrations removed in local/open-source build. */}
       </main>
     </div>
   );
