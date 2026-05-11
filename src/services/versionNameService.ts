@@ -1,4 +1,4 @@
-import { callingDirectAI } from './directAiService';
+import { callAI as callingDirectAI } from './aiClient';
 
 // Generate AI-powered version names based on changes made
 export async function generateVersionName(

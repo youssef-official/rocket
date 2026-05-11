@@ -1,4 +1,5 @@
-import { callingDirectAI, deductPointsAfterGeneration } from './directAiService';
+import { callAI as callingDirectAI } from './aiClient';
+const deductPointsAfterGeneration = async (..._args: any[]) => ({ creditsDeducted: 0, success: true });
 
 // Re-export types
 export interface ChatMessage {
