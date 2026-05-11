@@ -565,11 +565,8 @@ const ProfileAndAISection: React.FC<{ isRTL: boolean }> = ({ isRTL }) => {
     try {
       const ctrl = new AbortController();
       const timeout = setTimeout(() => ctrl.abort(), 30000);
-      const proxy = (settings.corsProxy || '').trim();
       const target = `${baseUrl}/chat/completions`;
-      const url = proxy
-        ? (proxy.includes('?') || proxy.endsWith('=') ? proxy + encodeURIComponent(target) : proxy + target)
-        : target;
+      const url = toProxiedUrl(target);
       const res = await fetch(url, {
         method: 'POST',
         headers: {
