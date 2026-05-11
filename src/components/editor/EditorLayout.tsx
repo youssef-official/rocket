@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useVersions, type ProjectVersion } from '@/hooks/useVersions';
 import { generateVersionName } from '@/services/versionNameService';
 import type { ProjectData, ChatMessage, ViewType, ProjectFile } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+// Local-only build — no Supabase. Renames/uploads stay in-memory.
 import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -298,46 +298,23 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     setCurrentView('details');
   }, []);
 
-  // Handle image upload to Cloudflare R2 via edge function
+  // Local-only image/file upload: convert to data URL so AI vision works
+  // without any backend storage.
   const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-image`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: formData,
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const url = typeof reader.result === 'string' ? reader.result : null;
+        if (!url) return resolve(null);
+        if (!file.type.startsWith('image/')) {
+          const ext = file.name.split('.').pop()?.toLowerCase() || '';
+          return resolve(`[FILE:${ext}:${file.name}]${url}`);
         }
-      );
-
-      if (!res.ok) {
-        console.error('Error uploading file:', await res.text());
-        return null;
-      }
-
-      const result = await res.json();
-      const publicUrl = result.url;
-
-      // For non-image files, prefix with file type info so the AI knows what it is
-      if (!file.type.startsWith('image/')) {
-        const ext = file.name.split('.').pop()?.toLowerCase() || '';
-        return `[FILE:${ext}:${file.name}]${publicUrl}`;
-      }
-
-      return publicUrl;
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      return null;
-    }
+        resolve(url);
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
   }, []);
 
   // Handle panel resize
