@@ -858,9 +858,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     if (e.key === 'Enter') {
                       const name = renameValue.trim() || displayProjectName;
                       onUpdateProject({ name, generatedName: name });
-                      if (project?.id) {
-                        supabase.from('projects').update({ name, generated_name: name }).eq('id', project.id).then(() => { });
-                      }
+                      // Local-only: name persists in project state.
                       setShowRenameDialog(false);
                     }
                   }}
@@ -877,9 +875,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     onClick={() => {
                       const name = renameValue.trim() || displayProjectName;
                       onUpdateProject({ name, generatedName: name });
-                      if (project?.id) {
-                        supabase.from('projects').update({ name, generated_name: name }).eq('id', project.id).then(() => { });
-                      }
+                      // Local-only: name persists in project state.
                       setShowRenameDialog(false);
                     }}
                     className="px-5 py-2 text-sm bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all duration-200 font-semibold shadow-md shadow-primary/20"
