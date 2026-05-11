@@ -1,12 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import type { User } from '@/types';
-import { sendNotificationEmail } from '@/services/emailService';
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
+  session: any;
   loading: boolean;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -15,108 +12,63 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+const KEY = 'vivora_local_profile';
 
-  const transformUser = (supabaseUser: SupabaseUser | null): User | null => {
-    if (!supabaseUser) return null;
-    return {
-      id: supabaseUser.id,
-      email: supabaseUser.email || '',
-      displayName: supabaseUser.user_metadata?.display_name,
-      avatarUrl: supabaseUser.user_metadata?.avatar_url,
-    };
+function loadProfile(): User {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  const u: User = {
+    id: 'local-user',
+    email: 'you@local.dev',
+    displayName: 'You',
+    avatarUrl: undefined,
   };
+  localStorage.setItem(KEY, JSON.stringify(u));
+  return u;
+}
+
+export function setLocalProfile(updates: Partial<User>) {
+  const cur = loadProfile();
+  const next = { ...cur, ...updates };
+  localStorage.setItem(KEY, JSON.stringify(next));
+  window.dispatchEvent(new Event('vivora-profile-change'));
+}
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(loadProfile());
+  const [loading] = useState(false);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        try {
-          setSession(session);
-          setUser(transformUser(session?.user ?? null));
-          setLoading(false);
-        } catch (e) {
-          console.error("Auth state change error", e);
-        }
-      }
-    );
-
-    // THEN check for existing session
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        setUser(transformUser(session?.user ?? null));
-      } catch (error) {
-        console.warn("Session check invalidated/aborted", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkSession();
-
-    return () => subscription.unsubscribe();
+    const handler = () => setUser(loadProfile());
+    window.addEventListener('vivora-profile-change', handler);
+    return () => window.removeEventListener('vivora-profile-change', handler);
   }, []);
 
-  const signUp = async (email: string, password: string, displayName?: string) => {
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: {
-            display_name: displayName || email.split('@')[0],
-          }
-        },
-      });
-      if (error) throw error;
-      // Send welcome email (fire and forget)
-      sendNotificationEmail({
-        type: 'welcome',
-        email,
-        name: email.split('@')[0],
-      });
-      return { error: null };
-    } catch (error) {
-      return { error: error as Error };
-    }
+  const signUp = async (email: string, _password: string, displayName?: string) => {
+    setLocalProfile({ email, displayName: displayName || email.split('@')[0] });
+    return { error: null };
   };
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      return { error: null };
-    } catch (error) {
-      return { error: error as Error };
-    }
+  const signIn = async (email: string, _password: string) => {
+    setLocalProfile({ email });
+    return { error: null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
+    // Keep the local profile around — there's nothing to sign out of.
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session: { user }, loading, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (ctx === undefined) throw new Error('useAuth must be used within an AuthProvider');
+  return ctx;
 };
