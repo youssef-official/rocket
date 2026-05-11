@@ -93,11 +93,8 @@ export async function callAI(
     stream,
   };
 
-  const proxy = (settings.corsProxy || '').trim();
   const targetUrl = `${baseUrl}/chat/completions`;
-  const finalUrl = proxy
-    ? (proxy.includes('?') || proxy.endsWith('=') ? proxy + encodeURIComponent(targetUrl) : proxy + targetUrl)
-    : targetUrl;
+  const finalUrl = toProxiedUrl(targetUrl);
 
   return fetch(finalUrl, {
     method: 'POST',
