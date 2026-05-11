@@ -10,8 +10,6 @@ import { TemplatesSection } from './TemplatesSection';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { FrameworkBar } from '@/components/shared/FrameworkLogos';
 import { Footer } from '@/components/shared/Footer';
-import { UpgradeModal } from '@/components/shared/UpgradeModal';
-import { SettingsModal } from '@/components/shared/SettingsModal';
 import { NotificationInbox } from '@/components/shared/NotificationInbox';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import { toast } from '@/hooks/use-toast';
@@ -79,8 +77,6 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   const [prompt, setPrompt] = useState(() => localStorage.getItem('vivora_home_prompt') || '');
   const [selectedFramework, setSelectedFramework] = useState('React');
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [typingIndex, setTypingIndex] = useState(0);
   const [displayText, setDisplayText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -475,12 +471,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <NotificationInbox />
                 </div>
 
-                <UserMenuDropdown
-                  user={user}
-                  signOut={signOut}
-                  onSettingsClick={() => setShowSettingsModal(true)}
-                  onUpgradeClick={() => setShowUpgradeModal(true)}
-                />
+                <UserMenuDropdown user={user} signOut={signOut} />
               </>
             ) : (
               <motion.button
@@ -987,17 +978,6 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* Footer */}
       <Footer />
 
-      {/* Upgrade Modal */}
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-      />
-
-      {/* Settings Modal */}
-      <SettingsModal
-        isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-      />
     </div>
   );
 };
