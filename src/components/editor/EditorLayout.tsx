@@ -857,30 +857,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         )}
       </div>
 
-      {/* Integration Dialogs */}
-      <VercelDeployDialog
-        open={showVercelDialog}
-        onOpenChange={setShowVercelDialog}
-        projectName={project?.name || 'untitled-project'}
-        projectFiles={project?.files || {}}
-        onDeployed={(url) => {
-          setDeployedUrl(url);
-        }}
-        onSendErrorToChat={(errorLog) => {
-          onSendMessage(`[AUTO-FIX] The deployment to Vercel failed. Please analyze the error log and fix any issues in the code:\n\n${errorLog}`, false);
-        }}
-        projectId={project?.id || null}
-        existingVercelUrl={project?.vercelUrl || deployedUrl || null}
-      />
-
-      <GitHubPushDialog
-        open={showGitHubPush}
-        onOpenChange={setShowGitHubPush}
-        projectName={project?.name || 'untitled-project'}
-        projectFiles={project?.files || {}}
-        projectId={project?.id || null}
-        existingRepoUrl={project?.githubRepoUrl || null}
-      />
 
       {/* Rename Dialog */}
       <AnimatePresence>
