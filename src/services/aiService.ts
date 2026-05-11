@@ -672,6 +672,105 @@ async function readSSEStream(
   onDelta?: (deltaText: string) => void,
   onAgentStep?: (event: AgentStepEvent) => void
 ): Promise<{ text: string; usage: SSEUsage | null }> {
+  const extractTextParts = (value: any): string => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value)) {
+      return value
+        .map((part) => {
+          if (typeof part === 'string') return part;
+          if (typeof part?.text === 'string') return part.text;
+          if (typeof part?.content === 'string') return part.content;
+          return '';
+        })
+        .join('');
+    }
+    if (typeof value?.text === 'string') return value.text;
+    if (typeof value?.content === 'string') return value.content;
+    return '';
+  };
+
+  const extractUsage = (parsed: any): SSEUsage | null => {
+    if (!parsed?.usage) return null;
+    return {
+      prompt_tokens: parsed.usage.prompt_tokens,
+      completion_tokens: parsed.usage.completion_tokens,
+      total_tokens: parsed.usage.total_tokens,
+    };
+  };
+
+  const extractChunkText = (parsed: any): string => {
+    if (!parsed || typeof parsed !== 'object') return '';
+    if (parsed.step && onAgentStep) {
+      onAgentStep(parsed as AgentStepEvent);
+      return '';
+    }
+
+    const choice = parsed.choices?.[0];
+    return (
+      extractTextParts(choice?.delta?.content) ||
+      extractTextParts(choice?.message?.content) ||
+      extractTextParts(choice?.text) ||
+      extractTextParts(parsed.message?.content) ||
+      extractTextParts(parsed.output_text) ||
+      extractTextParts(parsed.content)
+    );
+  };
+
+  const parseRawAIResponse = (raw: string): { text: string; usage: SSEUsage | null } => {
+    const trimmed = raw.trim();
+    if (!trimmed) return { text: '', usage: null };
+
+    const normalizedLines = trimmed
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    let text = '';
+    let usage: SSEUsage | null = null;
+
+    const consumeParsed = (parsed: any) => {
+      const chunkText = extractChunkText(parsed);
+      if (chunkText) text += chunkText;
+      const chunkUsage = extractUsage(parsed);
+      if (chunkUsage) usage = chunkUsage;
+    };
+
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(consumeParsed);
+        } else {
+          consumeParsed(parsed);
+        }
+        if (text) return { text, usage };
+      } catch {
+        // Fall through to line-by-line parsing.
+      }
+    }
+
+    for (const rawLine of normalizedLines) {
+      const line = rawLine.startsWith('data:') ? rawLine.slice(5).trim() : rawLine;
+      if (!line || line === '[DONE]') continue;
+      try {
+        consumeParsed(JSON.parse(line));
+      } catch {
+        // Ignore non-JSON lines.
+      }
+    }
+
+    return { text, usage };
+  };
+
+  const contentType = response.headers.get('content-type')?.toLowerCase() || '';
+  if (contentType.includes('application/json')) {
+    const raw = await response.text();
+    const parsed = parseRawAIResponse(raw);
+    if (parsed.text && onDelta) onDelta(parsed.text);
+    return parsed;
+  }
+
   if (!response.body) throw new Error('No response body');
 
   const reader = response.body.getReader();
@@ -681,6 +780,7 @@ async function readSSEStream(
   let fullResponse = '';
   let streamDone = false;
   let usage: SSEUsage | null = null;
+  let rawResponse = '';
 
   // Adaptive read timeout: 180 seconds between chunks (thinking/reasoning models may pause for a long time)
   const READ_TIMEOUT = 180_000;
@@ -703,6 +803,7 @@ async function readSSEStream(
     if (done) break;
 
     textBuffer += decoder.decode(value, { stream: true });
+    rawResponse += decoder.decode(value, { stream: true });
 
     let newlineIndex: number;
     while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
@@ -721,25 +822,13 @@ async function readSSEStream(
 
       try {
         const parsed = JSON.parse(jsonStr);
-
-        // Handle agent step events (from the agent loop)
-        if (parsed.step && onAgentStep) {
-          onAgentStep(parsed as AgentStepEvent);
-          continue;
-        }
-
-        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        const content = extractChunkText(parsed);
         if (content) {
           fullResponse += content;
           onDelta?.(content);
         }
-        if (parsed.usage) {
-          usage = {
-            prompt_tokens: parsed.usage.prompt_tokens,
-            completion_tokens: parsed.usage.completion_tokens,
-            total_tokens: parsed.usage.total_tokens,
-          };
-        }
+        const parsedUsage = extractUsage(parsed);
+        if (parsedUsage) usage = parsedUsage;
       } catch (parseErr) {
         // JSON can be split across chunks; put it back and wait for more data
         // But only if it looks like incomplete JSON (starts with { or [)
@@ -766,28 +855,27 @@ async function readSSEStream(
 
       try {
         const parsed = JSON.parse(jsonStr);
-        if (parsed.step && onAgentStep) {
-          onAgentStep(parsed as AgentStepEvent);
-          continue;
-        }
-        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        const content = extractChunkText(parsed);
         if (content) {
           fullResponse += content;
           onDelta?.(content);
         }
-        if (parsed.usage) {
-          usage = {
-            prompt_tokens: parsed.usage.prompt_tokens,
-            completion_tokens: parsed.usage.completion_tokens,
-            total_tokens: parsed.usage.total_tokens,
-          };
-        }
+        const parsedUsage = extractUsage(parsed);
+        if (parsedUsage) usage = parsedUsage;
       } catch (parseErr) {
         // ignore partial leftovers, but log for debugging
         if (jsonStr.length > 0 && jsonStr.length < 500) {
           console.warn('[readSSEStream] Final flush parse error:', jsonStr.slice(0, 100), parseErr);
         }
       }
+    }
+  }
+
+  if (!fullResponse.trim() && rawResponse.trim()) {
+    const fallback = parseRawAIResponse(rawResponse);
+    if (fallback.text) {
+      if (onDelta) onDelta(fallback.text);
+      return fallback;
     }
   }
 
@@ -969,6 +1057,9 @@ EXISTING PROJECT FILES: [${existingFiles}]
         }
       }
     );
+    if (!fullResponse.trim()) {
+      throw new Error('AI provider returned an empty response. The selected provider/model may not support the current streaming format.');
+    }
     options.onComplete(fullResponse, usage);
   } catch (error) {
     console.error('Code generation error:', error);
