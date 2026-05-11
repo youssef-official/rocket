@@ -167,7 +167,11 @@ const ProjectEditorRoute = () => {
           setStreamingContent('');
           setGenerationPhase({ phase: 'complete', message: t('chat.complete') });
         },
-        onError: () => { setIsGenerating(false); setGenerationPhase(null); },
+        onError: (err) => {
+          toast({ title: 'AI error', description: (err as any)?.message || 'Generation failed', variant: 'destructive' });
+          setIsGenerating(false);
+          setGenerationPhase(null);
+        },
       },
       fileList,
       language,
