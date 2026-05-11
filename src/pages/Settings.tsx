@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, Settings as SettingsIcon, Palette, ImageIcon,
   Check, Loader2, Key, Eye, EyeOff, PartyPopper, Moon, Sun, Monitor,
-  Sparkles, Plus, Trash2, User as UserIcon
+  Sparkles, Plus, Trash2, User as UserIcon, Zap, AlertCircle, CheckCircle2
 } from 'lucide-react';
 import { setLocalProfile } from '@/contexts/AuthContext';
 import {
