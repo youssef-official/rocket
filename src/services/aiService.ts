@@ -662,6 +662,12 @@ export interface SSEUsage {
   total_tokens?: number;
 }
 
+interface AIResponseDebug {
+  finishReason?: string;
+  refusal?: string;
+  rawPreview?: string;
+}
+
 export interface AgentStepEvent {
   step: 'planning' | 'generating' | 'validating' | 'fixing' | 'streaming' | 'done' | 'error';
   message?: string;
@@ -673,7 +679,7 @@ async function readSSEStream(
   response: Response,
   onDelta?: (deltaText: string) => void,
   onAgentStep?: (event: AgentStepEvent) => void
-): Promise<{ text: string; usage: SSEUsage | null }> {
+): Promise<{ text: string; usage: SSEUsage | null; debug: AIResponseDebug | null }> {
   const extractTextParts = (value: any): string => {
     if (!value) return '';
     if (typeof value === 'string') return value;
@@ -701,6 +707,43 @@ async function readSSEStream(
     };
   };
 
+  const extractFinishReason = (parsed: any): string | undefined => {
+    return (
+      parsed?.choices?.[0]?.finish_reason ||
+      parsed?.choices?.[0]?.finishReason ||
+      parsed?.finish_reason ||
+      parsed?.finishReason ||
+      parsed?.candidates?.[0]?.finishReason
+    );
+  };
+
+  const extractRefusal = (parsed: any): string | undefined => {
+    const choice = parsed?.choices?.[0];
+    return (
+      choice?.message?.refusal ||
+      choice?.delta?.refusal ||
+      parsed?.error?.message ||
+      parsed?.message?.refusal
+    );
+  };
+
+  const summarizeEmptyResponseReason = (debug: AIResponseDebug | null): string => {
+    const reason = (debug?.finishReason || '').toLowerCase();
+    if (reason === 'length' || reason === 'max_tokens' || reason === 'max_output_tokens') {
+      return 'AI provider returned no code because the response hit the token limit. Increase the output token limit or reduce the prompt size.';
+    }
+    if (reason === 'content_filter' || reason === 'safety' || reason === 'recitation') {
+      return 'AI provider returned no code because the response was blocked by a safety/content filter.';
+    }
+    if (debug?.refusal) {
+      return `AI provider returned no code and included this refusal: ${debug.refusal.slice(0, 240)}`;
+    }
+    if (debug?.rawPreview) {
+      return `AI provider returned no code content. Raw response preview: ${debug.rawPreview.slice(0, 240)}`;
+    }
+    return 'AI provider returned an empty response. The selected provider/model may not support the current streaming format.';
+  };
+
   const extractChunkText = (parsed: any): string => {
     if (!parsed || typeof parsed !== 'object') return '';
     if (parsed.step && onAgentStep) {
@@ -719,9 +762,9 @@ async function readSSEStream(
     );
   };
 
-  const parseRawAIResponse = (raw: string): { text: string; usage: SSEUsage | null } => {
+  const parseRawAIResponse = (raw: string): { text: string; usage: SSEUsage | null; debug: AIResponseDebug | null } => {
     const trimmed = raw.trim();
-    if (!trimmed) return { text: '', usage: null };
+    if (!trimmed) return { text: '', usage: null, debug: null };
 
     const normalizedLines = trimmed
       .split('\n')
@@ -730,12 +773,18 @@ async function readSSEStream(
 
     let text = '';
     let usage: SSEUsage | null = null;
+    let debug: AIResponseDebug | null = null;
 
     const consumeParsed = (parsed: any) => {
       const chunkText = extractChunkText(parsed);
       if (chunkText) text += chunkText;
       const chunkUsage = extractUsage(parsed);
       if (chunkUsage) usage = chunkUsage;
+      debug = {
+        finishReason: extractFinishReason(parsed) || debug?.finishReason,
+        refusal: extractRefusal(parsed) || debug?.refusal,
+        rawPreview: trimmed.slice(0, 500),
+      };
     };
 
     if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
@@ -746,7 +795,7 @@ async function readSSEStream(
         } else {
           consumeParsed(parsed);
         }
-        if (text) return { text, usage };
+        if (text || debug) return { text, usage, debug };
       } catch {
         // Fall through to line-by-line parsing.
       }
@@ -762,7 +811,7 @@ async function readSSEStream(
       }
     }
 
-    return { text, usage };
+    return { text, usage, debug: debug || { rawPreview: trimmed.slice(0, 500) } };
   };
 
   const contentType = response.headers.get('content-type')?.toLowerCase() || '';
@@ -783,6 +832,7 @@ async function readSSEStream(
   let streamDone = false;
   let usage: SSEUsage | null = null;
   let rawResponse = '';
+  let debug: AIResponseDebug | null = null;
 
   // Adaptive read timeout: 180 seconds between chunks (thinking/reasoning models may pause for a long time)
   const READ_TIMEOUT = 180_000;
@@ -831,6 +881,11 @@ async function readSSEStream(
         }
         const parsedUsage = extractUsage(parsed);
         if (parsedUsage) usage = parsedUsage;
+        debug = {
+          finishReason: extractFinishReason(parsed) || debug?.finishReason,
+          refusal: extractRefusal(parsed) || debug?.refusal,
+          rawPreview: rawResponse.trim().slice(0, 500),
+        };
       } catch (parseErr) {
         // JSON can be split across chunks; put it back and wait for more data
         // But only if it looks like incomplete JSON (starts with { or [)
@@ -864,6 +919,11 @@ async function readSSEStream(
         }
         const parsedUsage = extractUsage(parsed);
         if (parsedUsage) usage = parsedUsage;
+        debug = {
+          finishReason: extractFinishReason(parsed) || debug?.finishReason,
+          refusal: extractRefusal(parsed) || debug?.refusal,
+          rawPreview: rawResponse.trim().slice(0, 500),
+        };
       } catch (parseErr) {
         // ignore partial leftovers, but log for debugging
         if (jsonStr.length > 0 && jsonStr.length < 500) {
@@ -879,9 +939,14 @@ async function readSSEStream(
       if (onDelta) onDelta(fallback.text);
       return fallback;
     }
+    throw new Error(summarizeEmptyResponseReason(fallback.debug));
   }
 
-  return { text: fullResponse, usage };
+  if (!fullResponse.trim()) {
+    throw new Error(summarizeEmptyResponseReason(debug));
+  }
+
+  return { text: fullResponse, usage, debug };
 }
 
 // Generate short project name (2 words)
