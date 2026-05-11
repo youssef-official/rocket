@@ -9,6 +9,7 @@ import {
   getAISettings, saveAISettings, getAllProviders, getAvailableModels,
   BUILTIN_PROVIDERS, type AISettings, type AIProviderPreset,
 } from '@/services/aiSettings';
+import { toProxiedUrl } from '@/services/aiClient';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
