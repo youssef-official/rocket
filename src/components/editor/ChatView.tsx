@@ -7,7 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
 import type { ProjectVersion } from '@/hooks/useVersions';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
-const useUserPlan = () => ({ userPlan: { plan: 'business' as const, dailyCredits: 999 } });
+const useUserPlan = () => ({ userPlan: { plan: 'business', dailyCredits: 999 } as any });
 import { toast } from '@/hooks/use-toast';
 import { VersionCardNew } from '@/components/editor/VersionCardNew';
 

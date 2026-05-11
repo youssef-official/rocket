@@ -11,7 +11,7 @@ import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { FrameworkBar } from '@/components/shared/FrameworkLogos';
 import { Footer } from '@/components/shared/Footer';
 const NotificationInbox = () => null;
-const useUserPlan = () => ({ userPlan: { plan: 'business' as const, dailyCredits: 999 }, shouldShowUpgradeBanner: () => false, canUsePrivateProjects: () => true, getRemainingCredits: () => ({ daily: 999, monthly: 999, total: 999 }) });
+const useUserPlan = () => ({ userPlan: { plan: 'business', dailyCredits: 999 } as any, shouldShowUpgradeBanner: () => false, canUsePrivateProjects: () => true, getRemainingCredits: () => ({ daily: 999, monthly: 999, total: 999 }) });
 import { toast } from '@/hooks/use-toast';
 import { useThemePreference } from '@/hooks/useThemePreference';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
