@@ -93,12 +93,17 @@ export async function callAI(
     stream,
   };
 
-  return fetch(`${baseUrl}/chat/completions`, {
+  const proxy = (settings.corsProxy || '').trim();
+  const targetUrl = `${baseUrl}/chat/completions`;
+  const finalUrl = proxy
+    ? (proxy.includes('?') || proxy.endsWith('=') ? proxy + encodeURIComponent(targetUrl) : proxy + targetUrl)
+    : targetUrl;
+
+  return fetch(finalUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${settings.apiKey}`,
-      // OpenRouter recommends these but they're optional
       'HTTP-Referer': window.location.origin,
       'X-Title': 'Vivora Local',
     },

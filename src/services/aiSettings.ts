@@ -38,6 +38,7 @@ export interface AISettings {
   customProviders: AIProviderPreset[];        // user-added providers
   customModels: Record<string, string[]>;      // providerId -> extra models
   apiKeys: Record<string, string>;             // providerId -> apiKey (so users keep multiple)
+  corsProxy: string;                           // optional CORS proxy prefix (e.g. https://corsproxy.io/?)
 }
 
 const KEY = 'vivora_ai_settings';
@@ -50,6 +51,7 @@ const DEFAULTS: AISettings = {
   customProviders: [],
   customModels: {},
   apiKeys: {},
+  corsProxy: '',
 };
 
 export function getAISettings(): AISettings {

@@ -565,7 +565,12 @@ const ProfileAndAISection: React.FC<{ isRTL: boolean }> = ({ isRTL }) => {
     try {
       const ctrl = new AbortController();
       const timeout = setTimeout(() => ctrl.abort(), 30000);
-      const res = await fetch(`${baseUrl}/chat/completions`, {
+      const proxy = (settings.corsProxy || '').trim();
+      const target = `${baseUrl}/chat/completions`;
+      const url = proxy
+        ? (proxy.includes('?') || proxy.endsWith('=') ? proxy + encodeURIComponent(target) : proxy + target)
+        : target;
+      const res = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -709,6 +714,28 @@ const ProfileAndAISection: React.FC<{ isRTL: boolean }> = ({ isRTL }) => {
               </button>
             </div>
             <p className="text-[10px] text-white/30 mt-1">Stored locally in your browser only.</p>
+          </div>
+          <div>
+            <label className="text-[11px] text-white/40 mb-1 block">CORS Proxy (optional)</label>
+            <Input
+              value={settings.corsProxy || ''}
+              onChange={e => setSettings(s => ({ ...s, corsProxy: e.target.value }))}
+              placeholder="https://corsproxy.io/?"
+              className="text-xs font-mono bg-white/[0.03] border-white/[0.08] text-white/80"
+            />
+            <p className="text-[10px] text-white/30 mt-1">
+              Some providers (NVIDIA, Anthropic, etc.) block browser CORS. Use a proxy like
+              <button type="button" className="ml-1 underline text-violet-300 hover:text-violet-200"
+                onClick={() => setSettings(s => ({ ...s, corsProxy: 'https://corsproxy.io/?' }))}>
+                corsproxy.io
+              </button>
+              {' · '}
+              <button type="button" className="underline text-violet-300 hover:text-violet-200"
+                onClick={() => setSettings(s => ({ ...s, corsProxy: 'https://api.allorigins.win/raw?url=' }))}>
+                allorigins
+              </button>
+              . Leave empty for providers that allow CORS (OpenAI, OpenRouter, Groq).
+            </p>
           </div>
         </CardContent>
       </Card>
