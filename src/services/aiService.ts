@@ -955,7 +955,8 @@ EXISTING PROJECT FILES: [${existingFiles}]
     const response = await callingDirectAI('code', finalMessages, options.signal, undefined, userLanguage, colorTheme);
 
     if (!response.ok) {
-      throw new Error(`AI request failed: ${response.status}`);
+      const body = await response.text().catch(() => '');
+      throw new Error(`AI ${response.status}: ${body.slice(0, 300) || response.statusText}`);
     }
 
     const { text: fullResponse, usage } = await readSSEStream(
