@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, Settings as SettingsIcon, Palette, ImageIcon,
   Check, Loader2, Key, Eye, EyeOff, PartyPopper, Moon, Sun, Monitor,
-  Sparkles, Plus, Trash2, User as UserIcon
+  Sparkles, Plus, Trash2, User as UserIcon, Zap, AlertCircle, CheckCircle2
 } from 'lucide-react';
 import { setLocalProfile } from '@/contexts/AuthContext';
 import {
@@ -585,6 +585,63 @@ const ProfileAndAISection: React.FC<{ isRTL: boolean }> = ({ isRTL }) => {
     toast({ title: 'Saved', description: 'AI provider and profile updated.' });
   };
 
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string; latencyMs?: number; reply?: string } | null>(null);
+
+  const handleTest = async () => {
+    setTestResult(null);
+    const baseUrl = (settings.baseUrl || '').replace(/\/+$/, '');
+    if (!baseUrl) { setTestResult({ ok: false, message: 'Base URL is required.' }); return; }
+    if (!settings.apiKey.trim()) { setTestResult({ ok: false, message: 'API key is required.' }); return; }
+    if (!settings.model.trim()) { setTestResult({ ok: false, message: 'Model id is required.' }); return; }
+
+    setTesting(true);
+    const started = performance.now();
+    try {
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 30000);
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${settings.apiKey}`,
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'Vivora Local',
+        },
+        body: JSON.stringify({
+          model: settings.model,
+          messages: [
+            { role: 'system', content: 'You are a connection test. Reply with the single word: OK.' },
+            { role: 'user', content: 'ping' },
+          ],
+          stream: false,
+          max_tokens: 16,
+        }),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timeout);
+      const latencyMs = Math.round(performance.now() - started);
+      const text = await res.text();
+      let data: any = null;
+      try { data = JSON.parse(text); } catch {}
+      if (!res.ok) {
+        const msg = data?.error?.message || data?.message || text.slice(0, 300) || `HTTP ${res.status}`;
+        setTestResult({ ok: false, message: `HTTP ${res.status} — ${msg}`, latencyMs });
+        return;
+      }
+      const reply = data?.choices?.[0]?.message?.content
+        ?? data?.choices?.[0]?.delta?.content
+        ?? '(empty response)';
+      setTestResult({ ok: true, message: 'Connection successful', latencyMs, reply: typeof reply === 'string' ? reply : JSON.stringify(reply) });
+    } catch (e: any) {
+      const latencyMs = Math.round(performance.now() - started);
+      const msg = e?.name === 'AbortError' ? 'Request timed out after 30s' : (e?.message || 'Network error (CORS / unreachable host)');
+      setTestResult({ ok: false, message: msg, latencyMs });
+    } finally {
+      setTesting(false);
+    }
+  };
+
   return (
     <>
       <div className={`flex items-center gap-3 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -755,7 +812,35 @@ const ProfileAndAISection: React.FC<{ isRTL: boolean }> = ({ isRTL }) => {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
+      {testResult && (
+        <div className={`mb-3 p-3 rounded-lg border text-xs flex items-start gap-2 ${
+          testResult.ok
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+            : 'bg-red-500/10 border-red-500/30 text-red-200'
+        }`}>
+          {testResult.ok
+            ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+            : <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />}
+          <div className="flex-1 min-w-0">
+            <p className="font-medium">
+              {testResult.ok ? 'Success' : 'Test failed'}
+              {typeof testResult.latencyMs === 'number' && (
+                <span className="ml-2 opacity-60">· {testResult.latencyMs}ms</span>
+              )}
+            </p>
+            <p className="opacity-80 break-words whitespace-pre-wrap mt-0.5">{testResult.message}</p>
+            {testResult.reply && (
+              <p className="opacity-70 mt-1 font-mono">Reply: {testResult.reply}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-end gap-2">
+        <Button onClick={handleTest} disabled={testing} variant="outline" className="gap-1.5 border-white/10 text-white/80 hover:bg-white/[0.06]">
+          {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+          {testing ? 'Testing…' : 'Test connection'}
+        </Button>
         <Button onClick={handleSave} className="gap-1.5 bg-violet-500 hover:bg-violet-600">
           <Check className="w-4 h-4" /> Save AI & Profile
         </Button>
