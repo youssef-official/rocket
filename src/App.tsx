@@ -23,6 +23,7 @@ import {
   type Suggestion,
 } from "@/services/aiService";
 import type { ProjectData, ChatMessage, ProjectFile } from "@/types";
+import { toast } from "@/hooks/use-toast";
 
 const queryClient = new QueryClient();
 
@@ -93,7 +94,14 @@ const ProjectEditorRoute = () => {
       }).catch(() => {});
 
       let explanation = '';
-      try { explanation = await generateExplanation(prompt, localProject.projectType, language); } catch {}
+      try {
+        explanation = await generateExplanation(prompt, localProject.projectType, language);
+      } catch (e: any) {
+        toast({ title: 'AI provider error', description: e?.message || 'Failed to reach AI provider. Check Settings.', variant: 'destructive' });
+        setIsGenerating(false);
+        setGenerationPhase(null);
+        return;
+      }
       const assistantId = crypto.randomUUID();
       await addMessage('assistant', explanation || `**${t('chat.generating')}**`, undefined, undefined, undefined, assistantId);
 
@@ -120,6 +128,7 @@ const ProjectEditorRoute = () => {
           },
           onError: err => {
             console.error('Generation error:', err);
+            toast({ title: 'Code generation failed', description: (err as any)?.message || 'Unknown error', variant: 'destructive' });
             setIsGenerating(false);
             setGenerationPhase(null);
           },
@@ -158,7 +167,11 @@ const ProjectEditorRoute = () => {
           setStreamingContent('');
           setGenerationPhase({ phase: 'complete', message: t('chat.complete') });
         },
-        onError: () => { setIsGenerating(false); setGenerationPhase(null); },
+        onError: (err) => {
+          toast({ title: 'AI error', description: (err as any)?.message || 'Generation failed', variant: 'destructive' });
+          setIsGenerating(false);
+          setGenerationPhase(null);
+        },
       },
       fileList,
       language,

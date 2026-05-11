@@ -899,19 +899,21 @@ export async function generateExplanation(
     const msgs = [{ role: 'user', content: prompt }];
     const response = await callingDirectAI('explanation', msgs, undefined, undefined, userLanguage);
 
-    if (!response.ok) throw new Error(`Status ${response.status}`);
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new Error(`AI ${response.status}: ${body.slice(0, 300) || response.statusText}`);
+    }
 
     const streamPromise = readSSEStream(response).then(r => r.text);
     const timeoutPromise = new Promise<string>((resolve) =>
-      setTimeout(() => resolve("I'll create something amazing for you!"), 150_000)
+      setTimeout(() => resolve(''), 150_000)
     );
 
     const fullResponse = await Promise.race([streamPromise, timeoutPromise]);
-
     return fullResponse || "I'll create something amazing for you!";
   } catch (error) {
     console.error('Explanation generation error:', error);
-    return "I'll create something amazing for you!";
+    throw error;
   }
 }
 
@@ -953,7 +955,8 @@ EXISTING PROJECT FILES: [${existingFiles}]
     const response = await callingDirectAI('code', finalMessages, options.signal, undefined, userLanguage, colorTheme);
 
     if (!response.ok) {
-      throw new Error(`AI request failed: ${response.status}`);
+      const body = await response.text().catch(() => '');
+      throw new Error(`AI ${response.status}: ${body.slice(0, 300) || response.statusText}`);
     }
 
     const { text: fullResponse, usage } = await readSSEStream(
