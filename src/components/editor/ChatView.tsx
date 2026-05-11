@@ -1369,19 +1369,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       </div>
                       <span className="text-sm text-foreground/80 group-hover/item:text-foreground">{t('chat.addReference')}</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowPlusMenu(false);
-                        window.dispatchEvent(new CustomEvent('open-visual-edit'));
-                      }}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left border-t border-border/50 group/item"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                        <MousePointer className="w-4 h-4 text-emerald-500" />
-                      </div>
-                      <span className="text-sm text-foreground/80 group-hover/item:text-foreground">{t('chat.visualEdit')}</span>
-                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>

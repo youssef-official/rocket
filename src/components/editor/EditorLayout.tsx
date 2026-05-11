@@ -10,7 +10,7 @@ import githubLogo from '@/assets/logos/github.svg';
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
-import { VisualEditMode } from './VisualEditMode';
+
 import { VercelDeployDialog } from './IntegrationDialogs';
 import { GitHubPushDialog } from './GitHubPushDialog';
 import { DatabasePanel } from './DatabasePanel';
@@ -114,7 +114,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number | null>(null);
   const [showHomeDialog, setShowHomeDialog] = useState(false);
-  const [showVisualEdit, setShowVisualEdit] = useState(false);
+  const showVisualEdit = false;
   // GitHub removed - Vercel only
   const [showVercelDialog, setShowVercelDialog] = useState(false);
   const [showGitHubPush, setShowGitHubPush] = useState(false);
@@ -410,40 +410,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
   const displayMessages = messages;
 
-  // Listen for visual edit trigger from ChatView
-  useEffect(() => {
-    const handleOpenVisualEdit = () => {
-      setShowVisualEdit(true);
-    };
-
-    window.addEventListener('open-visual-edit', handleOpenVisualEdit);
-    return () => window.removeEventListener('open-visual-edit', handleOpenVisualEdit);
-  }, []);
-
-  // Handle visual edit save - update project files and create a version
-  const handleVisualEditSave = async (
-    changes: { elementId: string; newContent: string; newStyles: any; position?: { x: number; y: number } }[],
-    updatedFiles: Record<string, ProjectFile>,
-    summary: string
-  ) => {
-    console.log('Visual edit changes:', changes);
-    console.log('Updated files:', Object.keys(updatedFiles));
-
-    // Update project files
-    if (project && Object.keys(updatedFiles).length > 0) {
-      onUpdateProject({ files: updatedFiles });
-
-      // Create a new version with the visual changes
-      await createVersion(
-        updatedFiles,
-        messages,
-        summary || 'Visual Edit Changes',
-        [{ name: 'Visual Edit', status: 'done', action: 'edited' }]
-      );
-    }
-
-    setShowVisualEdit(false);
-  };
   // Apply theme
   useEffect(() => {
     const applyTheme = () => {
@@ -904,16 +870,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                 <AnalyticsPanel projectId={project.id} previewUrl={previewUrl} />
               )}
 
-              {showVisualEdit && (
-                <div className="absolute inset-0 z-10 flex">
-                  <VisualEditMode
-                    projectFiles={project?.files || {}}
-                    onSave={handleVisualEditSave}
-                    onClose={() => setShowVisualEdit(false)}
-                  />
-                  <div className="flex-1" />
-                </div>
-              )}
             </div>
           </div>
         ) : (
