@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, Settings as SettingsIcon, Palette, ImageIcon,
-  Check, Loader2, Key, Eye, EyeOff, PartyPopper, Moon, Sun, Monitor
+  Check, Loader2, Key, Eye, EyeOff, PartyPopper, Moon, Sun, Monitor,
+  Sparkles, Plus, Trash2, User as UserIcon
 } from 'lucide-react';
+import { setLocalProfile } from '@/contexts/AuthContext';
+import {
+  getAISettings, saveAISettings, getAllProviders, getAvailableModels,
+  BUILTIN_PROVIDERS, type AISettings, type AIProviderPreset,
+} from '@/services/aiSettings';
+import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
