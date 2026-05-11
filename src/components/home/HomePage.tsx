@@ -346,10 +346,6 @@ export const HomePage: React.FC<HomePageProps> = ({
       setCloneLoading(false);
     }
   };
-    } finally {
-      setCloneLoading(false);
-    }
-  };
 
   const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
