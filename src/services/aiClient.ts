@@ -13,6 +13,24 @@ import {
   CLARIFY_PROMPT,
 } from './systemPrompts';
 
+/**
+ * Routes browser requests through the Vite dev proxy to bypass CORS for
+ * providers that don't allow cross-origin browser calls (NVIDIA, Anthropic,
+ * etc). The proxy is configured in vite.config.ts under "/ai-proxy".
+ */
+export function toProxiedUrl(absoluteUrl: string): string {
+  try {
+    const u = new URL(absoluteUrl);
+    // Same origin as the app — no proxy needed.
+    if (typeof window !== 'undefined' && u.origin === window.location.origin) {
+      return absoluteUrl;
+    }
+    return `/ai-proxy/${encodeURIComponent(u.origin)}${u.pathname}${u.search}`;
+  } catch {
+    return absoluteUrl;
+  }
+}
+
 export type AIMode =
   | 'code'
   | 'chat'
@@ -93,11 +111,8 @@ export async function callAI(
     stream,
   };
 
-  const proxy = (settings.corsProxy || '').trim();
   const targetUrl = `${baseUrl}/chat/completions`;
-  const finalUrl = proxy
-    ? (proxy.includes('?') || proxy.endsWith('=') ? proxy + encodeURIComponent(targetUrl) : proxy + targetUrl)
-    : targetUrl;
+  const finalUrl = toProxiedUrl(targetUrl);
 
   return fetch(finalUrl, {
     method: 'POST',

@@ -9,6 +9,7 @@ import {
   getAISettings, saveAISettings, getAllProviders, getAvailableModels,
   BUILTIN_PROVIDERS, type AISettings, type AIProviderPreset,
 } from '@/services/aiSettings';
+import { toProxiedUrl } from '@/services/aiClient';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -565,11 +566,8 @@ const ProfileAndAISection: React.FC<{ isRTL: boolean }> = ({ isRTL }) => {
     try {
       const ctrl = new AbortController();
       const timeout = setTimeout(() => ctrl.abort(), 30000);
-      const proxy = (settings.corsProxy || '').trim();
       const target = `${baseUrl}/chat/completions`;
-      const url = proxy
-        ? (proxy.includes('?') || proxy.endsWith('=') ? proxy + encodeURIComponent(target) : proxy + target)
-        : target;
+      const url = toProxiedUrl(target);
       const res = await fetch(url, {
         method: 'POST',
         headers: {
