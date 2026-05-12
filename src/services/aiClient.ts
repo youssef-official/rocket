@@ -14,17 +14,23 @@ import {
 } from './systemPrompts';
 
 /**
- * Resolves the final URL the browser will fetch.
- * Priority:
- *   1. Same origin → call directly.
- *   2. localhost / 127.0.0.1 (Ollama, LM Studio, local-proxy.js) → call directly.
- *   3. User-configured corsProxy in AI Settings → prefix the absolute URL.
- *      Supported proxy formats:
- *        - "https://my.proxy/"            → appended as `${proxy}${absoluteUrl}`
- *        - "https://my.proxy/?url="       → appended as `${proxy}${encodeURIComponent(absoluteUrl)}`
- *        - "https://my.proxy/{url}"       → `{url}` replaced with encoded absoluteUrl
- *   4. Dev server (vite) → fall back to /ai-proxy/<encoded-origin>/path.
- *   5. Production with no proxy → call directly (works for OpenAI/OpenRouter/Groq/Gemini, fails on Anthropic/NVIDIA).
+ * Returns the URL to fetch. We call the provider directly from the browser.
+ *
+ * CORS reality check: CORS is enforced by the *target* server, not by us.
+ * No amount of client-side code can "bypass" CORS without an actual server
+ * relaying the request. The good news: most modern AI providers DO send the
+ * right CORS headers and work directly from the browser:
+ *
+ *   ✅ OpenAI, OpenRouter, Google Gemini, Groq, Mistral, DeepSeek, xAI
+ *   ✅ Ollama / LM Studio (localhost — no CORS at all)
+ *   ❌ Anthropic, NVIDIA NIM (no CORS for browsers)
+ *
+ * For the ❌ providers, the user should pick OpenRouter (which mirrors the
+ * same models with proper CORS) instead — surfaced in the Settings UI.
+ *
+ * Dev-only escape hatch: when running on Vite dev server we still route
+ * through `/ai-proxy/<encoded-origin>` so developers can test no-CORS
+ * providers locally.
  */
 export function toProxiedUrl(absoluteUrl: string): string {
   try {
@@ -35,19 +41,11 @@ export function toProxiedUrl(absoluteUrl: string): string {
     if (u.hostname === 'localhost' || u.hostname === '127.0.0.1' || u.hostname === '0.0.0.0') {
       return absoluteUrl;
     }
-    // Lazy import to avoid cycles.
-    const settings = (() => { try { return JSON.parse(localStorage.getItem('vivora_ai_settings') || '{}'); } catch { return {}; } })();
-    const proxy: string = (settings.corsProxy || '').trim();
-    if (proxy) {
-      if (proxy.includes('{url}')) return proxy.replace('{url}', encodeURIComponent(absoluteUrl));
-      if (/[?&]url=$/.test(proxy)) return `${proxy}${encodeURIComponent(absoluteUrl)}`;
-      return `${proxy}${absoluteUrl}`;
-    }
-    // Dev fallback
-    if (typeof window !== 'undefined' && /localhost|127\.0\.0\.1/.test(window.location.hostname)) {
+    // Dev-only proxy via Vite (works only when running `npm run dev`)
+    if (typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)) {
       return `/ai-proxy/${encodeURIComponent(u.origin)}${u.pathname}${u.search}`;
     }
-    // Production with no proxy: call directly.
+    // Production: call provider directly. Provider must allow CORS.
     return absoluteUrl;
   } catch {
     return absoluteUrl;
