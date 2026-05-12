@@ -14,18 +14,41 @@ import {
 } from './systemPrompts';
 
 /**
- * Routes browser requests through the Vite dev proxy to bypass CORS for
- * providers that don't allow cross-origin browser calls (NVIDIA, Anthropic,
- * etc). The proxy is configured in vite.config.ts under "/ai-proxy".
+ * Resolves the final URL the browser will fetch.
+ * Priority:
+ *   1. Same origin → call directly.
+ *   2. localhost / 127.0.0.1 (Ollama, LM Studio, local-proxy.js) → call directly.
+ *   3. User-configured corsProxy in AI Settings → prefix the absolute URL.
+ *      Supported proxy formats:
+ *        - "https://my.proxy/"            → appended as `${proxy}${absoluteUrl}`
+ *        - "https://my.proxy/?url="       → appended as `${proxy}${encodeURIComponent(absoluteUrl)}`
+ *        - "https://my.proxy/{url}"       → `{url}` replaced with encoded absoluteUrl
+ *   4. Dev server (vite) → fall back to /ai-proxy/<encoded-origin>/path.
+ *   5. Production with no proxy → call directly (works for OpenAI/OpenRouter/Groq/Gemini, fails on Anthropic/NVIDIA).
  */
 export function toProxiedUrl(absoluteUrl: string): string {
   try {
     const u = new URL(absoluteUrl);
-    // Same origin as the app — no proxy needed.
     if (typeof window !== 'undefined' && u.origin === window.location.origin) {
       return absoluteUrl;
     }
-    return `/ai-proxy/${encodeURIComponent(u.origin)}${u.pathname}${u.search}`;
+    if (u.hostname === 'localhost' || u.hostname === '127.0.0.1' || u.hostname === '0.0.0.0') {
+      return absoluteUrl;
+    }
+    // Lazy import to avoid cycles.
+    const settings = (() => { try { return JSON.parse(localStorage.getItem('vivora_ai_settings') || '{}'); } catch { return {}; } })();
+    const proxy: string = (settings.corsProxy || '').trim();
+    if (proxy) {
+      if (proxy.includes('{url}')) return proxy.replace('{url}', encodeURIComponent(absoluteUrl));
+      if (/[?&]url=$/.test(proxy)) return `${proxy}${encodeURIComponent(absoluteUrl)}`;
+      return `${proxy}${absoluteUrl}`;
+    }
+    // Dev fallback
+    if (typeof window !== 'undefined' && /localhost|127\.0\.0\.1/.test(window.location.hostname)) {
+      return `/ai-proxy/${encodeURIComponent(u.origin)}${u.pathname}${u.search}`;
+    }
+    // Production with no proxy: call directly.
+    return absoluteUrl;
   } catch {
     return absoluteUrl;
   }
