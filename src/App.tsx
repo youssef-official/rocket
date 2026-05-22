@@ -278,9 +278,10 @@ const App = () => (
               <Route path="/" element={<HomeRoute />} />
               <Route path="/projects/:id" element={<ProjectEditorRoute />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="*" element={<HomeRoute />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
             <FloatingMusicPlayer />
+            <CorsProxySetup />
           </BrowserRouter>
         </TooltipProvider>
       </LanguageProvider>
