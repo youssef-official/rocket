@@ -25,11 +25,25 @@ function looksLikeHtmlDocument(response: Response): boolean {
 // Public CORS proxies used as a last-resort fallback when the provider blocks
 // browser CORS (NVIDIA, Anthropic, etc.) and we're not running under the local
 // Vite dev proxy. Each entry wraps a target URL.
-const PUBLIC_CORS_PROXIES: ((url: string) => string)[] = [
+const DEFAULT_PUBLIC_CORS_PROXIES: ((url: string) => string)[] = [
   (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   (url) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`,
   (url) => `https://thingproxy.freeboard.io/fetch/${url}`,
 ];
+
+function buildProxyList(): ((url: string) => string)[] {
+  const list: ((url: string) => string)[] = [];
+  try {
+    const userProxy = getAISettings().corsProxy?.trim();
+    if (userProxy) {
+      list.push((url) => {
+        if (userProxy.includes('{url}')) return userProxy.replace('{url}', encodeURIComponent(url));
+        return userProxy + encodeURIComponent(url);
+      });
+    }
+  } catch {}
+  return [...list, ...DEFAULT_PUBLIC_CORS_PROXIES];
+}
 
 async function tryFetch(url: string, init: RequestInit): Promise<Response | null> {
   try {
@@ -54,8 +68,8 @@ async function fetchWithProxyFallback(targetUrl: string, init: RequestInit): Pro
   const direct = await tryFetch(targetUrl, init);
   if (direct) return direct;
 
-  // 3. Public CORS proxies fallback (NVIDIA, Anthropic, etc.)
-  for (const wrap of PUBLIC_CORS_PROXIES) {
+  // 3. Public CORS proxies fallback (user-configured first, then defaults)
+  for (const wrap of buildProxyList()) {
     const r = await tryFetch(wrap(targetUrl), init);
     if (r) return r;
   }
