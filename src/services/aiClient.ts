@@ -14,39 +14,27 @@ import {
 } from './systemPrompts';
 
 /**
- * Returns the URL to fetch. We call the provider directly from the browser.
+ * Routes every outbound AI request through our in-process Vite middleware
+ * at `/ai-proxy/<encoded-origin>/<path>`. The middleware (see
+ * `vite-plugins/ai-proxy.ts`) runs alongside the main dev/preview server,
+ * so there is no separate process to start and no external service to trust.
+ * CORS becomes a non-issue because the browser only ever talks to its own origin.
  *
- * CORS reality check: CORS is enforced by the *target* server, not by us.
- * No amount of client-side code can "bypass" CORS without an actual server
- * relaying the request. The good news: most modern AI providers DO send the
- * right CORS headers and work directly from the browser:
- *
- *   ✅ OpenAI, OpenRouter, Google Gemini, Groq, Mistral, DeepSeek, xAI
- *   ✅ Ollama / LM Studio (localhost — no CORS at all)
- *   ❌ Anthropic, NVIDIA NIM (no CORS for browsers)
- *
- * For the ❌ providers, the user should pick OpenRouter (which mirrors the
- * same models with proper CORS) instead — surfaced in the Settings UI.
- *
- * Dev-only escape hatch: when running on Vite dev server we still route
- * through `/ai-proxy/<encoded-origin>` so developers can test no-CORS
- * providers locally.
+ * Exceptions:
+ *   - Same-origin URLs are returned as-is.
+ *   - localhost providers (Ollama, LM Studio) are returned as-is — they
+ *     already accept browser requests without CORS restrictions.
  */
 export function toProxiedUrl(absoluteUrl: string): string {
   try {
     const u = new URL(absoluteUrl);
-    if (typeof window !== 'undefined' && u.origin === window.location.origin) {
+    if (typeof window !== "undefined" && u.origin === window.location.origin) {
       return absoluteUrl;
     }
-    if (u.hostname === 'localhost' || u.hostname === '127.0.0.1' || u.hostname === '0.0.0.0') {
+    if (u.hostname === "localhost" || u.hostname === "127.0.0.1" || u.hostname === "0.0.0.0") {
       return absoluteUrl;
     }
-    // Dev-only proxy via Vite (works only when running `npm run dev`)
-    if (typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)) {
-      return `/ai-proxy/${encodeURIComponent(u.origin)}${u.pathname}${u.search}`;
-    }
-    // Production: call provider directly. Provider must allow CORS.
-    return absoluteUrl;
+    return `/ai-proxy/${encodeURIComponent(u.origin)}${u.pathname}${u.search}`;
   } catch {
     return absoluteUrl;
   }
