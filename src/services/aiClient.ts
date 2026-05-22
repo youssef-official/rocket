@@ -13,17 +13,35 @@ import {
   CLARIFY_PROMPT,
 } from './systemPrompts';
 
+function canUseInProcessProxy(): boolean {
+  return Boolean(import.meta.env.DEV);
+}
+
+function looksLikeHtmlDocument(response: Response): boolean {
+  const contentType = response.headers.get('content-type') || '';
+  return /text\/html|application\/xhtml\+xml/i.test(contentType);
+}
+
+async function fetchWithProxyFallback(targetUrl: string, init: RequestInit): Promise<Response> {
+  const proxiedUrl = toProxiedUrl(targetUrl);
+  const response = await fetch(proxiedUrl, init);
+
+  if (proxiedUrl !== targetUrl && looksLikeHtmlDocument(response)) {
+    return fetch(targetUrl, init);
+  }
+
+  return response;
+}
+
 /**
- * Routes every outbound AI request through our in-process Vite middleware
- * at `/ai-proxy/<encoded-origin>/<path>`. The middleware (see
- * `vite-plugins/ai-proxy.ts`) runs alongside the main dev/preview server,
- * so there is no separate process to start and no external service to trust.
- * CORS becomes a non-issue because the browser only ever talks to its own origin.
+ * Routes outbound AI requests through the local Vite middleware only while the
+ * app is actually running under the local dev server. Built previews/published
+ * deployments do not have that middleware, so they must call the provider URL
+ * directly instead of hitting the SPA fallback and receiving index.html.
  *
  * Exceptions:
  *   - Same-origin URLs are returned as-is.
- *   - localhost providers (Ollama, LM Studio) are returned as-is — they
- *     already accept browser requests without CORS restrictions.
+ *   - localhost providers (Ollama, LM Studio) are returned as-is.
  */
 export function toProxiedUrl(absoluteUrl: string): string {
   try {
@@ -32,6 +50,9 @@ export function toProxiedUrl(absoluteUrl: string): string {
       return absoluteUrl;
     }
     if (u.hostname === "localhost" || u.hostname === "127.0.0.1" || u.hostname === "0.0.0.0") {
+      return absoluteUrl;
+    }
+    if (!canUseInProcessProxy()) {
       return absoluteUrl;
     }
     return `/ai-proxy/${encodeURIComponent(u.origin)}${u.pathname}${u.search}`;
@@ -125,9 +146,8 @@ export async function callAI(
   }
 
   const targetUrl = `${baseUrl}/chat/completions`;
-  const finalUrl = toProxiedUrl(targetUrl);
 
-  return fetch(finalUrl, {
+  return fetchWithProxyFallback(targetUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
