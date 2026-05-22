@@ -22,26 +22,51 @@ function looksLikeHtmlDocument(response: Response): boolean {
   return /text\/html|application\/xhtml\+xml/i.test(contentType);
 }
 
-async function fetchWithProxyFallback(targetUrl: string, init: RequestInit): Promise<Response> {
-  const proxiedUrl = toProxiedUrl(targetUrl);
-  const response = await fetch(proxiedUrl, init);
+// Public CORS proxies used as a last-resort fallback when the provider blocks
+// browser CORS (NVIDIA, Anthropic, etc.) and we're not running under the local
+// Vite dev proxy. Each entry wraps a target URL.
+const PUBLIC_CORS_PROXIES: ((url: string) => string)[] = [
+  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`,
+  (url) => `https://thingproxy.freeboard.io/fetch/${url}`,
+];
 
-  if (proxiedUrl !== targetUrl && looksLikeHtmlDocument(response)) {
-    return fetch(targetUrl, init);
+async function tryFetch(url: string, init: RequestInit): Promise<Response | null> {
+  try {
+    const r = await fetch(url, init);
+    // Treat HTML responses (SPA fallback / proxy error page) as a miss.
+    if (looksLikeHtmlDocument(r)) return null;
+    return r;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchWithProxyFallback(targetUrl: string, init: RequestInit): Promise<Response> {
+  // 1. Local dev Vite proxy if available
+  const localProxied = toProxiedUrl(targetUrl);
+  if (localProxied !== targetUrl) {
+    const r = await tryFetch(localProxied, init);
+    if (r) return r;
   }
 
-  return response;
+  // 2. Direct call (works for OpenAI, OpenRouter, Gemini, Groq, etc.)
+  const direct = await tryFetch(targetUrl, init);
+  if (direct) return direct;
+
+  // 3. Public CORS proxies fallback (NVIDIA, Anthropic, etc.)
+  for (const wrap of PUBLIC_CORS_PROXIES) {
+    const r = await tryFetch(wrap(targetUrl), init);
+    if (r) return r;
+  }
+
+  // Last resort: re-issue direct call so the caller sees the real error.
+  return fetch(targetUrl, init);
 }
 
 /**
  * Routes outbound AI requests through the local Vite middleware only while the
- * app is actually running under the local dev server. Built previews/published
- * deployments do not have that middleware, so they must call the provider URL
- * directly instead of hitting the SPA fallback and receiving index.html.
- *
- * Exceptions:
- *   - Same-origin URLs are returned as-is.
- *   - localhost providers (Ollama, LM Studio) are returned as-is.
+ * app is actually running under the local dev server.
  */
 export function toProxiedUrl(absoluteUrl: string): string {
   try {
