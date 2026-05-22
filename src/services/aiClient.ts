@@ -146,7 +146,6 @@ export async function callAI(
   }
 
   const targetUrl = `${baseUrl}/chat/completions`;
-  const finalUrl = toProxiedUrl(targetUrl);
 
   return fetchWithProxyFallback(targetUrl, {
     method: 'POST',
