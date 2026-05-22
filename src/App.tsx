@@ -10,6 +10,8 @@ import { HomePage } from "@/components/home/HomePage";
 import { EditorLayout } from "@/components/editor/EditorLayout";
 import { ThemeInitializer } from "@/components/shared/ThemeInitializer";
 import SettingsPage from "@/pages/Settings";
+import NotFound from "@/pages/NotFound";
+import { CorsProxySetup } from "@/components/shared/CorsProxySetup";
 import { useProjects } from "@/hooks/useProjects";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useVersions } from "@/hooks/useVersions";
