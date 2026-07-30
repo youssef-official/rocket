@@ -6,6 +6,7 @@ import { UserMenuDropdown, getWallpaperSrc } from '@/components/shared/UserMenuD
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { TemplatesSection } from './TemplatesSection';
+import { ProjectsSection } from './ProjectsSection';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { FrameworkBar } from '@/components/shared/FrameworkLogos';
 import { Footer } from '@/components/shared/Footer';
@@ -15,10 +16,16 @@ import { LanguageSelector } from '@/components/shared/LanguageSelector';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import { toast } from '@/hooks/use-toast';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
+import type { Project } from '@/types';
 
 interface HomePageProps {
   onStartBuilding: (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageUrls?: string[], buildKind?: 'website' | 'store') => Promise<boolean | void>;
   onShowAuth?: () => void;
+  projects?: Project[];
+  projectsLoading?: boolean;
+  onOpenProject?: (id: string) => void;
+  onDeleteProject?: (id: string) => void;
+  onForkProject?: (id: string) => void;
 }
 
 const MAX_PROMPT_LENGTH = 1000000;
@@ -27,6 +34,11 @@ const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
 export const HomePage: React.FC<HomePageProps> = ({
   onStartBuilding,
   onShowAuth,
+  projects = [],
+  projectsLoading = false,
+  onOpenProject = () => undefined,
+  onDeleteProject = () => undefined,
+  onForkProject = () => undefined,
 }) => {
   const { user, signOut } = useAuth();
   const { t, isRTL, language } = useLanguage();
@@ -773,6 +785,16 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
           </div>
         </section>
+      )}
+
+      {user && (
+        <ProjectsSection
+          projects={projects}
+          loading={projectsLoading}
+          onOpenProject={onOpenProject}
+          onDeleteProject={onDeleteProject}
+          onForkProject={onForkProject}
+        />
       )}
 
       {/* Templates Section - visible to all users */}

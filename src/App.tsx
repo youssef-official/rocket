@@ -69,11 +69,22 @@ const fallbackPlan = (editing = false, request = '') => {
 
 const generatePlanLine = async (editing: boolean, request: string, language: string, theme?: { name: string; colors: string[] } | null) => {
   const themeContext = theme ? ` The selected design system is ${theme.name} with colors ${theme.colors.join(', ')} and it must drive the final UI.` : '';
-  const generated = await generateExplanation(
+  const explanation = generateExplanation(
     `${editing ? 'Describe the concrete change you are about to implement' : 'Describe the concrete website you are about to build'} for this request: ${request}.${themeContext}`,
     'html',
     language,
-  );
+  ).catch(() => '');
+  // Planning is decorative and must never hold the actual build hostage. Some
+  // providers take minutes to return their first byte, so continue with a
+  // useful local plan if no answer arrives quickly.
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const generated = await Promise.race([
+    explanation,
+    new Promise<string>(resolve => {
+      timeoutId = setTimeout(() => resolve(''), 12_000);
+    }),
+  ]);
+  if (timeoutId) clearTimeout(timeoutId);
   const line = generated
     .replace(/^[\s\-*•\d.)]+/, '')
     .replace(/\s+/g, ' ')
@@ -179,6 +190,8 @@ const ProjectEditorRoute = () => {
           publishedSlug: dbProject.publishedSlug,
           createdAt: dbProject.createdAt,
           updatedAt: dbProject.updatedAt,
+          buildingPlan: dbProject.buildingPlan,
+          generationStatus: dbProject.generationStatus,
         });
 
         // Restore generation state from database if available
@@ -222,7 +235,13 @@ const ProjectEditorRoute = () => {
     // 5. Project has NO files (true initial state)
     const hasFiles = localProject && Object.keys(localProject.files).length > 0;
 
-    if (localProject && !hasStartedGeneration && !messagesLoading && messages.length === 0 && localProject.description && !hasFiles) {
+    const isFreshProject = messages.length === 0;
+    const isInterruptedBuild = localProject?.generationStatus === 'generating';
+    // A CORS/network failure may have saved the prompt message but failed
+    // before the first generation-status PATCH reached the server.
+    const isUnstartedBuild = !localProject?.generationStatus;
+
+    if (localProject && !hasStartedGeneration && !messagesLoading && (isFreshProject || isInterruptedBuild || isUnstartedBuild) && localProject.description && !hasFiles) {
       // This is a newly created project, start generation
       const startInitialGeneration = async () => {
         setHasStartedGeneration(true);
@@ -236,7 +255,11 @@ const ProjectEditorRoute = () => {
           sessionStorage.removeItem(`project_image_${localProject.id}`);
         }
 
-        await addMessage('user', prompt, savedImageUrl || undefined);
+        // A reload can reconnect to a project whose previous request was cut
+        // off. Reuse its saved prompt instead of duplicating the chat message.
+        if (messages.length === 0) {
+          await addMessage('user', prompt, savedImageUrl || undefined);
+        }
         setIsGenerating(true);
         setStreamingContent('');
         setFileActivities([]);
@@ -493,7 +516,10 @@ const ProjectEditorRoute = () => {
               onError: async (error) => {
                 // Do NOT deduct credits on error
                 console.error('AI error:', error);
-                await addMessage('assistant', `I encountered an error: ${error.message}. I've created a starter template for you.`);
+                await updateProject(localProject.id, { generationStatus: 'failed' });
+                await addMessage('assistant', language === 'ar'
+                  ? `تعذّر إكمال البناء: ${error.message}. حاول مرة أخرى من المحادثة.`
+                  : `I couldn't complete the build: ${error.message}. Please retry from the chat.`);
                 setIsGenerating(false);
                 setStreamingContent('');
                 setStatusMessage('');
@@ -565,7 +591,10 @@ const ProjectEditorRoute = () => {
         } catch (error) {
           if (isCancelled.current) return;
           console.error('Generation error:', error);
-          await addMessage('assistant', "I'm working on your project with the starter template!");
+          await updateProject(localProject.id, { generationStatus: 'failed' });
+          await addMessage('assistant', language === 'ar'
+            ? `تعذّر بدء البناء: ${(error as Error).message}. حاول مرة أخرى من المحادثة.`
+            : `I couldn't start the build: ${(error as Error).message}. Please retry from the chat.`);
           setIsGenerating(false);
           setStreamingContent('');
           setStatusMessage('');
@@ -1200,6 +1229,8 @@ const AppContent = () => {
     loading: projectsLoading,
     createProject,
     updateProject,
+    deleteProject,
+    forkProject,
     getProject
   } = useProjects();
 
@@ -1335,6 +1366,18 @@ const AppContent = () => {
     navigate('/');
   }, [clearMessages, navigate]);
 
+  const handleDeleteProject = useCallback(async (projectId: string) => {
+    const deleted = await deleteProject(projectId);
+    if (!deleted) {
+      toast({ title: language === 'ar' ? 'تعذّر حذف المشروع' : 'Could not delete project', variant: 'destructive' });
+    }
+  }, [deleteProject, language]);
+
+  const handleForkProject = useCallback(async (projectId: string) => {
+    const copy = await forkProject(projectId);
+    if (copy) navigate(`/projects/${copy.id}`);
+  }, [forkProject, navigate]);
+
   // Loading state
   if (authLoading) {
     return (
@@ -1365,6 +1408,11 @@ const AppContent = () => {
     <HomePage
       onStartBuilding={handleBuildAttempt}
       onShowAuth={() => setShowAuth(true)}
+      projects={projects}
+      projectsLoading={projectsLoading}
+      onOpenProject={(projectId) => navigate(`/projects/${projectId}`)}
+      onDeleteProject={handleDeleteProject}
+      onForkProject={handleForkProject}
     />
   );
 };

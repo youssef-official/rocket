@@ -296,6 +296,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [clarifyAnswers, setClarifyAnswers] = useState<Record<number, string>>({});
   const [customAnswerIndex, setCustomAnswerIndex] = useState<number | null>(null);
   const [customAnswerText, setCustomAnswerText] = useState('');
+  const [elapsedGenerationSeconds, setElapsedGenerationSeconds] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -381,6 +382,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
   }, [messages, isGenerating, fileActivities, generationPhase, statusMessage]);
+
+  useEffect(() => {
+    if (!isGenerating) {
+      setElapsedGenerationSeconds(0);
+      return;
+    }
+    const startedAt = Date.now();
+    setElapsedGenerationSeconds(0);
+    const intervalId = window.setInterval(() => {
+      setElapsedGenerationSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [isGenerating]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -693,7 +707,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           />
         </div>
         <span className="text-sm font-semibold text-foreground/70 tabular-nums">
-          {generationPhase?.thinkingTime || 0}s
+          {elapsedGenerationSeconds}s
         </span>
         <Loader2 className="w-3.5 h-3.5 animate-spin text-pink-400/60" />
       </motion.div>

@@ -1,6 +1,9 @@
 const browserApi = typeof window !== 'undefined'
   ? import.meta.env.DEV
-    ? `${window.location.protocol}//${window.location.hostname}:3001/api`
+    // Vite proxies this same-origin path to the production API. Keeping the
+    // browser on one origin avoids flaky cPanel/LiteSpeed CORS preflights while
+    // development still reads and writes the real egyhost1.com data.
+    ? '/server-api'
     : 'https://egyhost1.com/server'
   : 'http://localhost:3001/api';
 
@@ -9,7 +12,7 @@ export const normalizeApiBase = (value: string) => {
   return base.endsWith('/server') ? `${base}/api` : base;
 };
 
-const API_URL = normalizeApiBase(import.meta.env.VITE_API_URL || browserApi);
+const API_URL = normalizeApiBase(import.meta.env.DEV ? browserApi : (import.meta.env.VITE_API_URL || browserApi));
 
 export const getToken = () => localStorage.getItem('webo_token');
 export const setToken = (token: string | null) => token ? localStorage.setItem('webo_token', token) : localStorage.removeItem('webo_token');

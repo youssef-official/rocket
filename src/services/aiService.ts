@@ -730,19 +730,23 @@ export async function readSSEStream(
   let streamDone = false;
   let usage: SSEUsage | null = null;
 
-  // Adaptive read timeout: 180 seconds between chunks (thinking/reasoning models may pause for a long time)
-  const READ_TIMEOUT = 180_000;
+  // Do not leave the editor spinning forever if an upstream stream opens but
+  // stops producing data. The caller turns this into a retryable project error.
+  const READ_TIMEOUT = 90_000;
 
   while (!streamDone) {
     const readPromise = reader.read();
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('SSE read timeout — model may still be thinking. Please retry.')), READ_TIMEOUT)
-    );
+    let readTimeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      readTimeoutId = setTimeout(() => reject(new Error('The AI response stopped. Please retry.')), READ_TIMEOUT);
+    });
 
     let result: ReadableStreamReadResult<Uint8Array>;
     try {
       result = await Promise.race([readPromise, timeoutPromise]);
+      if (readTimeoutId) clearTimeout(readTimeoutId);
     } catch (e) {
+      if (readTimeoutId) clearTimeout(readTimeoutId);
       reader.cancel();
       throw e;
     }
