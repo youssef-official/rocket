@@ -1,0 +1,24 @@
+/* WEBO CONTROL ROOM — operational interface, not a marketing dashboard. */
+main[dir="rtl"]:has(> div > aside) { background:#08111f !important; color:#f5f7fa; }
+main[dir="rtl"]:has(> div > aside)::before { content:""; position:fixed; inset:0; pointer-events:none; background:radial-gradient(900px 480px at 8% -10%,rgba(255,176,0,.16),transparent 62%),radial-gradient(720px 460px at 95% 110%,rgba(16,36,60,.75),transparent 70%); }
+main[dir="rtl"]:has(> div > aside) > div { max-width:none; position:relative; }
+main[dir="rtl"]:has(> div > aside) aside { width:280px; background:#0b1828 !important; border-color:#21384f !important; }
+main[dir="rtl"]:has(> div > aside) header,main[dir="rtl"]:has(> div > aside) nav { background:#0d1b2b !important; border-color:#21384f !important; }
+main[dir="rtl"]:has(> div > aside) section { width:min(100%,1280px); margin-inline:auto; padding:44px 38px 72px; }
+main[dir="rtl"]:has(> div > aside) h1,main[dir="rtl"]:has(> div > aside) h2,main[dir="rtl"]:has(> div > aside) h3,main[dir="rtl"]:has(> div > aside) b,main[dir="rtl"]:has(> div > aside) .font-bold,main[dir="rtl"]:has(> div > aside) .font-extrabold { color:#f5f7fa; }
+main[dir="rtl"]:has(> div > aside) p,main[dir="rtl"]:has(> div > aside) small,main[dir="rtl"]:has(> div > aside) .text-\[\#6c665c\] { color:#b8c7d7 !important; }
+main[dir="rtl"]:has(> div > aside) section .rounded-xl { background:#10243c !important; border:1px solid #284766; box-shadow:0 18px 38px rgba(0,0,0,.22); }
+main[dir="rtl"]:has(> div > aside) aside .bg-\[\#e7dfd0\] { background:#10243c !important; border:1px solid #284766; }
+main[dir="rtl"]:has(> div > aside) table { background:#10243c; border-radius:14px; overflow:hidden; }
+main[dir="rtl"]:has(> div > aside) thead { background:#0b1828 !important; color:#b8c7d7 !important; }
+main[dir="rtl"]:has(> div > aside) tbody tr { background:#10243c; border-color:#284766 !important; }
+main[dir="rtl"]:has(> div > aside) tbody tr:hover { background:#16304e; }
+main[dir="rtl"]:has(> div > aside) input,main[dir="rtl"]:has(> div > aside) select { min-height:40px; background:#08111f !important; color:#f5f7fa !important; border-color:#365b7c !important; }
+main[dir="rtl"]:has(> div > aside) input::placeholder { color:#7f97ad; }
+main[dir="rtl"]:has(> div > aside) header button { background:#ffb000 !important; border-color:#ffca52 !important; color:#08111f !important; box-shadow:0 10px 20px rgba(255,176,0,.2); }
+main[dir="rtl"]:has(> div > aside) section button.bg-\[\#222a27\] { background:#ffb000 !important; color:#08111f !important; }
+main[dir="rtl"]:has(> div > aside) button { transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease; }
+main[dir="rtl"]:has(> div > aside) button:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 18px rgba(0,0,0,.18); }
+main[dir="rtl"]:has(> div > aside) button:focus-visible,main[dir="rtl"]:has(> div > aside) input:focus-visible,main[dir="rtl"]:has(> div > aside) select:focus-visible { outline:2px solid #ffb000; outline-offset:2px; }
+main[dir="rtl"]:has(> div > aside) .text-\[\#a76113\] { color:#ffb000 !important; }
+@media (max-width:767px) { main[dir="rtl"]:has(> div > aside) section { padding:28px 16px 56px; } main[dir="rtl"]:has(> div > aside) h1 { font-size:2rem !important; } }

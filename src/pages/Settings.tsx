@@ -1,22 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import {
-  ArrowLeft, Settings as SettingsIcon, Palette, ImageIcon,
-  Check, Loader2, Key, Eye, EyeOff, PartyPopper, Moon, Sun, Monitor
+  ArrowLeft, Palette, ImageIcon,
+  Check, PartyPopper, Moon, Sun, Monitor
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useIntegrations } from '@/hooks/useIntegrations';
 import { useThemePreference } from '@/hooks/useThemePreference';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
-import vercelLogo from '@/assets/logos/vercel.svg';
-import githubLogo from '@/assets/logos/github.svg';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 import lightHeroBg from '@/assets/light-hero-bg.jpg';
 import auroraGradientBg from '@/assets/aurora-gradient-bg.png';
@@ -64,20 +60,6 @@ const Settings: React.FC = () => {
   const { user } = useAuth();
   const { t, isRTL } = useLanguage();
   const { theme, setTheme } = useThemePreference();
-  const {
-    integrations, loading,
-    saveVercelToken, saveGitHubToken,
-    disconnectVercel, disconnectGitHub,
-  } = useIntegrations();
-
-  // Integration tokens
-  const [vercelToken, setVercelToken] = useState('');
-  const [githubToken, setGitHubToken] = useState('');
-  const [savingVercel, setSavingVercel] = useState(false);
-  const [savingGitHub, setSavingGitHub] = useState(false);
-  const [showVercelToken, setShowVercelToken] = useState(false);
-  const [showGitHubToken, setShowGitHubToken] = useState(false);
-
   // Customization
   const [selectedPreset, setSelectedPreset] = useState(() => localStorage.getItem('vivora_color_preset') || 'midnight');
   const [customBg, setCustomBg] = useState(() => localStorage.getItem('vivora_custom_bg') || '#1B1B1B');
@@ -125,30 +107,6 @@ const Settings: React.FC = () => {
     localStorage.setItem('vivora_show_eid', String(showEid));
     window.dispatchEvent(new Event('vivora-celebrations-change'));
   }, [showRamadan, showEid]);
-
-  const handleSaveVercel = async () => {
-    if (!vercelToken.trim()) return;
-    setSavingVercel(true);
-    const success = await saveVercelToken(vercelToken.trim());
-    setSavingVercel(false);
-    if (success) setVercelToken('');
-  };
-
-  const handleSaveGitHub = async () => {
-    if (!githubToken.trim()) return;
-    setSavingGitHub(true);
-    const success = await saveGitHubToken(githubToken.trim());
-    setSavingGitHub(false);
-    if (success) setGitHubToken('');
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   const sectionVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -367,116 +325,9 @@ const Settings: React.FC = () => {
           </Card>
         </motion.div>
 
-        {/* ═══ Integrations ═══ */}
-        <motion.div variants={sectionVariants} initial="hidden" animate="visible" transition={{ delay: 0.1 }}>
-          <div className={`flex items-center gap-3 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
-              <SettingsIcon className="w-4 h-4 text-blue-400" />
-            </div>
-            <h2 className="text-xl font-bold text-white font-serif">{t('footer.integrations')}</h2>
-          </div>
-
-          <div className="space-y-4">
-            <TokenCard
-              logo={vercelLogo} name="Vercel" description="Deploy your projects to Vercel"
-              connected={!!integrations?.vercel_connected} username={integrations?.vercel_username}
-              tokenValue={vercelToken} onTokenChange={setVercelToken}
-              onSave={handleSaveVercel} onDisconnect={disconnectVercel}
-              saving={savingVercel} showToken={showVercelToken}
-              onToggleShow={() => setShowVercelToken(!showVercelToken)}
-              placeholder="Enter your Vercel Access Token"
-              helpUrl="https://vercel.com/account/tokens"
-              helpText="Get token → Vercel Settings → Tokens"
-              isRTL={isRTL}
-            />
-            <TokenCard
-              logo={githubLogo} name="GitHub" description="Push your projects to GitHub"
-              connected={!!integrations?.github_connected} username={integrations?.github_username}
-              tokenValue={githubToken} onTokenChange={setGitHubToken}
-              onSave={handleSaveGitHub} onDisconnect={disconnectGitHub}
-              saving={savingGitHub} showToken={showGitHubToken}
-              onToggleShow={() => setShowGitHubToken(!showGitHubToken)}
-              placeholder="Enter your GitHub Personal Access Token"
-              helpUrl="https://github.com/settings/tokens/new"
-              helpText="Get token → GitHub Settings → Developer settings → Tokens"
-              isRTL={isRTL}
-            />
-          </div>
-        </motion.div>
       </main>
     </div>
   );
 };
-
-// ─── Token Card ───
-const TokenCard: React.FC<{
-  logo: string; name: string; description: string; connected: boolean;
-  username?: string | null; tokenValue: string; onTokenChange: (val: string) => void;
-  onSave: () => void; onDisconnect: () => Promise<boolean>; saving: boolean;
-  showToken: boolean; onToggleShow: () => void; placeholder: string;
-  helpUrl: string; helpText: string; isRTL: boolean;
-}> = ({ logo, name, description, connected, username, tokenValue, onTokenChange, onSave, onDisconnect, saving, showToken, onToggleShow, placeholder, helpUrl, helpText, isRTL }) => (
-  <Card className="bg-white/[0.03] border-white/[0.06]">
-    <CardHeader>
-      <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-        <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center">
-            <img src={logo} alt={name} className="w-5 h-5 invert" />
-          </div>
-          <div className={isRTL ? 'text-right' : ''}>
-            <CardTitle className="text-sm text-white/80">{name}</CardTitle>
-            <CardDescription className="text-white/30">{description}</CardDescription>
-          </div>
-        </div>
-        {connected ? (
-          <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-            <Check className="w-3 h-3 mr-1" /> Connected
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="text-white/30 border-white/10">Not Connected</Badge>
-        )}
-      </div>
-    </CardHeader>
-    <CardContent className="space-y-4">
-      {connected ? (
-        <div className={`flex items-center justify-between p-4 bg-white/[0.03] rounded-xl ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center">
-              <img src={logo} alt={name} className="w-4 h-4 invert" />
-            </div>
-            <div className={isRTL ? 'text-right' : ''}>
-              <p className="font-medium text-white/80 text-sm">{username}</p>
-              <p className="text-[11px] text-white/30">Connected via Token</p>
-            </div>
-          </div>
-          <Button variant="destructive" size="sm" onClick={onDisconnect}>Disconnect</Button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="relative">
-            <Input
-              type={showToken ? 'text' : 'password'}
-              value={tokenValue}
-              onChange={(e) => onTokenChange(e.target.value)}
-              placeholder={placeholder}
-              className="pr-10 bg-white/[0.03] border-white/[0.08] text-white/70"
-              onKeyDown={(e) => e.key === 'Enter' && onSave()}
-            />
-            <button type="button" onClick={onToggleShow} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
-              {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          <a href={helpUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-violet-400 hover:text-violet-300 hover:underline block">
-            {helpText}
-          </a>
-          <Button onClick={onSave} disabled={saving || !tokenValue.trim()} className="w-full gap-2">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
-            Connect {name}
-          </Button>
-        </div>
-      )}
-    </CardContent>
-  </Card>
-);
 
 export default Settings;

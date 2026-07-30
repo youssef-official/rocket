@@ -10,7 +10,7 @@ a, button, [role='button'], input[type='submit'], input[type='button'], .cursor-
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'%3E%3Cpath d='M7 1L7 14.5L10.5 11L14 16L16 15L12.5 9.5L17 9L7 1Z' fill='%238b5cf6' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E"), pointer !important;
 }
 
-/* Rocket Builder - Premium Dark Gray Design System (Dark Mode Only) */
+/* Webo — focused studio workbench */
 
 @layer base {
   :root {
@@ -25,7 +25,7 @@ a, button, [role='button'], input[type='submit'], input[type='button'], .cursor-
     --popover-foreground: 240 6% 10%;
     
     /* Blue accent color - Lovable Blue */
-    --primary: 227 100% 65%;
+    --primary: 40 100% 50%;
     --primary-foreground: 0 0% 100%;
     
     --secondary: 240 5% 96%;
@@ -42,7 +42,7 @@ a, button, [role='button'], input[type='submit'], input[type='button'], .cursor-
     
     --border: 240 6% 90%;
     --input: 240 5% 93%;
-    --ring: 227 100% 65%;
+    --ring: 40 100% 50%;
     
     --radius: 0.75rem;
     
@@ -89,7 +89,7 @@ a, button, [role='button'], input[type='submit'], input[type='button'], .cursor-
     --popover: 240 5% 13%;
     --popover-foreground: 0 0% 95%;
     
-    --primary: 227 100% 65%;
+    --primary: 40 100% 50%;
     --primary-foreground: 0 0% 100%;
     
     --secondary: 240 4% 16%;
@@ -106,7 +106,7 @@ a, button, [role='button'], input[type='submit'], input[type='button'], .cursor-
     
     --border: 240 4% 19%;
     --input: 240 4% 16%;
-    --ring: 227 100% 65%;
+    --ring: 40 100% 50%;
     
     /* Gradients dark mode */
     --gradient-primary: linear-gradient(135deg, hsl(227 100% 65%), hsl(199 89% 48%));

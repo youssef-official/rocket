@@ -95,7 +95,6 @@ export const Privacy: React.FC = () => {
                 </p>
                 <ul className="list-disc list-inside text-white/70 space-y-1 ml-4 mt-2">
                   <li>AI Models — for code generation and image analysis</li>
-                  <li>Vercel — for project deployment (optional, user-initiated)</li>
                   <li>PayPal — for payment processing of subscription plans</li>
                 </ul>
               </section>

@@ -6,7 +6,7 @@ import {
   ChevronRight, Search, Globe, Lock, GitBranch,
   Layers, Rocket, Image as ImageIcon, Play,
   RefreshCw, Languages, CreditCard, Shield, Eye,
-  PenTool, Bell, Users, Copy, Mail, Database
+  PenTool, Bell, Users, Copy, Mail
 } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { SEOHead } from '@/components/shared/SEOHead';
@@ -27,7 +27,7 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'Welcome to Vivora X',
-          description: 'Vivora X is an AI-powered web application builder that transforms your ideas into production-ready React applications with TypeScript and Tailwind CSS. Simply describe what you want, and Vivora X generates a complete multi-page project in seconds.',
+          description: 'Webo is an AI-powered website builder that transforms your ideas into browser-native HTML, CSS, and JavaScript. Simply describe what you want, and Webo generates the complete three-file website.',
         },
         {
           title: 'Quick Start Guide',
@@ -58,7 +58,7 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'How AI Generation Works',
-          description: 'Vivora X uses advanced AI models to understand your natural language descriptions and convert them into production-ready code. The AI generates clean, maintainable React components with TypeScript type safety, Tailwind CSS styling, and a premium "Classic" design aesthetic.',
+          description: 'Webo uses AI to understand natural-language descriptions and convert them into semantic HTML, maintainable CSS, and browser-native JavaScript.',
         },
         {
           title: 'What Vivora X Can Generate',
@@ -67,7 +67,7 @@ export const Docs: React.FC = () => {
             'Multi-page websites with navigation and routing',
             'E-commerce stores with product catalogs, shopping carts, and checkout',
             'Dashboards with data visualization, charts, and analytics',
-            'Landing pages with animations (Framer Motion) and call-to-actions',
+            'Landing pages with CSS and JavaScript animations and call-to-actions',
             'Admin panels with CRUD forms, data tables, and password protection',
             'Portfolio sites with galleries, animations, and contact forms',
             'Blog and content sites with rich typography and layouts',
@@ -78,7 +78,7 @@ export const Docs: React.FC = () => {
           title: 'Admin Dashboard Generation',
           description: 'When you ask for an admin panel, Vivora X builds a fully functional dashboard — not a mockup:',
           steps: [
-            'Centralized state management with React Context + useReducer',
+            'Browser-native state with JavaScript modules and Web Storage',
             'Full CRUD operations: Create, Read, Update, Delete — all working',
             'Real statistics calculated from actual data in state',
             'Form validation with error messages for all inputs',
@@ -115,7 +115,7 @@ export const Docs: React.FC = () => {
           steps: [
             'The image is uploaded to secure cloud storage',
             'The AI model analyzes the visual design, layout, colors, and components',
-            'It generates matching React code with accurate styling and structure',
+            'It generates matching HTML, CSS, and JavaScript with accurate styling and structure',
             'You can further refine by chatting with the AI about specific changes',
           ],
         },
@@ -186,65 +186,6 @@ export const Docs: React.FC = () => {
       ],
     },
     {
-      id: 'github',
-      title: 'GitHub Publishing',
-      icon: GitBranch,
-      content: [
-        {
-          title: 'Push to GitHub',
-          description: 'Connect your GitHub account and push your Vivora X projects directly to any repository.',
-        },
-        {
-          title: 'How to Connect GitHub',
-          description: 'Follow these steps:',
-          steps: [
-            'Go to Settings from the top menu',
-            'Navigate to the GitHub section',
-            'Enter your GitHub Personal Access Token (PAT)',
-            'Click Connect — your username will appear once connected',
-          ],
-        },
-        {
-          title: 'Publishing a Project',
-          description: 'Once connected:',
-          steps: [
-            'Open your project in the editor',
-            'Click the GitHub icon in the header toolbar',
-            'Choose to create a new repository or push to an existing one',
-            'Enter the repository name and click Push',
-            'A README is auto-generated with your project details',
-          ],
-        },
-      ],
-    },
-    {
-      id: 'database',
-      title: 'Database Integration',
-      icon: Database,
-      content: [
-        {
-          title: 'Connect Your Supabase Database',
-          description: 'Use the DB tab in the editor to connect your own Supabase project via OAuth. Click "Sign in with Supabase" to authenticate, then select your project from the list or enter your Project ID manually.',
-        },
-        {
-          title: 'How Database Connection Works',
-          description: 'The connection flow:',
-          steps: [
-            'Click the DB tab in the editor',
-            'Click "Sign in with Supabase" — this uses secure OAuth (no credentials stored)',
-            'Your Supabase projects appear in a list — select one to connect',
-            'If projects don\'t appear, enter your Supabase Project ID manually',
-            'Vivora X saves the project URL and Anon Key to your project record',
-            'The AI generates a Supabase client, migrations, and Edge Functions',
-          ],
-        },
-        {
-          title: 'SQL Migrations',
-          description: 'When the AI needs database tables, it generates SQL migration files that are auto-executed on your connected Supabase project.',
-        },
-      ],
-    },
-    {
       id: 'notifications',
       title: 'Notifications',
       icon: Bell,
@@ -299,28 +240,6 @@ export const Docs: React.FC = () => {
       ],
     },
     {
-      id: 'vercel',
-      title: 'Vercel Deployment',
-      icon: Upload,
-      content: [
-        {
-          title: 'Deploy to Vercel',
-          description: 'Deploy your project to Vercel with one click. Get a live URL instantly.',
-        },
-        {
-          title: 'How to Deploy',
-          description: 'Steps:',
-          steps: [
-            'Go to Settings and add your Vercel API Token',
-            'Click the "Publish" button in the editor header',
-            'Enter a project name (optional)',
-            'Click "Deploy to Vercel"',
-            'Wait for deployment to complete and get your live URL',
-          ],
-        },
-      ],
-    },
-    {
       id: 'export',
       title: 'Export & Download',
       icon: Download,
@@ -359,7 +278,7 @@ export const Docs: React.FC = () => {
       content: [
         {
           title: 'Clone Any Website Design',
-          description: 'Clone Design lets you enter any website URL and Vivora X will scrape its HTML, analyze its design, and recreate it as a fully functional React project.',
+          description: 'Clone Design lets you enter a website URL so Webo can analyze its design and recreate it as a browser-native website.',
         },
         {
           title: 'How to Use',
@@ -368,7 +287,7 @@ export const Docs: React.FC = () => {
             'Find the "Clone Design" input on the homepage',
             'Enter any website URL',
             'Add an optional description of changes you want',
-            'Press Enter — the AI scrapes and generates a matching React project',
+            'Press Enter — the AI analyzes the source and generates matching HTML, CSS, and JavaScript',
           ],
         },
       ],
@@ -561,8 +480,8 @@ export const Docs: React.FC = () => {
     <div className="min-h-screen flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
       <SEOHead
         title="Documentation — Vivora X Guide"
-        description="Complete guide to using Vivora X vibe coding platform. Learn how to build React apps with AI, deploy to Vercel, manage credits, and integrate GitHub."
-        keywords="vivora x docs, vibe coding documentation, vivorax guide, AI web builder tutorial, React app builder guide, how to use vivora x"
+        description="Complete guide to Webo. Learn how to build browser-native websites with AI, preview them instantly, manage credits, and export your files."
+        keywords="webo docs, AI website builder, HTML CSS JavaScript generator, browser website preview"
         canonical="https://vivorax.online/docs"
       />
       <div 

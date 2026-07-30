@@ -5,53 +5,28 @@ import { CelebrationEffects } from './CelebrationEffects';
 import { UserMenuDropdown, getWallpaperSrc } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ProjectsSection } from './ProjectsSection';
 import { TemplatesSection } from './TemplatesSection';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { FrameworkBar } from '@/components/shared/FrameworkLogos';
 import { Footer } from '@/components/shared/Footer';
 import { UpgradeModal } from '@/components/shared/UpgradeModal';
-import { SettingsModal } from '@/components/shared/SettingsModal';
 import { NotificationInbox } from '@/components/shared/NotificationInbox';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import { toast } from '@/hooks/use-toast';
 import { useThemePreference } from '@/hooks/useThemePreference';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 import lightHeroBg from '@/assets/light-hero-bg.jpg';
-import { supabase } from '@/integrations/supabase/client';
-
-interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  projectType: 'vite' | 'html';
-  isPublished: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface HomePageProps {
   onStartBuilding: (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageUrls?: string[]) => void;
-  onViewDashboard?: () => void;
-  onOpenProject?: (id: string) => void;
-  onDeleteProject?: (id: string) => void;
-  onForkProject?: (id: string) => void;
   onShowAuth?: () => void;
-  projects?: Project[];
-  projectsLoading?: boolean;
 }
 
 const MAX_PROMPT_LENGTH = 1000000;
 
 export const HomePage: React.FC<HomePageProps> = ({
   onStartBuilding,
-  onViewDashboard,
-  onOpenProject,
-  onDeleteProject,
-  onForkProject,
   onShowAuth,
-  projects = [],
-  projectsLoading = false
 }) => {
   const { user, signOut } = useAuth();
   const { t, isRTL, language } = useLanguage();
@@ -78,9 +53,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   const heroBg = getWallpaperUrl(wallpaperId);
 
   const [prompt, setPrompt] = useState(() => localStorage.getItem('vivora_home_prompt') || '');
-  const [selectedFramework, setSelectedFramework] = useState('React');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [typingIndex, setTypingIndex] = useState(0);
   const [displayText, setDisplayText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -250,32 +223,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     return `https://${trimmed.replace(/^\/+/, '')}`;
   }, []);
 
-  const uploadFileToR2 = useCallback(async (file: File) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-image`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: formData,
-        }
-      );
-      if (res.ok) {
-        const result = await res.json();
-        return normalizePublicImageUrl(result.url || '');
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }, [normalizePublicImageUrl]);
+  const uploadFileToR2 = useCallback(async (file: File) => URL.createObjectURL(file), []);
 
   const uploadImmediately = useCallback((files: File[]) => {
     const newEntries = files.map(file => ({
@@ -335,34 +283,9 @@ export const HomePage: React.FC<HomePageProps> = ({
   const handleCloneDesign = async () => {
     if (!cloneUrl.trim()) return;
     setCloneLoading(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-website`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ url: cloneUrl.trim() }),
-        }
-      );
-      if (!res.ok) throw new Error('Scrape failed');
-      const result = await res.json();
-      if (result.html) {
-        setCloneAttachment({ url: cloneUrl.trim(), html: result.html });
-        setShowCloneInput(false);
-        setCloneUrl('');
-        toast({ title: 'Design cloned!', description: `Source code from ${cloneUrl.trim()} attached.` });
-      } else {
-        throw new Error('No HTML returned');
-      }
-    } catch {
-      toast({ title: 'Clone failed', description: 'Could not scrape the website. Please try again.', variant: 'destructive' });
-    } finally {
+    try { throw new Error('Website cloning is not configured on the local Webo server.'); }
+    catch { toast({ title: 'Clone unavailable', description: 'Website cloning needs a local Webo server endpoint.', variant: 'destructive' }); }
+    finally {
       setCloneLoading(false);
     }
   };
@@ -380,7 +303,6 @@ export const HomePage: React.FC<HomePageProps> = ({
     e.preventDefault();
     const stillUploading = uploadedImages.some(img => img.uploading);
     if (prompt.trim() && !isSubmitting && !stillUploading) {
-      const projectType = selectedFramework === 'React' || selectedFramework === 'Next.js' ? 'vite' : 'html';
       const urls = uploadedImages
         .map(img => normalizePublicImageUrl(img.url || ''))
         .filter((u): u is string => !!u);
@@ -400,7 +322,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       } else {
         sessionStorage.removeItem('vivora_pending_color_theme');
       }
-      onStartBuilding(prompt, projectType, undefined, urls.length > 0 ? urls : undefined);
+      onStartBuilding(prompt, 'html', undefined, urls.length > 0 ? urls : undefined);
     }
   };
 
@@ -466,6 +388,11 @@ export const HomePage: React.FC<HomePageProps> = ({
             {user ? (
               <>
                 <div className={`flex items-center gap-1 bg-white/[0.08] backdrop-blur-xl rounded-full p-1 border border-white/[0.08] ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  {user.role === 'admin' && (
+                    <a href="/admin" className="hidden md:flex items-center justify-center px-3 h-8 rounded-full bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 transition-all text-xs font-semibold" title="Admin">
+                      {isRTL ? 'الإدارة' : 'Admin'}
+                    </a>
+                  )}
                   <a href="/docs" className="hidden md:flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full transition-all duration-200" title="Docs">
                     <BookOpen className="w-[18px] h-[18px] text-white/70" />
                   </a>
@@ -478,7 +405,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <UserMenuDropdown
                   user={user}
                   signOut={signOut}
-                  onSettingsClick={() => setShowSettingsModal(true)}
+                  onSettingsClick={() => { window.location.href = '/settings'; }}
                   onUpgradeClick={() => setShowUpgradeModal(true)}
                 />
               </>
@@ -507,7 +434,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           className="mb-6 md:mb-8 cursor-pointer group"
         >
           <div className={`flex items-center gap-2 px-4 md:px-5 py-2.5 bg-white/[0.08] backdrop-blur-xl rounded-full hover:bg-white/[0.12] transition-all duration-300 border border-white/[0.1] shadow-lg shadow-black/5 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <span className="px-2.5 py-0.5 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">{t('home.newBadge')}</span>
+            <span className="px-2.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">{t('home.newBadge')}</span>
             <span className="text-white/90 text-xs md:text-sm font-medium">{t('home.mobileAnnouncement')}</span>
             <ArrowUpRight className={`w-3.5 h-3.5 text-white/60 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200 ${isRTL ? 'rotate-180' : ''}`} />
           </div>
@@ -521,7 +448,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           className="text-center mb-6"
         >
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-4">
-            {t('home.title1')} <span className="text-pink-400">{t('home.title2')}</span> {t('home.title3')}
+            {t('home.title1')} <span className="text-amber-400">{t('home.title2')}</span> {t('home.title3')}
           </h1>
           <p className="text-base md:text-xl text-white/80">
             {t('home.subtitle')}{' '}
@@ -549,7 +476,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             />
 
             <div
-              className={`bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative transition-colors ${isDragging ? 'ring-2 ring-pink-400' : ''}`}
+              className={`bg-white rounded-[2.5rem] shadow-2xl overflow-hidden relative transition-colors ${isDragging ? 'ring-2 ring-amber-400' : ''}`}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
               onDragOver={handleDragOver}
@@ -557,8 +484,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             >
               {/* Drag overlay */}
               {isDragging && (
-                <div className="absolute inset-0 z-10 bg-pink-50 border-2 border-dashed border-pink-400 rounded-[2.5rem] flex items-center justify-center pointer-events-none">
-                  <div className="flex flex-col items-center gap-2 text-pink-500">
+                <div className="absolute inset-0 z-10 bg-amber-50 border-2 border-dashed border-amber-400 rounded-[2.5rem] flex items-center justify-center pointer-events-none">
+                  <div className="flex flex-col items-center gap-2 text-amber-600">
                     <ImageIcon className="w-8 h-8" />
                     <span className="font-medium">{t('home.dropImage')}</span>
                   </div>
@@ -708,15 +635,15 @@ export const HomePage: React.FC<HomePageProps> = ({
                             }}
                             className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-all duration-200 ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
                           >
-                            <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center flex-shrink-0">
-                              <ImageIcon className="w-4 h-4 text-pink-500" />
+                            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                              <ImageIcon className="w-4 h-4 text-amber-600" />
                             </div>
                             <div className={`flex-1 ${isRTL ? 'text-right' : ''}`}>
                               <p className="text-sm font-semibold text-gray-700">Attach Images</p>
                               <p className="text-[11px] text-gray-500">{isPaidPlan ? 'Up to 5 images' : 'Pro+ only'}</p>
                             </div>
                             {!isPaidPlan && (
-                              <span className="px-1.5 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[9px] font-bold rounded-full uppercase tracking-wider">PRO</span>
+                              <span className="px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold rounded-full uppercase tracking-wider">PRO</span>
                             )}
                           </button>
 
@@ -874,11 +801,11 @@ export const HomePage: React.FC<HomePageProps> = ({
           transition={{ delay: 0.3 }}
           className="mt-8 w-full max-w-3xl"
         >
-          <FrameworkBar selectedFramework={selectedFramework} onSelectFramework={setSelectedFramework} />
+          <FrameworkBar />
         </motion.div>
       </main>
 
-      {/* Meet Vivora X Section - only visible for non-logged in users */}
+      {/* Meet Webo Section - only visible for non-logged in users */}
       {!user && (
         <section className="relative z-10 py-12 md:py-16 px-4 md:px-6">
           <div className="max-w-7xl mx-auto">
@@ -889,7 +816,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               transition={{ duration: 0.6 }}
               className="mb-16"
             >
-              <h2 className="text-4xl md:text-6xl font-bold text-white mb-4">Meet Vivora X</h2>
+              <h2 className="text-4xl md:text-6xl font-bold text-white mb-4">Meet Webo</h2>
             </motion.div>
 
             <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${isRTL ? 'lg:flex-row-reverse' : ''}`}>
@@ -928,7 +855,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   },
                   {
                     title: isRTL ? 'شاهده ينبض بالحياة' : 'Watch it come to life',
-                    desc: isRTL ? 'شاهد رؤيتك تتحول إلى نموذج أولي عامل في الوقت الفعلي بينما يبنيه الذكاء الاصطناعي' : 'See your vision transform into a working prototype in real-time as AI builds it for you',
+                    desc: isRTL ? 'شاهد صفحات وملفات ومجلدات المشروع تظهر لحظة بلحظة أثناء البناء' : 'Watch pages, files, and folders appear as the AI builds',
                     step: '02',
                   },
                   {
@@ -953,36 +880,8 @@ export const HomePage: React.FC<HomePageProps> = ({
         </section>
       )}
 
-      {/* Projects Section */}
-      {user && projects.length > 0 && (
-        <ProjectsSection
-          projects={projects}
-          loading={projectsLoading}
-          onOpenProject={onOpenProject || (() => { })}
-          onDeleteProject={onDeleteProject || (() => { })}
-          onForkProject={onForkProject || (() => { })}
-          onNewProject={() => { }}
-        />
-      )}
-
       {/* Templates Section - visible to all users */}
       <TemplatesSection onSelectTemplate={(prompt) => setPrompt(prompt)} />
-
-      {/* Welcome message for new logged-in users with no projects */}
-      {user && projects.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="relative z-10 max-w-3xl mx-auto px-4 mb-20 text-center"
-        >
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
-            <Sparkles className="w-12 h-12 text-pink-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">Welcome to Vivora X!</h2>
-            <p className="text-white/70 mb-6">Start by describing your dream project above.</p>
-          </div>
-        </motion.div>
-      )}
 
       {/* Footer */}
       <Footer />
@@ -993,11 +892,6 @@ export const HomePage: React.FC<HomePageProps> = ({
         onClose={() => setShowUpgradeModal(false)}
       />
 
-      {/* Settings Modal */}
-      <SettingsModal
-        isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-      />
     </div>
   );
 };

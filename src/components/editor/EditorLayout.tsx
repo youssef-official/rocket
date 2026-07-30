@@ -2,18 +2,14 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Code2, Eye, LogOut, Moon, Sun, ChevronDown, Download, Clock, Pencil,
-  Eye as EyeIcon, Upload, Coins, Database, GitBranch, Settings2,
-  BookOpen, CreditCard, CircleHelp, Rocket, Monitor, FileArchive,
+  Eye as EyeIcon, Coins, Settings2,
+  BookOpen, CreditCard, Monitor, FileArchive,
   PanelLeftClose, PanelLeftOpen, BarChart2
 } from 'lucide-react';
-import githubLogo from '@/assets/logos/github.svg';
 import { ChatView } from './ChatView';
 import { CodeView } from './CodeView';
 import { PreviewView } from './PreviewView';
 import { VisualEditMode } from './VisualEditMode';
-import { VercelDeployDialog } from './IntegrationDialogs';
-import { GitHubPushDialog } from './GitHubPushDialog';
-import { DatabasePanel } from './DatabasePanel';
 import { AnalyticsPanel } from './AnalyticsPanel';
 import { DetailsPanel } from './DetailsPanel';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
@@ -21,12 +17,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useVersions, type ProjectVersion } from '@/hooks/useVersions';
 import { generateVersionName } from '@/services/versionNameService';
 import type { ProjectData, ChatMessage, ViewType, ProjectFile } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
 import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
-import { useAutoMigration } from '@/hooks/useAutoMigration';
 // CreditWarningBanner removed
 
 interface FileActivity {
@@ -59,7 +53,6 @@ interface EditorLayoutProps {
   isGenerating: boolean;
   onNewProject: () => void;
   onUpdateProject: (updates: Partial<ProjectData>) => void;
-  onViewDashboard?: () => void;
   streamingContent?: string;
   onVersionRestore?: (files: Record<string, ProjectFile>, messages: ChatMessage[]) => void;
   onGoHome?: () => void;
@@ -82,7 +75,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   isGenerating,
   onNewProject,
   onUpdateProject,
-  onViewDashboard,
   streamingContent,
   onVersionRestore,
   onGoHome,
@@ -101,8 +93,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
   const { userPlan, getRemainingCredits } = useUserPlan();
-  const { runMigrations } = useAutoMigration(project?.id || null);
-  const [currentView, setCurrentView] = useState<'code' | 'preview' | 'database' | 'details' | 'analytics'>('preview');
+  const [currentView, setCurrentView] = useState<'code' | 'preview' | 'details' | 'analytics'>('preview');
   const [detailsVersion, setDetailsVersion] = useState<{ version: ProjectVersion; activities: any[] } | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -115,14 +106,8 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number | null>(null);
   const [showHomeDialog, setShowHomeDialog] = useState(false);
   const [showVisualEdit, setShowVisualEdit] = useState(false);
-  // GitHub removed - Vercel only
-  const [showVercelDialog, setShowVercelDialog] = useState(false);
-  const [showGitHubPush, setShowGitHubPush] = useState(false);
-  const [gitHubRepoName, setGitHubRepoName] = useState('');
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [renameValue, setRenameValue] = useState('');
-  // connectedRepoUrl removed
-  const [deployedUrl, setDeployedUrl] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [waitingForTest, setWaitingForTest] = useState(false);
   const pendingVersionRef = useRef<{ files: Record<string, ProjectFile>; messages: ChatMessage[]; activities: FileActivity[] } | null>(null);
@@ -130,9 +115,19 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const prevIsGenerating = useRef(isGenerating);
   const versionCreatedForSession = useRef(false);
   const lastFileActivitiesRef = useRef<FileActivity[]>([]);
+  const lastPreviewErrorRef = useRef<{ message: string; at: number } | null>(null);
 
   // Versions hook
   const { versions, fetchVersions, createVersion, rollbackToVersion } = useVersions(project?.id || null);
+
+  const handlePreviewError = useCallback((errorLog: string) => {
+    if (isGenerating) return;
+    const normalized = errorLog.trim();
+    const previous = lastPreviewErrorRef.current;
+    if (previous?.message === normalized && Date.now() - previous.at < 60_000) return;
+    lastPreviewErrorRef.current = { message: normalized, at: Date.now() };
+    onSendMessage(`[AUTO-FIX] The preview has a reproducible console error. Use the reported source filename to make the smallest exact SEARCH/REPLACE patch. Inspect and patch only the failing file unless another file is proven necessary. Do not rewrite complete files and do not return read-only actions.\n\n${normalized}`, false);
+  }, [isGenerating, onSendMessage]);
 
   // Track file activities for version
   useEffect(() => {
@@ -188,9 +183,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       const hasMessages = messages.length > 0;
 
       if (hasFiles && hasMessages) {
-        // Auto-run SQL migrations on connected Supabase project
-        runMigrations(project.files);
-
         const isFirstVersion = versions.length === 0;
 
         if (isFirstVersion) {
@@ -255,7 +247,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     }
 
     prevIsGenerating.current = isGenerating;
-  }, [isGenerating, messages, project?.files, project?.description, project?.name, createVersion, versions.length, isChatMode, runMigrations, generationPhase]);
+  }, [isGenerating, messages, project?.files, project?.description, project?.name, createVersion, versions.length, isChatMode, generationPhase]);
 
   // Handle test completion - save pending version
   const handleTestComplete = useCallback(async (passed: boolean) => {
@@ -308,47 +300,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     setCurrentView('details');
   }, []);
 
-  // Handle image upload to Cloudflare R2 via edge function
-  const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-image`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: formData,
-        }
-      );
-
-      if (!res.ok) {
-        console.error('Error uploading file:', await res.text());
-        return null;
-      }
-
-      const result = await res.json();
-      const publicUrl = result.url;
-
-      // For non-image files, prefix with file type info so the AI knows what it is
-      if (!file.type.startsWith('image/')) {
-        const ext = file.name.split('.').pop()?.toLowerCase() || '';
-        return `[FILE:${ext}:${file.name}]${publicUrl}`;
-      }
-
-      return publicUrl;
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      return null;
-    }
-  }, []);
+  const handleImageUpload = useCallback(async (file: File): Promise<string | null> => URL.createObjectURL(file), []);
 
   // Handle panel resize
   const handleResizeStart = (e: React.MouseEvent) => {
@@ -592,13 +544,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <span>{t('editor.code')}</span>
           </button>
           <button
-            onClick={() => setCurrentView('database')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'database' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
-          >
-            <Database className="w-3.5 h-3.5" />
-            <span>DB</span>
-          </button>
-          <button
             onClick={() => setCurrentView('analytics')}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'analytics' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
           >
@@ -619,29 +564,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           >
             <Download className="w-4 h-4" />
           </button>
-
-          {/* GitHub - hidden on mobile */}
-          <motion.button
-            onClick={() => setShowGitHubPush(true)}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-border/60 bg-secondary/60 hover:bg-secondary text-foreground text-sm font-semibold transition-all duration-200 shadow-sm"
-            title="Push to GitHub"
-          >
-            <img src={githubLogo} alt="GitHub" className="w-4 h-4 dark:invert" />
-            <span className="hidden lg:inline">GitHub</span>
-          </motion.button>
-
-          {/* Publish */}
-          <motion.button
-            onClick={() => setShowVercelDialog(true)}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            className={`flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 shadow-md shadow-primary/20 ${isRTL ? 'flex-row-reverse' : ''}`}
-          >
-            <Rocket className="w-3.5 h-3.5" />
-            {t('editor.publish')}
-          </motion.button>
 
           {/* User Menu */}
           <div className="relative">
@@ -870,12 +792,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
               <div className={`h-full ${currentView === 'preview' && !showVisualEdit ? 'block' : 'hidden'}`}>
                 <PreviewView
                   files={project?.files || {}}
-                  projectType={project?.projectType || 'vite'}
+                  projectType="html"
                   isLoading={isGenerating && !isChatMode}
                   projectId={project?.id}
-                  onPreviewError={(errorLog) => {
-                    onSendMessage(`[AUTO-FIX] The preview has console errors. Please fix them:\n\n${errorLog}`, false);
-                  }}
+                  onPreviewError={handlePreviewError}
                   onPreviewUrlChange={(url) => setPreviewUrl(url)}
                 />
               </div>
@@ -887,10 +807,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   onUpdateFile={handleUpdateFile}
                 />
               </div>
-              {/* Database Tab */}
-              {currentView === 'database' && !showVisualEdit && (
-                <DatabasePanel projectId={project?.id || null} onSendMessage={onSendMessage} projectFiles={project?.files} />
-              )}
               {/* Details Tab - use live fileActivities during generation */}
               {currentView === 'details' && !showVisualEdit && detailsVersion && (
                 <DetailsPanel
@@ -945,12 +861,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             <div className={`h-full ${mobilePanel === 'preview' ? 'block' : 'hidden'}`}>
               <PreviewView
                 files={project?.files || {}}
-                projectType={project?.projectType || 'vite'}
+                projectType="html"
                 isLoading={isGenerating && !isChatMode}
                 projectId={project?.id}
-                onPreviewError={(errorLog) => {
-                  onSendMessage(`[AUTO-FIX] The preview has console errors. Please fix them:\n\n${errorLog}`, false);
-                }}
+                onPreviewError={handlePreviewError}
                 onPreviewUrlChange={(url) => setPreviewUrl(url)}
               />
             </div>
@@ -959,31 +873,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
           </div>
         )}
       </div>
-
-      {/* Integration Dialogs */}
-      <VercelDeployDialog
-        open={showVercelDialog}
-        onOpenChange={setShowVercelDialog}
-        projectName={project?.name || 'untitled-project'}
-        projectFiles={project?.files || {}}
-        onDeployed={(url) => {
-          setDeployedUrl(url);
-        }}
-        onSendErrorToChat={(errorLog) => {
-          onSendMessage(`[AUTO-FIX] The deployment to Vercel failed. Please analyze the error log and fix any issues in the code:\n\n${errorLog}`, false);
-        }}
-        projectId={project?.id || null}
-        existingVercelUrl={project?.vercelUrl || deployedUrl || null}
-      />
-
-      <GitHubPushDialog
-        open={showGitHubPush}
-        onOpenChange={setShowGitHubPush}
-        projectName={project?.name || 'untitled-project'}
-        projectFiles={project?.files || {}}
-        projectId={project?.id || null}
-        existingRepoUrl={project?.githubRepoUrl || null}
-      />
 
       {/* Rename Dialog */}
       <AnimatePresence>
@@ -1008,9 +897,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     if (e.key === 'Enter') {
                       const name = renameValue.trim() || displayProjectName;
                       onUpdateProject({ name, generatedName: name });
-                      if (project?.id) {
-                        supabase.from('projects').update({ name, generated_name: name }).eq('id', project.id).then(() => { });
-                      }
                       setShowRenameDialog(false);
                     }
                   }}
@@ -1027,9 +913,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     onClick={() => {
                       const name = renameValue.trim() || displayProjectName;
                       onUpdateProject({ name, generatedName: name });
-                      if (project?.id) {
-                        supabase.from('projects').update({ name, generated_name: name }).eq('id', project.id).then(() => { });
-                      }
                       setShowRenameDialog(false);
                     }}
                     className="px-5 py-2 text-sm bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all duration-200 font-semibold shadow-md shadow-primary/20"

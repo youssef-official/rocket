@@ -10,9 +10,9 @@ interface SEOHeadProps {
   jsonLd?: object;
 }
 
-const SITE_NAME = 'Vivora X';
-const DEFAULT_TITLE = 'Vivora X — AI-Powered Vibe Coding Platform | Build Web Apps in Seconds';
-const DEFAULT_DESCRIPTION = 'Vivora X is the ultimate vibe coding platform. Transform ideas into production-ready React apps using AI. No coding required — just describe what you want and watch it build.';
+const SITE_NAME = 'Webo';
+const DEFAULT_TITLE = 'Webo — Build Websites with HTML, CSS & JavaScript';
+const DEFAULT_DESCRIPTION = 'Describe a website and Webo generates a complete browser-native multi-page project with an instant preview.';
 const DEFAULT_IMAGE = 'https://vivorax.online/og-image.png';
 const SITE_URL = 'https://vivorax.online';
 

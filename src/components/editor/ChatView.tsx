@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, Code2, FileCode, FileType, File, FileJson, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp, Monitor, AtSign, Download, Copy, ThumbsUp, ThumbsDown, Check, Coins } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, FileCode, FileType, File, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp, Monitor, AtSign, Download, Copy, ThumbsUp, ThumbsDown, Check, Coins } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
 import type { ProjectVersion } from '@/hooks/useVersions';
@@ -10,6 +9,7 @@ import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import { toast } from '@/hooks/use-toast';
 import { VersionCardNew } from '@/components/editor/VersionCardNew';
+import { isBrowserProjectFile } from '@/lib/browserProject';
 
 interface FileActivity {
   name: string;
@@ -72,18 +72,12 @@ interface ChatViewProps {
 const getFileIcon = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase();
   switch (ext) {
-    case 'tsx':
-    case 'ts':
-      return <Code2 className="w-4 h-4 text-blue-400" />;
-    case 'jsx':
     case 'js':
       return <FileCode className="w-4 h-4 text-yellow-400" />;
     case 'css':
       return <FileType className="w-4 h-4 text-purple-400" />;
     case 'html':
       return <File className="w-4 h-4 text-orange-400" />;
-    case 'json':
-      return <FileJson className="w-4 h-4 text-green-400" />;
     default:
       return <File className="w-4 h-4 text-muted-foreground" />;
   }
@@ -97,7 +91,6 @@ const cleanAIMessage = (content: string): string => {
   
   if (trimmedS.startsWith('{') && (
     trimmedS.includes('"files"') || 
-    trimmedS.includes('"src/') ||
     trimmedS.includes('"index.html"') ||
     trimmedS.includes('"actions_taken"')
   )) {
@@ -114,7 +107,7 @@ const cleanAIMessage = (content: string): string => {
   cleaned = cleaned.replace(/\{\s*"actions_taken"\s*:\s*\[[\s\S]*?\]\s*\}/g, '');
   cleaned = cleaned.replace(/<FILE\s+path=("|')[^"']+\1>[\s\S]*?<\/FILE>/gi, '');
   cleaned = cleaned.replace(/```(?:json)?\s*\{[\s\S]*?\}\s*```/gi, '');
-  cleaned = cleaned.replace(/```(?:tsx?|jsx?|html|css)?\s*[\s\S]*?```/gi, '');
+  cleaned = cleaned.replace(/```(?:html|css|js|javascript)?\s*[\s\S]*?```/gi, '');
   cleaned = cleaned.replace(/\{\s*"files"\s*:\s*\{[\s\S]*$/g, '');
   cleaned = cleaned.replace(/\[\s*\{[\s\S]*$/g, '');
   cleaned = cleaned.replace(/<!--SUMMARY-->[\s\S]*?<!--\/SUMMARY-->/g, '');
@@ -124,16 +117,16 @@ const cleanAIMessage = (content: string): string => {
   cleaned = cleaned.replace(/###?\s*\*?\*?What I will build.*?\*?\*?:?\s*/gi, '');
   cleaned = cleaned.replace(/\*\*.*?Generating.*?\*\*/gi, '');
   cleaned = cleaned.replace(/Done!?\s*Generated\/modified\s*\d+\s*files?\s*(in background)?\.?\s*/gi, '');
-  cleaned = cleaned.replace(/^-\s*(src\/|index\.html|public\/).+$/gm, '');
+  cleaned = cleaned.replace(/^-\s*(index\.html|styles\.css|script\.js).+$/gm, '');
   cleaned = cleaned.replace(/\.\.\.\s*and\s*\d+\s*more\s*files?/gi, '');
 
   cleaned = cleaned.split('\n').filter(line => {
     const t = line.trim();
-    if (t.startsWith('"') && (t.includes('src/') || t.includes('index.html'))) return false;
+    if (t.startsWith('"') && /index\.html|styles\.css|script\.js/.test(t)) return false;
     if (t.startsWith('{') || t === '}' || t === '],') return false;
     if (t.startsWith('[') && t.includes('"')) return false;
     if (t.toLowerCase().startsWith('summary:')) return false;
-    if (/^["']?(src\/|index\.html|package\.json|tailwind|vite)/.test(t)) return false;
+    if (/^["']?(index\.html|styles\.css|script\.js)/.test(t)) return false;
     return true;
   }).join('\n');
 
@@ -189,13 +182,6 @@ const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; token
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Load existing feedback from supabase
-    supabase.from('message_feedback').select('feedback').eq('message_id', messageId).maybeSingle().then(({ data }) => {
-      if (data?.feedback) setFeedback(data.feedback as 'like' | 'dislike');
-    });
-  }, [messageId]);
-
-  useEffect(() => {
     const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false); };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
@@ -204,14 +190,7 @@ const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; token
   const handleFeedback = async (type: 'like' | 'dislike') => {
     const newFeedback = feedback === type ? null : type;
     setFeedback(newFeedback);
-    try {
-      if (newFeedback) {
-        await supabase.from('message_feedback').upsert({ message_id: messageId, user_id: (await supabase.auth.getUser()).data.user?.id || '', feedback: newFeedback, project_id: null }, { onConflict: 'message_id,user_id' });
-      } else {
-        const userId = (await supabase.auth.getUser()).data.user?.id;
-        if (userId) await supabase.from('message_feedback').delete().eq('message_id', messageId).eq('user_id', userId);
-      }
-    } catch (e) { console.error('Feedback error:', e); }
+    // This action is intentionally local until Webo's own feedback API is added.
   };
 
   const handleCopy = async () => {
@@ -984,15 +963,27 @@ export const ChatView: React.FC<ChatViewProps> = ({
     const lastAssistantIndex = messages.reduce((last, msg, i) => msg.role === 'assistant' ? i : last, -1);
     const sortedVersions = [...versions].sort((a, b) => a.versionNumber - b.versionNumber);
     const versionAssignments = new Map<number, ProjectVersion>();
+    const assignedMessages = new Set<number>();
     const assistantMessages = messages
       .map((msg, idx) => ({ msg, idx }))
       .filter(({ msg }) => msg.role === 'assistant');
 
     for (const version of sortedVersions) {
+      const snapshotAssistantId = [...version.chatMessages].reverse().find(message => message.role === 'assistant')?.id;
+      const exactMessageIdx = snapshotAssistantId
+        ? messages.findIndex(message => message.id === snapshotAssistantId)
+        : -1;
+      if (exactMessageIdx >= 0 && !assignedMessages.has(exactMessageIdx)) {
+        versionAssignments.set(exactMessageIdx, version);
+        assignedMessages.add(exactMessageIdx);
+        continue;
+      }
+
       const versionTime = new Date(version.createdAt).getTime();
       let bestMatchIdx: number | null = null;
       let minDiff = Infinity;
       for (const { msg, idx } of assistantMessages) {
+        if (assignedMessages.has(idx)) continue;
         const msgTime = msg.createdAt ? new Date(msg.createdAt).getTime() : 0;
         const diff = versionTime - msgTime;
         if (diff >= -5000 && diff < minDiff) {
@@ -1002,6 +993,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
       }
       if (bestMatchIdx !== null) {
         versionAssignments.set(bestMatchIdx, version);
+        assignedMessages.add(bestMatchIdx);
       }
     }
 
@@ -1041,9 +1033,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
               const cleanedContent = !isUser ? cleanAIMessage(msg.content) : null;
               const hasContent = isUser || (cleanedContent && cleanedContent.length > 0);
 
-              const versionActivities: FileActivity[] = version?.actionsTaken
+              const rawVersionActivities: FileActivity[] = version?.actionsTaken
                 ? (version.actionsTaken as unknown as FileActivity[])
                 : (msg.actionsTaken ? (msg.actionsTaken as unknown as FileActivity[]) : []);
+              const versionActivities = rawVersionActivities.filter(activity =>
+                isBrowserProjectFile(activity.name)
+                || activity.action === 'analyzed_image'
+              );
 
               const isActiveVersion = currentVersion === version?.versionNumber ||
                 (!currentVersion && version?.versionNumber === versions[0]?.versionNumber);

@@ -15,7 +15,6 @@ export const PLAN_CONFIG: Record<
       priorityAccess: boolean;
       watermarkRemoval: boolean;
       codeEditing: boolean;
-      githubPush: boolean;
     };
   }
 > = {
@@ -30,7 +29,6 @@ export const PLAN_CONFIG: Record<
       priorityAccess: false,
       watermarkRemoval: false,
       codeEditing: false,
-      githubPush: true,
     },
   },
   pro: {
@@ -44,7 +42,6 @@ export const PLAN_CONFIG: Record<
       priorityAccess: false,
       watermarkRemoval: true,
       codeEditing: true,
-      githubPush: true,
     },
   },
   business: {
@@ -58,7 +55,6 @@ export const PLAN_CONFIG: Record<
       priorityAccess: true,
       watermarkRemoval: true,
       codeEditing: true,
-      githubPush: true,
     },
   },
 };

@@ -8,11 +8,11 @@ import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 const milestones = [
   { year: '2026 Q1', title: 'Founded', desc: 'Vivora X was established with a bold vision — to democratize web development through artificial intelligence.' },
-  { year: '2026 Q1', title: 'Platform Launch', desc: 'Released the first public version with AI code generation, live preview, and GitHub/Vercel deployment.' },
+  { year: '2026 Q1', title: 'Platform Launch', desc: 'Released the first public version with AI code generation and live browser preview.' },
   { year: '2026 Q1', title: 'AI Gateway', desc: 'Launched the free AI Gateway — unlimited AI access for all developers worldwide, zero cost.' },
   { year: '2026 Q2', title: 'Game Engine', desc: 'Added full HTML5 Canvas game generation — scoring, levels, sound effects, and particle systems from natural language.' },
   { year: '2026 Q2', title: 'Visual Edit & Secrets', desc: 'Shipped drag-and-drop visual editing, secrets management, and session recording analytics.' },
-  { year: '2026 Q2', title: 'Multi-Provider AI', desc: 'Dynamic AI model routing — admin-controlled per-plan model assignment across Vercel, OpenRouter, NVIDIA, and Lovable.' },
+  { year: '2026 Q2', title: 'AI Runtime', desc: 'Introduced one controlled OpenRouter generation path with private server-side project data.' },
 ];
 
 const values = [
@@ -23,14 +23,14 @@ const values = [
 ];
 
 const features = [
-  { icon: Code, title: 'AI Code Generation', desc: 'Full React + TypeScript + Tailwind apps from natural language. 15-25 files per project with routing, state, and animations.' },
-  { icon: Eye, title: 'Live Preview', desc: 'Instant sandboxed preview with hot reload. See your app running in real-time as it generates.' },
+  { icon: Code, title: 'AI Code Generation', desc: 'Complete HTML, CSS, and JavaScript websites from natural language in three clear, editable files.' },
+  { icon: Eye, title: 'Browser Preview', desc: 'Instant in-browser preview with no containers or dependency installation.' },
   { icon: Zap, title: 'Free AI Gateway', desc: 'Unlimited AI API for all developers. No keys, no billing, no limits. Power chatbots, generators, anything.' },
-  { icon: Database, title: 'Supabase Integration', desc: 'Connect your Supabase project for auth, database, and edge functions. Auto-run SQL migrations.' },
+  { icon: Database, title: 'Private SQLite', desc: 'Webo keeps authentication, data and backups inside its protected Node server.' },
   { icon: Key, title: 'Secrets Management', desc: 'Secure environment variables stored per-project. The AI reads and uses them automatically.' },
   { icon: BarChart2, title: 'Session Analytics', desc: 'Track visitors, page views, device types, and user behavior with built-in analytics dashboard.' },
   { icon: Layers, title: 'Version History', desc: 'Every generation creates a named version. Rollback, compare, and restore at any time.' },
-  { icon: Rocket, title: 'One-Click Deploy', desc: 'Push to GitHub and deploy to Vercel in one click. From idea to production URL in minutes.' },
+  { icon: Rocket, title: 'Portable Projects', desc: 'Download clean HTML, CSS, and JavaScript files that run directly in a browser.' },
   { icon: Lock, title: 'Admin Dashboard', desc: 'Full admin panel with user management, AI model routing, promo codes, celebrations, and feedback.' },
 ];
 
@@ -124,8 +124,8 @@ export const AboutUs: React.FC = () => {
               </p>
               <p className="text-white/70 text-lg leading-relaxed">
                 From entrepreneurs to students, anyone can ship professional software without writing code. 
-                Our AI generates complete React + TypeScript applications with routing, animations, dark mode, 
-                database integration, and deployment — all from a single prompt.
+                Our AI generates complete browser-native websites with responsive layouts, interactions, dark mode,
+                and polished visual systems — all from a single prompt.
               </p>
             </div>
           </motion.div>

@@ -43,14 +43,13 @@ interface ParsedElement {
   src?: string;
 }
 
-// Parse JSX/TSX content to find editable elements
+// Parse browser-native HTML to find editable elements.
 export function parseProjectElements(files: Record<string, ProjectFile>): ParsedElement[] {
   const elements: ParsedElement[] = [];
   let elementCounter = 0;
 
   Object.entries(files).forEach(([path, file]) => {
-    if (!path.endsWith('.tsx') && !path.endsWith('.jsx')) return;
-    if (path.includes('node_modules')) return;
+    if (path.replace(/^\/+/, '') !== 'index.html') return;
 
     const lines = file.content.split('\n');
     
@@ -142,7 +141,7 @@ export function parseProjectElements(files: Record<string, ProjectFile>): Parsed
       }
 
       // Find divs with text content (containers)
-      const divMatch = line.match(/<div[^>]*className=["'][^"']*["'][^>]*>([^<]+)<\/div>/);
+      const divMatch = line.match(/<div[^>]*(?:class=["'][^"']*["'])?[^>]*>([^<]+)<\/div>/);
       if (divMatch && divMatch[1].trim() && !divMatch[1].includes('{')) {
         elements.push({
           id: `element-${elementCounter++}`,
@@ -176,73 +175,39 @@ export function parseProjectElements(files: Record<string, ProjectFile>): Parsed
       }
     });
 
-    // Parse multi-line elements
-    const multiLineElements = parseMultiLineElements(file.content, path);
-    elements.push(...multiLineElements.map(el => ({ ...el, id: `element-${elementCounter++}` })));
   });
 
   return elements;
 }
 
-// Parse multi-line JSX elements
-function parseMultiLineElements(content: string, filePath: string): Omit<ParsedElement, 'id'>[] {
-  const elements: Omit<ParsedElement, 'id'>[] = [];
-  const lines = content.split('\n');
-  
-  // Find JSX text expressions like {`Some text`} or {"Some text"}
-  const jsxTextRegex = />\s*\{[`"']([^`"']+)[`"']\}\s*</g;
-  let match;
-  
-  while ((match = jsxTextRegex.exec(content)) !== null) {
-    const textContent = match[1];
-    const position = match.index;
-    const lineNumber = content.substring(0, position).split('\n').length;
-    
-    if (textContent.trim().length > 0) {
-      elements.push({
-        type: 'text',
-        tagName: 'jsx-text',
-        content: textContent,
-        filePath,
-        startLine: lineNumber,
-        endLine: lineNumber,
-        rawCode: match[0],
-        styles: {},
-      });
-    }
-  }
-
-  return elements;
-}
-
-// Extract className from JSX
+// Extract a standard HTML class attribute.
 function extractClassName(line: string): string | undefined {
-  const match = line.match(/className=["']([^"']+)["']/);
+  const match = line.match(/\bclass=["']([^"']+)["']/);
   return match ? match[1] : undefined;
 }
 
-// Extract inline styles from style={{ }} syntax
+// Extract inline CSS declarations from a standard HTML style attribute.
 function extractInlineStyles(line: string): Partial<ElementStyles> {
   const styles: Partial<ElementStyles> = {};
-  const styleMatch = line.match(/style=\{\{([^}]+)\}\}/);
+  const styleMatch = line.match(/\bstyle=["']([^"']+)["']/);
   
   if (styleMatch) {
     const styleContent = styleMatch[1];
     
     // Parse style properties
-    const colorMatch = styleContent.match(/color:\s*["']?([^,"']+)["']?/);
+    const colorMatch = styleContent.match(/(?:^|;)\s*color:\s*([^;]+)/);
     if (colorMatch) styles.color = colorMatch[1].trim();
     
-    const fontSizeMatch = styleContent.match(/fontSize:\s*["']?([^,"']+)["']?/);
+    const fontSizeMatch = styleContent.match(/font-size:\s*([^;]+)/);
     if (fontSizeMatch) styles.fontSize = fontSizeMatch[1].trim();
     
-    const fontWeightMatch = styleContent.match(/fontWeight:\s*["']?([^,"']+)["']?/);
+    const fontWeightMatch = styleContent.match(/font-weight:\s*([^;]+)/);
     if (fontWeightMatch) styles.fontWeight = fontWeightMatch[1].trim();
     
-    const bgMatch = styleContent.match(/backgroundColor:\s*["']?([^,"']+)["']?/);
+    const bgMatch = styleContent.match(/background-color:\s*([^;]+)/);
     if (bgMatch) styles.backgroundColor = bgMatch[1].trim();
     
-    const textAlignMatch = styleContent.match(/textAlign:\s*["']?([^,"']+)["']?/);
+    const textAlignMatch = styleContent.match(/text-align:\s*([^;]+)/);
     if (textAlignMatch) styles.textAlign = textAlignMatch[1].trim();
   }
   
@@ -288,11 +253,11 @@ export function applyVisualChanges(
     // Update or add inline styles
     const styleString = generateStyleString(change.newStyles);
     if (styleString) {
-      if (updatedLine.includes('style={{')) {
+      if (/\bstyle=["']/.test(updatedLine)) {
         // Update existing style
         updatedLine = updatedLine.replace(
-          /style=\{\{[^}]*\}\}/,
-          `style={{${styleString}}}`
+          /style=["'][^"']*["']/,
+          `style="${styleString}"`
         );
       } else {
         // Add new style attribute before closing >
@@ -301,7 +266,7 @@ export function applyVisualChanges(
           const insertPos = updatedLine.lastIndexOf(tagEndMatch[0]);
           updatedLine = 
             updatedLine.substring(0, insertPos) + 
-            ` style={{${styleString}}}` + 
+            ` style="${styleString}"` +
             updatedLine.substring(insertPos);
         }
       }
@@ -322,37 +287,37 @@ export function applyVisualChanges(
 function generateStyleString(styles: ElementStyles): string {
   const parts: string[] = [];
   
-  if (styles.color) parts.push(`color: '${styles.color}'`);
-  if (styles.fontSize) parts.push(`fontSize: '${styles.fontSize}'`);
+  if (styles.color) parts.push(`color: ${styles.color}`);
+  if (styles.fontSize) parts.push(`font-size: ${styles.fontSize}`);
   if (styles.fontWeight && styles.fontWeight !== 'normal') {
-    parts.push(`fontWeight: '${styles.fontWeight}'`);
+    parts.push(`font-weight: ${styles.fontWeight}`);
   }
   if (styles.fontStyle && styles.fontStyle !== 'normal') {
-    parts.push(`fontStyle: '${styles.fontStyle}'`);
+    parts.push(`font-style: ${styles.fontStyle}`);
   }
   if (styles.textAlign && styles.textAlign !== 'left') {
-    parts.push(`textAlign: '${styles.textAlign}'`);
+    parts.push(`text-align: ${styles.textAlign}`);
   }
   if (styles.textDecoration && styles.textDecoration !== 'none') {
-    parts.push(`textDecoration: '${styles.textDecoration}'`);
+    parts.push(`text-decoration: ${styles.textDecoration}`);
   }
   if (styles.fontFamily && styles.fontFamily !== 'inherit') {
-    parts.push(`fontFamily: '${styles.fontFamily}'`);
+    parts.push(`font-family: ${styles.fontFamily}`);
   }
   if (styles.backgroundColor) {
-    parts.push(`backgroundColor: '${styles.backgroundColor}'`);
+    parts.push(`background-color: ${styles.backgroundColor}`);
   }
   if (styles.borderRadius) {
-    parts.push(`borderRadius: '${styles.borderRadius}'`);
+    parts.push(`border-radius: ${styles.borderRadius}`);
   }
   if (styles.opacity && styles.opacity !== '1') {
     parts.push(`opacity: ${styles.opacity}`);
   }
   if (styles.padding) {
-    parts.push(`padding: '${styles.padding}'`);
+    parts.push(`padding: ${styles.padding}`);
   }
   
-  return parts.join(', ');
+  return parts.join('; ');
 }
 
 // Generate a summary of changes for version name

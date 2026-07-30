@@ -2,28 +2,11 @@ import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 // Import logos
-import reactLogo from '@/assets/logos/react.svg';
-import vueLogo from '@/assets/logos/vue.svg';
-import nextjsLogo from '@/assets/logos/nextjs.svg';
-import tailwindLogo from '@/assets/logos/tailwind.svg';
-import githubLogo from '@/assets/logos/github.svg';
-import supabaseLogo from '@/assets/logos/supabase.svg';
-import vercelLogo from '@/assets/logos/vercel.svg';
 import stripeLogo from '@/assets/logos/stripe.svg';
 import firebaseLogo from '@/assets/logos/firebase.svg';
 import mongodbLogo from '@/assets/logos/mongodb.svg';
 
-export const frameworkLogos = {
-  React: reactLogo,
-  Vue: vueLogo,
-  'Next.js': nextjsLogo,
-  Tailwind: tailwindLogo,
-};
-
 export const integrationLogos = {
-  GitHub: githubLogo,
-  Supabase: supabaseLogo,
-  Vercel: vercelLogo,
   Stripe: stripeLogo,
   Firebase: firebaseLogo,
   MongoDB: mongodbLogo,
@@ -42,7 +25,7 @@ export const LogoIcon: React.FC<LogoIconProps> = ({
   size = 'md',
   className = '' 
 }) => {
-  const logos = type === 'framework' ? frameworkLogos : integrationLogos;
+  const logos = type === 'framework' ? {} : integrationLogos;
   const logo = logos[name as keyof typeof logos];
 
   const sizeClasses = {
@@ -69,16 +52,7 @@ export const LogoIcon: React.FC<LogoIconProps> = ({
   );
 };
 
-interface FrameworkBarProps {
-  selectedFramework?: string;
-  onSelectFramework?: (name: string) => void;
-}
-
-export const FrameworkBar: React.FC<FrameworkBarProps> = ({
-  selectedFramework = 'React',
-  onSelectFramework,
-}) => {
-  const frameworks = Object.keys(frameworkLogos);
+export const FrameworkBar: React.FC = () => {
   const integrations = Object.keys(integrationLogos);
   const { t, isRTL } = useLanguage();
 
@@ -88,19 +62,13 @@ export const FrameworkBar: React.FC<FrameworkBarProps> = ({
       <div className={`flex items-center gap-4 ${isRTL ? 'pl-4 border-l flex-row-reverse' : 'pr-4 border-r'} border-white/10`}>
         <span className="text-white/80 text-sm font-medium">{t('footer.features')}</span>
         <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          {frameworks.map((fw) => (
-            <button
-              key={fw}
-              onClick={() => onSelectFramework?.(fw)}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                selectedFramework === fw
-                  ? 'bg-white/20 ring-1 ring-white/30 shadow-lg shadow-white/5'
-                  : 'bg-white/5 hover:bg-white/10'
-              }`}
-              title={fw}
+          {['HTML', 'CSS', 'JavaScript'].map((language) => (
+            <span
+              key={language}
+              className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-xs font-semibold text-white"
             >
-              <LogoIcon name={fw} type="framework" size="md" />
-            </button>
+              {language}
+            </span>
           ))}
         </div>
       </div>

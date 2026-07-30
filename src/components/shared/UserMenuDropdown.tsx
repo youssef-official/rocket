@@ -163,7 +163,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
 
   const remainingCredits = getRemainingCredits();
   const planConfig = userPlan ? (PLAN_CONFIG[userPlan.plan] || PLAN_CONFIG.free) : PLAN_CONFIG.free;
-  const totalCredits = (userPlan?.dailyCredits || 5) + planConfig.monthlyCredits;
+  const totalCredits = (Number(userPlan?.dailyCredits) || 0) + (Number(userPlan?.monthlyCredits) || 0);
   const usedCredits = totalCredits - remainingCredits.total;
   const usagePercent = totalCredits > 0 ? (usedCredits / totalCredits) * 100 : 0;
   const showBanner = shouldShowUpgradeBanner();
@@ -236,7 +236,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
 
               <div className="flex justify-between text-[11px] text-white/40">
                 <span>{t('credits.daily')}: {remainingCredits.daily.toFixed(1)}</span>
-                {planConfig.monthlyCredits > 0 && (
+                {(Number(userPlan?.monthlyCredits) || 0) > 0 && (
                   <span>{t('credits.monthly')}: {remainingCredits.monthly.toFixed(1)}</span>
                 )}
               </div>

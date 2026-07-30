@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ArrowLeft, HelpCircle, Sparkles, Zap, Shield, Globe, GitBranch, Mail } from 'lucide-react';
+import { ChevronDown, ArrowLeft, HelpCircle, Sparkles, Zap, Shield, Globe, Mail } from 'lucide-react';
 import { VivoraLogo } from '@/components/shared/VivoraLogo';
 import { Footer } from '@/components/shared/Footer';
 import { SEOHead } from '@/components/shared/SEOHead';
@@ -15,7 +15,7 @@ interface FAQItem {
 const faqData: FAQItem[] = [
   {
     question: "What is Vivora X?",
-    answer: "Vivora X is an AI-powered web application builder that transforms your ideas into production-ready code. Simply describe what you want to build, and watch as Vivora X generates complete React applications with TypeScript and Tailwind CSS.",
+    answer: "Webo is an AI-powered website builder. Describe what you want and Webo generates a complete browser-native website with linked HTML pages, CSS, JavaScript, and organized folders.",
     icon: Sparkles
   },
   {
@@ -29,14 +29,9 @@ const faqData: FAQItem[] = [
     icon: Shield
   },
   {
-    question: "Can I deploy my projects?",
-    answer: "Absolutely! You can deploy directly to Vercel with one click, or push your code to a GitHub repository. Your projects get a live URL that you can share with anyone. Paid plans can also download projects as ZIP files.",
+    question: "Can I export my projects?",
+    answer: "Yes. Paid plans can download the complete project as a ZIP file, including every page, asset, and folder.",
     icon: Globe
-  },
-  {
-    question: "Can I push my code to GitHub?",
-    answer: "Yes! Connect your GitHub account in the editor, then push your project to any repository. Each new version can be pushed as a new commit. Your repo link is saved per project for easy updates.",
-    icon: GitBranch
   }
 ];
 
@@ -47,7 +42,7 @@ export const FAQ: React.FC = () => {
     <div className="min-h-screen flex flex-col">
       <SEOHead
         title="FAQ — Vivora X Frequently Asked Questions"
-        description="Find answers to common questions about Vivora X vibe coding platform. Learn about deployment, GitHub integration, and more."
+        description="Find answers to common questions about Webo website generation, project files, and data."
         keywords="vivora x faq, vibe coding questions, vivorax help, AI web builder faq"
         canonical="https://vivorax.online/faq"
       />

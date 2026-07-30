@@ -4,10 +4,11 @@ import Editor, { type Monaco } from '@monaco-editor/react';
 import { ChevronRight, ChevronDown, File, Folder, FileCode, FileJson, FileText, Loader2, CheckCircle2, Hash, Image, Settings2, Lock, Save, Undo2, Redo2 } from 'lucide-react';
 import type { ProjectFile } from '@/types';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
+import { isBrowserProjectFile, normalizeBrowserProjectPath } from '@/lib/browserProject';
 
-// GitHub Dark inspired Monaco theme
-const defineGitHubDarkTheme = (monaco: Monaco) => {
-  monaco.editor.defineTheme('github-dark-custom', {
+// Webo's focused dark Monaco theme
+const defineWeboDarkTheme = (monaco: Monaco) => {
+  monaco.editor.defineTheme('webo-dark-custom', {
     base: 'vs-dark',
     inherit: true,
     rules: [
@@ -81,7 +82,10 @@ function parseStreamingFiles(content: string): { path: string; content: string; 
       const parsed = JSON.parse(jsonStr);
       if (parsed.files) {
         for (const [path, fileContent] of Object.entries(parsed.files)) {
-          files.push({ path, content: fileContent as string, complete: jsonMatch[2] === '```' });
+          const normalizedPath = normalizeBrowserProjectPath(path);
+          if (isBrowserProjectFile(normalizedPath)) {
+            files.push({ path: normalizedPath, content: fileContent as string, complete: jsonMatch[2] === '```' });
+          }
         }
         return files;
       }
@@ -91,8 +95,9 @@ function parseStreamingFiles(content: string): { path: string; content: string; 
         const path = match[1];
         const fileContent = match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"');
         const complete = !!match[3];
-        if (path.includes('.') && !path.includes('://')) {
-          files.push({ path, content: fileContent, complete });
+        const normalizedPath = normalizeBrowserProjectPath(path);
+        if (isBrowserProjectFile(normalizedPath)) {
+          files.push({ path: normalizedPath, content: fileContent, complete });
         }
       }
     }
@@ -103,10 +108,10 @@ function parseStreamingFiles(content: string): { path: string; content: string; 
   const fileTagMatches = Array.from(content.matchAll(fileTagRegex));
   if (fileTagMatches.length > 0) {
     const starts = fileTagMatches.map((m) => ({
-      path: (m[1] ?? m[2] ?? m[3] ?? '').trim(),
+      path: normalizeBrowserProjectPath((m[1] ?? m[2] ?? m[3] ?? '').trim()),
       tagIndex: m.index ?? 0,
       contentStart: (m.index ?? 0) + m[0].length,
-    })).filter((s) => s.path.length > 0);
+    })).filter((s) => isBrowserProjectFile(s.path));
 
     for (let i = 0; i < starts.length; i++) {
       const current = starts[i];
@@ -123,7 +128,8 @@ function parseStreamingFiles(content: string): { path: string; content: string; 
   const codeBlockRegex = /```(\w+)?\s*(?:\/\/\s*)?(\S+\.\w+)\n([\s\S]*?)(```|$)/g;
   let match;
   while ((match = codeBlockRegex.exec(content)) !== null) {
-    files.push({ path: match[2], content: match[3], complete: match[4] === '```' });
+    const path = normalizeBrowserProjectPath(match[2]);
+    if (isBrowserProjectFile(path)) files.push({ path, content: match[3], complete: match[4] === '```' });
   }
 
   return files;
@@ -134,7 +140,7 @@ export const CodeView: React.FC<CodeViewProps> = ({
 }) => {
   const { userPlan } = useUserPlan();
   const canEditCode = userPlan ? (PLAN_CONFIG[userPlan.plan] || PLAN_CONFIG.free).features.codeEditing : false;
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['src']));
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
   // Pending edits buffer (for Save button)
   const [pendingEdits, setPendingEdits] = useState<Record<string, string>>({});
@@ -456,7 +462,7 @@ export const CodeView: React.FC<CodeViewProps> = ({
                 language={getLanguage(fileName)}
                 value={displayContent}
                 onChange={handleEditorChange}
-                theme="github-dark-custom"
+                theme="webo-dark-custom"
                 options={{
                   minimap: { enabled: false },
                   fontSize: 13,
@@ -487,7 +493,7 @@ export const CodeView: React.FC<CodeViewProps> = ({
                   },
                 }}
                 beforeMount={(monaco) => {
-                  defineGitHubDarkTheme(monaco);
+                  defineWeboDarkTheme(monaco);
                   monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
                     noSemanticValidation: true,
                     noSyntaxValidation: false,

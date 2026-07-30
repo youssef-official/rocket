@@ -1,9 +1,4 @@
-import { deductCredits } from './creditService';
-
-// Get Supabase URL from env
-function getSupabaseUrl(): string {
-    return import.meta.env.VITE_SUPABASE_URL || '';
-}
+import { apiUrl, getToken } from './api';
 
 // SMART CREDIT DEDUCTION: Calculate credit cost based on file count then deduct
 export async function deductPointsAfterGeneration(
@@ -12,11 +7,9 @@ export async function deductPointsAfterGeneration(
     workDescription?: string,
     creditsToDeduct: number = 1
 ): Promise<{ creditsDeducted: number; success: boolean }> {
-    const result = await deductCredits(userId, projectId, workDescription, creditsToDeduct);
-    return {
-        creditsDeducted: result.creditsDeducted,
-        success: result.success
-    };
+    // Credits are a future server-side billing concern; generation is never charged in the browser.
+    void userId; void projectId; void workDescription;
+    return { creditsDeducted: creditsToDeduct, success: true };
 }
 
 // Calculate credits based on number of files modified (file-count algorithm)
@@ -34,29 +27,24 @@ export async function calculateRequestCredits(_userMessage: string): Promise<num
     return 1;
 }
 
-// Main function to call AI via Supabase Edge Function
+// Main function to call AI through Webo's private Node API.
 // Supports adaptive timeouts for slow/thinking models
 export async function callingDirectAI(
-    mode: 'code' | 'status' | 'explanation' | 'project-name' | 'suggestions' | 'chat' | 'version-name' | 'clarify',
+    mode: 'code' | 'status' | 'explanation' | 'suggestions' | 'chat' | 'version-name' | 'clarify',
     messages: any[],
     signal?: AbortSignal,
     userPlan?: string,
     userLanguage?: string,
-    colorTheme?: { name: string; colors: string[] } | null
+    colorTheme?: { name: string; colors: string[] } | null,
+    projectId?: string,
+    generationKind?: 'initial' | 'edit'
 ): Promise<Response> {
-    const supabaseUrl = getSupabaseUrl();
-    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-    if (!supabaseUrl) {
-        throw new Error("Missing Supabase URL. Please check your .env file.");
-    }
 
     const timeoutMs: Record<string, number> = {
         'code': 300_000,
         'chat': 180_000,
         'clarify': 60_000,
         'explanation': 180_000,
-        'project-name': 120_000,
         'version-name': 120_000,
         'suggestions': 120_000,
         'status': 60_000,
@@ -91,17 +79,19 @@ export async function callingDirectAI(
             mode, 
             messages: formattedMessages,
             userPlan: userPlan || 'free',
-            userLanguage: userLanguage || 'en'
+            userLanguage: userLanguage || 'en',
+            projectId,
+            generationKind,
         };
         if (colorTheme) {
             body.colorTheme = colorTheme;
         }
 
-        const response = await fetch(`${supabaseUrl}/functions/v1/generate-code`, {
+        const response = await fetch(apiUrl('/generate'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${anonKey}`
+                'Authorization': `Bearer ${getToken() || ''}`
             },
             body: JSON.stringify(body),
             signal: controller.signal

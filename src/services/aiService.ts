@@ -1,4 +1,6 @@
 import { callingDirectAI, deductPointsAfterGeneration } from './directAiService';
+import type { ProjectFile } from '@/types';
+import { isBrowserProjectFile, normalizeBrowserProjectPath } from '@/lib/browserProject';
 
 // Re-export types
 export interface ChatMessage {
@@ -120,8 +122,8 @@ function manualExtractFiles(text: string): { files: Record<string, any>, fileLis
   const fileStarts: { path: string; tagStart: number; contentStart: number }[] = [];
 
   while ((tagMatch = fileTagRegex.exec(text)) !== null) {
-    const path = (tagMatch[1] ?? tagMatch[2] ?? tagMatch[3] ?? '').trim();
-    if (!path) continue;
+    const path = normalizeBrowserProjectPath(tagMatch[1] ?? tagMatch[2] ?? tagMatch[3] ?? '');
+    if (!isBrowserProjectFile(path)) continue;
     fileStarts.push({
       path,
       tagStart: tagMatch.index,
@@ -147,11 +149,12 @@ function manualExtractFiles(text: string): { files: Record<string, any>, fileLis
   if (fileList.length > 0) return { files, fileList };
 
   // Fallback: JSON-style extraction
-  const fileRegex = /"([^"]+\.(tsx?|jsx?|css|json|html|md|js))"\s*:\s*(\{[\s\S]*?\}|"[^"]*")/g;
+  const fileRegex = /"([^"]+\.(?:html|css|js|json|svg|txt|md))"\s*:\s*(\{[\s\S]*?\}|"[^"]*")/gi;
   let match;
 
   while ((match = fileRegex.exec(text)) !== null) {
-    const path = match[1];
+    const path = normalizeBrowserProjectPath(match[1]);
+    if (!isBrowserProjectFile(path)) continue;
     const rawValue = match[2];
 
     try {
@@ -182,15 +185,15 @@ function manualExtractFiles(text: string): { files: Record<string, any>, fileLis
 /**
  * Fallback: Extracts files from markdown-style responses.
  * Example supported patterns:
- * - ### src/App.tsx + fenced code block
- * - **File: src/App.tsx** + fenced code block
- * - `src/App.tsx` + fenced code block
+ * - ### index.html + fenced code block
+ * - **File: styles.css** + fenced code block
+ * - `script.js` + fenced code block
  */
 function extractMarkdownFileBlocks(text: string): { files: Record<string, any>, fileList: string[] } {
   const files: Record<string, any> = {};
   const fileList: string[] = [];
 
-  const pathRegex = /([A-Za-z0-9_./-]+\.(?:tsx?|jsx?|css|scss|sass|less|html|json|md|yml|yaml|toml|sql|py|sh))/i;
+  const pathRegex = /((?:[a-zA-Z0-9._-]+\/)*[a-zA-Z0-9._-]+\.(?:html|css|js|json|svg|txt|md))\b/i;
   const fenceRegex = /```(?:[a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g;
 
   let match: RegExpExecArray | null;
@@ -207,13 +210,14 @@ function extractMarkdownFileBlocks(text: string): { files: Record<string, any>, 
       path = contextPath[1].trim();
     } else {
       const firstLine = code.split('\n')[0] || '';
-      const firstLinePath = firstLine.match(/(?:file|path)\s*[:=-]\s*([A-Za-z0-9_./-]+\.(?:tsx?|jsx?|css|scss|sass|less|html|json|md|yml|yaml|toml|sql|py|sh))/i);
+      const firstLinePath = firstLine.match(/(?:file|path)\s*[:=-]\s*((?:[a-zA-Z0-9._-]+\/)*[a-zA-Z0-9._-]+\.(?:html|css|js|json|svg|txt|md))\b/i);
       if (firstLinePath?.[1]) {
         path = firstLinePath[1].trim();
       }
     }
 
-    if (!path || /^\d+$/.test(path) || fileList.includes(path)) continue;
+    path = normalizeBrowserProjectPath(path);
+    if (!isBrowserProjectFile(path) || fileList.includes(path)) continue;
 
     fileList.push(path);
     files[path] = { path, content: code, type: 'file' };
@@ -251,8 +255,8 @@ function parseFileBlocks(text: string): { files: Record<string, any>, fileList: 
     // Extract path from the opening tag (supports path= or name=, quoted and unquoted values)
     const tagStr = normalizedText.substring(openTagStart, openTagEnd + 1);
     const pathMatch = tagStr.match(/(?:path|name)=(?:"([^"]+)"|'([^']+)'|([^\s>]+))/);
-    const path = (pathMatch?.[1] ?? pathMatch?.[2] ?? pathMatch?.[3] ?? '').trim();
-    if (!path || /^\d+$/.test(path)) { searchFrom = openTagEnd + 1; continue; }
+    const path = normalizeBrowserProjectPath(pathMatch?.[1] ?? pathMatch?.[2] ?? pathMatch?.[3] ?? '');
+    if (!isBrowserProjectFile(path)) { searchFrom = openTagEnd + 1; continue; }
 
     // Find closing tag
     const closeTag = '</FILE>';
@@ -280,8 +284,8 @@ function parseFileBlocks(text: string): { files: Record<string, any>, fileList: 
   const deleteRe = /<delete\s+path=("|')([^"']+)\1\s*\/?>/gi;
   let deleteMatch: RegExpExecArray | null;
   while ((deleteMatch = deleteRe.exec(normalizedText)) !== null) {
-    const path = deleteMatch[2]?.trim();
-    if (path && !deletedFiles.includes(path)) {
+    const path = normalizeBrowserProjectPath(deleteMatch[2] || '');
+    if (isBrowserProjectFile(path) && !deletedFiles.includes(path)) {
       deletedFiles.push(path);
     }
   }
@@ -294,7 +298,10 @@ function parseFileBlocks(text: string): { files: Record<string, any>, fileList: 
     actionLines.forEach(line => {
       try {
         const action = JSON.parse(line.trim());
-        if (action.name && action.action) {
+        if (action.name && action.action && (
+          isBrowserProjectFile(String(action.name))
+          || action.action === 'analyzed_image'
+        )) {
           actionsTaken.push({
             name: action.name,
             status: action.status || 'done',
@@ -505,7 +512,45 @@ function extractJsonFromMixedResponse(raw: string): any {
 }
 
 // Main parser with robust error handling
-export function parseAIResponse(response: string): { files: Record<string, any>, fileList: string[], actionsTaken?: FileActivity[], deletedFiles?: string[], summary?: string } {
+function parseSearchReplaceBlocks(
+  response: string,
+  currentFiles: Record<string, { content: string }> = {},
+): { files: Record<string, any>; fileList: string[]; actionsTaken: FileActivity[] } {
+  const files: Record<string, any> = {};
+  const fileList: string[] = [];
+  const actionsTaken: FileActivity[] = [];
+  const patchRegex = /<PATCH\s+[^>]*(?:path|name)=(?:"([^"]+)"|'([^']+)'|([^\s>]+))[^>]*>([\s\S]*?)<\/PATCH>/gi;
+  const unwrap = (value: string) => value.replace(/^\r?\n/, '').replace(/\r?\n$/, '');
+  let match: RegExpExecArray | null;
+
+  while ((match = patchRegex.exec(response)) !== null) {
+    const path = normalizeBrowserProjectPath(match[1] ?? match[2] ?? match[3] ?? '');
+    if (!isBrowserProjectFile(path) || !currentFiles[path]) continue;
+    const body = match[4] || '';
+    const replacement = body.match(/<SEARCH>([\s\S]*?)<\/SEARCH>\s*<REPLACE>([\s\S]*?)<\/REPLACE>/i);
+    if (!replacement) continue;
+
+    const search = unwrap(replacement[1]);
+    const replace = unwrap(replacement[2]);
+    const baseContent = files[path]?.content ?? currentFiles[path].content;
+    const searchIndex = baseContent.indexOf(search);
+    if (!search || searchIndex === -1) continue;
+
+    const content = baseContent.slice(0, searchIndex) + replace + baseContent.slice(searchIndex + search.length);
+    files[path] = { path, content, type: 'file' };
+    if (!fileList.includes(path)) {
+      fileList.push(path);
+      actionsTaken.push({ name: path, status: 'done', action: 'edited' });
+    }
+  }
+
+  return { files, fileList, actionsTaken };
+}
+
+export function parseAIResponse(
+  response: string,
+  currentFiles: Record<string, { content: string }> = {},
+): { files: Record<string, any>, fileList: string[], actionsTaken?: FileActivity[], deletedFiles?: string[], summary?: string } {
   try {
     // Handle "json|..." format from AI gateways
     if (response.startsWith('json|')) {
@@ -515,11 +560,24 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
       }
     }
 
-    // Preferred: parse <FILE> blocks (doesn't require JSON escaping)
+    // Preferred for edits: apply compact exact SEARCH/REPLACE patches.
+    const patches = parseSearchReplaceBlocks(response, currentFiles);
+
+    // Preferred for initial generation and large edits: complete <FILE> blocks.
     const fileBlocks = parseFileBlocks(response);
-    if (fileBlocks && (fileBlocks.fileList.length > 0 || fileBlocks.deletedFiles.length > 0 || fileBlocks.actionsTaken.length > 0)) {
-      console.log('[parseAIResponse] Successfully parsed using <FILE> blocks');
-      return { files: fileBlocks.files, fileList: fileBlocks.fileList, deletedFiles: fileBlocks.deletedFiles, actionsTaken: fileBlocks.actionsTaken, summary: fileBlocks.summary };
+    if (patches.fileList.length > 0 || (fileBlocks && (fileBlocks.fileList.length > 0 || fileBlocks.deletedFiles.length > 0 || fileBlocks.actionsTaken.length > 0))) {
+      console.log('[parseAIResponse] Successfully parsed compact patches or <FILE> blocks');
+      const completeFiles = fileBlocks?.files || {};
+      const fileList = [...new Set([...(fileBlocks?.fileList || []), ...patches.fileList])];
+      const actionsTaken = [...(fileBlocks?.actionsTaken || []), ...patches.actionsTaken]
+        .filter((action, index, all) => all.findIndex(item => item.name === action.name && item.action === action.action) === index);
+      return {
+        files: { ...patches.files, ...completeFiles },
+        fileList,
+        deletedFiles: fileBlocks?.deletedFiles || [],
+        actionsTaken,
+        summary: fileBlocks?.summary,
+      };
     }
 
     // Check for truncation (diagnostic only)
@@ -604,15 +662,16 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
       if (Array.isArray(parsed.files)) {
         parsed.files.forEach((file: any) => {
           if (file.path && file.content !== undefined) {
-            const path = file.path;
-            if (/^\d+$/.test(path)) return;
+            const path = normalizeBrowserProjectPath(String(file.path));
+            if (!isBrowserProjectFile(path)) return;
             fileList.push(path);
             files[path] = { path, content: file.content as string, type: 'file' };
           }
         });
       } else {
-        Object.entries(parsed.files).forEach(([path, content]) => {
-          if (/^\d+$/.test(path)) return;
+        Object.entries(parsed.files).forEach(([rawPath, content]) => {
+          const path = normalizeBrowserProjectPath(rawPath);
+          if (!isBrowserProjectFile(path)) return;
           const fileContent = typeof content === 'object' && content !== null && 'content' in content
             ? (content as any).content
             : content;
@@ -637,11 +696,6 @@ export function parseAIResponse(response: string): { files: Record<string, any>,
     console.error('[parseAIResponse] Unexpected error:', e);
     return { files: {}, fileList: [] };
   }
-}
-
-// Generate default project
-export function generateDefaultViteProject(): any[] {
-  return [];
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -788,47 +842,12 @@ async function readSSEStream(
   return { text: fullResponse, usage };
 }
 
-// Generate short project name (2 words)
-// Uses a generous timeout to support slow/thinking AI models
-export async function generateProjectName(prompt: string): Promise<string> {
-  try {
-    const msgs = [{ role: 'user', content: `Project: ${prompt}` }];
-    const response = await callingDirectAI('project-name', msgs);
-
-    if (!response.ok) {
-      throw new Error(`AI request failed: ${response.status}`);
-    }
-
-    // Race against a 150s fallback timeout (thinking models can take 60-120s)
-    const streamPromise = readSSEStream(response).then(r => r.text);
-    const timeoutPromise = new Promise<string>((resolve) =>
-      setTimeout(() => resolve(''), 150_000)
-    );
-
-    const fullResponse = await Promise.race([streamPromise, timeoutPromise]);
-
-    const content = fullResponse || 'New Project';
-    const cleaned = content.trim().replace(/[^a-zA-Z\s]/g, '').trim();
-    const words = cleaned.split(/\s+/).filter((w: string) => w.length > 0);
-    if (words.length >= 2) {
-      return words
-        .slice(0, 2)
-        .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-        .join(' ');
-    }
-    return cleaned || 'New Project';
-  } catch (error) {
-    console.error('Project name generation error:', error);
-    return 'New Project';
-  }
-}
-
 // Generate suggestions after project completion
 export async function generateSuggestions(projectDescription: string): Promise<Suggestion[]> {
   const defaultSuggestions: Suggestion[] = [
     { label: "Add Dark Mode", prompt: "Add a dark mode toggle that saves user preference" },
     { label: "Improve Mobile", prompt: "Improve the mobile responsiveness and add a hamburger menu" },
-    { label: "Add Animations", prompt: "Add smooth animations and transitions using Framer Motion" },
+    { label: "Add Animations", prompt: "Add smooth browser-native CSS and JavaScript animations" },
     { label: "SEO Optimization", prompt: "Add meta tags and improve SEO for better search rankings" },
   ];
 
@@ -887,25 +906,27 @@ export async function generateChatResponse(
 export async function generateExplanation(
   prompt: string,
   projectType: 'vite' | 'html',
-  userLanguage?: string
+  userLanguage?: string,
+  onChunk?: (chunk: string) => void,
 ): Promise<string> {
+  const controller = new AbortController();
   try {
     const msgs = [{ role: 'user', content: prompt }];
-    const response = await callingDirectAI('explanation', msgs, undefined, undefined, userLanguage);
+    const response = await callingDirectAI('explanation', msgs, controller.signal, undefined, userLanguage);
 
     if (!response.ok) throw new Error(`Status ${response.status}`);
 
-    const streamPromise = readSSEStream(response).then(r => r.text);
+    const streamPromise = readSSEStream(response, onChunk).then(r => r.text);
     const timeoutPromise = new Promise<string>((resolve) =>
-      setTimeout(() => resolve("I'll create something amazing for you!"), 150_000)
+      setTimeout(() => { controller.abort(); resolve(''); }, 12_000)
     );
 
     const fullResponse = await Promise.race([streamPromise, timeoutPromise]);
 
-    return fullResponse || "I'll create something amazing for you!";
+    return fullResponse || '';
   } catch (error) {
     console.error('Explanation generation error:', error);
-    return "I'll create something amazing for you!";
+    return '';
   }
 }
 
@@ -921,6 +942,8 @@ export async function streamAICodeGeneration(
     onStatusUpdate?: (status: string) => void;
     onAgentStep?: (event: AgentStepEvent) => void;
     signal?: AbortSignal;
+    projectId?: string;
+    generationKind?: 'initial' | 'edit';
   },
   existingFiles?: string,
   userLanguage?: string,
@@ -933,21 +956,27 @@ export async function streamAICodeGeneration(
       if (lastMsg.role === 'user') {
         lastMsg.content = `${lastMsg.content}
 
-EXISTING PROJECT FILES: [${existingFiles}]
+EXISTING PROJECT FILES:
+${existingFiles}
 ⚠️ CRITICAL EDITING RULES:
-- This is an EXISTING project. ONLY output <FILE> blocks for files that NEED changes.
-- DO NOT regenerate index.html, main.tsx, index.css, App.tsx unless the change SPECIFICALLY requires it.
+- This is an EXISTING project. For small fixes, output compact <PATCH> blocks instead of rewriting complete files.
+- Patch format: <PATCH path="relative/file.js"><SEARCH>exact existing snippet</SEARCH><REPLACE>corrected snippet</REPLACE></PATCH>.
+- SEARCH must match the supplied file exactly and include enough surrounding context to be unique. Use multiple PATCH blocks when needed.
+- Use a complete <FILE> block only for a new file or when most of an existing file genuinely changes.
+- Read the supplied current file contents before editing.
+- Keep index.html as the entry point. Additional browser-native HTML, CSS, JavaScript, JSON, SVG, text, and Markdown files may be organized in folders.
 - If the user asks to fix a bug, identify the EXACT file causing it and ONLY fix that file.
 - If the user asks to add a feature, ONLY create/modify the files needed for that feature.
 - NEVER touch files unrelated to the user's request.
-- Include "read" actions for files you analyzed, and "edited"/"created" for files you changed.`;
+- Never return read-only actions. A successful edit response must contain at least one valid PATCH, FILE, or DELETE block.`;
       }
     }
 
-    const response = await callingDirectAI('code', finalMessages, options.signal, undefined, userLanguage, colorTheme);
+    const response = await callingDirectAI('code', finalMessages, options.signal, undefined, userLanguage, colorTheme, options.projectId, options.generationKind);
 
     if (!response.ok) {
-      throw new Error(`AI request failed: ${response.status}`);
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || `AI request failed: ${response.status}`);
     }
 
     const { text: fullResponse, usage } = await readSSEStream(

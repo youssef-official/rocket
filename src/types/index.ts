@@ -1,4 +1,4 @@
-export type ViewType = 'chat' | 'code' | 'preview' | 'database';
+export type ViewType = 'chat' | 'code' | 'preview';
 
 export interface ProjectFile {
   name: string;
@@ -20,8 +20,6 @@ export interface ProjectData {
   generatedName?: string;
   buildingPlan?: string[];
   generationStatus?: string;
-  githubRepoUrl?: string;
-  vercelUrl?: string;
 }
 
 export interface ChatMessage {
@@ -40,7 +38,9 @@ export interface User {
   id: string;
   email: string;
   displayName?: string;
+  phone?: string;
   avatarUrl?: string;
+  role?: 'user' | 'admin';
 }
 
 export interface Project {
@@ -57,8 +57,6 @@ export interface Project {
   generatedName?: string;
   buildingPlan?: string[];
   generationStatus?: string;
-  githubRepoUrl?: string;
-  vercelUrl?: string;
 }
 
 export interface FileActivity {

@@ -1,150 +1,57 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { PLAN_CONFIG, normalizePlan, type PlanType } from '@/lib/plans';
+import { PLAN_CONFIG, type PlanType } from '@/lib/plans';
+import { api } from '@/services/api';
+import { useBackendEvents } from '@/hooks/useBackendEvents';
 
-// re-export for existing imports across the app
 export { PLAN_CONFIG };
 export type { PlanType };
 
 export interface UserPlan {
-  id: string;
-  userId: string;
-  plan: PlanType;
-  dailyCredits: number;
-  maxDailyCredits: number;
-  creditsUsedToday: number;
-  totalCreditsUsed: number;
-  monthlyCredits: number;
-  lastDailyReset: string | null;
-  createdAt: string;
-  updatedAt: string;
+  id: string; userId: string; plan: PlanType; dailyCredits: number; maxDailyCredits: number;
+  creditsUsedToday: number; totalCreditsUsed: number; monthlyCredits: number; monthlyCreditsUsed: number;
+  subscriptionExpiresAt: string | null; lastDailyReset: string | null; createdAt: string; updatedAt: string;
 }
 
+/**
+ * A single shared query powers every credit/plan display in the application.
+ * React Query deduplicates calls across components, refreshes on focus, and
+ * polls while the app is open so administrator updates reach active sessions.
+ */
 export function useUserPlan() {
   const { user } = useAuth();
-  const [userPlan, setUserPlan] = useState<UserPlan | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchUserPlan = useCallback(async () => {
-    if (!user) {
-      setUserPlan(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Auto-reset daily credits if needed before fetching
-      try { await supabase.rpc('check_and_reset_user_credits', { p_user_id: user.id }); } catch {}
-
-
-      const { data, error } = await supabase
-        .from('user_plans')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      if (!data) {
-          // No plan exists, create default
-          const { data: newPlan, error: createError } = await supabase
-            .from('user_plans')
-            .insert([{
-              user_id: user.id,
-              plan: 'free',
-              daily_credits: 3,
-              max_daily_credits: 3,
-              credits_used_today: 0,
-              total_credits_used: 0,
-              monthly_credits: 0,
-            }])
-            .select()
-            .single();
-
-          if (createError) throw createError;
-          
-          setUserPlan({
-            id: newPlan.id,
-            userId: newPlan.user_id,
-            plan: normalizePlan(newPlan.plan),
-            dailyCredits: newPlan.daily_credits,
-            maxDailyCredits: newPlan.max_daily_credits,
-            creditsUsedToday: newPlan.credits_used_today,
-            totalCreditsUsed: newPlan.total_credits_used,
-            monthlyCredits: newPlan.monthly_credits,
-            lastDailyReset: newPlan.last_daily_reset,
-            createdAt: newPlan.created_at,
-            updatedAt: newPlan.updated_at,
-          });
-      } else {
-        setUserPlan({
-          id: data.id,
-          userId: data.user_id,
-          plan: normalizePlan(data.plan),
-          dailyCredits: data.daily_credits,
-          maxDailyCredits: data.max_daily_credits,
-          creditsUsedToday: data.credits_used_today,
-          totalCreditsUsed: data.total_credits_used,
-          monthlyCredits: data.monthly_credits,
-          lastDailyReset: data.last_daily_reset,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching user plan:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchUserPlan();
-  }, [fetchUserPlan]);
-
-  // Get remaining credits
+  const query = useQuery({
+    queryKey: ['webo-user-plan', user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: () => api<UserPlan>('/account/plan'),
+    staleTime: 1_000,
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: 'always',
+  });
+  const userPlan = query.data ?? null;
+  useBackendEvents(Boolean(user?.id), event => {
+    if (event.type === 'account.updated') void query.refetch();
+  });
   const getRemainingCredits = useCallback(() => {
     if (!userPlan) return { daily: 0, monthly: 0, total: 0 };
-    
-    const dailyRemaining = Math.max(0, userPlan.dailyCredits - userPlan.creditsUsedToday);
-    const planConfig = PLAN_CONFIG[userPlan.plan] || PLAN_CONFIG.free;
-    const monthlyRemaining = Math.max(0, (planConfig.monthlyCredits ?? 0) - userPlan.totalCreditsUsed);
-    
-    return {
-      daily: dailyRemaining,
-      monthly: monthlyRemaining,
-      total: dailyRemaining + monthlyRemaining
-    };
+    const dailyCredits = Number(userPlan.dailyCredits) || 0;
+    const usedToday = Number(userPlan.creditsUsedToday) || 0;
+    const monthlyCredits = Number(userPlan.monthlyCredits) || 0;
+    const monthlyUsed = Number(userPlan.monthlyCreditsUsed) || 0;
+    const daily = Math.max(0, dailyCredits - usedToday);
+    const monthly = Math.max(0, monthlyCredits - monthlyUsed);
+    return { daily, monthly, total: daily + monthly };
   }, [userPlan]);
-
-  // Check if user should see upgrade banner
-  const shouldShowUpgradeBanner = useCallback(() => {
-    if (!userPlan) return false;
-    const remaining = getRemainingCredits();
-    const planConfig = PLAN_CONFIG[userPlan.plan] || PLAN_CONFIG.free;
-    const totalAllowed = userPlan.dailyCredits + (planConfig.monthlyCredits ?? 0);
-    return remaining.total < totalAllowed * 0.5;
-  }, [userPlan, getRemainingCredits]);
-
-  // Check if user can use private projects
-  const canUsePrivateProjects = useCallback(() => {
-    if (!userPlan) return false;
-    return userPlan.plan === 'pro' || userPlan.plan === 'business';
-  }, [userPlan]);
-
-  // Check if user can export ZIP
-  const canExportZip = useCallback(() => {
-    if (!userPlan) return false;
-    return (PLAN_CONFIG[userPlan.plan] || PLAN_CONFIG.free).features.zipExport;
-  }, [userPlan]);
+  const shouldShowUpgradeBanner = useCallback(() => getRemainingCredits().daily <= 1, [getRemainingCredits]);
+  const canUsePrivateProjects = useCallback(() => userPlan?.plan !== 'free', [userPlan?.plan]);
+  const canExportZip = useCallback(() => userPlan?.plan !== 'free', [userPlan?.plan]);
 
   return {
     userPlan,
-    loading,
-    refetch: fetchUserPlan,
+    loading: query.isLoading,
+    refetch: query.refetch,
     getRemainingCredits,
     shouldShowUpgradeBanner,
     canUsePrivateProjects,

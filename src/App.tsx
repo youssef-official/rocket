@@ -8,7 +8,6 @@ import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { HomePage } from "@/components/home/HomePage";
 import { EditorLayout } from "@/components/editor/EditorLayout";
-import { ProjectsDashboard } from "@/components/dashboard/ProjectsDashboard";
 import { AdminPanel } from "@/pages/Admin";
 import { ThemeInitializer } from "@/components/shared/ThemeInitializer";
 import { useProjects } from "@/hooks/useProjects";
@@ -16,29 +15,80 @@ import { useChatMessages } from "@/hooks/useChatMessages";
 import { useVersions } from "@/hooks/useVersions";
 import { FloatingMusicPlayer } from "@/components/shared/MusicPlayer";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import {
   streamAICodeGeneration,
   parseAIResponse,
-  generateDefaultViteProject,
-  generateExplanation,
   stopGeneration,
-  generateProjectName,
   generateSuggestions,
-  deductPointsAfterGeneration,
   type Suggestion
 } from "@/services/aiService";
-import { calculateRequestCredits } from "@/services/directAiService";
 import type { ProjectData, ChatMessage, ProjectFile } from "@/types";
 import { toast } from "@/hooks/use-toast";
+import { browserFileLanguage, isBrowserProjectFile, normalizeBrowserProjectPath } from "@/lib/browserProject";
 
 const queryClient = new QueryClient();
+const isNativeGenerationStatus = (status: string) =>
+  !/(?:package\.json|\.tsx?\b|\.jsx?\b|react|vite|tailwind|next\.js|node_modules)/i.test(status);
 
 const normalizePublicImageUrl = (url: string): string => {
   const trimmed = (url || '').trim();
   if (!trimmed) return '';
   if (/^(https?:\/\/|data:|blob:)/i.test(trimmed)) return trimmed;
   return `https://${trimmed.replace(/^\/+/, '')}`;
+};
+
+// Keep the editor and preview useful before the model has closed its final
+// response. The server receives a debounced snapshot of these partial files,
+// so another Webo tab can join the same build in progress.
+const extractLiveFiles = (response: string): Record<string, ProjectFile> => {
+  const files: Record<string, ProjectFile> = {};
+  // Only expose a file after its closing marker arrives. Showing an open block
+  // made the editor persist partial content (often just the starter fallback)
+  // while the model was still streaming the rest of the file.
+  const blocks = response.matchAll(/<FILE\s+[^>]*(?:path|name)=(?:"([^"]+)"|'([^']+)')[^>]*>([\s\S]*?)<\/FILE>/gi);
+  for (const block of blocks) {
+    const path = normalizeBrowserProjectPath(block[1] || block[2] || '');
+    if (!isBrowserProjectFile(path)) continue;
+    const content = (block[3] || '').replace(/\n?<\/FILE>\s*$/i, '');
+    files[path] = { name: path.split('/').pop() || path, path, content, language: browserFileLanguage(path) };
+  }
+  return files;
+};
+
+const instantPlan = (editing = false, request = '') => {
+  const goal = request.replace(/\s+/g, ' ').trim().slice(0, 90);
+  return editing
+    ? [
+        `Read the affected project files for the requested change${goal ? `: ${goal}` : ''}`,
+        'Edit the affected HTML pages and shared styles',
+        'Update browser interactions and verify links between pages',
+      ]
+    : [
+        `Analyze the request${goal ? ` and define the page for: ${goal}` : ''}`,
+        'Plan the browser-native page and folder structure',
+        'Write the semantic HTML pages and responsive CSS files',
+        'Implement JavaScript interactions and verify navigation between pages',
+      ];
+};
+
+const runtimeFile = (path: string, content: string, language: string): ProjectFile => ({
+  name: path.split('/').pop() || path, path, content, language,
+});
+
+const ensureStaticWebsiteFiles = (files: Record<string, ProjectFile>) => {
+  const next: Record<string, ProjectFile> = {};
+  for (const [rawPath, file] of Object.entries(files)) {
+    const path = normalizeBrowserProjectPath(rawPath);
+    if (isBrowserProjectFile(path)) next[path] = { ...file, name: path.split('/').pop() || path, path, language: browserFileLanguage(path) };
+  }
+  if (!next['index.html']) {
+    next['index.html'] = runtimeFile(
+      'index.html',
+      '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Webo Website</title>\n</head>\n<body>\n  <main><h1>Your website is ready</h1></main>\n</body>\n</html>',
+      'html',
+    );
+  }
+  return next;
 };
 
 interface FileActivity {
@@ -116,8 +166,6 @@ const ProjectEditorRoute = () => {
           publishedSlug: dbProject.publishedSlug,
           createdAt: dbProject.createdAt,
           updatedAt: dbProject.updatedAt,
-          githubRepoUrl: dbProject.githubRepoUrl,
-          vercelUrl: dbProject.vercelUrl,
         });
 
         // Restore generation state from database if available
@@ -164,9 +212,6 @@ const ProjectEditorRoute = () => {
 
         const prompt = localProject.description || '';
 
-        // Get the selected model from sessionStorage
-        const savedModelId = sessionStorage.getItem(`project_model_${localProject.id}`) || 'rok-fast';
-
         // Get any uploaded image URL from sessionStorage
         const savedImageUrl = sessionStorage.getItem(`project_image_${localProject.id}`);
         if (savedImageUrl) {
@@ -192,46 +237,11 @@ const ProjectEditorRoute = () => {
         setStatusMessage(t('chat.analyzing'));
         setGenerationPhase({ phase: 'planning', message: t('chat.analyzing') });
 
-        // Generate project name in background (don't block UI)
-        generateProjectName(prompt).then(async (generatedName) => {
-          try {
-            await updateProject(localProject.id, { name: generatedName });
-            setLocalProject(prev => prev ? { ...prev, name: generatedName } : null);
-          } catch (e) {
-            console.error('Failed to update project name:', e);
-          }
-        }).catch((e) => {
-          console.error('Failed to generate project name:', e);
-        });
-
         try {
-          // Step 1: Thinking phase
-          const thinkingStartTime = Date.now();
-          setStatusMessage(t('chat.thinking'));
-          setGenerationPhase({ phase: 'thinking', message: t('chat.thinking'), thinkingTime: 0 });
-
-          // Update thinking time every second
-          const thinkingInterval = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - thinkingStartTime) / 1000);
-            setGenerationPhase(prev => prev ? { ...prev, thinkingTime: elapsed } : null);
-          }, 1000);
-
-          let explanation = '';
-          try {
-            explanation = await generateExplanation(prompt, localProject.projectType, language);
-          } catch (e) {
-            explanation = "I'll create something amazing for you!";
-          }
-
-          clearInterval(thinkingInterval);
-          const finalThinkingTime = Math.floor((Date.now() - thinkingStartTime) / 1000);
-
-          // Parse plan from explanation
-          const planLines = explanation.split('\n')
-            .filter(line => /^\d+\.|^•|^\*/.test(line.trim()))
-            .map(line => line.replace(/^\d+\.\s*|^•\s*|^\*\s*/, '').trim())
-            .filter(line => line.length > 0)
-            .slice(0, 6);
+          // The plan is deterministic so it explains the browser-native
+          // multi-file build clearly before generation starts.
+          const planLines = instantPlan(false, prompt);
+          setGenerationPhase({ phase: 'planning', message: t('chat.analyzing'), thinkingTime: 0, plan: planLines, completedSteps: [], currentStep: 0, stepFiles: {} });
 
           // Save plan to database
           await updateProject(localProject.id, {
@@ -241,9 +251,9 @@ const ProjectEditorRoute = () => {
           });
 
           setGenerationPhase({
-            phase: 'thinking',
-            message: t('chat.thinkingComplete'),
-            thinkingTime: finalThinkingTime,
+            phase: 'generating',
+            message: t('chat.generating'),
+            thinkingTime: 0,
             plan: planLines,
             completedSteps: [],
             currentStep: 0,
@@ -273,6 +283,31 @@ const ProjectEditorRoute = () => {
 
           let fullResponse = '';
           const detectedFiles = new Set<string>();
+          let liveSaveTimer: ReturnType<typeof setTimeout> | undefined;
+          let liveSaveChain: Promise<unknown> = Promise.resolve();
+          let lastLiveSnapshot = '';
+          const persistLiveFiles = (immediate = false) => {
+            const liveFiles = extractLiveFiles(fullResponse);
+            const snapshot = JSON.stringify(liveFiles);
+            const flushPendingSave = immediate && Boolean(liveSaveTimer);
+            if (immediate && liveSaveTimer) clearTimeout(liveSaveTimer);
+            if (!Object.keys(liveFiles).length || (snapshot === lastLiveSnapshot && !flushPendingSave)) return;
+            lastLiveSnapshot = snapshot;
+            const save = () => {
+              const files = { ...localProject.files, ...liveFiles };
+              setLocalProject(prev => prev ? { ...prev, files } : null);
+              liveSaveChain = liveSaveChain.catch(() => undefined).then(() => updateProject(localProject.id, {
+                files,
+                generationStatus: 'generating',
+              }));
+            };
+            if (immediate) {
+              save();
+            } else {
+              if (liveSaveTimer) clearTimeout(liveSaveTimer);
+              liveSaveTimer = setTimeout(save, 450);
+            }
+          };
 
           // Add "Analyzing image" activity if image was uploaded
           if (savedImageUrl) {
@@ -288,7 +323,7 @@ const ProjectEditorRoute = () => {
           // Credits will be deducted AFTER generation completes (in onComplete)
 
           // Build prompt with safety rules + clone data (hidden from chat)
-          let userPrompt = `${prompt}\n\n[STRICT RULE: Every component used MUST be imported. If you use <AnimatePresence>, you MUST add: import { motion, AnimatePresence } from "framer-motion"; at the top of the file. NO EXCEPTIONS.]`;
+          let userPrompt = `${prompt}\n\n[OUTPUT RULE: Build this as a browser-native multi-page website. Keep index.html as the entry point and create any additional HTML, CSS, JavaScript, JSON, SVG, text, or Markdown files and folders the product genuinely needs. Do not use React, JSX, TypeScript, Vite, packages, or frameworks.]`;
           if (cloneData) {
             userPrompt += `\n\n---\n[CLONE DESIGN SOURCE - ${cloneData.url}]\nHere is the source code of the website I want to clone/replicate the design of:\n\`\`\`html\n${cloneData.html}\n\`\`\``;
           }
@@ -305,16 +340,28 @@ const ProjectEditorRoute = () => {
             aiMessages,
             localProject.projectType,
             {
+              projectId: localProject.id,
+              generationKind: 'initial',
               onChunk: (chunk) => {
                 if (isCancelled.current) return;
                 fullResponse += chunk;
                 setStreamingContent(fullResponse);
+                persistLiveFiles();
 
                 // Live file detection (JSON + <FILE> blocks)
                 const markFile = (fileNameRaw: string) => {
-                  const fileName = (fileNameRaw || '').trim();
-                  if (!fileName || detectedFiles.has(fileName)) return;
+                  const fileName = (fileNameRaw || '').trim().replace(/^\/+/, '');
+                  if (!isBrowserProjectFile(fileName) || detectedFiles.has(fileName)) return;
                   detectedFiles.add(fileName);
+                  const extension = fileName.split('.').pop()?.toLowerCase();
+                  const planStep = extension === 'html' ? 1 : extension === 'css' ? 2 : 3;
+                  setGenerationPhase(prev => prev ? {
+                    ...prev,
+                    currentStep: planStep,
+                    completedSteps: Array.from({ length: planStep }, (_, index) => index),
+                    status: planLines[planStep],
+                    stepFiles: { ...(prev.stepFiles || {}), [planStep]: [fileName] },
+                  } : prev);
 
                   setFileActivities(prev => {
                     const exists = prev.find(f => f.name === fileName);
@@ -326,7 +373,7 @@ const ProjectEditorRoute = () => {
                   });
                 };
 
-                const jsonPathMatches = fullResponse.match(/"([^"]+\.(tsx?|jsx?|css|json|html|md))"\s*:/g);
+                const jsonPathMatches = fullResponse.match(/"([^"]+\.(?:html|css|js|json|svg|txt|md))"\s*:/gi);
                 if (jsonPathMatches) {
                   jsonPathMatches.forEach(m => markFile(m.replace(/["':]/g, '')));
                 }
@@ -339,33 +386,33 @@ const ProjectEditorRoute = () => {
               onComplete: async (response, usage) => {
                 if (isCancelled.current) return;
 
-                const { files, fileList, actionsTaken, summary: aiSummary } = parseAIResponse(response);
+                fullResponse = response;
+                persistLiveFiles(true);
+                await liveSaveChain;
 
-                const activities = actionsTaken && actionsTaken.length > 0
-                  ? actionsTaken
-                  : fileList.map(name => ({
-                    name,
-                    status: 'done' as const,
-                    action: 'created' as const
-                  }));
-                // Preserve initial "Analyzing" activities at the top
+                const { files } = parseAIResponse(response);
+
+                let finalFiles = Object.keys(files).length > 0
+                  ? { ...localProject.files, ...files }
+                  : localProject.files;
+                finalFiles = ensureStaticWebsiteFiles(finalFiles);
+                const generatedPaths = Object.keys(finalFiles);
+                const activities: FileActivity[] = generatedPaths.map(name => ({
+                  name,
+                  status: 'done',
+                  action: 'created',
+                }));
                 setFileActivities(prev => {
                   const analyzingActivities = prev.filter(a => a.action === 'analyzed_image');
                   return [...analyzingActivities, ...activities];
                 });
 
-                // Distribute files across plan steps
-                const filesPerStep = Math.ceil(fileList.length / Math.max(planLines.length, 1));
                 const stepFilesMap: Record<number, string[]> = {};
-                fileList.forEach((file, idx) => {
-                  const stepIdx = Math.min(Math.floor(idx / filesPerStep), planLines.length - 1);
-                  if (!stepFilesMap[stepIdx]) stepFilesMap[stepIdx] = [];
-                  stepFilesMap[stepIdx].push(file);
+                generatedPaths.forEach(path => {
+                  const extension = path.split('.').pop()?.toLowerCase();
+                  const step = extension === 'html' ? 1 : extension === 'css' ? 2 : 3;
+                  stepFilesMap[step] = [...(stepFilesMap[step] || []), path];
                 });
-
-                let finalFiles = Object.keys(files).length > 0
-                  ? { ...localProject.files, ...files }
-                  : localProject.files;
 
                 await updateProject(localProject.id, {
                   files: finalFiles,
@@ -376,10 +423,7 @@ const ProjectEditorRoute = () => {
                 // Mark all steps as complete
                 const allStepsComplete = planLines.map((_, i) => i);
 
-                // Use AI-generated summary if available
-                const summary = aiSummary
-                  ? `✅ ${aiSummary}`
-                  : `✅ Created ${activities.length} file${activities.length > 1 ? 's' : ''}. Your project is ready!`;
+                const summary = `✅ Created ${generatedPaths.length} browser-native file${generatedPaths.length === 1 ? '' : 's'} with working page navigation.`;
 
                 // Update original explanation message instead of adding a new one
                 if (assistantId) {
@@ -414,13 +458,12 @@ const ProjectEditorRoute = () => {
                   summary
                 }));
 
-                // Deduct credits AFTER generation (first version = 2 credits)
+                // The server commits the initial 2-credit reservation only after
+                // the generation stream completes successfully.
                 if (user) {
                   try {
-                    const { calculateCreditsByFileCount } = await import('@/services/directAiService');
-                    const creditsToDeduct = calculateCreditsByFileCount(activities.length, true);
-                    await deductPointsAfterGeneration(user.id, localProject.id, `Initial: ${activities.length} files`, creditsToDeduct);
-                    queryClient.invalidateQueries({ queryKey: ['userPlan'] });
+                    const creditsToDeduct = 2;
+                    queryClient.invalidateQueries({ queryKey: ['webo-user-plan', user.id] });
                     // Save credits used to the assistant message
                     if (assistantId) {
                       await updateMessage(assistantId, { creditsUsed: creditsToDeduct, tokensUsed: usage?.total_tokens || null });
@@ -446,16 +489,17 @@ const ProjectEditorRoute = () => {
                 setFileActivities([]);
               },
               onFileStart: (fileName) => {
-                if (isCancelled.current) return;
+                if (isCancelled.current || !isBrowserProjectFile(fileName)) return;
 
-                // Calculate which step we're on based on file count
                 setGenerationPhase(prev => {
                   if (!prev || !prev.plan) return prev;
 
                   const currentFiles = prev.stepFiles || {};
-                  const totalFiles = Object.values(currentFiles).flat().length;
-                  const filesPerStep = Math.ceil(15 / Math.max(prev.plan.length, 1)); // Estimate 15 files
-                  const currentStepIdx = Math.min(Math.floor(totalFiles / filesPerStep), prev.plan.length - 1);
+                  const extension = fileName.split('.').pop()?.toLowerCase();
+                  const currentStepIdx = Math.min(
+                    extension === 'html' ? 1 : extension === 'css' ? 2 : 3,
+                    prev.plan.length - 1,
+                  );
 
                   // Add file to current step
                   const updatedStepFiles = { ...currentFiles };
@@ -488,7 +532,7 @@ const ProjectEditorRoute = () => {
                 });
               },
               onStatusUpdate: (status) => {
-                if (isCancelled.current) return;
+                if (isCancelled.current || !isNativeGenerationStatus(status)) return;
                 setStatusMessage(status);
               },
               onAgentStep: (event) => {
@@ -498,7 +542,7 @@ const ProjectEditorRoute = () => {
                   agentStep: event.step,
                   agentConfidence: event.confidence ?? prev.agentConfidence,
                   agentIssuesCount: event.issues_count ?? prev.agentIssuesCount,
-                  message: event.message || prev.message,
+                  message: event.message && isNativeGenerationStatus(event.message) ? event.message : prev.message,
                 } : null);
               },
             },
@@ -556,9 +600,7 @@ const ProjectEditorRoute = () => {
     let userMessageAlreadySaved = false;
     isCancelled.current = false;
 
-    // Get the selected model from sessionStorage
-    const savedModelId = sessionStorage.getItem(`project_model_${localProject.id}`) || 'rok-fast';
-
+    // Webo always uses the single approved model path on the server.
     // AUTO-DETECT: Call clarify mode to determine intent before code gen
     const isAutoFix = content.startsWith('[AUTO-FIX]');
     const hasReferencedFiles = content.includes('[Referenced Files:');
@@ -608,29 +650,8 @@ const ProjectEditorRoute = () => {
       }
     }
 
-    // For build mode, check credits BEFORE saving message
-    if (!isChatOnly && user) {
-      const { checkCreditsAvailable } = await import('@/services/creditService');
-      const hasCredits = await checkCreditsAvailable(user.id);
-      if (!hasCredits) {
-        const { toast } = await import('sonner');
-        toast.error(t('credits.noCredits'));
-        return;
-      }
-
-      try {
-        const { deductCredits } = await import('@/services/creditService');
-        const reservation = await deductCredits(user.id, localProject.id, 'Credit reservation (pending)', 0.5);
-        if (!reservation.success) {
-          const { toast } = await import('sonner');
-          toast.error(t('credits.noCredits'));
-          return;
-        }
-        queryClient.invalidateQueries({ queryKey: ['userPlan'] });
-      } catch (e) {
-        console.error('Credit reservation failed:', e);
-      }
-    }
+    // The Node API owns credit reservation and finalization. This keeps the
+    // balance authoritative and releases a reservation if generation fails.
 
     // Save the message (skip if already saved during clarify)
     if (!userMessageAlreadySaved) {
@@ -646,15 +667,6 @@ const ProjectEditorRoute = () => {
         const { generateChatResponse } = await import('@/services/aiService');
         const response = await generateChatResponse(content, messages);
         addMessage('assistant', response);
-        if (user) {
-          try {
-            const { deductCredits } = await import('@/services/creditService');
-            await deductCredits(user.id, localProject.id, 'Plan mode chat', 1.5);
-            queryClient.invalidateQueries({ queryKey: ['userPlan'] });
-          } catch (e) {
-            console.error('Plan mode credit deduction failed:', e);
-          }
-        }
       } catch (error) {
         addMessage('assistant', "I'm here to help! Ask me anything about your project or web development.");
       }
@@ -691,23 +703,6 @@ const ProjectEditorRoute = () => {
             action: 'analyzed_image'
           });
 
-          // If it's a logo upload, copy image to project files
-          if (isLogoUpload) {
-            const logoFile = {
-              name: 'logo.png',
-              path: 'public/logo.png',
-              content: `[IMAGE_URL:${url}]`,
-              language: 'image'
-            };
-            const updatedFiles = { ...localProject.files, 'public/logo.png': logoFile };
-            setLocalProject(prev => prev ? { ...prev, files: updatedFiles } : null);
-            updateProject(localProject.id, { files: updatedFiles });
-            initialActivities.push({
-              name: 'public/logo.png',
-              status: 'done',
-              action: 'created'
-            });
-          }
         }
       });
     }
@@ -717,39 +712,16 @@ const ProjectEditorRoute = () => {
     setFileActivities(initialActivities);
 
     try {
-      // Step 1: Thinking phase
-      const thinkingStartTime = Date.now();
       if (isCancelled.current) return;
-      setStatusMessage(t('chat.thinking'));
-      setGenerationPhase({ phase: 'thinking', message: t('chat.thinking'), thinkingTime: 0 });
-
-      // Update thinking time every second
-      const thinkingInterval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - thinkingStartTime) / 1000);
-        setGenerationPhase(prev => prev ? { ...prev, thinkingTime: elapsed } : null);
-      }, 1000);
-
-      let explanation = '';
-      try {
-        explanation = await generateExplanation(content, localProject.projectType, language);
-      } catch (e) {
-        explanation = "I'll make those changes for you!";
-      }
-
-      clearInterval(thinkingInterval);
-      const finalThinkingTime = Math.floor((Date.now() - thinkingStartTime) / 1000);
-
-      // Parse plan from explanation
-      const planLines = explanation.split('\n')
-        .filter(line => /^\d+\.|^•|^\*/.test(line.trim()))
-        .map(line => line.replace(/^\d+\.\s*|^•\s*|^\*\s*/, '').trim())
-        .filter(line => line.length > 0)
-        .slice(0, 6);
+      const planLines = isAutoFix
+        ? ['Locate the exact syntax error', 'Patch only the failing file', 'Verify the browser preview']
+        : instantPlan(true, content);
+      setGenerationPhase({ phase: 'planning', message: t('chat.analyzing'), thinkingTime: 0, plan: planLines, completedSteps: [], currentStep: 0, stepFiles: {} });
 
       setGenerationPhase({
-        phase: 'thinking',
-        message: t('chat.thinkingComplete'),
-        thinkingTime: finalThinkingTime,
+        phase: 'generating',
+        message: t('chat.generating'),
+        thinkingTime: 0,
         plan: planLines,
         completedSteps: [],
         currentStep: 0,
@@ -799,25 +771,64 @@ const ProjectEditorRoute = () => {
 
       let fullResponse = '';
       const detectedFiles = new Set<string>();
+      let liveSaveTimer: ReturnType<typeof setTimeout> | undefined;
+      let liveSaveChain: Promise<unknown> = Promise.resolve();
+      let lastLiveSnapshot = '';
+      const persistLiveFiles = (immediate = false) => {
+        const liveFiles = extractLiveFiles(fullResponse);
+        const snapshot = JSON.stringify(liveFiles);
+        const flushPendingSave = immediate && Boolean(liveSaveTimer);
+        if (immediate && liveSaveTimer) clearTimeout(liveSaveTimer);
+        if (!Object.keys(liveFiles).length || (snapshot === lastLiveSnapshot && !flushPendingSave)) return;
+        lastLiveSnapshot = snapshot;
+        const save = () => {
+          const files = { ...localProject.files, ...liveFiles };
+          setLocalProject(prev => prev ? { ...prev, files } : null);
+          liveSaveChain = liveSaveChain.catch(() => undefined).then(() => updateProject(localProject.id, {
+            files,
+            generationStatus: 'generating',
+          }));
+        };
+        if (immediate) save();
+        else {
+          if (liveSaveTimer) clearTimeout(liveSaveTimer);
+          liveSaveTimer = setTimeout(save, 450);
+        }
+      };
 
       // Credits will be deducted AFTER generation completes (in onComplete)
 
       // Pass existing file list so AI knows what files exist and can do targeted edits
-      const existingFilesList = Object.keys(localProject.files);
+      const browserFiles = Object.entries(localProject.files)
+        .filter(([path]) => isBrowserProjectFile(path));
+      const explicitlyRelevantPaths = browserFiles
+        .map(([path]) => path)
+        .filter(path => content.includes(path));
+      const autoFixSource = isAutoFix
+        ? content.match(/(?:error in|source file:?|patch only)\s+(?:webo-preview:\/\/)?([^\s:]+\.(?:js|css|html))/i)?.[1]
+        : undefined;
+      const relevantPaths = new Set(autoFixSource ? [autoFixSource] : explicitlyRelevantPaths);
+      const existingFilesList = browserFiles
+        .filter(([path]) => relevantPaths.size === 0 || relevantPaths.has(path))
+        .map(([path, file]) => `<CURRENT_FILE path="${path}">\n${file.content}\n</CURRENT_FILE>`)
+        .join('\n\n');
 
       await streamAICodeGeneration(
         conversationHistory,
         localProject.projectType,
         {
+          projectId: localProject.id,
+          generationKind: 'edit',
           onChunk: (chunk) => {
             if (isCancelled.current) return;
             fullResponse += chunk;
             setStreamingContent(fullResponse);
+            persistLiveFiles();
 
             // Live file detection (JSON + <FILE> blocks)
             const markFile = (fileNameRaw: string) => {
-              const fileName = (fileNameRaw || '').trim();
-              if (!fileName || detectedFiles.has(fileName)) return;
+              const fileName = (fileNameRaw || '').trim().replace(/^\/+/, '');
+              if (!isBrowserProjectFile(fileName) || detectedFiles.has(fileName)) return;
               detectedFiles.add(fileName);
 
               const isEdit = localProject.files[fileName] !== undefined;
@@ -831,16 +842,43 @@ const ProjectEditorRoute = () => {
               });
             };
 
-            const jsonPathMatches = fullResponse.match(/"([^"]+\.(tsx?|jsx?|css|json|html|md))"\s*:/g);
+            const jsonPathMatches = fullResponse.match(/"([^"]+\.(?:html|css|js|json|svg|txt|md))"\s*:/gi);
             if (jsonPathMatches) jsonPathMatches.forEach(m => markFile(m.replace(/["':]/g, '')));
 
             const fileBlockMatches = Array.from(fullResponse.matchAll(/<FILE\s+[^>]*(?:path|name)=(?:"([^"]+)"|'([^']+)')/gi));
             if (fileBlockMatches.length > 0) fileBlockMatches.forEach(m => markFile((m[1] ?? m[2] ?? '').trim()));
+
+            const patchBlockMatches = Array.from(fullResponse.matchAll(/<PATCH\s+[^>]*(?:path|name)=(?:"([^"]+)"|'([^']+)')/gi));
+            if (patchBlockMatches.length > 0) patchBlockMatches.forEach(m => markFile((m[1] ?? m[2] ?? '').trim()));
           },
           onComplete: async (response, usage) => {
             if (isCancelled.current) return;
 
-            const { files: newFiles, fileList, actionsTaken, deletedFiles, summary: aiSummary } = parseAIResponse(response);
+            fullResponse = response;
+            persistLiveFiles(true);
+            await liveSaveChain;
+
+            const { files: newFiles, fileList, actionsTaken, deletedFiles, summary: aiSummary } = parseAIResponse(response, localProject.files);
+            const hasFileChanges = Object.keys(newFiles).length > 0 || Boolean(deletedFiles?.length);
+
+            if (!hasFileChanges) {
+              const noChangeMessage = isAutoFix
+                ? 'The automatic repair did not return a file change, so Webo stopped it instead of creating an empty version.'
+                : 'No file changes were returned for this request.';
+              if (assistantId) {
+                await updateMessage(assistantId, { content: noChangeMessage, actionsTaken: [] });
+              } else {
+                await addMessage('assistant', noChangeMessage, undefined, []);
+              }
+              setFileActivities([]);
+              setIsGenerating(false);
+              setStreamingContent('');
+              setStatusMessage('');
+              setGenerationPhase(null);
+              currentGenerationMessages.current = [];
+              backgroundFallbackTriggered.current = false;
+              return;
+            }
 
             // Use AI's actions_taken for read/edit/create activities
             const imageActivities: FileActivity[] = fileActivities.filter(a => a.action === 'analyzed_image');
@@ -879,26 +917,23 @@ const ProjectEditorRoute = () => {
             });
 
             if (Object.keys(newFiles).length > 0 || (deletedFiles && deletedFiles.length > 0)) {
-              const mergedFiles = { ...localProject.files, ...newFiles };
+              let mergedFiles = { ...localProject.files, ...newFiles };
               if (deletedFiles) {
                 deletedFiles.forEach(f => delete mergedFiles[f]);
               }
+              mergedFiles = ensureStaticWebsiteFiles(mergedFiles);
               await updateProject(localProject.id, { files: mergedFiles });
               setLocalProject(prev => prev ? { ...prev, files: mergedFiles } : null);
             }
 
-            // Deduct remaining credits AFTER generation (0.5 already reserved)
+            // The server commits the 1-credit edit reservation only when the
+            // streamed generation succeeds; errors automatically release it.
             if (user) {
               try {
-                const { calculateCreditsByFileCount } = await import('@/services/directAiService');
-                const totalCredits = calculateCreditsByFileCount(fileList.length, false);
-                const remaining = Math.max(0, totalCredits - 0.5); // subtract reservation
-                if (remaining > 0) {
-                  await deductPointsAfterGeneration(user.id, localProject.id, `Edit: ${fileList.length} files`, remaining);
-                }
-                queryClient.invalidateQueries({ queryKey: ['userPlan'] });
+                const totalCredits = 1;
+                queryClient.invalidateQueries({ queryKey: ['webo-user-plan', user.id] });
                 // Save credits used to the assistant message
-                const totalDeducted = totalCredits; // reservation + remaining
+                const totalDeducted = totalCredits;
                 if (assistantId) {
                   await updateMessage(assistantId, { creditsUsed: totalDeducted, tokensUsed: usage?.total_tokens || null });
                 }
@@ -971,7 +1006,7 @@ const ProjectEditorRoute = () => {
             setFileActivities([]);
           },
           onFileStart: (fileName) => {
-            if (isCancelled.current) return;
+            if (isCancelled.current || !isBrowserProjectFile(fileName)) return;
 
             // Calculate which step we're on based on file count
             setGenerationPhase(prev => {
@@ -1014,7 +1049,7 @@ const ProjectEditorRoute = () => {
             });
           },
           onStatusUpdate: (status) => {
-            if (isCancelled.current) return;
+            if (isCancelled.current || !isNativeGenerationStatus(status)) return;
             setStatusMessage(status);
           },
           onAgentStep: (event) => {
@@ -1024,11 +1059,11 @@ const ProjectEditorRoute = () => {
               agentStep: event.step,
               agentConfidence: event.confidence ?? prev.agentConfidence,
               agentIssuesCount: event.issues_count ?? prev.agentIssuesCount,
-              message: event.message || prev.message,
+              message: event.message && isNativeGenerationStatus(event.message) ? event.message : prev.message,
             } : null);
           },
         },
-        existingFilesList.join(', '),
+        existingFilesList,
         language,
         (() => {
           try {
@@ -1133,7 +1168,6 @@ const ProjectEditorRoute = () => {
       isGenerating={isGenerating}
       onNewProject={() => navigate('/')}
       onUpdateProject={handleUpdateProject}
-      onViewDashboard={() => navigate('/dashboard')}
       streamingContent={streamingContent}
       onVersionRestore={handleVersionRestore}
       onGoHome={() => navigate('/')}
@@ -1159,8 +1193,6 @@ const AppContent = () => {
     loading: projectsLoading,
     createProject,
     updateProject,
-    deleteProject,
-    forkProject,
     getProject
   } = useProjects();
 
@@ -1200,8 +1232,6 @@ const AppContent = () => {
           publishedSlug: dbProject.publishedSlug,
           createdAt: dbProject.createdAt,
           updatedAt: dbProject.updatedAt,
-          githubRepoUrl: dbProject.githubRepoUrl,
-          vercelUrl: dbProject.vercelUrl,
         });
       }
     }
@@ -1227,18 +1257,13 @@ const AppContent = () => {
     });
   }, []);
 
-  const handleStartBuilding = useCallback(async (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageUrls?: string[]) => {
+  const handleStartBuilding = useCallback(async (prompt: string, projectType: 'vite' | 'html', _modelId?: string, imageUrls?: string[]) => {
     if (!user) return;
 
     isCancelled.current = false;
 
-    // Create project in DB first
-    const projectName = prompt.slice(0, 50) || 'New Project';
-    const defaultFiles = projectType === 'vite'
-      ? generateDefaultViteProject()
-      : {};
-
-    const newProject = await createProject(projectName, projectType, defaultFiles, prompt);
+    // The server assigns a random system name; prompts are never used as names.
+    const newProject = await createProject('', 'html', {}, prompt);
 
     if (!newProject) {
       toast({
@@ -1249,10 +1274,6 @@ const AppContent = () => {
       return;
     }
 
-    // Store selectedModel in sessionStorage so it can be used when generating
-    if (modelId) {
-      sessionStorage.setItem(`project_model_${newProject.id}`, modelId);
-    }
 
     // Store pre-uploaded image URLs in sessionStorage for initial generation
     if (imageUrls && imageUrls.length > 0) {
@@ -1276,10 +1297,6 @@ const AppContent = () => {
     navigate(`/projects/${newProject.id}`);
   }, [user, createProject, navigate]);
 
-  const handleOpenProject = useCallback((id: string) => {
-    navigate(`/projects/${id}`);
-  }, [navigate]);
-
   const handleNewProject = useCallback(() => {
     setCurrentProjectId(null);
     setLocalProject(null);
@@ -1298,12 +1315,12 @@ const AppContent = () => {
   }
 
   // Handle build attempt - require login if not authenticated
-  const handleBuildAttempt = async (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageUrls?: string[]) => {
+  const handleBuildAttempt = async (prompt: string, projectType: 'vite' | 'html', _modelId?: string, imageUrls?: string[]) => {
     if (!user) {
       setShowAuth(true);
       return;
     }
-    await handleStartBuilding(prompt, projectType, modelId, imageUrls);
+    await handleStartBuilding(prompt, projectType, undefined, imageUrls);
   };
 
   // Show auth page only if explicitly requested
@@ -1315,77 +1332,18 @@ const AppContent = () => {
   return (
     <HomePage
       onStartBuilding={handleBuildAttempt}
-      onViewDashboard={() => navigate('/dashboard')}
-      onOpenProject={handleOpenProject}
-      onDeleteProject={deleteProject}
-      onForkProject={async (id) => {
-        const forked = await forkProject(id);
-        if (forked) {
-          handleOpenProject(forked.id);
-        }
-      }}
       onShowAuth={() => setShowAuth(true)}
-      projects={projects.map(p => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        projectType: p.projectType,
-        isPublished: p.isPublished,
-        createdAt: p.createdAt,
-        updatedAt: p.updatedAt,
-      }))}
-      projectsLoading={projectsLoading}
     />
   );
 };
 
-// Dashboard wrapper
-const DashboardRoute = () => {
-  const navigate = useNavigate();
-  const { projects, loading, deleteProject, forkProject } = useProjects();
-
-  return (
-    <ProjectsDashboard
-      projects={projects.map(p => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        projectType: p.projectType,
-        isPublished: p.isPublished,
-        createdAt: p.createdAt,
-        updatedAt: p.updatedAt,
-      }))}
-      onNewProject={() => navigate('/')}
-      onOpenProject={(id) => navigate(`/projects/${id}`)}
-      onDeleteProject={deleteProject}
-      onForkProject={async (id) => {
-        const forked = await forkProject(id);
-        if (forked) {
-          navigate(`/projects/${forked.id}`);
-        }
-      }}
-    />
-  );
-};
-
-import { Pricing } from "@/pages/Pricing";
 import { Docs } from "@/pages/Docs";
 import Settings from "@/pages/Settings";
-import { ProjectView } from "@/pages/ProjectView";
 import FAQ from "@/pages/FAQ";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
-import { NewVibeTool } from "@/pages/NewVibeTool";
-import AiForAll from "@/pages/AiForAll";
-import SupabaseConnect from "@/pages/SupabaseConnect";
-import Blog from "@/pages/Blog";
-import BlogPost from "@/pages/BlogPost";
 import AboutUs from "@/pages/AboutUs";
 // AdminPanel already imported at the top
-import ProjectSettings from "@/pages/ProjectSettings";
-import Billing from "@/pages/Billing";
-import SupabaseCallbackPage from "@/pages/SupabaseCallback";
-import GetStarted from "@/pages/GetStarted";
 
 import { MaintenanceScreen } from "@/components/shared/MaintenanceScreen";
 import { SiteMessagePopup } from "@/components/shared/SiteMessagePopup";
@@ -1401,32 +1359,28 @@ const App = () => (
           <SiteMessagePopup />
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Routes>
               <Route path="/login" element={<AuthPage onSuccess={() => {
                 const onboardingDone = localStorage.getItem('onboarding_completed');
                 window.location.href = onboardingDone ? '/' : '/get-started';
               }} />} />
-              <Route path="/dashboard" element={<DashboardRoute />} />
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
               <Route path="/projects/:id" element={<ProjectEditorRoute />} />
-              <Route path="/projects/:id/settings" element={<ProjectSettings />} />
-              <Route path="/view/:projectId" element={<ProjectView />} />
-              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/projects/:id/settings" element={<Navigate to="/" replace />} />
+              <Route path="/view/:projectId" element={<Navigate to="/" replace />} />
+              <Route path="/pricing" element={<Navigate to="/" replace />} />
               <Route path="/docs" element={<Docs />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/settings" element={<Settings />} />
-              <Route path="/billing" element={<Billing />} />
+              <Route path="/billing" element={<Navigate to="/" replace />} />
               <Route path="/admin" element={<AdminPanel />} />
-              <Route path="/new-vibe-tool" element={<NewVibeTool />} />
-              <Route path="/ai-for-all" element={<AiForAll />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:slug" element={<BlogPost />} />
-              <Route path="/supabase-connect" element={<SupabaseConnect />} />
-              <Route path="/supabase-callback" element={<SupabaseCallbackPage />} />
+              <Route path="/blog" element={<Navigate to="/" replace />} />
+              <Route path="/blog/:slug" element={<Navigate to="/" replace />} />
               <Route path="/about" element={<AboutUs />} />
-              <Route path="/get-started" element={<GetStarted />} />
+              <Route path="/get-started" element={<Navigate to="/" replace />} />
               <Route path="/" element={<AppContent />} />
             </Routes>
           </BrowserRouter>
