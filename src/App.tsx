@@ -20,6 +20,7 @@ import {
   parseAIResponse,
   stopGeneration,
   generateSuggestions,
+  generateExplanation,
   type Suggestion
 } from "@/services/aiService";
 import type { ProjectData, ChatMessage, ProjectFile } from "@/types";
@@ -39,7 +40,7 @@ const normalizePublicImageUrl = (url: string): string => {
 
 // Keep the editor and preview useful before the model has closed its final
 // response. The server receives a debounced snapshot of these partial files,
-// so another Webo tab can join the same build in progress.
+// so another Vivora X tab can join the same build in progress.
 const extractLiveFiles = (response: string): Record<string, ProjectFile> => {
   const files: Record<string, ProjectFile> = {};
   // Only expose a file after its closing marker arrives. Showing an open block
@@ -55,20 +56,26 @@ const extractLiveFiles = (response: string): Record<string, ProjectFile> => {
   return files;
 };
 
-const instantPlan = (editing = false, request = '') => {
+const fallbackPlan = (editing = false, request = '') => {
   const goal = request.replace(/\s+/g, ' ').trim().slice(0, 90);
   return editing
-    ? [
-        `Read the affected project files for the requested change${goal ? `: ${goal}` : ''}`,
-        'Edit the affected HTML pages and shared styles',
-        'Update browser interactions and verify links between pages',
-      ]
-    : [
-        `Analyze the request${goal ? ` and define the page for: ${goal}` : ''}`,
-        'Plan the browser-native page and folder structure',
-        'Write the semantic HTML pages and responsive CSS files',
-        'Implement JavaScript interactions and verify navigation between pages',
-      ];
+    ? `I’ll apply the requested update${goal ? ` for “${goal}”` : ''}, then verify the affected experience.`
+    : `I’ll turn ${goal ? `“${goal}”` : 'your brief'} into a responsive browser-native experience and verify it end to end.`;
+};
+
+const generatePlanLine = async (editing: boolean, request: string, language: string, theme?: { name: string; colors: string[] } | null) => {
+  const themeContext = theme ? ` The selected design system is ${theme.name} with colors ${theme.colors.join(', ')} and it must drive the final UI.` : '';
+  const generated = await generateExplanation(
+    `${editing ? 'Describe the concrete change you are about to implement' : 'Describe the concrete website you are about to build'} for this request: ${request}.${themeContext}`,
+    'html',
+    language,
+  );
+  const line = generated
+    .replace(/^[\s\-*•\d.)]+/, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 240);
+  return [line || fallbackPlan(editing, request)];
 };
 
 const runtimeFile = (path: string, content: string, language: string): ProjectFile => ({
@@ -84,7 +91,7 @@ const ensureStaticWebsiteFiles = (files: Record<string, ProjectFile>) => {
   if (!next['index.html']) {
     next['index.html'] = runtimeFile(
       'index.html',
-      '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Webo Website</title>\n</head>\n<body>\n  <main><h1>Your website is ready</h1></main>\n</body>\n</html>',
+      '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Vivora X Website</title>\n</head>\n<body>\n  <main><h1>Your website is ready</h1></main>\n</body>\n</html>',
       'html',
     );
   }
@@ -118,7 +125,7 @@ const ProjectEditorRoute = () => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const { user, loading: authLoading } = useAuth();
-  const { projects, loading: projectsLoading, updateProject, getProject } = useProjects();
+  const { projects, loading: projectsLoading, updateProject, getProject, fetchProject } = useProjects();
 
   const [localProject, setLocalProject] = useState<ProjectData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -135,6 +142,7 @@ const ProjectEditorRoute = () => {
   const [pendingClarifyImageUrl, setPendingClarifyImageUrl] = useState<string | undefined>(undefined);
   const isCancelled = useRef(false);
   const lastAssistantMessageId = useRef<string | null>(null);
+  const projectLoadAttempt = useRef<string | null>(null);
 
   // Use chat messages hook for persistence
   const {
@@ -146,16 +154,17 @@ const ProjectEditorRoute = () => {
     clearMessages
   } = useChatMessages(id || null);
 
-  const { createVersion } = useVersions(id || null);
+  const { snapshotVersion } = useVersions(id || null);
 
   const backgroundFallbackTriggered = useRef(false);
   const currentGenerationMessages = useRef<any[]>([]);
 
 
   useEffect(() => {
-    if (id && !projectsLoading && projects.length > 0) {
-      const dbProject = projects.find(p => p.id === id);
+    if (id && !projectsLoading) {
+      const dbProject = getProject(id);
       if (dbProject) {
+        projectLoadAttempt.current = id;
         setLocalProject({
           id: dbProject.id,
           name: dbProject.name,
@@ -187,12 +196,17 @@ const ProjectEditorRoute = () => {
             setHasStartedGeneration(true);
           }
         }
-      } else {
-        // Project not found, redirect to home
-        navigate('/');
+      } else if (projectLoadAttempt.current !== id) {
+        projectLoadAttempt.current = id;
+        void fetchProject(id).then(found => {
+          if (!found) {
+            toast({ title: 'Project not found', description: 'The project could not be loaded. Try creating it again.', variant: 'destructive' });
+            navigate('/');
+          }
+        });
       }
     }
-  }, [id, projects, projectsLoading, navigate]);
+  }, [id, projects, projectsLoading, navigate, getProject, fetchProject]);
 
   // Auto-start generation for new projects (description = prompt, no messages yet)
   useEffect(() => {
@@ -218,19 +232,7 @@ const ProjectEditorRoute = () => {
           sessionStorage.removeItem(`project_image_${localProject.id}`);
         }
 
-        // Get any clone design data from sessionStorage
-        const cloneDataRaw = sessionStorage.getItem('pending_clone_data');
-        let cloneData: { url: string; html: string } | null = null;
-        if (cloneDataRaw) {
-          sessionStorage.removeItem('pending_clone_data');
-          try { cloneData = JSON.parse(cloneDataRaw); } catch { }
-        }
-
-        // Add user message (visible) - show clone indicator but NOT the HTML
-        const visiblePrompt = cloneData
-          ? `${prompt}\n\n📎 Clone Design: ${cloneData.url}`
-          : prompt;
-        await addMessage('user', visiblePrompt, savedImageUrl || undefined);
+        await addMessage('user', prompt, savedImageUrl || undefined);
         setIsGenerating(true);
         setStreamingContent('');
         setFileActivities([]);
@@ -238,9 +240,13 @@ const ProjectEditorRoute = () => {
         setGenerationPhase({ phase: 'planning', message: t('chat.analyzing') });
 
         try {
-          // The plan is deterministic so it explains the browser-native
-          // multi-file build clearly before generation starts.
-          const planLines = instantPlan(false, prompt);
+          const selectedDesignSystem = (() => {
+            try {
+              const saved = sessionStorage.getItem(`project_color_theme_${localProject.id}`);
+              return saved ? JSON.parse(saved) as { name: string; colors: string[] } : null;
+            } catch { return null; }
+          })();
+          const planLines = await generatePlanLine(false, prompt, language, selectedDesignSystem);
           setGenerationPhase({ phase: 'planning', message: t('chat.analyzing'), thinkingTime: 0, plan: planLines, completedSteps: [], currentStep: 0, stepFiles: {} });
 
           // Save plan to database
@@ -264,9 +270,7 @@ const ProjectEditorRoute = () => {
 
           // Add explanation message for initial generation (keep it SHORT)
           const assistantId = crypto.randomUUID();
-          const planContent = planLines.length > 0
-            ? `${planLines.slice(0, 4).map((line) => `- ${line}`).join('\n')}\n\n`
-            : '';
+          const planContent = planLines.length > 0 ? `${planLines[0]}\n\n` : '';
           const explanationMessage = `${planContent}**${t('chat.generating')}**`;
           await addMessage('assistant', explanationMessage, undefined, undefined, undefined, assistantId);
           lastAssistantMessageId.current = assistantId;
@@ -312,7 +316,7 @@ const ProjectEditorRoute = () => {
           // Add "Analyzing image" activity if image was uploaded
           if (savedImageUrl) {
             const isDesignRef = prompt.toLowerCase().includes('design') || prompt.toLowerCase().includes('تصميم') || prompt.toLowerCase().includes('mockup') || prompt.toLowerCase().includes('صفحة');
-            const imgFileName = savedImageUrl.split('/').pop() || 'uploaded-image';
+            const imgFileName = savedImageUrl.startsWith('data:') ? 'uploaded-image' : savedImageUrl.split('/').pop() || 'uploaded-image';
             setFileActivities([{
               name: isDesignRef ? `Design Reference: ${imgFileName}` : imgFileName,
               status: 'done',
@@ -322,10 +326,10 @@ const ProjectEditorRoute = () => {
 
           // Credits will be deducted AFTER generation completes (in onComplete)
 
-          // Build prompt with safety rules + clone data (hidden from chat)
+          // Build prompt with the chosen design system as an enforceable input.
           let userPrompt = `${prompt}\n\n[OUTPUT RULE: Build this as a browser-native multi-page website. Keep index.html as the entry point and create any additional HTML, CSS, JavaScript, JSON, SVG, text, or Markdown files and folders the product genuinely needs. Do not use React, JSX, TypeScript, Vite, packages, or frameworks.]`;
-          if (cloneData) {
-            userPrompt += `\n\n---\n[CLONE DESIGN SOURCE - ${cloneData.url}]\nHere is the source code of the website I want to clone/replicate the design of:\n\`\`\`html\n${cloneData.html}\n\`\`\``;
+          if (selectedDesignSystem) {
+            userPrompt += `\n\n[SELECTED DESIGN SYSTEM: ${selectedDesignSystem.name}. Use these palette colors as the actual interface tokens: ${selectedDesignSystem.colors.join(', ')}. Apply them consistently to backgrounds, surfaces, text hierarchy, borders, focus states, and actions; do not silently replace this palette.]`;
           }
 
           const aiMessages: any[] = [{ role: 'user', content: userPrompt }];
@@ -353,8 +357,7 @@ const ProjectEditorRoute = () => {
                   const fileName = (fileNameRaw || '').trim().replace(/^\/+/, '');
                   if (!isBrowserProjectFile(fileName) || detectedFiles.has(fileName)) return;
                   detectedFiles.add(fileName);
-                  const extension = fileName.split('.').pop()?.toLowerCase();
-                  const planStep = extension === 'html' ? 1 : extension === 'css' ? 2 : 3;
+                  const planStep = 0;
                   setGenerationPhase(prev => prev ? {
                     ...prev,
                     currentStep: planStep,
@@ -390,7 +393,7 @@ const ProjectEditorRoute = () => {
                 persistLiveFiles(true);
                 await liveSaveChain;
 
-                const { files } = parseAIResponse(response);
+                const { files, summary: aiSummary } = parseAIResponse(response);
 
                 let finalFiles = Object.keys(files).length > 0
                   ? { ...localProject.files, ...files }
@@ -409,21 +412,23 @@ const ProjectEditorRoute = () => {
 
                 const stepFilesMap: Record<number, string[]> = {};
                 generatedPaths.forEach(path => {
-                  const extension = path.split('.').pop()?.toLowerCase();
-                  const step = extension === 'html' ? 1 : extension === 'css' ? 2 : 3;
+                  const step = 0;
                   stepFilesMap[step] = [...(stepFilesMap[step] || []), path];
                 });
 
-                await updateProject(localProject.id, {
+                const projectSaved = await updateProject(localProject.id, {
                   files: finalFiles,
                   generationStatus: 'complete'
                 });
+                if (!projectSaved) throw new Error('The generated files could not be saved. Check the server connection and try again.');
                 setLocalProject(prev => prev ? { ...prev, files: finalFiles } : null);
 
                 // Mark all steps as complete
                 const allStepsComplete = planLines.map((_, i) => i);
 
-                const summary = `✅ Created ${generatedPaths.length} browser-native file${generatedPaths.length === 1 ? '' : 's'} with working page navigation.`;
+                const summary = aiSummary
+                  ? `✅ ${aiSummary}`
+                  : `✅ Created ${generatedPaths.length} browser-native file${generatedPaths.length === 1 ? '' : 's'} with working page navigation.`;
 
                 // Update original explanation message instead of adding a new one
                 if (assistantId) {
@@ -472,6 +477,9 @@ const ProjectEditorRoute = () => {
                     console.error('Credit deduction failed:', e);
                   }
                 }
+
+                const savedVersion = await snapshotVersion('Initial Build', activities, 2);
+                if (!savedVersion) throw new Error('The project was saved, but its first version could not be created.');
 
                 // Generate suggestions after completion
                 if (localProject.description) {
@@ -548,12 +556,7 @@ const ProjectEditorRoute = () => {
             },
             undefined,
             language,
-            (() => {
-              try {
-                const t = sessionStorage.getItem(`project_color_theme_${localProject.id}`);
-                return t ? JSON.parse(t) : null;
-              } catch { return null; }
-            })()
+            selectedDesignSystem
           );
         } catch (error) {
           if (isCancelled.current) return;
@@ -569,7 +572,7 @@ const ProjectEditorRoute = () => {
 
       startInitialGeneration();
     }
-  }, [localProject, messages, hasStartedGeneration, addMessage, updateProject]);
+  }, [localProject, messages, hasStartedGeneration, addMessage, updateProject, snapshotVersion, language]);
 
   const handleVersionRestore = useCallback(async (files: Record<string, ProjectFile>, restoredMessages: ChatMessage[]) => {
     if (localProject) {
@@ -593,14 +596,12 @@ const ProjectEditorRoute = () => {
   const handleSendMessage = useCallback(async (content: string, isChatOnly: boolean = false, imageUrl?: string) => {
     if (!localProject) return;
 
-    const imageUrls = imageUrl
-      ? imageUrl.split(',').map((u) => normalizePublicImageUrl(u)).filter(Boolean)
-      : [];
+    const imageUrls = imageUrl ? [normalizePublicImageUrl(imageUrl)].filter(Boolean) : [];
 
     let userMessageAlreadySaved = false;
     isCancelled.current = false;
 
-    // Webo always uses the single approved model path on the server.
+    // Vivora X always uses the single approved model path on the server.
     // AUTO-DETECT: Call clarify mode to determine intent before code gen
     const isAutoFix = content.startsWith('[AUTO-FIX]');
     const hasReferencedFiles = content.includes('[Referenced Files:');
@@ -684,7 +685,7 @@ const ProjectEditorRoute = () => {
     // Add "Analyzing image/file" activities for uploaded files
     const initialActivities: FileActivity[] = [];
     if (imageUrl) {
-      const urls = imageUrl.split(',').filter(Boolean);
+      const urls = [imageUrl].filter(Boolean);
       urls.forEach(url => {
         const fileMetaMatch = url.match(/\[FILE:(\w+):([^\]]+)\]/);
         if (fileMetaMatch) {
@@ -694,7 +695,7 @@ const ProjectEditorRoute = () => {
             action: 'analyzed_image'
           });
         } else {
-          const imgName = url.split('/').pop() || 'uploaded-image';
+          const imgName = url.startsWith('data:') ? 'uploaded-image' : url.split('/').pop() || 'uploaded-image';
           const isDesignRef = content.toLowerCase().includes('design') || content.toLowerCase().includes('تصميم') || content.toLowerCase().includes('mockup') || content.toLowerCase().includes('مثل');
           const isLogoUpload = content.toLowerCase().includes('logo') || content.toLowerCase().includes('لوجو') || content.toLowerCase().includes('شعار');
           initialActivities.push({
@@ -713,9 +714,15 @@ const ProjectEditorRoute = () => {
 
     try {
       if (isCancelled.current) return;
+      const selectedDesignSystem = (() => {
+        try {
+          const saved = sessionStorage.getItem(`project_color_theme_${localProject.id}`);
+          return saved ? JSON.parse(saved) as { name: string; colors: string[] } : null;
+        } catch { return null; }
+      })();
       const planLines = isAutoFix
-        ? ['Locate the exact syntax error', 'Patch only the failing file', 'Verify the browser preview']
-        : instantPlan(true, content);
+        ? ['Locate and repair the reported preview error, then verify the affected file.']
+        : await generatePlanLine(true, content, language, selectedDesignSystem);
       setGenerationPhase({ phase: 'planning', message: t('chat.analyzing'), thinkingTime: 0, plan: planLines, completedSteps: [], currentStep: 0, stepFiles: {} });
 
       setGenerationPhase({
@@ -732,9 +739,7 @@ const ProjectEditorRoute = () => {
 
       // Add the explanation message (keep it SHORT)
       const assistantId = crypto.randomUUID();
-      const planContent = planLines.length > 0
-        ? `${planLines.slice(0, 4).map((line, i) => `${i + 1}. ${line}`).join('\n')}\n\n`
-        : '';
+      const planContent = planLines.length > 0 ? `${planLines[0]}\n\n` : '';
       const explanationMessage = `${planContent}**${t('chat.generating')}**`;
       await addMessage('assistant', explanationMessage, undefined, undefined, undefined, assistantId);
       lastAssistantMessageId.current = assistantId;
@@ -754,7 +759,7 @@ const ProjectEditorRoute = () => {
         ...messages.map(m => ({
           role: m.role as 'user' | 'assistant',
           content: m.content,
-          imageUrls: m.imageUrl ? m.imageUrl.split(',').map((u) => normalizePublicImageUrl(u)).filter(Boolean) : undefined
+          imageUrls: m.imageUrl ? [normalizePublicImageUrl(m.imageUrl)].filter(Boolean) : undefined
         })),
         {
           role: 'user' as const,
@@ -863,7 +868,7 @@ const ProjectEditorRoute = () => {
 
             if (!hasFileChanges) {
               const noChangeMessage = isAutoFix
-                ? 'The automatic repair did not return a file change, so Webo stopped it instead of creating an empty version.'
+                ? 'The automatic repair did not return a file change, so Vivora X stopped it instead of creating an empty version.'
                 : 'No file changes were returned for this request.';
               if (assistantId) {
                 await updateMessage(assistantId, { content: noChangeMessage, actionsTaken: [] });
@@ -922,7 +927,8 @@ const ProjectEditorRoute = () => {
                 deletedFiles.forEach(f => delete mergedFiles[f]);
               }
               mergedFiles = ensureStaticWebsiteFiles(mergedFiles);
-              await updateProject(localProject.id, { files: mergedFiles });
+              const projectSaved = await updateProject(localProject.id, { files: mergedFiles, generationStatus: 'complete' });
+              if (!projectSaved) throw new Error('The updated files could not be saved. Check the server connection and try again.');
               setLocalProject(prev => prev ? { ...prev, files: mergedFiles } : null);
             }
 
@@ -966,6 +972,9 @@ const ProjectEditorRoute = () => {
               await addMessage('assistant', summary, undefined, activities);
             }
 
+            const savedVersion = await snapshotVersion(undefined, activities, 1);
+            if (!savedVersion) throw new Error('The project changes were saved, but the new version could not be created.');
+
             currentGenerationMessages.current = [];
             backgroundFallbackTriggered.current = false;
             setIsGenerating(false);
@@ -982,8 +991,6 @@ const ProjectEditorRoute = () => {
               stepFiles: stepFilesMap,
               summary
             }));
-
-            // Version creation is handled by EditorLayout's auto-create on generation complete
 
             // Note: Preview is already the default view in EditorLayout
 
@@ -1065,12 +1072,7 @@ const ProjectEditorRoute = () => {
         },
         existingFilesList,
         language,
-        (() => {
-          try {
-            const t = sessionStorage.getItem(`project_color_theme_${localProject.id}`);
-            return t ? JSON.parse(t) : null;
-          } catch { return null; }
-        })()
+        selectedDesignSystem
       );
     } catch (error) {
       if (isCancelled.current) return;
@@ -1081,7 +1083,7 @@ const ProjectEditorRoute = () => {
       setGenerationPhase(null);
       setFileActivities([]);
     }
-  }, [localProject, messages, updateProject, addMessage]);
+  }, [localProject, messages, updateProject, addMessage, snapshotVersion, language]);
 
   // Handle clarify complete - user answered all questions
   const handleClarifyComplete = useCallback((answers: Record<number, string>) => {
@@ -1197,6 +1199,7 @@ const AppContent = () => {
   } = useProjects();
 
   const [showAuth, setShowAuth] = useState(false);
+  const [pendingBuild, setPendingBuild] = useState<{ prompt:string; projectType:'vite'|'html'; imageUrls?:string[] } | null>(null);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [localProject, setLocalProject] = useState<ProjectData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -1258,7 +1261,7 @@ const AppContent = () => {
   }, []);
 
   const handleStartBuilding = useCallback(async (prompt: string, projectType: 'vite' | 'html', _modelId?: string, imageUrls?: string[]) => {
-    if (!user) return;
+    if (!user) return false;
 
     isCancelled.current = false;
 
@@ -1271,7 +1274,7 @@ const AppContent = () => {
         description: 'Failed to create project',
         variant: 'destructive',
       });
-      return;
+      return false;
     }
 
 
@@ -1282,7 +1285,7 @@ const AppContent = () => {
         .filter(Boolean);
 
       if (normalizedImageUrls.length > 0) {
-        sessionStorage.setItem(`project_image_${newProject.id}`, normalizedImageUrls.join(','));
+        sessionStorage.setItem(`project_image_${newProject.id}`, normalizedImageUrls[0]);
       }
     }
 
@@ -1294,8 +1297,17 @@ const AppContent = () => {
     }
 
     // Navigate to project page
+    localStorage.removeItem('vivora_home_prompt');
     navigate(`/projects/${newProject.id}`);
+    return true;
   }, [user, createProject, navigate]);
+
+  useEffect(() => {
+    if (!user || !pendingBuild) return;
+    const request = pendingBuild;
+    setPendingBuild(null);
+    void handleStartBuilding(request.prompt, request.projectType, undefined, request.imageUrls);
+  }, [user, pendingBuild, handleStartBuilding]);
 
   const handleNewProject = useCallback(() => {
     setCurrentProjectId(null);
@@ -1317,10 +1329,11 @@ const AppContent = () => {
   // Handle build attempt - require login if not authenticated
   const handleBuildAttempt = async (prompt: string, projectType: 'vite' | 'html', _modelId?: string, imageUrls?: string[]) => {
     if (!user) {
+      setPendingBuild({ prompt, projectType, imageUrls });
       setShowAuth(true);
-      return;
+      return false;
     }
-    await handleStartBuilding(prompt, projectType, undefined, imageUrls);
+    return handleStartBuilding(prompt, projectType, undefined, imageUrls);
   };
 
   // Show auth page only if explicitly requested
@@ -1337,12 +1350,10 @@ const AppContent = () => {
   );
 };
 
-import { Docs } from "@/pages/Docs";
 import Settings from "@/pages/Settings";
 import FAQ from "@/pages/FAQ";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
-import AboutUs from "@/pages/AboutUs";
 // AdminPanel already imported at the top
 
 import { MaintenanceScreen } from "@/components/shared/MaintenanceScreen";
@@ -1369,8 +1380,6 @@ const App = () => (
               <Route path="/projects/:id" element={<ProjectEditorRoute />} />
               <Route path="/projects/:id/settings" element={<Navigate to="/" replace />} />
               <Route path="/view/:projectId" element={<Navigate to="/" replace />} />
-              <Route path="/pricing" element={<Navigate to="/" replace />} />
-              <Route path="/docs" element={<Docs />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
@@ -1379,7 +1388,6 @@ const App = () => (
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/blog" element={<Navigate to="/" replace />} />
               <Route path="/blog/:slug" element={<Navigate to="/" replace />} />
-              <Route path="/about" element={<AboutUs />} />
               <Route path="/get-started" element={<Navigate to="/" replace />} />
               <Route path="/" element={<AppContent />} />
             </Routes>

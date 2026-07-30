@@ -27,7 +27,7 @@ export async function calculateRequestCredits(_userMessage: string): Promise<num
     return 1;
 }
 
-// Main function to call AI through Webo's private Node API.
+// Main function to call AI through Vivora X's private Node API.
 // Supports adaptive timeouts for slow/thinking models
 export async function callingDirectAI(
     mode: 'code' | 'status' | 'explanation' | 'suggestions' | 'chat' | 'version-name' | 'clarify',

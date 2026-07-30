@@ -6,7 +6,7 @@ import type { ProjectFile } from '@/types';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
 import { isBrowserProjectFile, normalizeBrowserProjectPath } from '@/lib/browserProject';
 
-// Webo's focused dark Monaco theme
+// Vivora X's focused dark Monaco theme
 const defineWeboDarkTheme = (monaco: Monaco) => {
   monaco.editor.defineTheme('webo-dark-custom', {
     base: 'vs-dark',
@@ -417,7 +417,7 @@ export const CodeView: React.FC<CodeViewProps> = ({
               <File className="w-3.5 h-3.5" style={{ color: '#8b949e' }} />
               <span className="text-xs font-medium flex items-center gap-1.5" style={{ color: '#e1e4e8', fontFamily: "'SF Mono', 'Fira Code', monospace" }}>
                 {selectedFile}
-                {isFileModified && <span className="w-2 h-2 rounded-full bg-yellow-400" />}
+                {isFileModified && <span className="w-2 h-2 rounded-full bg-pink-400" />}
               </span>
               {currentFileData?.isNew && !currentFileData?.complete && (
                 <span className="text-[10px] flex items-center gap-1 ml-auto font-medium" style={{ color: '#d29922' }}>
@@ -515,8 +515,8 @@ export const CodeView: React.FC<CodeViewProps> = ({
             {!canEditCode && (
               <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 flex items-end justify-center pointer-events-none">
                 <div className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 text-white/80 text-sm">
-                  <Lock className="w-4 h-4 text-yellow-400" />
-                  <span>Code editing requires <a href="/pricing" className="text-purple-400 hover:underline font-semibold">Pro or Business</a> plan</span>
+                  <Lock className="w-4 h-4 text-pink-400" />
+                  <span>Code editing requires a Pro or Business plan. Upgrade from your account menu.</span>
                 </div>
               </div>
             )}

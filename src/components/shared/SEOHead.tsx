@@ -10,9 +10,9 @@ interface SEOHeadProps {
   jsonLd?: object;
 }
 
-const SITE_NAME = 'Webo';
-const DEFAULT_TITLE = 'Webo — Build Websites with HTML, CSS & JavaScript';
-const DEFAULT_DESCRIPTION = 'Describe a website and Webo generates a complete browser-native multi-page project with an instant preview.';
+const SITE_NAME = 'Vivora X';
+const DEFAULT_TITLE = 'Vivora X — Build Websites with HTML, CSS & JavaScript';
+const DEFAULT_DESCRIPTION = 'Describe a website and Vivora X generates a complete browser-native multi-page project with an instant preview.';
 const DEFAULT_IMAGE = 'https://vivorax.online/og-image.png';
 const SITE_URL = 'https://vivorax.online';
 

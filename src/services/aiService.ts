@@ -844,18 +844,11 @@ async function readSSEStream(
 
 // Generate suggestions after project completion
 export async function generateSuggestions(projectDescription: string): Promise<Suggestion[]> {
-  const defaultSuggestions: Suggestion[] = [
-    { label: "Add Dark Mode", prompt: "Add a dark mode toggle that saves user preference" },
-    { label: "Improve Mobile", prompt: "Improve the mobile responsiveness and add a hamburger menu" },
-    { label: "Add Animations", prompt: "Add smooth browser-native CSS and JavaScript animations" },
-    { label: "SEO Optimization", prompt: "Add meta tags and improve SEO for better search rankings" },
-  ];
-
   try {
     const msgs = [{ role: 'user', content: `Project description: ${projectDescription}. Generate 4 relevant feature suggestions.` }];
     const response = await callingDirectAI('suggestions', msgs);
 
-    if (!response.ok) return defaultSuggestions;
+    if (!response.ok) return [];
 
     const { text: fullResponse } = await readSSEStream(response);
 
@@ -871,10 +864,10 @@ export async function generateSuggestions(projectDescription: string): Promise<S
       console.error('Failed to parse suggestions JSON');
     }
 
-    return defaultSuggestions;
+    return [];
   } catch (error) {
     console.error('Suggestions generation error:', error);
-    return defaultSuggestions;
+    return [];
   }
 }
 
@@ -918,7 +911,7 @@ export async function generateExplanation(
 
     const streamPromise = readSSEStream(response, onChunk).then(r => r.text);
     const timeoutPromise = new Promise<string>((resolve) =>
-      setTimeout(() => { controller.abort(); resolve(''); }, 12_000)
+      setTimeout(() => { controller.abort(); resolve(''); }, 30_000)
     );
 
     const fullResponse = await Promise.race([streamPromise, timeoutPromise]);
@@ -936,8 +929,8 @@ export async function streamAICodeGeneration(
   projectType: 'vite' | 'html',
   options: {
     onChunk: (chunk: string) => void;
-    onComplete: (fullResponse: string, usage?: SSEUsage | null) => void;
-    onError?: (error: Error) => void;
+    onComplete: (fullResponse: string, usage?: SSEUsage | null) => void | Promise<void>;
+    onError?: (error: Error) => void | Promise<void>;
     onFileStart?: (fileName: string) => void;
     onStatusUpdate?: (status: string) => void;
     onAgentStep?: (event: AgentStepEvent) => void;
@@ -989,13 +982,13 @@ ${existingFiles}
         }
       }
     );
-    options.onComplete(fullResponse, usage);
+    await options.onComplete(fullResponse, usage);
   } catch (error) {
     console.error('Code generation error:', error);
     if (options.onError) {
-      options.onError(error as Error);
+      await options.onError(error as Error);
     } else {
-      options.onComplete('');
+      await options.onComplete('');
     }
   }
 }

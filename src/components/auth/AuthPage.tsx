@@ -69,19 +69,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <VivoraXLogo size="md" onClick={() => window.location.href = '/'} />
 
-          <nav className="hidden md:flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-full px-2 py-1">
-            <button className="px-4 py-2 text-white/80 hover:text-white transition-colors text-sm">
-              Pricing
-            </button>
-            <button className="px-4 py-2 text-white/80 hover:text-white transition-colors text-sm">
-              Careers
-            </button>
-            <a href="/blog/ai-for-all" className="px-4 py-2 text-white/80 hover:text-white transition-colors text-sm flex items-center gap-1">
-              AI for All
-            </a>
-          </nav>
-
-          <div className="w-24" /> {/* Spacer for balance */}
+          <div className="w-9" aria-hidden="true" />
         </div>
       </header>
 

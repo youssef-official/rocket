@@ -161,7 +161,10 @@ app.use(cors({
   maxAge: 86_400,
   credentials: false,
 }));
-app.use(express.json({ limit: '2mb' }));
+// Generated multi-page sites can exceed a couple of megabytes once SVG and
+// embedded assets are included. Keep the limit bounded, but large enough for a
+// complete project snapshot and its version history.
+app.use(express.json({ limit: '20mb' }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use('/api', rateLimit({ windowMs: 15 * 60_000, limit: 300, standardHeaders: true, legacyHeaders: false }));
 
@@ -172,7 +175,7 @@ const projectAdjectives = ['Amber', 'Atlas', 'Bright', 'Cedar', 'Cloud', 'Coral'
 const projectNouns = ['Canvas', 'Forge', 'Harbor', 'Meadow', 'Nest', 'Orbit', 'Page', 'Studio', 'Trail', 'Wave', 'Works'];
 const randomItem = values => values[randomInt(0, values.length)];
 const systemProjectName = () => `${randomItem(projectAdjectives)} ${randomItem(projectNouns)} ${randomBytes(2).toString('hex').toUpperCase()}`;
-// A small authenticated SSE hub keeps every open Webo screen in sync.  It is
+// A small authenticated SSE hub keeps every open Vivora X screen in sync. It is
 // intentionally in-process: no third-party realtime service and no token in a
 // URL are needed.  SQLite remains the source of truth; events only tell a
 // client when it should fetch the latest record.
@@ -204,6 +207,13 @@ const projectVersion = row => ({
   chatMessages: json(row.messages_json, []),
   actionsTaken: json(row.actions_json, []),
   creditsUsed: row.credits_used == null ? undefined : Number(row.credits_used),
+  createdAt: row.created_at,
+});
+const chatMessage = row => ({
+  id: row.id, role: row.role, content: row.content,
+  imageUrl: row.image_url || undefined,
+  creditsUsed: row.credits_used || undefined,
+  actionsTaken: json(row.actions_json, []),
   createdAt: row.created_at,
 });
 const sign = user => jwt.sign({ sub: user.id, role: user.role }, config.jwtSecret, { expiresIn: '7d', issuer: 'webo' });
@@ -326,6 +336,10 @@ app.get('/api/account/plan', auth, (req, res) => {
 });
 
 app.get('/api/projects', auth, (req, res) => res.json(db.prepare('SELECT * FROM projects WHERE user_id = ? ORDER BY updated_at DESC').all(req.auth.sub).map(project)));
+app.get('/api/projects/:id', auth, (req, res) => {
+  const current = ownedProject(req.params.id, req.auth.sub);
+  return current ? res.json(project(current)) : res.status(404).json({ error: 'Project not found.' });
+});
 app.post('/api/projects', auth, (req, res) => {
   try {
     const schema = z.object({ name: z.string().max(120).optional(), projectType: z.enum(['vite', 'html']).optional(), description: z.string().max(100000).optional(), files: z.record(z.unknown()).default({}) });
@@ -392,7 +406,50 @@ app.post('/api/projects/:id/versions', auth, (req, res) => {
   };
   db.prepare('INSERT INTO project_versions (id,project_id,user_id,version_number,name,files_json,messages_json,actions_json,credits_used,created_at) VALUES (@id,@project_id,@user_id,@version_number,@name,@files_json,@messages_json,@actions_json,@credits_used,@created_at)')
     .run(record);
-  res.status(201).json(projectVersion(db.prepare('SELECT * FROM project_versions WHERE id = ?').get(record.id)));
+  const created = projectVersion(db.prepare('SELECT * FROM project_versions WHERE id = ?').get(record.id));
+  sendRealtimeEvent(req.auth.sub, 'version.created', { projectId: current.id, versionId: created.id });
+  res.status(201).json(created);
+});
+
+app.post('/api/projects/:id/versions/snapshot', auth, (req, res) => {
+  const current = ownedProject(req.params.id, req.auth.sub);
+  if (!current) return res.status(404).json({ error: 'Project not found.' });
+  const parsed = z.object({ name:z.string().max(100).optional(), actionsTaken:z.array(z.unknown()).optional(), creditsUsed:z.number().optional() }).safeParse(req.body || {});
+  if (!parsed.success) return res.status(400).json({ error: 'Invalid version snapshot.' });
+  const chatMessages = db.prepare('SELECT * FROM chat_messages WHERE project_id = ? AND user_id = ? ORDER BY created_at ASC').all(current.id, req.auth.sub).map(chatMessage);
+  const messagesJson = JSON.stringify(chatMessages);
+  const latest = db.prepare('SELECT * FROM project_versions WHERE project_id = ? AND user_id = ? ORDER BY version_number DESC LIMIT 1').get(current.id, req.auth.sub);
+  if (latest && latest.files_json === current.files_json && latest.messages_json === messagesJson) return res.json(projectVersion(latest));
+  const nextNumber = Number(latest?.version_number || 0) + 1;
+  const record = {
+    id: id(), project_id: current.id, user_id: req.auth.sub, version_number: nextNumber,
+    name: parsed.data.name || (nextNumber === 1 ? 'Initial Build' : `Website Update ${nextNumber}`),
+    files_json: current.files_json, messages_json: messagesJson,
+    actions_json: JSON.stringify(parsed.data.actionsTaken || []), credits_used: parsed.data.creditsUsed ?? null, created_at: now(),
+  };
+  db.prepare('INSERT INTO project_versions (id,project_id,user_id,version_number,name,files_json,messages_json,actions_json,credits_used,created_at) VALUES (@id,@project_id,@user_id,@version_number,@name,@files_json,@messages_json,@actions_json,@credits_used,@created_at)').run(record);
+  const created = projectVersion(db.prepare('SELECT * FROM project_versions WHERE id = ?').get(record.id));
+  sendRealtimeEvent(req.auth.sub, 'version.created', { projectId: current.id, versionId: created.id });
+  res.status(201).json(created);
+});
+
+app.post('/api/projects/:id/versions/:number/rollback', auth, (req, res) => {
+  const current = ownedProject(req.params.id, req.auth.sub);
+  if (!current) return res.status(404).json({ error: 'Project not found.' });
+  const versionNumber = Number(req.params.number);
+  if (!Number.isInteger(versionNumber) || versionNumber < 1) return res.status(400).json({ error: 'Invalid version number.' });
+  const target = db.prepare('SELECT * FROM project_versions WHERE project_id = ? AND user_id = ? AND version_number = ?').get(current.id, req.auth.sub, versionNumber);
+  if (!target) return res.status(404).json({ error: 'Version not found.' });
+
+  db.transaction(() => {
+    db.prepare('DELETE FROM project_versions WHERE project_id = ? AND user_id = ? AND version_number > ?').run(current.id, req.auth.sub, versionNumber);
+    db.prepare('DELETE FROM chat_messages WHERE project_id = ? AND user_id = ? AND created_at > ?').run(current.id, req.auth.sub, target.created_at);
+    db.prepare('UPDATE projects SET files_json = ?, generation_status = ?, updated_at = ? WHERE id = ? AND user_id = ?')
+      .run(target.files_json, 'complete', now(), current.id, req.auth.sub);
+  })();
+
+  sendRealtimeEvent(req.auth.sub, 'project.updated', { projectId: current.id });
+  res.json(projectVersion(target));
 });
 
 app.post('/api/projects/:id/analytics/events', auth, (req, res) => {
@@ -459,11 +516,11 @@ app.delete('/api/projects/:id', auth, (req, res) => { const result = db.prepare(
 
 app.get('/api/projects/:id/messages', auth, (req, res) => {
   if (!ownedProject(req.params.id, req.auth.sub)) return res.status(404).json({ error: 'Project not found.' });
-  res.json(db.prepare('SELECT * FROM chat_messages WHERE project_id = ? AND user_id = ? ORDER BY created_at ASC').all(req.params.id, req.auth.sub).map(m => ({ id:m.id, role:m.role, content:m.content, imageUrl:m.image_url || undefined, creditsUsed:m.credits_used || undefined, actionsTaken:json(m.actions_json, []), createdAt:m.created_at })));
+  res.json(db.prepare('SELECT * FROM chat_messages WHERE project_id = ? AND user_id = ? ORDER BY created_at ASC').all(req.params.id, req.auth.sub).map(chatMessage));
 });
 app.put('/api/projects/:id/messages/:messageId', auth, (req, res) => {
   if (!ownedProject(req.params.id, req.auth.sub)) return res.status(404).json({ error: 'Project not found.' });
-  const message = z.object({ role:z.enum(['user','assistant']), content:z.string().max(500000), imageUrl:z.string().max(2000000).optional(), actionsTaken:z.array(z.unknown()).optional(), creditsUsed:z.number().optional() }).safeParse(req.body);
+  const message = z.object({ role:z.enum(['user','assistant']), content:z.string().max(500000), imageUrl:z.string().max(5000000).optional(), actionsTaken:z.array(z.unknown()).optional(), creditsUsed:z.number().optional() }).safeParse(req.body);
   if (!message.success) return res.status(400).json({ error: 'Invalid message.' }); const m = message.data;
   db.prepare(`INSERT INTO chat_messages (id,project_id,user_id,role,content,image_url,credits_used,actions_json,created_at) VALUES (@id,@project_id,@user_id,@role,@content,@image_url,@credits_used,@actions_json,@created_at) ON CONFLICT(id) DO UPDATE SET content=excluded.content,image_url=excluded.image_url,credits_used=excluded.credits_used,actions_json=excluded.actions_json`).run({ id:req.params.messageId, project_id:req.params.id, user_id:req.auth.sub, role:m.role, content:m.content, image_url:m.imageUrl || null, credits_used:m.creditsUsed || null, actions_json:JSON.stringify(m.actionsTaken || []), created_at:now() });
   sendRealtimeEvent(req.auth.sub, 'message.updated', { projectId:req.params.id, messageId:req.params.messageId });
@@ -500,7 +557,7 @@ app.patch('/api/admin/celebrations/:name', auth, admin, (req, res) => {
 });
 app.get('/api/admin/backup-schedule', auth, admin, (_req, res) => res.json({ hourly: 'Every 60 minutes', daily: 'Every 24 hours', weekly: 'Every 7 days', retention: 30 }));
 
-const codeSystem = `You are Webo's senior frontend engineer, QA engineer, and visual designer. Build browser-native websites using only HTML, CSS, and JavaScript.
+const codeSystem = `You are Vivora X's senior frontend engineer, QA engineer, and visual designer. Build browser-native websites using only HTML, CSS, and JavaScript.
 
 RUNTIME CONTRACT:
 - Build a complete static browser project. index.html is the required entry point, but you may create as many additional files and folders as the product genuinely needs.
@@ -527,7 +584,7 @@ OUTPUT CONTRACT:
 - End with <SUMMARY>what was built, files changed, interactions implemented, and checks performed</SUMMARY>.
 - FILE paths may use folders but must stay relative, must not contain "..", and must use an allowed browser-native extension.
 - Never mention a file unless you output it. Never use markdown code fences outside FILE blocks.` + designQualitySystem;
-const autoFixSystem = `You are Webo's fast automatic repair engine for an existing browser-native website.
+const autoFixSystem = `You are Vivora X's fast automatic repair engine for an existing browser-native website.
 
 - Fix the reported reproducible error only. The user message includes the exact error and the current source file.
 - Inspect only the named failing file unless the supplied evidence proves one direct dependency is required.
@@ -542,12 +599,11 @@ const autoFixSystem = `You are Webo's fast automatic repair engine for an existi
 - End with one short <SUMMARY> describing the repaired error.</SUMMARY>.`;
 const promptForMode = (mode) => ({
   code: codeSystem,
-  explanation: `Return a concise implementation plan with 3 to 5 concrete bullet points for building the user's browser-native project with index.html as its entry point and any additional HTML, CSS, JavaScript, JSON, SVG, text, or Markdown files and folders it needs.
-Every point must say what you will do now and name the relevant file: analyze the request or attached images, read an existing file, write page structure, style the responsive layout, implement browser interactions, or verify the result.
-The plan must commit to a specific subject-led art direction, typography strategy, palette, composition, and one signature interaction instead of generic visual language.
+  explanation: `Return exactly one short, natural sentence describing the concrete website or change you are about to implement.
+Mention the subject-led art direction or primary interaction that matters most, and use the user's language.
 Stay strictly within the user's request. Do not invent business details or suggest gathering assets.
 Never mention choosing a platform/CMS, buying a domain, hosting, SSL, launch, publishing, analytics, backups, photography, maintenance schedules, or other work outside the generated app unless the user explicitly requested that exact capability.
-Do not output code, XML tags, JSON, generic filler, React, frameworks, or build tooling.`,
+Do not output bullets, numbering, headings, code, XML tags, JSON, generic filler, React, frameworks, or build tooling.`,
   suggestions: 'Return ONLY a JSON array of exactly four objects with the string keys "label" and "prompt". Make each suggestion a concrete, subject-specific improvement to composition, typography, responsive behavior, or one purposeful interaction; never return generic polish advice or repeat the same effect. Every suggestion must be possible using only HTML, CSS, and browser-native JavaScript. Never suggest React, frameworks, packages, build tools, a database, or a backend. No markdown or explanation.',
   'version-name': 'Return ONLY a short version name of two to five words. No code, XML, JSON, or explanation.',
   clarify: 'Ask only the smallest set of clear product questions needed to build the request. Do not output code or file blocks.',
@@ -556,7 +612,7 @@ Do not output code, XML tags, JSON, generic filler, React, frameworks, or build 
 }[mode] || codeSystem);
 app.post('/api/generate', auth, rateLimit({ windowMs: 60_000, limit: 12 }), async (req, res) => {
   if (!config.openRouterKey) return res.status(503).json({ error: 'OpenRouter generation is not configured on the server.' });
-  const payload = z.object({ mode:z.enum(['code','status','explanation','suggestions','chat','version-name','clarify']).default('code'), messages:z.array(z.object({ role:z.enum(['user','assistant','system']), content:z.any() })).min(1).max(60), userLanguage:z.string().max(10).optional(), projectId:z.string().uuid().optional(), generationKind:z.enum(['initial','edit']).optional() }).safeParse(req.body);
+  const payload = z.object({ mode:z.enum(['code','status','explanation','suggestions','chat','version-name','clarify']).default('code'), messages:z.array(z.object({ role:z.enum(['user','assistant','system']), content:z.any() })).min(1).max(60), userLanguage:z.string().max(10).optional(), projectId:z.string().uuid().optional(), generationKind:z.enum(['initial','edit']).optional(), colorTheme:z.object({ name:z.string().max(80), colors:z.array(z.string().regex(/^#[0-9a-f]{6}$/i)).min(1).max(8) }).optional() }).safeParse(req.body);
   if (!payload.success) return res.status(400).json({ error: 'Invalid generation request.' });
   let reservation = null;
   let generationProject = null;
@@ -569,10 +625,13 @@ app.post('/api/generate', auth, rateLimit({ windowMs: 60_000, limit: 12 }), asyn
   let upstream;
   const latestUserContent = [...payload.data.messages].reverse().find(message => message.role === 'user')?.content;
   const isAutoFix = payload.data.mode === 'code' && typeof latestUserContent === 'string' && latestUserContent.startsWith('[AUTO-FIX]');
-  const systemPrompt = isAutoFix ? autoFixSystem : promptForMode(payload.data.mode);
+  const themeDirective = payload.data.colorTheme
+    ? `\n\nSELECTED DESIGN SYSTEM (MANDATORY): Use the “${payload.data.colorTheme.name}” palette as real CSS design tokens throughout the result: ${payload.data.colorTheme.colors.join(', ')}. Preserve accessible contrast while keeping these colors visibly dominant. Do not substitute a different palette.`
+    : '';
+  const systemPrompt = `${isAutoFix ? autoFixSystem : promptForMode(payload.data.mode)}${themeDirective}`;
   const temperature = isAutoFix ? 0.1 : payload.data.mode === 'code' ? 0.35 : 0.25;
   const maxTokens = isAutoFix ? 6000 : payload.data.mode === 'explanation' ? 240 : payload.data.mode === 'code' ? 35000 : 8000;
-  try { upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', { method:'POST', headers:{ 'Authorization':`Bearer ${config.openRouterKey}`, 'Content-Type':'application/json', 'HTTP-Referer': process.env.OPENROUTER_SITE_URL || 'https://webo.local', 'X-Title':'Webo' }, body:JSON.stringify({ model:'qwen/qwen3.7-flash', stream:true, temperature, max_tokens:maxTokens, messages:[{ role:'system', content:systemPrompt }, ...payload.data.messages] }) }); }
+  try { upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', { method:'POST', headers:{ 'Authorization':`Bearer ${config.openRouterKey}`, 'Content-Type':'application/json', 'HTTP-Referer': process.env.OPENROUTER_SITE_URL || 'https://vivorax.online', 'X-Title':'Vivora X' }, body:JSON.stringify({ model:'qwen/qwen3.7-flash', stream:true, temperature, max_tokens:maxTokens, messages:[{ role:'system', content:systemPrompt }, ...payload.data.messages] }) }); }
   catch (error) { if (reservation) finalizeReservation(reservation.id, false); throw error; }
   if (!upstream.ok || !upstream.body) {
     if (reservation) finalizeReservation(reservation.id, false);
@@ -602,5 +661,5 @@ setInterval(() => createBackup('weekly'), 7 * 24 * 60 * 60_000).unref();
 if (!existsSync(join(backupDir, '.initialized'))) { createBackup('initial'); }
 // Keep an explicit server reference: some local/cPanel launchers otherwise
 // detach the event loop immediately after startup.
-const httpServer = app.listen(config.port, () => console.log(`Webo server listening on port ${config.port}`));
+const httpServer = app.listen(config.port, () => console.log(`Vivora X server listening on port ${config.port}`));
 httpServer.ref();

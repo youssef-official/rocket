@@ -22,7 +22,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
   const plans: { key: PlanType; icon: React.ReactNode; color: string; popular?: boolean }[] = [
     { key: 'free', icon: <Zap className="w-5 h-5" />, color: 'gray' },
     { key: 'pro', icon: <Crown className="w-5 h-5" />, color: 'purple', popular: true },
-    { key: 'business', icon: <Rocket className="w-5 h-5" />, color: 'orange' }
+    { key: 'business', icon: <Rocket className="w-5 h-5" />, color: 'rose' }
   ];
 
   const getFeaturesList = (planKey: PlanType) => {
@@ -106,7 +106,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                         color === 'gray' ? 'bg-gray-500/20 text-gray-400' :
                         color === 'purple' ? 'bg-purple-500/20 text-purple-400' :
-                        'bg-orange-500/20 text-orange-400'
+                        'bg-rose-500/20 text-rose-300'
                       }`}>
                         {icon}
                       </div>
@@ -175,7 +175,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
                 <div className="grid grid-cols-3 gap-3">
                   {Object.entries(PLAN_CONFIG).map(([key, config]) => (
                     <div key={key} className="bg-background/50 rounded-lg p-3 border border-border/50 text-center">
-                      <div className="text-yellow-400 font-bold text-lg">{config.dailyCredits}/day</div>
+                      <div className="text-pink-400 font-bold text-lg">{config.dailyCredits}/day</div>
                       {config.monthlyCredits > 0 && (
                         <div className="text-green-400 text-sm">+{config.monthlyCredits}/mo</div>
                       )}

@@ -48,7 +48,7 @@ export const translations: Translations = {
   'home.publicDesc': { en: 'Anyone can view & fork', zh: '任何人都可以查看和分叉', ja: '誰でも閲覧・フォーク可能', fr: 'Tout le monde peut voir et forker' },
   'home.privateDesc': { en: 'Only you can access', zh: '仅您可以访问', ja: 'あなただけがアクセス可能', fr: 'Vous seul pouvez y accéder' },
   'home.newBadge': { en: 'New', zh: '新', ja: '新着', fr: 'Nouveau' },
-  'home.mobileAnnouncement': { en: 'Webo: HTML, CSS & JavaScript with AI', zh: 'Webo：AI 生成 HTML、CSS 和 JavaScript', ja: 'Webo：AIでHTML・CSS・JavaScriptを生成', fr: 'Webo : HTML, CSS et JavaScript avec l’IA' },
+  'home.mobileAnnouncement': { en: 'Vivora X: HTML, CSS & JavaScript with AI', zh: 'Vivora X：AI 生成 HTML、CSS 和 JavaScript', ja: 'Vivora X：AIでHTML・CSS・JavaScriptを生成', fr: 'Vivora X : HTML, CSS et JavaScript avec l’IA' },
   'home.dropImage': { en: 'Drop image here', zh: '将图片拖放到此处', ja: 'ここに画像をドロップ', fr: 'Déposez l\'image ici' },
 
   // Typing words
@@ -83,7 +83,7 @@ export const translations: Translations = {
   'footer.blog': { en: 'Blog', zh: '博客', ja: 'ブログ', fr: 'Blog' },
   'footer.privacy': { en: 'Privacy Policy', zh: '隐私政策', ja: 'プライバシーポリシー', fr: 'Politique de confidentialité' },
   'footer.terms': { en: 'Terms of Service', zh: '服务条款', ja: '利用規約', fr: 'Conditions d\'utilisation' },
-  'footer.copyright': { en: '© 2026 Force Digital. All Rights Reserved.', zh: '© 2026 Force Digital. 保留所有权利.', ja: '© 2026 Force Digital. 全著作権所有.', fr: '© 2026 Force Digital. Tous droits réservés.' },
+  'footer.copyright': { en: '© 2026 WebMax. All Rights Reserved.', zh: '© 2026 WebMax. 保留所有权利.', ja: '© 2026 WebMax. 全著作権所有.', fr: '© 2026 WebMax. Tous droits réservés.' },
   'footer.tagline': { en: 'Build production-ready web applications with AI-powered code generation.', zh: '使用AI代码生成构建生产就绪的Web应用程序。', ja: 'AI搭載のコード生成で本番対応のWebアプリケーションを構築。', fr: 'Créez des applications web prêtes pour la production avec la génération de code par IA.' },
 
   // Docs
@@ -141,8 +141,8 @@ export const translations: Translations = {
   'chat.planMode': { en: 'Plan', zh: '规划', ja: 'プラン', fr: 'Plan' },
   'chat.uploadImage': { en: 'Upload Image', zh: '上传图片', ja: '画像をアップロード', fr: 'Télécharger une image' },
   'chat.visualEdit': { en: 'Visual Edit', zh: '可视化编辑', ja: 'ビジュアル編集', fr: 'Édition visuelle' },
-  'chat.placeholder': { en: 'What should Webo build or change?', zh: 'Webo 今天要构建或修改什么？', ja: 'Weboで何を作成・変更しますか？', fr: 'Que doit créer ou modifier Webo ?' },
-  'chat.planPlaceholder': { en: 'Plan with Webo (no file changes)...', zh: '与 Webo 规划（不更改文件）...', ja: 'Weboと計画（ファイル変更なし）...', fr: 'Planifier avec Webo (sans modifier les fichiers)...' },
+  'chat.placeholder': { en: 'What should Vivora X build or change?', zh: 'Vivora X 今天要构建或修改什么？', ja: 'Vivora Xで何を作成・変更しますか？', fr: 'Que doit créer ou modifier Vivora X ?' },
+  'chat.planPlaceholder': { en: 'Plan with Vivora X (no file changes)...', zh: '与 Vivora X 规划（不更改文件）...', ja: 'Vivora Xと計画（ファイル変更なし）...', fr: 'Planifier avec Vivora X (sans modifier les fichiers)...' },
   'chat.analyzing': { en: 'Analyzing your request...', zh: '正在分析您的请求...', ja: 'リクエストを分析中...', fr: 'Analyse de votre demande...' },
   'chat.thinkingComplete': { en: 'Thinking complete!', zh: '思考完成!', ja: '思考完了!', fr: 'Réflexion terminée!' },
   'chat.makingChanges': { en: 'Making changes', zh: '正在进行更改', ja: '変更を行っています', fr: 'Modifications en cours' },

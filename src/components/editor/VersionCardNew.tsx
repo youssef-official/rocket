@@ -150,13 +150,13 @@ export const VersionCardNew: React.FC<VersionCardNewProps> = ({
                   </motion.span>
                   {agentStep === 'validating' && agentConfidence !== undefined && (
                     <span className={`text-[10px] font-bold tabular-nums ${
-                      agentConfidence >= 85 ? 'text-emerald-400' : 'text-amber-400'
+                      agentConfidence >= 85 ? 'text-emerald-400' : 'text-pink-400'
                     }`}>
                       {agentConfidence}%
                     </span>
                   )}
                   {agentStep === 'fixing' && agentIssuesCount !== undefined && (
-                    <span className="text-[10px] font-medium text-amber-400 tabular-nums">
+                    <span className="text-[10px] font-medium text-pink-400 tabular-nums">
                       {agentIssuesCount} {isAr ? 'مشكلة' : 'issues'}
                     </span>
                   )}

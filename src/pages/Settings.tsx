@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, Palette, ImageIcon,
-  Check, PartyPopper, Moon, Sun, Monitor
+  Check, PartyPopper
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,59 +11,48 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useThemePreference } from '@/hooks/useThemePreference';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
-import lightHeroBg from '@/assets/light-hero-bg.jpg';
 import auroraGradientBg from '@/assets/aurora-gradient-bg.png';
 
 // ─── Color Presets ───
 const COLOR_PRESETS = [
-  { id: 'midnight', name: 'Midnight', bg: '#1B1B1B', accent: '#a78bfa', label: 'Default' },
-  { id: 'deep-blue', name: 'Deep Blue', bg: '#0f172a', accent: '#3b82f6', label: 'Ocean' },
-  { id: 'charcoal', name: 'Charcoal', bg: '#1c1c1e', accent: '#6b7280', label: 'Minimal' },
-  { id: 'dark-emerald', name: 'Emerald', bg: '#0d1117', accent: '#10b981', label: 'Matrix' },
-  { id: 'warm-dark', name: 'Warm Dark', bg: '#1a1614', accent: '#f59e0b', label: 'Amber' },
-  { id: 'royal', name: 'Royal', bg: '#0e0e2c', accent: '#8b5cf6', label: 'Purple' },
+  { id: 'midnight', name: 'Vivora Midnight', bg: '#0b1020', accent: '#ec4899', label: 'Signature' },
+  { id: 'deep-blue', name: 'Deep Space', bg: '#08111f', accent: '#38bdf8', label: 'Cosmic' },
+  { id: 'charcoal', name: 'Graphite', bg: '#15171c', accent: '#f472b6', label: 'Focused' },
+  { id: 'dark-emerald', name: 'Aurora', bg: '#071713', accent: '#34d399', label: 'Luminous' },
+  { id: 'warm-dark', name: 'Solar Dust', bg: '#1a1214', accent: '#fb7185', label: 'Warm' },
+  { id: 'royal', name: 'Royal Orbit', bg: '#100c24', accent: '#c084fc', label: 'Violet' },
 ];
 
 const WALLPAPERS = [
   { id: 'aurora-gradient', label: 'Aurora', src: auroraGradientBg },
   { id: 'space', label: 'Space', src: spaceHeroBg },
-  { id: 'light', label: 'Light', src: lightHeroBg },
   { id: 'nebula', label: 'Nebula', src: '/wallpapers/nebula.jpg' },
-  { id: 'sunset', label: 'Sunset', src: '/wallpapers/sunset.jpg' },
   { id: 'forest', label: 'Forest', src: '/wallpapers/forest.jpg' },
   { id: 'ocean', label: 'Ocean', src: '/wallpapers/ocean.jpg' },
   { id: 'mountains', label: 'Mountains', src: '/wallpapers/mountains.jpg' },
   { id: 'city-night', label: 'City Night', src: '/wallpapers/city-night.jpg' },
-  { id: 'desert', label: 'Desert', src: '/wallpapers/desert.jpg' },
   { id: 'tropical', label: 'Tropical', src: '/wallpapers/tropical.jpg' },
   { id: 'gradient-purple', label: 'Purple Flow', src: '/wallpapers/gradient-purple.jpg' },
   { id: 'zen-garden', label: 'Zen Garden', src: '/wallpapers/zen-garden.jpg' },
   { id: 'cyberpunk', label: 'Cyberpunk', src: '/wallpapers/cyberpunk.jpg' },
   { id: 'northern-lights', label: 'Northern Lights', src: '/wallpapers/northern-lights.jpg' },
-  { id: 'cozy-cafe', label: 'Cozy Café', src: '/wallpapers/cozy-cafe.jpg' },
-  { id: 'black-gold', label: 'Black & Gold', src: '/wallpapers/black-gold.jpg' },
   { id: 'starry-night', label: 'Starry Night', src: '/wallpapers/starry-night.jpg' },
-  { id: 'volcanic', label: 'Volcanic', src: '/wallpapers/volcanic.jpg' },
   { id: 'sakura', label: 'Sakura', src: '/wallpapers/sakura.jpg' },
   { id: 'deep-ocean', label: 'Deep Ocean', src: '/wallpapers/deep-ocean.jpg' },
   { id: 'neon-tokyo', label: 'Neon Tokyo', src: '/wallpapers/neon-tokyo.jpg' },
   { id: 'lavender', label: 'Lavender', src: '/wallpapers/lavender.jpg' },
-  { id: 'rose-gold', label: 'Rose Gold', src: '/wallpapers/rose-gold.jpg' },
-  { id: 'alpine-dawn', label: 'Alpine Dawn', src: '/wallpapers/alpine-dawn.jpg' },
 ];
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t, isRTL } = useLanguage();
-  const { theme, setTheme } = useThemePreference();
   // Customization
   const [selectedPreset, setSelectedPreset] = useState(() => localStorage.getItem('vivora_color_preset') || 'midnight');
   const [customBg, setCustomBg] = useState(() => localStorage.getItem('vivora_custom_bg') || '#1B1B1B');
-  const [customAccent, setCustomAccent] = useState(() => localStorage.getItem('vivora_custom_accent') || '#a78bfa');
+  const [customAccent, setCustomAccent] = useState(() => localStorage.getItem('vivora_custom_accent') || '#ec4899');
   const [selectedWallpaper, setSelectedWallpaper] = useState(() => localStorage.getItem('vivora_wallpaper') || 'space');
   const [showRamadan, setShowRamadan] = useState(() => localStorage.getItem('vivora_show_ramadan') !== 'false');
   const [showEid, setShowEid] = useState(() => localStorage.getItem('vivora_show_eid') !== 'false');
@@ -142,40 +131,11 @@ const Settings: React.FC = () => {
         {/* ═══ Appearance ═══ */}
         <motion.div variants={sectionVariants} initial="hidden" animate="visible">
           <div className={`flex items-center gap-3 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <div className="w-8 h-8 rounded-xl bg-violet-500/10 flex items-center justify-center">
-              <Palette className="w-4 h-4 text-violet-400" />
+            <div className="w-8 h-8 rounded-xl bg-pink-500/10 flex items-center justify-center">
+              <Palette className="w-4 h-4 text-pink-400" />
             </div>
             <h2 className="text-xl font-bold text-white font-serif">Appearance</h2>
           </div>
-
-          {/* Theme Mode */}
-          <Card className="bg-white/[0.03] border-white/[0.06] mb-4">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-white/80">Theme Mode</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                {([
-                  { val: 'light' as const, icon: <Sun className="w-4 h-4" />, label: 'Light' },
-                  { val: 'dark' as const, icon: <Moon className="w-4 h-4" />, label: 'Dark' },
-                  { val: 'system' as const, icon: <Monitor className="w-4 h-4" />, label: 'System' },
-                ]).map(opt => (
-                  <button
-                    key={opt.val}
-                    onClick={() => setTheme(opt.val)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                      theme === opt.val
-                        ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
-                        : 'bg-white/[0.03] text-white/50 border border-white/[0.06] hover:bg-white/[0.06]'
-                    }`}
-                  >
-                    {opt.icon}
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Color Presets */}
           <Card className="bg-white/[0.03] border-white/[0.06] mb-4">
@@ -191,7 +151,7 @@ const Settings: React.FC = () => {
                     onClick={() => applyPreset(preset)}
                     className={`relative p-3 rounded-xl border transition-all duration-200 text-left ${
                       selectedPreset === preset.id
-                        ? 'border-violet-500/50 bg-violet-500/5'
+                        ? 'border-pink-500/50 bg-pink-500/5'
                         : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]'
                     }`}
                   >
@@ -203,7 +163,7 @@ const Settings: React.FC = () => {
                     <p className="text-[10px] text-white/30">{preset.label}</p>
                     {selectedPreset === preset.id && (
                       <div className="absolute top-2 right-2">
-                        <Check className="w-3 h-3 text-violet-400" />
+                        <Check className="w-3 h-3 text-pink-400" />
                       </div>
                     )}
                   </button>
@@ -244,7 +204,7 @@ const Settings: React.FC = () => {
                         value={customAccent}
                         onChange={e => applyCustomColor('accent', e.target.value)}
                         className="h-8 text-xs bg-white/[0.03] border-white/[0.08] text-white/70 font-mono"
-                        placeholder="#a78bfa"
+                        placeholder="#ec4899"
                       />
                     </div>
                   </div>
@@ -281,13 +241,13 @@ const Settings: React.FC = () => {
                     onClick={() => selectWallpaper(wp.id)}
                     className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all duration-200 ${
                       selectedWallpaper === wp.id
-                        ? 'border-violet-500 ring-1 ring-violet-500/30'
+                        ? 'border-pink-500 ring-1 ring-pink-500/30'
                         : 'border-white/[0.06] hover:border-white/20'
                     }`}
                   >
                     <img src={wp.src} alt={wp.label} className="w-full h-full object-cover" />
                     {selectedWallpaper === wp.id && (
-                      <div className="absolute inset-0 bg-violet-500/20 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-pink-500/20 flex items-center justify-center">
                         <Check className="w-4 h-4 text-white" />
                       </div>
                     )}

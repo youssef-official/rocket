@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
-import { applyTheme, getStoredTheme } from "@/lib/theme";
+import { setStoredTheme } from "@/lib/theme";
 
 export const ThemeInitializer: React.FC = () => {
   useEffect(() => {
-    applyTheme(getStoredTheme());
+    setStoredTheme('dark');
   }, []);
 
   return null;

@@ -15,7 +15,7 @@ interface FAQItem {
 const faqData: FAQItem[] = [
   {
     question: "What is Vivora X?",
-    answer: "Webo is an AI-powered website builder. Describe what you want and Webo generates a complete browser-native website with linked HTML pages, CSS, JavaScript, and organized folders.",
+    answer: "Vivora X is an AI-powered website builder. Describe what you want and Vivora X generates a complete browser-native website with linked HTML pages, CSS, JavaScript, and organized folders.",
     icon: Sparkles
   },
   {
@@ -42,7 +42,7 @@ export const FAQ: React.FC = () => {
     <div className="min-h-screen flex flex-col">
       <SEOHead
         title="FAQ — Vivora X Frequently Asked Questions"
-        description="Find answers to common questions about Webo website generation, project files, and data."
+        description="Find answers to common questions about Vivora X website generation, project files, and data."
         keywords="vivora x faq, vibe coding questions, vivorax help, AI web builder faq"
         canonical="https://vivorax.online/faq"
       />

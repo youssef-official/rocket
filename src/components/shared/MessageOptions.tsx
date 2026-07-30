@@ -108,10 +108,10 @@ export const MessageOptions: React.FC<MessageOptionsProps> = ({
             {creditsUsed !== undefined && (
               <div className={`flex items-center justify-between px-4 py-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <Coins className="w-4 h-4 text-yellow-500" />
+                  <Coins className="w-4 h-4 text-pink-400" />
                   <span className="text-sm text-muted-foreground">{t('message.creditsUsed')}</span>
                 </div>
-                <span className="text-sm font-medium text-yellow-500">{creditsUsed.toFixed(2)}</span>
+                <span className="text-sm font-medium text-pink-400">{creditsUsed.toFixed(2)}</span>
               </div>
             )}
           </motion.div>

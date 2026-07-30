@@ -65,7 +65,7 @@ export const Terms: React.FC = () => {
               <section>
                 <h2 className="text-2xl font-bold text-white mb-4">2. Description of Service</h2>
                 <p className="text-white/70 leading-relaxed">
-                  Webo is an AI-powered website builder that creates browser-native websites from natural language prompts. Our services include AI code generation, project management, version control, visual editing, deployment, and project export. Generated projects use HTML, CSS, and JavaScript only.
+                  Vivora X is an AI-powered website builder that creates browser-native websites from natural language prompts. Our services include AI code generation, project management, version control, visual editing, deployment, and project export. Generated projects use HTML, CSS, and JavaScript only.
                 </p>
               </section>
 

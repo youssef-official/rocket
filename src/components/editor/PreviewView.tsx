@@ -311,7 +311,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({
             {previewPath}
           </span>
           <span className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className={`h-2 w-2 rounded-full ${previewDocument ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <span className={`h-2 w-2 rounded-full ${previewDocument ? 'bg-emerald-500' : 'bg-pink-500'}`} />
             {previewDocument ? 'Browser preview ready' : 'Waiting for index.html'}
           </span>
           <button
@@ -342,7 +342,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({
               {isLoading ? 'Writing the website files…' : 'The preview starts when index.html is ready.'}
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
-              Webo renders HTML, CSS, and JavaScript directly in your browser.
+              Vivora X renders HTML, CSS, and JavaScript directly in your browser.
             </p>
           </div>
         ) : (

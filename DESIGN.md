@@ -1,8 +1,8 @@
-# Webo design system
+# Vivora X design system
 
 ## Direction
 
-Webo is a focused studio workbench: a deep ink-blue workspace with warm electric amber used only for decisive actions and generation state. It replaces the prior generic SaaS/glass language with dense, calm operational surfaces.
+Vivora X is a focused studio workbench: a deep ink-blue workspace with vivid Vivora pink used for decisive actions and generation state. Its identity is anchored by the original animated pink-and-white Vivora X mark and wordmark.
 
 ## Tokens
 
@@ -10,10 +10,10 @@ Webo is a focused studio workbench: a deep ink-blue workspace with warm electric
 - Blueprint: `#10243C`
 - Slate: `#5E7188`
 - Paper: `#F5F7FA`
-- Signal: `#FFB000`
+- Signal: `#EC4899`
 - Success: `#2BC48A`
 
-Use `Manrope` for interface and body copy and `Sora` for display text. Rounded panels are restrained (16px); controls use clear borders and one soft, directional shadow rather than glass effects.
+Use `Manrope` for interface and body copy and `Sora` for display text. The interface remains dark-only, with pink and fuchsia accents derived from the Vivora X mark. Rounded panels are restrained (16px); controls use clear borders and one soft, directional shadow rather than glass effects.
 
 ## Interaction
 

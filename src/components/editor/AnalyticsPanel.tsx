@@ -43,7 +43,7 @@ export const AnalyticsPanel = ({ projectId }: { projectId?: string; previewUrl?:
   if (loading && data.totals.pageviews === 0) {
     return (
       <div className="flex h-full items-center justify-center bg-[#08111f] text-[#f5f7fa]">
-        <Loader2 className="h-5 w-5 animate-spin text-[#ffb000]" aria-label="Loading analytics" />
+        <Loader2 className="h-5 w-5 animate-spin text-[#ec4899]" aria-label="Loading analytics" />
       </div>
     );
   }
@@ -66,7 +66,7 @@ export const AnalyticsPanel = ({ projectId }: { projectId?: string; previewUrl?:
           <button
             type="button"
             onClick={() => void load()}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#183552] px-4 text-sm font-semibold text-[#e6edf4] transition hover:bg-[#204565] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ffb000]"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#183552] px-4 text-sm font-semibold text-[#e6edf4] transition hover:bg-[#204565] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ec4899]"
           >
             <RefreshCw size={15} />
             Refresh
@@ -78,7 +78,7 @@ export const AnalyticsPanel = ({ projectId }: { projectId?: string; previewUrl?:
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           {metrics.map(({ label, value, icon: Icon }) => (
             <section key={label} className="rounded-2xl bg-[#10243c] p-5">
-              <Icon className="text-[#ffb000]" size={19} />
+              <Icon className="text-[#ec4899]" size={19} />
               <p className="mt-8 text-3xl font-bold tabular-nums">{value}</p>
               <p className="mt-1 text-sm text-[#9fb0c2]">{label}</p>
             </section>
@@ -97,7 +97,7 @@ export const AnalyticsPanel = ({ projectId }: { projectId?: string; previewUrl?:
           <div className="mt-6 grid gap-5 lg:grid-cols-2">
             <section className="overflow-hidden rounded-2xl bg-[#10243c]">
               <div className="flex items-center gap-2 border-b border-[#203b57] px-5 py-4">
-                <Globe2 className="text-[#ffb000]" size={17} />
+                <Globe2 className="text-[#ec4899]" size={17} />
                 <h3 className="font-bold">Visitors by country</h3>
               </div>
               {data.countries.map(country => (
@@ -110,7 +110,7 @@ export const AnalyticsPanel = ({ projectId }: { projectId?: string; previewUrl?:
 
             <section className="overflow-hidden rounded-2xl bg-[#10243c]">
               <div className="flex items-center gap-2 border-b border-[#203b57] px-5 py-4">
-                <MousePointerClick className="text-[#ffb000]" size={17} />
+                <MousePointerClick className="text-[#ec4899]" size={17} />
                 <h3 className="font-bold">Most clicked elements</h3>
               </div>
               {data.targets.length ? data.targets.map(target => (

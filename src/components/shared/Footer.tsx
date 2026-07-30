@@ -80,9 +80,6 @@ export const Footer: React.FC = () => {
             <a href="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               FAQ
             </a>
-            <a href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              About Us
-            </a>
           </div>
         </div>
 
@@ -90,12 +87,12 @@ export const Footer: React.FC = () => {
         <p className="text-sm text-muted-foreground">
           © 2026{' '}
           <a 
-            href="https://www.technova-eg.store/" 
+            href="https://www.webmax-technology.com/"
             target="_blank" 
             rel="noopener noreferrer"
             className="hover:text-foreground transition-colors underline"
           >
-            Force Digital
+            WebMax
           </a>
           . All Rights Reserved.
         </p>

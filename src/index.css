@@ -10,7 +10,7 @@ a, button, [role='button'], input[type='submit'], input[type='button'], .cursor-
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'%3E%3Cpath d='M7 1L7 14.5L10.5 11L14 16L16 15L12.5 9.5L17 9L7 1Z' fill='%238b5cf6' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E"), pointer !important;
 }
 
-/* Webo — focused studio workbench */
+/* Vivora X — focused studio workbench */
 
 @layer base {
   :root {

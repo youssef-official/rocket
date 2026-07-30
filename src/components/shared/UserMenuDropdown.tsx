@@ -1,14 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, Settings2, LogOut, Moon, Sun, Monitor, Coins, Crown, Sparkles, ImageIcon, Music } from 'lucide-react';
+import { User as UserIcon, Settings2, LogOut, Coins, Sparkles, ImageIcon, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '@/types';
-import { useThemePreference } from '@/hooks/useThemePreference';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
 import { LanguageSelector } from './LanguageSelector';
 import { Progress } from '@/components/ui/progress';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
-import lightHeroBg from '@/assets/light-hero-bg.jpg';
 import auroraGradientBg from '@/assets/aurora-gradient-bg.png';
 
 interface UserMenuDropdownProps {
@@ -21,29 +19,21 @@ interface UserMenuDropdownProps {
 const WALLPAPERS = [
   { id: 'aurora-gradient', label: 'Aurora', src: auroraGradientBg },
   { id: 'space', label: 'Space', src: spaceHeroBg },
-  { id: 'light', label: 'Light', src: lightHeroBg },
   { id: 'nebula', label: 'Nebula', src: '/wallpapers/nebula.jpg' },
-  { id: 'sunset', label: 'Sunset', src: '/wallpapers/sunset.jpg' },
   { id: 'forest', label: 'Forest', src: '/wallpapers/forest.jpg' },
   { id: 'ocean', label: 'Ocean', src: '/wallpapers/ocean.jpg' },
   { id: 'mountains', label: 'Mountains', src: '/wallpapers/mountains.jpg' },
   { id: 'city-night', label: 'City Night', src: '/wallpapers/city-night.jpg' },
-  { id: 'desert', label: 'Desert', src: '/wallpapers/desert.jpg' },
   { id: 'tropical', label: 'Tropical', src: '/wallpapers/tropical.jpg' },
   { id: 'gradient-purple', label: 'Purple Flow', src: '/wallpapers/gradient-purple.jpg' },
   { id: 'zen-garden', label: 'Zen Garden', src: '/wallpapers/zen-garden.jpg' },
   { id: 'cyberpunk', label: 'Cyberpunk', src: '/wallpapers/cyberpunk.jpg' },
   { id: 'northern-lights', label: 'Northern Lights', src: '/wallpapers/northern-lights.jpg' },
-  { id: 'cozy-cafe', label: 'Cozy Café', src: '/wallpapers/cozy-cafe.jpg' },
-  { id: 'black-gold', label: 'Black & Gold', src: '/wallpapers/black-gold.jpg' },
   { id: 'starry-night', label: 'Starry Night', src: '/wallpapers/starry-night.jpg' },
-  { id: 'volcanic', label: 'Volcanic', src: '/wallpapers/volcanic.jpg' },
   { id: 'sakura', label: 'Sakura', src: '/wallpapers/sakura.jpg' },
   { id: 'deep-ocean', label: 'Deep Ocean', src: '/wallpapers/deep-ocean.jpg' },
   { id: 'neon-tokyo', label: 'Neon Tokyo', src: '/wallpapers/neon-tokyo.jpg' },
   { id: 'lavender', label: 'Lavender', src: '/wallpapers/lavender.jpg' },
-  { id: 'rose-gold', label: 'Rose Gold', src: '/wallpapers/rose-gold.jpg' },
-  { id: 'alpine-dawn', label: 'Alpine Dawn', src: '/wallpapers/alpine-dawn.jpg' },
 ];
 
 // Export for use in HomePage
@@ -78,7 +68,7 @@ const WallpaperSelector: React.FC = () => {
             <button
               key={wp.id}
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); select(wp.id); }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${current === wp.id ? 'bg-violet-500/20 text-violet-300' : 'text-white/60 hover:bg-white/[0.04]'}`}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${current === wp.id ? 'bg-pink-500/20 text-pink-300' : 'text-white/60 hover:bg-white/[0.04]'}`}
             >
               <div className="w-8 h-5 rounded overflow-hidden border border-white/10">
                 <img src={wp.src} alt={wp.label} className="w-full h-full object-cover" />
@@ -94,24 +84,11 @@ const WallpaperSelector: React.FC = () => {
 
 export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOut, onUpgradeClick, onSettingsClick }) => {
   const [showMenu, setShowMenu] = useState(false);
-  const { theme, cycleTheme } = useThemePreference();
   const { t, isRTL } = useLanguage();
   const { userPlan, getRemainingCredits, shouldShowUpgradeBanner } = useUserPlan();
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-
-  const getThemeIcon = () => {
-    if (theme === 'dark') return <Moon className="w-4 h-4" />;
-    if (theme === 'light') return <Sun className="w-4 h-4" />;
-    return <Monitor className="w-4 h-4" />;
-  };
-
-  const getThemeLabel = () => {
-    if (theme === 'dark') return t('common.dark');
-    if (theme === 'light') return t('common.light');
-    return t('common.system');
-  };
 
   const handleMouseEnter = () => {
     if (closeTimeoutRef.current) {
@@ -221,12 +198,12 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
             <div className="p-4 border-b border-white/[0.06] bg-white/[0.02]">
               <div className={`flex items-center justify-between mb-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <div className="w-6 h-6 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                    <Coins className="w-3.5 h-3.5 text-yellow-400" />
+                  <div className="w-6 h-6 rounded-lg bg-pink-500/10 flex items-center justify-center">
+                    <Coins className="w-3.5 h-3.5 text-pink-400" />
                   </div>
                   <span className="text-sm text-white/70 font-medium">{t('credits.remaining')}</span>
                 </div>
-                <span className="text-sm font-bold text-yellow-400">{remainingCredits.total.toFixed(1)}</span>
+                <span className="text-sm font-bold text-pink-400">{remainingCredits.total.toFixed(1)}</span>
               </div>
 
               <Progress
@@ -248,7 +225,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
 
             {/* Upgrade Banner */}
             {showBanner && onUpgradeClick && (
-              <div className="p-3 bg-gradient-to-r from-purple-500/15 to-pink-500/15 border-b border-white/[0.06]">
+              <div className="p-3 bg-gradient-to-r from-pink-500/15 to-pink-500/15 border-b border-white/[0.06]">
                 <p className="text-xs text-white/70 mb-2">
                   🚀 {t('credits.runningLow')}
                 </p>
@@ -260,7 +237,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                     setShowMenu(false);
                     onUpgradeClick();
                   }}
-                  className="w-full py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg shadow-purple-500/20"
+                  className="w-full py-2 bg-gradient-to-r from-pink-500 to-pink-500 text-white text-xs font-semibold rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg shadow-pink-500/20"
                 >
                   {t('models.upgradeAccess')}
                 </button>
@@ -278,7 +255,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                     setShowMenu(false);
                     onUpgradeClick();
                   }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 mb-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl transition-all duration-200 text-sm font-semibold cursor-pointer shadow-lg shadow-purple-500/20 ${isRTL ? 'flex-row-reverse' : ''}`}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 mb-1 bg-gradient-to-r from-pink-500 to-pink-500 text-white rounded-xl transition-all duration-200 text-sm font-semibold cursor-pointer shadow-lg shadow-pink-500/20 ${isRTL ? 'flex-row-reverse' : ''}`}
                 >
                   <Sparkles className="w-4 h-4" />
                   {t('models.upgradeAccess')}
@@ -286,23 +263,6 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
               )}
 
               <LanguageSelector />
-
-              {/* Theme */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  cycleTheme();
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
-              >
-                <div className={`flex items-center gap-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  {getThemeIcon()}
-                  {t('common.theme')}
-                </div>
-                <span className="text-[11px] text-white/40 bg-white/[0.06] px-2 py-0.5 rounded-md">{getThemeLabel()}</span>
-              </button>
 
               {/* Wallpaper */}
               <WallpaperSelector />

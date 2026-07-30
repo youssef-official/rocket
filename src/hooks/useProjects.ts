@@ -25,7 +25,7 @@ export function useProjects() {
     // A non-empty system fallback keeps project creation compatible with older
     // server processes. The current server ignores it and assigns its own
     // cryptographically random name; no AI naming request is involved.
-    const systemFallbackName = name.trim() || `Webo ${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+    const systemFallbackName = name.trim() || `Vivora X ${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
     try{
       const p=await api<Project>('/projects',{method:'POST',body:JSON.stringify({name:systemFallbackName,projectType:'html',files,description})});
       setProjects(v=>[p,...v]);
@@ -35,8 +35,10 @@ export function useProjects() {
       return null;
     }
   };
+  const fetchProject=useCallback(async(id:string)=>{try{const p=await api<Project>(`/projects/${id}`);setProjects(all=>all.some(item=>item.id===p.id)?all.map(item=>item.id===p.id?p:item):[p,...all]);return p;}catch{return null;}},[]);
   const updateProject=async(id:string,updates:Partial<Pick<Project,'name'|'description'|'files'|'isPublished'|'buildingPlan'|'generationStatus'>>)=>{try{const p=await api<Project>(`/projects/${id}`,{method:'PATCH',body:JSON.stringify(updates)});setProjects(v=>v.map(x=>x.id===id?p:x));return true;}catch{return false;}};
   const deleteProject=async(id:string)=>{try{await api(`/projects/${id}`,{method:'DELETE'});setProjects(v=>v.filter(x=>x.id!==id));return true;}catch{return false;}};
   const forkProject=async(id:string)=>{const p=projects.find(x=>x.id===id);return p?createProject('', 'html', p.files, p.description):null;};
-  return {projects,loading,createProject,updateProject,deleteProject,forkProject,getProject:(id:string)=>projects.find(p=>p.id===id),refetch:fetchProjects};
+  const getProject=useCallback((id:string)=>projects.find(p=>p.id===id),[projects]);
+  return {projects,loading,createProject,updateProject,deleteProject,forkProject,getProject,fetchProject,refetch:fetchProjects};
 }

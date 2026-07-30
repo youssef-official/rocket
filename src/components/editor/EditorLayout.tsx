@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Code2, Eye, LogOut, Moon, Sun, ChevronDown, Download, Clock, Pencil,
+  Code2, Eye, LogOut, ChevronDown, Download, Clock, Pencil,
   Eye as EyeIcon, Coins, Settings2,
-  BookOpen, CreditCard, Monitor, FileArchive,
+  FileArchive,
   PanelLeftClose, PanelLeftOpen, BarChart2
 } from 'lucide-react';
 import { ChatView } from './ChatView';
@@ -100,7 +100,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [showProjectMenu, setShowProjectMenu] = useState(false);
   const [chatWidth, setChatWidth] = useState(450);
   const [chatHidden, setChatHidden] = useState(false);
-  const [theme, setTheme] = useState<'dark' | 'light' | 'system'>('system');
   const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768);
 
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number | null>(null);
@@ -112,9 +111,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   const [waitingForTest, setWaitingForTest] = useState(false);
   const pendingVersionRef = useRef<{ files: Record<string, ProjectFile>; messages: ChatMessage[]; activities: FileActivity[] } | null>(null);
   const isResizing = useRef(false);
-  const prevIsGenerating = useRef(isGenerating);
-  const versionCreatedForSession = useRef(false);
-  const lastFileActivitiesRef = useRef<FileActivity[]>([]);
   const lastPreviewErrorRef = useRef<{ message: string; at: number } | null>(null);
 
   // Versions hook
@@ -129,18 +125,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     onSendMessage(`[AUTO-FIX] The preview has a reproducible console error. Use the reported source filename to make the smallest exact SEARCH/REPLACE patch. Inspect and patch only the failing file unless another file is proven necessary. Do not rewrite complete files and do not return read-only actions.\n\n${normalized}`, false);
   }, [isGenerating, onSendMessage]);
 
-  // Track file activities for version
-  useEffect(() => {
-    if (fileActivities.length > 0) {
-      lastFileActivitiesRef.current = [...fileActivities];
-    }
-  }, [fileActivities]);
-
   // Fetch versions when project changes
   useEffect(() => {
     if (project?.id) {
       fetchVersions();
-      versionCreatedForSession.current = false;
     }
   }, [project?.id, fetchVersions]);
 
@@ -167,87 +155,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [isGenerating, t]);
-
-  // Auto-create version when generation completes - WITH actions_taken
-  // IMPORTANT: Only create version when generationPhase is 'complete' to avoid
-  // premature version creation during clarify/thinking phases
-  useEffect(() => {
-    const wasGenerating = prevIsGenerating.current;
-    const nowNotGenerating = !isGenerating;
-
-    // Guard: only save version if generation actually completed (not just clarify/chat phases)
-    const generationActuallyCompleted = generationPhase?.phase === 'complete';
-
-    if (wasGenerating && nowNotGenerating && generationActuallyCompleted && project?.files && !versionCreatedForSession.current && !isChatMode) {
-      const hasFiles = Object.keys(project.files).length > 0;
-      const hasMessages = messages.length > 0;
-
-      if (hasFiles && hasMessages) {
-        const isFirstVersion = versions.length === 0;
-
-        if (isFirstVersion) {
-          const createFirstVersion = async () => {
-            const versionNumber = 1;
-            const projectDescription = project.description || project.name || '';
-            const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
-
-            const versionName = await generateVersionName(
-              projectDescription,
-              lastUserMessage,
-              versionNumber
-            );
-
-            await createVersion(
-              project.files,
-              messages,
-              versionName,
-              lastFileActivitiesRef.current.length > 0 ? lastFileActivitiesRef.current : undefined
-            );
-            setCurrentVersionNumber(null);
-            versionCreatedForSession.current = true;
-          };
-
-          createFirstVersion();
-        } else {
-          const createVersionWithAIName = async () => {
-            const versionNumber = versions.length + 1;
-            const projectDescription = project.description || project.name || '';
-            const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
-
-            const versionName = await generateVersionName(
-              projectDescription,
-              lastUserMessage,
-              versionNumber
-            );
-
-            const alreadyExists = versions.some(v =>
-              v.chatMessages.length === messages.length &&
-              JSON.stringify(v.files) === JSON.stringify(project.files)
-            );
-
-            if (!alreadyExists) {
-              await createVersion(
-                project.files,
-                messages,
-                versionName,
-                lastFileActivitiesRef.current.length > 0 ? lastFileActivitiesRef.current : undefined
-              );
-            }
-            setCurrentVersionNumber(null);
-            versionCreatedForSession.current = true;
-          };
-
-          createVersionWithAIName();
-        }
-      }
-    }
-
-    if (!wasGenerating && isGenerating) {
-      versionCreatedForSession.current = false;
-    }
-
-    prevIsGenerating.current = isGenerating;
-  }, [isGenerating, messages, project?.files, project?.description, project?.name, createVersion, versions.length, isChatMode, generationPhase]);
 
   // Handle test completion - save pending version
   const handleTestComplete = useCallback(async (passed: boolean) => {
@@ -300,7 +207,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
     setCurrentView('details');
   }, []);
 
-  const handleImageUpload = useCallback(async (file: File): Promise<string | null> => URL.createObjectURL(file), []);
+  const handleImageUpload = useCallback((file: File): Promise<string | null> => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+    reader.onerror = () => reject(reader.error || new Error('Could not read image.'));
+    reader.readAsDataURL(file);
+  }), []);
 
   // Handle panel resize
   const handleResizeStart = (e: React.MouseEvent) => {
@@ -396,36 +308,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
     setShowVisualEdit(false);
   };
-  // Apply theme
-  useEffect(() => {
-    const applyTheme = () => {
-      if (theme === 'system') {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.classList.toggle('dark', prefersDark);
-      } else {
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-      }
-    };
-
-    applyTheme();
-
-    if (theme === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handler = () => applyTheme();
-      mediaQuery.addEventListener('change', handler);
-      return () => mediaQuery.removeEventListener('change', handler);
-    }
-  }, [theme]);
-
-  // Toggle theme
-  const toggleTheme = () => {
-    setTheme(prev => {
-      if (prev === 'dark') return 'light';
-      if (prev === 'light') return 'system';
-      return 'dark';
-    });
-  };
-
   // State for mobile view
   const [mobilePanel, setMobilePanel] = useState<'chat' | 'preview' | 'code'>('preview');
 
@@ -624,16 +506,16 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                       <div className="px-4 py-3 border-b border-border/40 bg-accent/30">
                         <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <Coins className="w-3.5 h-3.5 text-yellow-500" />
+                            <Coins className="w-3.5 h-3.5 text-pink-400" />
                             <span className="text-xs font-semibold text-foreground">Credits</span>
                           </div>
-                          <span className="text-xs font-bold text-yellow-500">
+                          <span className="text-xs font-bold text-pink-400">
                             {getRemainingCredits().total.toFixed(1)}
                           </span>
                         </div>
                         <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-pink-500 to-fuchsia-500 rounded-full transition-all duration-500"
                             style={{
                               width: `${Math.min(100, (getRemainingCredits().total / ((userPlan.dailyCredits + (PLAN_CONFIG[userPlan.plan]?.monthlyCredits ?? 0)) || 5)) * 100)}%`
                             }}
@@ -656,39 +538,6 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                         </div>
                         <span className="font-medium">{t('common.settings')}</span>
                       </button>
-                      <button
-                        onClick={() => { setShowUserMenu(false); navigate('/docs'); }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                          <BookOpen className="w-3.5 h-3.5 text-muted-foreground" />
-                        </div>
-                        <span className="font-medium">{t('nav.docs')}</span>
-                      </button>
-                      <button
-                        onClick={() => { setShowUserMenu(false); navigate('/pricing'); }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                          <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
-                        </div>
-                        <span className="font-medium">{t('nav.pricing')}</span>
-                      </button>
-
-                      <div className="my-1 mx-3 border-t border-border/40" />
-
-                      {/* Theme */}
-                      <button
-                        onClick={() => toggleTheme()}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                          {theme === 'dark' ? <Moon className="w-3.5 h-3.5 text-muted-foreground" /> : theme === 'light' ? <Sun className="w-3.5 h-3.5 text-muted-foreground" /> : <Monitor className="w-3.5 h-3.5 text-muted-foreground" />}
-                        </div>
-                        <span className="font-medium">{t('common.theme')}</span>
-                        <span className={`text-[11px] text-muted-foreground bg-accent px-2 py-0.5 rounded-md capitalize ${isRTL ? 'mr-auto' : 'ml-auto'}`}>{theme}</span>
-                      </button>
-
                       <div className="my-1 mx-3 border-t border-border/40" />
 
                       <button

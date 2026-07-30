@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Loader2, ChevronDown, Plus, StopCircle, FileCode, FileType, File, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Files, Sparkles, CircleDot, ArrowUp, Monitor, AtSign, Download, Copy, ThumbsUp, ThumbsDown, Check, Coins } from 'lucide-react';
+import { Send, Loader2, ChevronDown, Plus, StopCircle, FileCode, FileType, File, CheckCircle2, Image as ImageIcon, X, Lightbulb, ListOrdered, Zap, Bookmark, Pencil, FileOutput, Package, MousePointer, MoreVertical, Eye, Lock, Trash2, FileSearch, Sparkles, CircleDot, ArrowUp, Monitor, AtSign, Download, Copy, ThumbsUp, ThumbsDown, Check, Coins } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ChatMessage } from '@/types';
@@ -16,6 +16,8 @@ interface FileActivity {
   status: 'editing' | 'done';
   action: 'read' | 'edited' | 'created' | 'analyzed_image' | 'deleted';
 }
+
+const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
 
 interface Suggestion {
   label: string;
@@ -73,11 +75,11 @@ const getFileIcon = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase();
   switch (ext) {
     case 'js':
-      return <FileCode className="w-4 h-4 text-yellow-400" />;
+      return <FileCode className="w-4 h-4 text-pink-400" />;
     case 'css':
       return <FileType className="w-4 h-4 text-purple-400" />;
     case 'html':
-      return <File className="w-4 h-4 text-orange-400" />;
+      return <File className="w-4 h-4 text-rose-400" />;
     default:
       return <File className="w-4 h-4 text-muted-foreground" />;
   }
@@ -190,7 +192,7 @@ const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; token
   const handleFeedback = async (type: 'like' | 'dislike') => {
     const newFeedback = feedback === type ? null : type;
     setFeedback(newFeedback);
-    // This action is intentionally local until Webo's own feedback API is added.
+    // This action is intentionally local until Vivora X's own feedback API is added.
   };
 
   const handleCopy = async () => {
@@ -230,10 +232,10 @@ const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; token
               </div>
               <div className="flex items-center justify-between px-3 py-2.5">
                 <div className="flex items-center gap-2">
-                  <Coins className="w-3.5 h-3.5 text-amber-500" />
+                  <Coins className="w-3.5 h-3.5 text-pink-400" />
                   <span className="text-xs text-muted-foreground">Site Credits</span>
                 </div>
-                <span className="text-xs font-bold text-amber-500">{creditsUsed !== undefined ? Number(creditsUsed).toFixed(2) : '0.00'}</span>
+                <span className="text-xs font-bold text-pink-400">{creditsUsed !== undefined ? Number(creditsUsed).toFixed(2) : '0.00'}</span>
               </div>
               <div className="flex items-center justify-between px-3 py-2.5 border-t border-border/50">
                 <div className="flex items-center gap-2">
@@ -296,7 +298,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const docInputRef = useRef<HTMLInputElement>(null);
 
   // Drag and drop handlers
   const handleDragEnter = (e: React.DragEvent) => {
@@ -323,31 +324,30 @@ export const ChatView: React.FC<ChatViewProps> = ({
     setIsDragging(false);
 
     if (!isPaidPlan) {
-      toast({ title: 'Upgrade Required', description: 'File upload is available on paid plans only.', variant: 'destructive' });
+      toast({ title: 'Upgrade Required', description: 'Image upload is available on paid plans only.', variant: 'destructive' });
       return;
     }
 
-    const files = Array.from(e.dataTransfer.files);
-    const supportedFiles = files.filter(f => 
-      f.type.startsWith('image/') || 
-      f.type === 'application/pdf' ||
-      f.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-      f.type === 'application/vnd.ms-excel' ||
-      f.type === 'text/csv' ||
-      f.type.startsWith('video/') ||
-      f.type.startsWith('font/') ||
-      f.name.endsWith('.ttf') || f.name.endsWith('.otf') || f.name.endsWith('.woff') || f.name.endsWith('.woff2')
-    ).slice(0, 5 - uploadedImages.length);
+    const image = Array.from(e.dataTransfer.files).find(file => file.type.startsWith('image/'));
+    if (!image) {
+      toast({ title: 'Images only', description: 'Files, documents, video, and fonts are not accepted.', variant: 'destructive' });
+      return;
+    }
+    if (image.size > MAX_IMAGE_BYTES) {
+      toast({ title: 'Image is too large', description: 'Choose an image smaller than 3 MB.', variant: 'destructive' });
+      return;
+    }
 
-    if (supportedFiles.length === 0) return;
-
-    const newFiles = supportedFiles.map(file => ({
-      file,
-      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : '',
+    const newFiles = [{
+      file: image,
+      preview: URL.createObjectURL(image),
       uploading: true,
-    }));
+    }];
 
-    setUploadedImages(prev => [...prev, ...newFiles]);
+    setUploadedImages(previous => {
+      previous.forEach(entry => URL.revokeObjectURL(entry.preview));
+      return newFiles;
+    });
 
     // Upload each file immediately
     for (const entry of newFiles) {
@@ -356,7 +356,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           const normalizedUrl = normalizePublicImageUrl(url || '');
           if (!normalizedUrl) {
             setUploadedImages(prev => prev.filter(img => img.file !== entry.file));
-            toast({ title: 'Upload failed', description: 'Could not upload file. Please try again.', variant: 'destructive' });
+            toast({ title: 'Upload failed', description: 'Could not read the image. Please try again.', variant: 'destructive' });
             return;
           }
           setUploadedImages(prev => prev.map(img => 
@@ -364,7 +364,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           ));
         }).catch(() => {
           setUploadedImages(prev => prev.filter(img => img.file !== entry.file));
-          toast({ title: 'Upload failed', description: 'Could not upload file. Please try again.', variant: 'destructive' });
+          toast({ title: 'Upload failed', description: 'Could not read the image. Please try again.', variant: 'destructive' });
         });
       }
     }
@@ -446,7 +446,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         finalMessage = `${finalMessage}\n\n[Referenced Files: ${refPaths}]\n\nPlease read and consider the following files before making changes:\n${referencedFiles.filter(f => projectFiles[f]).map(f => `--- @${f} ---\n${projectFiles[f].content}`).join('\n\n')}`;
       }
 
-      onSendMessage(finalMessage, isChatMode, imageUrls.length > 0 ? imageUrls.join(',') : undefined);
+      onSendMessage(finalMessage, isChatMode, imageUrls[0]);
 
       setInput('');
       localStorage.removeItem('vivora_chat_input');
@@ -485,25 +485,24 @@ export const ChatView: React.FC<ChatViewProps> = ({
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const supportedFiles = files.filter(f => 
-      f.type.startsWith('image/') || 
-      f.type === 'application/pdf' ||
-      f.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-      f.type === 'application/vnd.ms-excel' ||
-      f.type === 'text/csv' ||
-      f.type.startsWith('video/') ||
-      f.type.startsWith('font/') ||
-      f.name.endsWith('.ttf') || f.name.endsWith('.otf') || f.name.endsWith('.woff') || f.name.endsWith('.woff2')
-    ).slice(0, 5 - uploadedImages.length);
+    const image = Array.from(e.target.files || []).find(file => file.type.startsWith('image/'));
+    e.target.value = '';
+    if (!image) return;
+    if (image.size > MAX_IMAGE_BYTES) {
+      toast({ title: 'Image is too large', description: 'Choose an image smaller than 3 MB.', variant: 'destructive' });
+      return;
+    }
 
-    const newFiles = supportedFiles.map(file => ({
-      file,
-      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : '',
+    const newFiles = [{
+      file: image,
+      preview: URL.createObjectURL(image),
       uploading: true,
-    }));
+    }];
 
-    setUploadedImages(prev => [...prev, ...newFiles]);
+    setUploadedImages(previous => {
+      previous.forEach(entry => URL.revokeObjectURL(entry.preview));
+      return newFiles;
+    });
     setShowPlusMenu(false);
 
     // Upload each file immediately
@@ -513,7 +512,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           const normalizedUrl = normalizePublicImageUrl(url || '');
           if (!normalizedUrl) {
             setUploadedImages(prev => prev.filter(img => img.file !== entry.file));
-            toast({ title: 'Upload failed', description: 'Could not upload file. Please try again.', variant: 'destructive' });
+            toast({ title: 'Upload failed', description: 'Could not read the image. Please try again.', variant: 'destructive' });
             return;
           }
           setUploadedImages(prev => prev.map(img => 
@@ -521,7 +520,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           ));
         }).catch(() => {
           setUploadedImages(prev => prev.filter(img => img.file !== entry.file));
-          toast({ title: 'Upload failed', description: 'Could not upload file. Please try again.', variant: 'destructive' });
+          toast({ title: 'Upload failed', description: 'Could not read the image. Please try again.', variant: 'destructive' });
         });
       }
     }
@@ -683,19 +682,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
         className="flex items-center gap-3 py-3"
       >
         <div className="relative">
-          <div className="w-8 h-8 rounded-xl bg-yellow-500/10 flex items-center justify-center">
-            <Lightbulb className="w-4 h-4 text-yellow-400" />
+          <div className="w-8 h-8 rounded-xl bg-pink-500/10 flex items-center justify-center">
+            <Lightbulb className="w-4 h-4 text-pink-400" />
           </div>
           <motion.div
             animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0.6, 0.3] }}
             transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-            className="absolute inset-0 rounded-xl bg-yellow-400/15"
+            className="absolute inset-0 rounded-xl bg-pink-400/15"
           />
         </div>
         <span className="text-sm font-semibold text-foreground/70 tabular-nums">
           {generationPhase?.thinkingTime || 0}s
         </span>
-        <Loader2 className="w-3.5 h-3.5 animate-spin text-yellow-400/60" />
+        <Loader2 className="w-3.5 h-3.5 animate-spin text-pink-400/60" />
       </motion.div>
     );
   };
@@ -1051,8 +1050,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-br-md shadow-sm text-[15px] break-words whitespace-pre-wrap overflow-hidden bg-primary text-primary-foreground ml-auto">
                       {msg.imageUrl && (
                         <div className="mb-2 flex flex-wrap gap-2">
-                         {msg.imageUrl
-                            .split(',')
+                          {[msg.imageUrl]
                             .map(url => normalizePublicImageUrl(url))
                             .filter(Boolean)
                             .map((url, i) => (
@@ -1066,22 +1064,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                             ))}
                         </div>
                       )}
-                      {/* Render clone design as file badge, not inline text */}
-                      {(() => {
-                        const cloneMatch = msg.content.match(/^([\s\S]*?)\n\n📎 Clone Design: (.+)$/);
-                        if (cloneMatch) {
-                          return (
-                            <>
-                              {cloneMatch[1]}
-                              <div className="mt-2 flex items-center gap-2 bg-white/10 rounded-lg px-3 py-1.5 w-fit">
-                                <Files className="w-4 h-4 text-purple-300 flex-shrink-0" />
-                                <span className="text-xs text-white/70 truncate max-w-[200px]">Clone: {cloneMatch[2]}</span>
-                              </div>
-                            </>
-                          );
-                        }
-                        return msg.content;
-                      })()}
+                      {msg.content}
                     </div>
                   ) : (
                     /* AI message */
@@ -1247,30 +1230,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <div className="mb-3 flex flex-wrap gap-2">
             {uploadedImages.map((img, index) => (
               <div key={index} className="relative group/upload">
-                {img.file.type.startsWith('image/') ? (
-                  <div className="relative h-16 w-16">
-                    <img
-                      src={img.preview}
-                      alt={`Upload preview ${index + 1}`}
-                      className={`h-16 w-16 object-cover rounded-xl border border-border shadow-sm transition-opacity ${img.uploading ? 'opacity-50' : ''}`}
-                    />
-                    {img.uploading && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className={`relative h-16 w-auto min-w-[64px] px-3 flex flex-col items-center justify-center rounded-xl border border-border bg-secondary shadow-sm ${img.uploading ? 'opacity-50' : ''}`}>
-                    <File className="w-5 h-5 text-muted-foreground mb-1" />
-                    <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">{img.file.name}</span>
-                    {img.uploading && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                      </div>
-                    )}
-                  </div>
-                )}
+                <div className="relative h-16 w-16">
+                  <img
+                    src={img.preview}
+                    alt={`Upload preview ${index + 1}`}
+                    className={`h-16 w-16 object-cover rounded-xl border border-border shadow-sm transition-opacity ${img.uploading ? 'opacity-50' : ''}`}
+                  />
+                  {img.uploading && <div className="absolute inset-0 flex items-center justify-center"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}
+                </div>
                 <button
                   type="button"
                   onClick={() => removeUploadedImage(index)}
@@ -1280,7 +1247,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 </button>
               </div>
             ))}
-            <span className="text-[10px] text-muted-foreground self-end mb-1">{uploadedImages.length}/5</span>
+            <span className="text-[10px] text-muted-foreground self-end mb-1">صورة واحدة · 3MB بحد أقصى</span>
           </div>
         )}
 
@@ -1327,26 +1294,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         {isPaidPlan ? <ImageIcon className="w-4 h-4 text-blue-500" /> : <Lock className="w-4 h-4 text-muted-foreground" />}
                       </div>
                       <span className="text-sm text-foreground/80 group-hover/item:text-foreground">{t('chat.uploadImage')}</span>
-                      {!isPaidPlan && <span className="text-[10px] font-semibold text-amber-500 ml-auto px-1.5 py-0.5 rounded-md bg-amber-500/10">PRO</span>}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!isPaidPlan) {
-                          toast({ title: t('common.upgradeRequired') || 'Upgrade Required', description: t('common.upgradeToUpload') || 'File upload is available on paid plans only.', variant: 'destructive' });
-                          setShowPlusMenu(false);
-                          return;
-                        }
-                        docInputRef.current?.click();
-                        setShowPlusMenu(false);
-                      }}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left border-t border-border/50 group/item"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                        {isPaidPlan ? <File className="w-4 h-4 text-purple-500" /> : <Lock className="w-4 h-4 text-muted-foreground" />}
-                      </div>
-                      <span className="text-sm text-foreground/80 group-hover/item:text-foreground">{t('chat.uploadFile') || 'Upload File'}</span>
-                      {!isPaidPlan && <span className="text-[10px] font-semibold text-amber-500 ml-auto px-1.5 py-0.5 rounded-md bg-amber-500/10">PRO</span>}
+                      {!isPaidPlan && <span className="text-[10px] font-semibold text-pink-400 ml-auto px-1.5 py-0.5 rounded-md bg-pink-500/10">PRO</span>}
                     </button>
                     <button
                       type="button"
@@ -1360,8 +1308,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       }}
                       className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left border-t border-border/50 group/item"
                     >
-                      <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                        <AtSign className="w-4 h-4 text-orange-500" />
+                      <div className="w-7 h-7 rounded-lg bg-rose-500/10 flex items-center justify-center">
+                        <AtSign className="w-4 h-4 text-rose-400" />
                       </div>
                       <span className="text-sm text-foreground/80 group-hover/item:text-foreground">{t('chat.addReference')}</span>
                     </button>
@@ -1385,18 +1333,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/webp,image/gif"
                 onChange={handleFileSelect}
                 className="hidden"
-                multiple
-              />
-              <input
-                ref={docInputRef}
-                type="file"
-                accept=".pdf,.xlsx,.xls,.csv,.mp4,.webm,.ttf,.otf,.woff,.woff2"
-                onChange={handleFileSelect}
-                className="hidden"
-                multiple
               />
             </div>
 

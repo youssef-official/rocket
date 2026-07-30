@@ -1,6 +1,6 @@
-# Webo
+# Vivora X
 
-Webo is an Arabic-first AI workspace that generates and edits browser-native websites.
+Vivora X is an Arabic-first AI workspace that generates and edits browser-native websites.
 
 ## Generated project contract
 
@@ -19,7 +19,7 @@ Project names are assigned by the private Node server with cryptographically sec
 1. The model returns a short implementation plan that names the files and operations it will perform.
 2. The UI reports whether it is analyzing an attached image, reading an existing file, or writing a file.
 3. The model streams complete `<FILE>` blocks for the allowed files.
-4. Webo validates the three-file runtime contract and refreshes the browser preview.
+4. Vivora X validates the browser-native runtime contract and refreshes the browser preview.
 
 ## Local development
 
