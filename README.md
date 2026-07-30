@@ -36,4 +36,4 @@ npm install
 npm run dev
 ```
 
-The server owns authentication, SQLite data, backups, project creation, and the OpenRouter generation request. Configure the frontend API base with `VITE_API_URL`.
+The server owns authentication, SQLite data, backups, project creation, and the OpenRouter generation request. Production builds use `VITE_API_URL=https://egyhost1.com/server`; the frontend appends `/api` to that cPanel application base automatically.

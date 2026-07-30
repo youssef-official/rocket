@@ -1,5 +1,3 @@
-import 'dotenv/config';
-import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import Database from 'better-sqlite3';
 import compression from 'compression';
@@ -12,12 +10,18 @@ import morgan from 'morgan';
 import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { mkdirSync, existsSync, copyFileSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { loadEnvFile } from 'node:process';
 import { z } from 'zod';
 import { designQualitySystem } from './prompts/designQuality.js';
 
+// Node 20.12+ can load local development variables without making production
+// startup depend on dotenv being installed inside cPanel's Passenger runtime.
+try { loadEnvFile(); }
+catch (error) { if (error?.code !== 'ENOENT') throw error; }
+
 const config = {
   port: Number(process.env.PORT || 3001),
-  origin: process.env.WEB_ORIGIN || 'https://egyhost1.com,http://localhost:8080,http://localhost:5173',
+  origin: process.env.WEB_ORIGIN || 'https://vivorax.online,https://www.vivorax.online,https://egyhost1.com,http://localhost:8080,http://localhost:5173',
   jwtSecret: process.env.JWT_SECRET || '',
   openRouterKey: process.env.OPENROUTER_API_KEY || '',
   adminEmail: (process.env.ADMIN_EMAIL || '').toLowerCase(),
@@ -159,6 +163,8 @@ app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(compression());
 const allowedOrigins = [...new Set([
   ...config.origin.split(',').map(value => value.trim()).filter(Boolean),
+  'https://vivorax.online',
+  'https://www.vivorax.online',
   'http://localhost:8080',
   'http://localhost:5173',
 ])];

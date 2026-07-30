@@ -1,9 +1,15 @@
 const browserApi = typeof window !== 'undefined'
   ? import.meta.env.DEV
     ? `${window.location.protocol}//${window.location.hostname}:3001/api`
-    : 'https://egyhost1.com/server/api'
+    : 'https://egyhost1.com/server'
   : 'http://localhost:3001/api';
-const API_URL = (import.meta.env.VITE_API_URL || browserApi).replace(/\/$/, '');
+
+export const normalizeApiBase = (value: string) => {
+  const base = value.trim().replace(/\/+$/, '');
+  return base.endsWith('/server') ? `${base}/api` : base;
+};
+
+const API_URL = normalizeApiBase(import.meta.env.VITE_API_URL || browserApi);
 
 export const getToken = () => localStorage.getItem('webo_token');
 export const setToken = (token: string | null) => token ? localStorage.setItem('webo_token', token) : localStorage.removeItem('webo_token');
