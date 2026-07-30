@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import type { ProjectFile } from '@/types';
 import { applyVisualChanges, generateChangeSummary, parseProjectElements } from '@/services/visualEditService';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ElementStyles {
   color: string;
@@ -71,6 +72,7 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
   onSave,
   onClose,
 }) => {
+  const { t } = useLanguage();
   const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
   const [editedElements, setEditedElements] = useState<Map<string, SelectedElement>>(new Map());
   const [showFontDropdown, setShowFontDropdown] = useState(false);
@@ -190,7 +192,7 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Palette className="w-5 h-5 text-primary" />
-            <span className="font-semibold text-foreground">Visual Edit</span>
+            <span className="font-semibold text-foreground">{t('visual.title')}</span>
           </div>
           <button
             onClick={onClose}
@@ -296,28 +298,28 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
               {/* Content Editor */}
               <div className="mb-4">
                 <label className="text-sm font-medium text-foreground mb-2 block">
-                  Content
+                  {t('visual.content')}
                 </label>
                 <textarea
                   value={selectedElement.content}
                   onChange={(e) => updateElementContent(e.target.value)}
                   className="w-full p-3 rounded-lg border border-border bg-background text-foreground text-sm resize-none"
                   rows={3}
-                  placeholder="Enter content..."
+                  placeholder={t('visual.contentPlaceholder')}
                 />
               </div>
 
               {/* Font Family */}
               <div className="mb-4">
                 <label className="text-sm font-medium text-foreground mb-2 block">
-                  Font
+                  {t('visual.font')}
                 </label>
                 <div className="relative">
                   <button
                     onClick={() => setShowFontDropdown(!showFontDropdown)}
                     className="w-full p-2 rounded-lg border border-border bg-background text-left text-sm flex items-center justify-between"
                   >
-                    <span>{fontOptions.find(f => f.value === selectedElement.styles.fontFamily)?.label || 'Default'}</span>
+                    <span>{fontOptions.find(f => f.value === selectedElement.styles.fontFamily)?.label || t('visual.default')}</span>
                     <ChevronDown className="w-4 h-4" />
                   </button>
                   {showFontDropdown && (
@@ -425,11 +427,11 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
               {/* Colors */}
               <div className="mb-4">
                 <label className="text-sm font-medium text-foreground mb-2 block">
-                  Colors
+                  {t('visual.colors')}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Text</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">{t('visual.text')}</label>
                     <input
                       type="color"
                       value={selectedElement.styles.color}
@@ -438,7 +440,7 @@ export const VisualEditMode: React.FC<VisualEditModeProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Background</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">{t('visual.background')}</label>
                     <input
                       type="color"
                       value={selectedElement.styles.backgroundColor || '#ffffff'}

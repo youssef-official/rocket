@@ -21,6 +21,7 @@ import JSZip from 'jszip';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
+import { LanguageSelector } from '@/components/shared/LanguageSelector';
 // CreditWarningBanner removed
 
 interface FileActivity {
@@ -318,21 +319,20 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
   }, []);
 
   // Get display name for project
-  const displayProjectName = project?.generatedName || project?.name || 'Untitled Project';
+  const displayProjectName = project?.generatedName || project?.name || t('editor.untitledProject');
 
   // Visual Edit mode is now integrated into the main layout below
 
   return (
     <div className="h-screen flex flex-col bg-editor-bg" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header - Bolt Style */}
-      <header className={`h-14 flex items-center justify-between px-3 md:px-4 bg-editor-bg border-b border-border/60 ${isRTL ? 'flex-row-reverse' : ''}`}>
+      <header className="h-14 flex items-center justify-between px-3 md:px-4 bg-editor-bg border-b border-border/60">
         {/* Left Section */}
-        <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className="flex items-center gap-3">
           <button onClick={handleLogoClick} className="hover:opacity-80 transition-all duration-200 hover:scale-105">
             <VivoraLogo
               size="sm"
               showText={false}
-              className={isRTL ? 'rotate-180' : ''}
             />
           </button>
 
@@ -365,12 +365,13 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     className={`absolute ${isRTL ? 'right-0' : 'left-0'} top-full mt-2 w-60 bg-card border border-border/60 rounded-2xl shadow-xl shadow-black/10 overflow-hidden z-[9999]`}
                   >
                     <div className="p-1.5">
+                      <LanguageSelector />
                       <button
                         onClick={() => {
                           setShowProjectMenu(false);
                           setShowRenameDialog(true);
                         }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'text-right' : 'text-left'}`}
                       >
                         <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
                           <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
@@ -382,19 +383,19 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                           setShowProjectMenu(false);
                           window.location.href = `/projects/${project?.id}/settings`;
                         }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'text-right' : 'text-left'}`}
                       >
                         <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
                           <Settings2 className="w-3.5 h-3.5 text-muted-foreground" />
                         </div>
-                        <span className="font-medium">Project Settings</span>
+                        <span className="font-medium">{t('editor.projectSettings')}</span>
                       </button>
                       <button
                         onClick={() => {
                           handleDownload();
                           setShowProjectMenu(false);
                         }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'text-right' : 'text-left'}`}
                       >
                         <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
                           <FileArchive className="w-3.5 h-3.5 text-muted-foreground" />
@@ -413,30 +414,30 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
         <div className={`hidden md:flex items-center bg-secondary/80 rounded-xl p-0.5 border border-border/40 absolute left-1/2 transform -translate-x-1/2`}>
           <button
             onClick={() => setCurrentView('preview')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'preview' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'preview' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <Eye className="w-3.5 h-3.5" />
             <span>{t('editor.preview')}</span>
           </button>
           <button
             onClick={() => setCurrentView('code')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'code' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'code' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <Code2 className="w-3.5 h-3.5" />
             <span>{t('editor.code')}</span>
           </button>
           <button
             onClick={() => setCurrentView('analytics')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'analytics' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} ${isRTL ? 'flex-row-reverse' : ''}`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-[10px] text-xs font-semibold transition-all duration-200 ${currentView === 'analytics' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <BarChart2 className="w-3.5 h-3.5" />
-            <span>Analytics</span>
+            <span>{t('editor.analytics')}</span>
           </button>
 
         </div>
 
         {/* Right Section */}
-        <div className={`flex items-center gap-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className="flex items-center gap-1.5">
           {/* Download - hidden on mobile */}
           <button
             onClick={handleDownload}
@@ -486,7 +487,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   >
                     {/* User Info Header */}
                     <div className="px-4 pt-4 pb-3 border-b border-border/40">
-                      <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center text-sm font-bold text-primary-foreground overflow-hidden ring-2 ring-primary/20">
                           {user?.avatarUrl ? (
                             <img src={user.avatarUrl} alt="" className="w-full h-full object-cover rounded-xl" />
@@ -504,10 +505,10 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     {/* Credits */}
                     {userPlan && (
                       <div className="px-4 py-3 border-b border-border/40 bg-accent/30">
-                        <div className={`flex items-center justify-between mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
                             <Coins className="w-3.5 h-3.5 text-pink-400" />
-                            <span className="text-xs font-semibold text-foreground">Credits</span>
+                            <span className="text-xs font-semibold text-foreground">{t('editor.credits')}</span>
                           </div>
                           <span className="text-xs font-bold text-pink-400">
                             {getRemainingCredits().total.toFixed(1)}
@@ -521,9 +522,9 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                             }}
                           />
                         </div>
-                        <div className={`flex items-center justify-between mt-1.5 text-[11px] text-muted-foreground ${isRTL ? 'flex-row-reverse' : ''}`}>
-                          <span>Daily: {getRemainingCredits().daily.toFixed(1)}</span>
-                          <span>Monthly: {getRemainingCredits().monthly.toFixed(1)}</span>
+                        <div className="flex items-center justify-between mt-1.5 text-[11px] text-muted-foreground">
+                          <span>{t('credits.daily')}: {getRemainingCredits().daily.toFixed(1)}</span>
+                          <span>{t('credits.monthly')}: {getRemainingCredits().monthly.toFixed(1)}</span>
                         </div>
                       </div>
                     )}
@@ -531,7 +532,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     <div className="p-1.5">
                       <button
                         onClick={() => { setShowUserMenu(false); navigate('/settings'); }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/80 rounded-xl transition-all duration-200 text-sm text-foreground ${isRTL ? 'text-right' : 'text-left'}`}
                       >
                         <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                           <Settings2 className="w-3.5 h-3.5 text-primary" />
@@ -542,7 +543,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
 
                       <button
                         onClick={() => signOut()}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-destructive/10 rounded-xl transition-all duration-200 text-sm text-destructive ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-destructive/10 rounded-xl transition-all duration-200 text-sm text-destructive ${isRTL ? 'text-right' : 'text-left'}`}
                       >
                         <div className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
                           <LogOut className="w-3.5 h-3.5" />
@@ -561,7 +562,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Mobile Bottom Navigation */}
-        <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-editor-bg/95 backdrop-blur-xl border-t border-border/60 flex items-center gap-2 px-3 py-2 z-50 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-editor-bg/95 backdrop-blur-xl border-t border-border/60 flex items-center gap-2 px-3 py-2 z-50">
           <button
             onClick={() => setMobilePanel('chat')}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl transition-all duration-200 ${mobilePanel === 'chat' ? 'bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/20' : 'text-muted-foreground hover:bg-accent/60'}`}
@@ -584,26 +585,26 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
             {chatHidden && (
               <button
                 onClick={() => setChatHidden(false)}
-                className="flex-shrink-0 w-10 flex items-center justify-center border-r border-border hover:bg-accent/60 transition-colors text-muted-foreground hover:text-foreground"
-                title="Show chat"
+                className="flex-shrink-0 w-10 flex items-center justify-center border-e border-border hover:bg-accent/60 transition-colors text-muted-foreground hover:text-foreground"
+                title={t('editor.showChat')}
               >
-                <PanelLeftOpen className="w-4 h-4" />
+                <PanelLeftOpen className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
               </button>
             )}
 
             {!chatHidden && (
               <>
                 <div
-                  className="flex-shrink-0 border-r border-border relative"
+                  className="flex-shrink-0 border-e border-border relative"
                   style={{ width: chatWidth }}
                 >
                   {/* Hide chat button */}
                   <button
                     onClick={() => setChatHidden(true)}
-                    className="absolute top-2 right-2 z-10 p-1.5 rounded-lg hover:bg-accent/80 transition-colors text-muted-foreground hover:text-foreground"
-                    title="Hide chat"
+                    className="absolute top-2 end-2 z-10 p-1.5 rounded-lg hover:bg-accent/80 transition-colors text-muted-foreground hover:text-foreground"
+                    title={t('editor.hideChat')}
                   >
-                    <PanelLeftClose className="w-4 h-4" />
+                    <PanelLeftClose className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
                   </button>
                   <ChatView
                     messages={displayMessages}
@@ -751,12 +752,12 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                   }}
                   className="w-full px-4 py-2.5 bg-secondary/80 border border-border/60 rounded-xl text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 mb-4 transition-all duration-200"
                 />
-                <div className={`flex gap-2 justify-end ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="flex gap-2 justify-end">
                   <button
                     onClick={() => setShowRenameDialog(false)}
                     className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground rounded-xl hover:bg-accent/80 transition-all duration-200 font-medium"
                   >
-                    {isRTL ? 'إلغاء' : 'Cancel'}
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={() => {
@@ -766,7 +767,7 @@ export const EditorLayout: React.FC<EditorLayoutProps> = ({
                     }}
                     className="px-5 py-2 text-sm bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all duration-200 font-semibold shadow-md shadow-primary/20"
                   >
-                    {isRTL ? 'حفظ' : 'Save'}
+                    {t('common.save')}
                   </button>
                 </div>
               </div>

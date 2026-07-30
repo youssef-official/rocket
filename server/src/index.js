@@ -95,6 +95,35 @@ db.exec(`
     name TEXT PRIMARY KEY, is_active INTEGER NOT NULL DEFAULT 0,
     config_json TEXT NOT NULL DEFAULT '{}', updated_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS stores (
+    id TEXT PRIMARY KEY, owner_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL, slug TEXT UNIQUE NOT NULL, prompt TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft', config_json TEXT NOT NULL DEFAULT '{}',
+    social_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_stores_owner_updated ON stores(owner_user_id, updated_at DESC);
+  CREATE TABLE IF NOT EXISTS store_products (
+    id TEXT PRIMARY KEY, store_id TEXT NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    name TEXT NOT NULL, slug TEXT NOT NULL, description TEXT NOT NULL DEFAULT '',
+    price REAL NOT NULL DEFAULT 0, compare_at_price REAL, stock INTEGER NOT NULL DEFAULT 0,
+    image_url TEXT, category TEXT NOT NULL DEFAULT 'General', status TEXT NOT NULL DEFAULT 'active',
+    featured INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+    UNIQUE(store_id, slug)
+  );
+  CREATE INDEX IF NOT EXISTS idx_store_products_store ON store_products(store_id, status, created_at DESC);
+  CREATE TABLE IF NOT EXISTS store_orders (
+    id TEXT PRIMARY KEY, store_id TEXT NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    order_number TEXT NOT NULL, customer_name TEXT NOT NULL, phone TEXT NOT NULL,
+    email TEXT, address TEXT NOT NULL, city TEXT NOT NULL, notes TEXT,
+    subtotal REAL NOT NULL, total REAL NOT NULL, status TEXT NOT NULL DEFAULT 'new',
+    created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(store_id, order_number)
+  );
+  CREATE INDEX IF NOT EXISTS idx_store_orders_store ON store_orders(store_id, created_at DESC);
+  CREATE TABLE IF NOT EXISTS store_order_items (
+    id TEXT PRIMARY KEY, order_id TEXT NOT NULL REFERENCES store_orders(id) ON DELETE CASCADE,
+    product_id TEXT REFERENCES store_products(id) ON DELETE SET NULL,
+    product_name TEXT NOT NULL, quantity INTEGER NOT NULL, unit_price REAL NOT NULL
+  );
 `);
 // SQLite does not support ADD COLUMN IF NOT EXISTS. These small migrations keep
 // existing Webo databases compatible without touching any account data.
@@ -216,6 +245,30 @@ const chatMessage = row => ({
   actionsTaken: json(row.actions_json, []),
   createdAt: row.created_at,
 });
+const store = row => ({
+  id: row.id, ownerUserId: row.owner_user_id, name: row.name, slug: row.slug,
+  prompt: row.prompt, status: row.status, config: json(row.config_json, {}),
+  social: json(row.social_json, {}), createdAt: row.created_at, updatedAt: row.updated_at,
+});
+const storeProduct = row => ({
+  id: row.id, storeId: row.store_id, name: row.name, slug: row.slug,
+  description: row.description, price: Number(row.price), compareAtPrice: row.compare_at_price == null ? null : Number(row.compare_at_price),
+  stock: Number(row.stock), imageUrl: row.image_url || '', category: row.category,
+  status: row.status, featured: Boolean(row.featured), createdAt: row.created_at, updatedAt: row.updated_at,
+});
+const storeOrder = row => ({
+  id: row.id, storeId: row.store_id, orderNumber: row.order_number,
+  customerName: row.customer_name, phone: row.phone, email: row.email || '', address: row.address,
+  city: row.city, notes: row.notes || '', subtotal: Number(row.subtotal), total: Number(row.total),
+  status: row.status, createdAt: row.created_at, updatedAt: row.updated_at,
+});
+const slugify = value => String(value || '').normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').toLowerCase().slice(0, 54) || 'store';
+const uniqueStoreSlug = value => {
+  const base = slugify(value);
+  let candidate = base;
+  while (db.prepare('SELECT 1 FROM stores WHERE slug = ?').get(candidate)) candidate = `${base}-${randomBytes(2).toString('hex')}`;
+  return candidate;
+};
 const sign = user => jwt.sign({ sub: user.id, role: user.role }, config.jwtSecret, { expiresIn: '7d', issuer: 'webo' });
 const utcDay = () => new Date().toISOString().slice(0, 10);
 const addMonths = (from, months) => { const date = new Date(from); date.setUTCMonth(date.getUTCMonth() + months); return date.toISOString(); };
@@ -277,6 +330,7 @@ function auth(req, res, next) {
 }
 function admin(req, res, next) { return req.auth?.role === 'admin' ? next() : res.status(403).json({ error: 'Administrator access required.' }); }
 function ownedProject(projectId, userId) { return db.prepare('SELECT * FROM projects WHERE id = ? AND user_id = ?').get(projectId, userId); }
+function ownedStore(storeId, userId) { return db.prepare('SELECT * FROM stores WHERE id = ? AND owner_user_id = ?').get(storeId, userId); }
 
 app.get('/api/events', auth, (req, res) => {
   res.status(200);
@@ -333,6 +387,119 @@ app.get('/api/account/plan', auth, (req, res) => {
     monthlyCredits: Number(row.monthly_credits), monthlyCreditsUsed: Number(row.monthly_credits_used),
     subscriptionExpiresAt: row.subscription_expires_at || null, lastDailyReset: row.last_daily_reset || null, createdAt: user.created_at, updatedAt: row.updated_at,
   });
+});
+
+const defaultStoreConfig = {
+  direction: 'rtl', currency: 'EGP', locale: 'ar-EG', style: 'editorial',
+  colors: { ink:'#11131a', paper:'#f5f2ec', accent:'#ec4899', muted:'#777267' },
+  typography: { display:'Sora', body:'Manrope' },
+  hero: { title:'منتجات تستحق مكانًا في يومك', subtitle:'تشكيلة مختارة بعناية، وتجربة شراء واضحة من أول نظرة حتى وصول الطلب.', cta:'تسوّق المجموعة' },
+  announcement: 'شحن مجاني للطلبات المختارة', categories:['الجديد','الأكثر طلبًا','مختاراتنا'],
+};
+const storeBlueprintSchema = z.object({
+  name:z.string().min(1).max(80),
+  config:z.object({
+    direction:z.enum(['rtl','ltr']).default('rtl'), currency:z.string().max(8).default('EGP'), locale:z.string().max(12).default('ar-EG'), style:z.string().max(40).default('editorial'),
+    colors:z.object({ ink:z.string().regex(/^#[0-9a-f]{6}$/i), paper:z.string().regex(/^#[0-9a-f]{6}$/i), accent:z.string().regex(/^#[0-9a-f]{6}$/i), muted:z.string().regex(/^#[0-9a-f]{6}$/i) }),
+    typography:z.object({ display:z.string().max(60), body:z.string().max(60) }),
+    hero:z.object({ title:z.string().max(140), subtitle:z.string().max(260), cta:z.string().max(40) }),
+    announcement:z.string().max(120), categories:z.array(z.string().max(50)).min(1).max(8),
+  }),
+  social:z.object({ instagram:z.string().max(300).default(''), facebook:z.string().max(300).default(''), tiktok:z.string().max(300).default(''), whatsapp:z.string().max(50).default('') }).default({}),
+});
+const productInput = z.object({
+  name:z.string().min(1).max(120), description:z.string().max(2000).default(''),
+  price:z.number().min(0).max(100000000), compareAtPrice:z.number().min(0).max(100000000).nullable().optional(),
+  stock:z.number().int().min(0).max(1000000), imageUrl:z.string().max(2000).optional(),
+  category:z.string().min(1).max(80).default('General'), status:z.enum(['active','draft','archived']).default('active'), featured:z.boolean().default(false),
+});
+
+app.get('/api/stores', auth, (req, res) => res.json(db.prepare('SELECT * FROM stores WHERE owner_user_id = ? ORDER BY updated_at DESC').all(req.auth.sub).map(store)));
+app.post('/api/stores', auth, (req, res) => {
+  const parsed = z.object({ prompt:z.string().min(3).max(100000), blueprint:storeBlueprintSchema.optional() }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error:'Describe the store you want to create.' });
+  const blueprint = parsed.data.blueprint || { name:'متجري الجديد', config:defaultStoreConfig, social:{} };
+  const record = { id:id(), owner_user_id:req.auth.sub, name:blueprint.name, slug:uniqueStoreSlug(blueprint.name), prompt:parsed.data.prompt, status:'published', config_json:JSON.stringify(blueprint.config), social_json:JSON.stringify(blueprint.social || {}), created_at:now(), updated_at:now() };
+  const starterImages = [
+    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1000&q=85',
+    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1000&q=85',
+    'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=1000&q=85',
+    'https://images.unsplash.com/photo-1560343090-f0409e92791a?auto=format&fit=crop&w=1000&q=85',
+  ];
+  db.transaction(() => {
+    db.prepare('INSERT INTO stores (id,owner_user_id,name,slug,prompt,status,config_json,social_json,created_at,updated_at) VALUES (@id,@owner_user_id,@name,@slug,@prompt,@status,@config_json,@social_json,@created_at,@updated_at)').run(record);
+    const insert = db.prepare('INSERT INTO store_products (id,store_id,name,slug,description,price,compare_at_price,stock,image_url,category,status,featured,created_at,updated_at) VALUES (@id,@store_id,@name,@slug,@description,@price,@compare_at_price,@stock,@image_url,@category,@status,@featured,@created_at,@updated_at)');
+    const categories = blueprint.config.categories || ['الجديد'];
+    starterImages.forEach((image, index) => insert.run({ id:id(), store_id:record.id, name:`منتج تجريبي ${index + 1}`, slug:`starter-${index + 1}`, description:'منتج تجريبي جاهز للاستبدال من لوحة التحكم.', price:890 + index * 350, compare_at_price:index % 2 ? 1690 + index * 300 : null, stock:12 + index * 4, image_url:image, category:categories[index % categories.length], status:'active', featured:Number(index < 3), created_at:now(), updated_at:now() }));
+  })();
+  sendRealtimeEvent(req.auth.sub, 'store.created', { storeId:record.id });
+  res.status(201).json(store(record));
+});
+app.get('/api/stores/:id', auth, (req, res) => {
+  const current = ownedStore(req.params.id, req.auth.sub);
+  if (!current) return res.status(404).json({ error:'Store not found.' });
+  const products = db.prepare('SELECT * FROM store_products WHERE store_id = ? ORDER BY created_at DESC').all(current.id).map(storeProduct);
+  const orders = db.prepare('SELECT * FROM store_orders WHERE store_id = ? ORDER BY created_at DESC').all(current.id).map(storeOrder);
+  res.json({ ...store(current), products, orders });
+});
+app.patch('/api/stores/:id', auth, (req, res) => {
+  const current = ownedStore(req.params.id, req.auth.sub);
+  if (!current) return res.status(404).json({ error:'Store not found.' });
+  const parsed = z.object({ name:z.string().min(1).max(80).optional(), status:z.enum(['draft','published','paused']).optional(), config:storeBlueprintSchema.shape.config.partial().optional(), social:storeBlueprintSchema.shape.social.optional() }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error:'Check the store settings and try again.' });
+  const nextConfig = parsed.data.config ? { ...json(current.config_json, defaultStoreConfig), ...parsed.data.config } : json(current.config_json, defaultStoreConfig);
+  const nextSocial = parsed.data.social || json(current.social_json, {});
+  db.prepare('UPDATE stores SET name=?,status=?,config_json=?,social_json=?,updated_at=? WHERE id=? AND owner_user_id=?').run(parsed.data.name || current.name, parsed.data.status || current.status, JSON.stringify(nextConfig), JSON.stringify(nextSocial), now(), current.id, req.auth.sub);
+  sendRealtimeEvent(req.auth.sub, 'store.updated', { storeId:current.id });
+  res.json(store(ownedStore(current.id, req.auth.sub)));
+});
+app.post('/api/stores/:id/products', auth, (req, res) => {
+  const current = ownedStore(req.params.id, req.auth.sub); if (!current) return res.status(404).json({ error:'Store not found.' });
+  const parsed = productInput.safeParse(req.body); if (!parsed.success) return res.status(400).json({ error:'Complete the product name, price, and stock.' });
+  const value = parsed.data; const record = { id:id(), store_id:current.id, name:value.name, slug:`${slugify(value.name)}-${randomBytes(2).toString('hex')}`, description:value.description, price:value.price, compare_at_price:value.compareAtPrice ?? null, stock:value.stock, image_url:value.imageUrl || null, category:value.category, status:value.status, featured:Number(value.featured), created_at:now(), updated_at:now() };
+  db.prepare('INSERT INTO store_products (id,store_id,name,slug,description,price,compare_at_price,stock,image_url,category,status,featured,created_at,updated_at) VALUES (@id,@store_id,@name,@slug,@description,@price,@compare_at_price,@stock,@image_url,@category,@status,@featured,@created_at,@updated_at)').run(record);
+  sendRealtimeEvent(req.auth.sub, 'store.updated', { storeId:current.id }); res.status(201).json(storeProduct(record));
+});
+app.patch('/api/stores/:id/products/:productId', auth, (req, res) => {
+  const current = ownedStore(req.params.id, req.auth.sub); if (!current) return res.status(404).json({ error:'Store not found.' });
+  const existing = db.prepare('SELECT * FROM store_products WHERE id=? AND store_id=?').get(req.params.productId, current.id); if (!existing) return res.status(404).json({ error:'Product not found.' });
+  const parsed = productInput.partial().safeParse(req.body); if (!parsed.success) return res.status(400).json({ error:'Check the product details.' });
+  const v = parsed.data; db.prepare('UPDATE store_products SET name=?,description=?,price=?,compare_at_price=?,stock=?,image_url=?,category=?,status=?,featured=?,updated_at=? WHERE id=? AND store_id=?').run(v.name ?? existing.name, v.description ?? existing.description, v.price ?? existing.price, v.compareAtPrice === undefined ? existing.compare_at_price : v.compareAtPrice, v.stock ?? existing.stock, v.imageUrl === undefined ? existing.image_url : v.imageUrl, v.category ?? existing.category, v.status ?? existing.status, v.featured === undefined ? existing.featured : Number(v.featured), now(), existing.id, current.id);
+  sendRealtimeEvent(req.auth.sub, 'store.updated', { storeId:current.id }); res.json(storeProduct(db.prepare('SELECT * FROM store_products WHERE id=?').get(existing.id)));
+});
+app.delete('/api/stores/:id/products/:productId', auth, (req, res) => {
+  const current = ownedStore(req.params.id, req.auth.sub); if (!current) return res.status(404).json({ error:'Store not found.' });
+  const result = db.prepare('DELETE FROM store_products WHERE id=? AND store_id=?').run(req.params.productId, current.id); if (!result.changes) return res.status(404).json({ error:'Product not found.' });
+  sendRealtimeEvent(req.auth.sub, 'store.updated', { storeId:current.id }); res.status(204).end();
+});
+app.patch('/api/stores/:id/orders/:orderId', auth, (req, res) => {
+  const current = ownedStore(req.params.id, req.auth.sub); if (!current) return res.status(404).json({ error:'Store not found.' });
+  const parsed = z.object({ status:z.enum(['new','confirmed','preparing','shipped','delivered','cancelled']) }).safeParse(req.body); if (!parsed.success) return res.status(400).json({ error:'Choose a valid order status.' });
+  const result = db.prepare('UPDATE store_orders SET status=?,updated_at=? WHERE id=? AND store_id=?').run(parsed.data.status, now(), req.params.orderId, current.id); if (!result.changes) return res.status(404).json({ error:'Order not found.' });
+  sendRealtimeEvent(req.auth.sub, 'store.updated', { storeId:current.id }); res.json(storeOrder(db.prepare('SELECT * FROM store_orders WHERE id=?').get(req.params.orderId)));
+});
+
+app.get('/api/public/stores/:slug', (req, res) => {
+  const current = db.prepare("SELECT * FROM stores WHERE slug=? AND status='published'").get(req.params.slug); if (!current) return res.status(404).json({ error:'Store not found.' });
+  const products = db.prepare("SELECT * FROM store_products WHERE store_id=? AND status='active' ORDER BY featured DESC,created_at DESC").all(current.id).map(storeProduct);
+  res.json({ ...store(current), products });
+});
+app.post('/api/public/stores/:slug/orders', rateLimit({ windowMs:60_000, limit:12 }), (req, res) => {
+  const current = db.prepare("SELECT * FROM stores WHERE slug=? AND status='published'").get(req.params.slug); if (!current) return res.status(404).json({ error:'Store not found.' });
+  const parsed = z.object({ customerName:z.string().min(2).max(100), phone:z.string().min(7).max(30), email:z.string().email().max(254).optional().or(z.literal('')), address:z.string().min(5).max(500), city:z.string().min(2).max(100), notes:z.string().max(1000).optional(), items:z.array(z.object({ productId:z.string().uuid(), quantity:z.number().int().min(1).max(20) })).min(1).max(50) }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error:'Complete your contact and delivery details.' });
+  try {
+    const created = db.transaction(() => {
+      const resolved = parsed.data.items.map(item => { const product = db.prepare("SELECT * FROM store_products WHERE id=? AND store_id=? AND status='active'").get(item.productId, current.id); if (!product || product.stock < item.quantity) throw new Error('One of the products is unavailable or out of stock.'); return { product, quantity:item.quantity }; });
+      const subtotal = resolved.reduce((sum,item) => sum + Number(item.product.price) * item.quantity, 0); const orderId=id(); const orderNumber=`VX-${Date.now().toString().slice(-7)}`;
+      const record = { id:orderId, store_id:current.id, order_number:orderNumber, customer_name:parsed.data.customerName, phone:parsed.data.phone, email:parsed.data.email || null, address:parsed.data.address, city:parsed.data.city, notes:parsed.data.notes || null, subtotal, total:subtotal, status:'new', created_at:now(), updated_at:now() };
+      db.prepare('INSERT INTO store_orders (id,store_id,order_number,customer_name,phone,email,address,city,notes,subtotal,total,status,created_at,updated_at) VALUES (@id,@store_id,@order_number,@customer_name,@phone,@email,@address,@city,@notes,@subtotal,@total,@status,@created_at,@updated_at)').run(record);
+      const insertItem=db.prepare('INSERT INTO store_order_items (id,order_id,product_id,product_name,quantity,unit_price) VALUES (?,?,?,?,?,?)');
+      resolved.forEach(item => { insertItem.run(id(),orderId,item.product.id,item.product.name,item.quantity,item.product.price); db.prepare('UPDATE store_products SET stock=stock-?,updated_at=? WHERE id=?').run(item.quantity,now(),item.product.id); });
+      return record;
+    })();
+    sendRealtimeEvent(current.owner_user_id, 'store.updated', { storeId:current.id }); res.status(201).json(storeOrder(created));
+  } catch (error) { res.status(409).json({ error:(error instanceof Error ? error.message : 'Could not place the order.') }); }
 });
 
 app.get('/api/projects', auth, (req, res) => res.json(db.prepare('SELECT * FROM projects WHERE user_id = ? ORDER BY updated_at DESC').all(req.auth.sub).map(project)));
@@ -605,6 +772,9 @@ Stay strictly within the user's request. Do not invent business details or sugge
 Never mention choosing a platform/CMS, buying a domain, hosting, SSL, launch, publishing, analytics, backups, photography, maintenance schedules, or other work outside the generated app unless the user explicitly requested that exact capability.
 Do not output bullets, numbering, headings, code, XML tags, JSON, generic filler, React, frameworks, or build tooling.`,
   suggestions: 'Return ONLY a JSON array of exactly four objects with the string keys "label" and "prompt". Make each suggestion a concrete, subject-specific improvement to composition, typography, responsive behavior, or one purposeful interaction; never return generic polish advice or repeat the same effect. Every suggestion must be possible using only HTML, CSS, and browser-native JavaScript. Never suggest React, frameworks, packages, build tools, a database, or a backend. No markdown or explanation.',
+  'store-config': `Turn the user's store brief into one polished ecommerce identity configuration. Return ONLY valid JSON with this exact shape:
+{"name":"Store name","config":{"direction":"rtl or ltr","currency":"EGP","locale":"ar-EG","style":"short art direction","colors":{"ink":"#RRGGBB","paper":"#RRGGBB","accent":"#RRGGBB","muted":"#RRGGBB"},"typography":{"display":"Sora","body":"Manrope"},"hero":{"title":"specific headline","subtitle":"specific supporting line","cta":"short action"},"announcement":"short useful message","categories":["3 to 6 relevant categories"]},"social":{"instagram":"","facebook":"","tiktok":"","whatsapp":""}}.
+Use the user's language. Make the art direction subject-specific and high contrast. If a selected design system is supplied, use its colors exactly as the foundation. Do not output markdown, commentary, products, database instructions, code, or extra keys.`,
   'version-name': 'Return ONLY a short version name of two to five words. No code, XML, JSON, or explanation.',
   clarify: 'Ask only the smallest set of clear product questions needed to build the request. Do not output code or file blocks.',
   chat: 'Answer the user clearly and helpfully in plain text. Do not output code unless they explicitly requested code.',
@@ -612,7 +782,7 @@ Do not output bullets, numbering, headings, code, XML tags, JSON, generic filler
 }[mode] || codeSystem);
 app.post('/api/generate', auth, rateLimit({ windowMs: 60_000, limit: 12 }), async (req, res) => {
   if (!config.openRouterKey) return res.status(503).json({ error: 'OpenRouter generation is not configured on the server.' });
-  const payload = z.object({ mode:z.enum(['code','status','explanation','suggestions','chat','version-name','clarify']).default('code'), messages:z.array(z.object({ role:z.enum(['user','assistant','system']), content:z.any() })).min(1).max(60), userLanguage:z.string().max(10).optional(), projectId:z.string().uuid().optional(), generationKind:z.enum(['initial','edit']).optional(), colorTheme:z.object({ name:z.string().max(80), colors:z.array(z.string().regex(/^#[0-9a-f]{6}$/i)).min(1).max(8) }).optional() }).safeParse(req.body);
+  const payload = z.object({ mode:z.enum(['code','status','explanation','suggestions','chat','version-name','clarify','store-config']).default('code'), messages:z.array(z.object({ role:z.enum(['user','assistant','system']), content:z.any() })).min(1).max(60), userLanguage:z.string().max(10).optional(), projectId:z.string().uuid().optional(), generationKind:z.enum(['initial','edit']).optional(), colorTheme:z.object({ name:z.string().max(80), colors:z.array(z.string().regex(/^#[0-9a-f]{6}$/i)).min(1).max(8) }).optional() }).safeParse(req.body);
   if (!payload.success) return res.status(400).json({ error: 'Invalid generation request.' });
   let reservation = null;
   let generationProject = null;
@@ -630,7 +800,7 @@ app.post('/api/generate', auth, rateLimit({ windowMs: 60_000, limit: 12 }), asyn
     : '';
   const systemPrompt = `${isAutoFix ? autoFixSystem : promptForMode(payload.data.mode)}${themeDirective}`;
   const temperature = isAutoFix ? 0.1 : payload.data.mode === 'code' ? 0.35 : 0.25;
-  const maxTokens = isAutoFix ? 6000 : payload.data.mode === 'explanation' ? 240 : payload.data.mode === 'code' ? 35000 : 8000;
+  const maxTokens = isAutoFix ? 6000 : payload.data.mode === 'explanation' ? 240 : payload.data.mode === 'store-config' ? 1400 : payload.data.mode === 'code' ? 35000 : 8000;
   try { upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', { method:'POST', headers:{ 'Authorization':`Bearer ${config.openRouterKey}`, 'Content-Type':'application/json', 'HTTP-Referer': process.env.OPENROUTER_SITE_URL || 'https://vivorax.online', 'X-Title':'Vivora X' }, body:JSON.stringify({ model:'qwen/qwen3.7-flash', stream:true, temperature, max_tokens:maxTokens, messages:[{ role:'system', content:systemPrompt }, ...payload.data.messages] }) }); }
   catch (error) { if (reservation) finalizeReservation(reservation.id, false); throw error; }
   if (!upstream.ok || !upstream.body) {

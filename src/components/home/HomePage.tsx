@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Send, X, Image as ImageIcon, ChevronDown, Sparkles, CircleHelp, LogIn, Plus, Mic, MicOff, Palette } from 'lucide-react';
+import { ArrowRight, Send, X, Image as ImageIcon, ChevronDown, Sparkles, CircleHelp, LogIn, Plus, Mic, MicOff, Palette, Globe2, ShoppingBag } from 'lucide-react';
 import { CelebrationEffects } from './CelebrationEffects';
 import { UserMenuDropdown, getWallpaperSrc } from '@/components/shared/UserMenuDropdown';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,12 +11,13 @@ import { FrameworkBar } from '@/components/shared/FrameworkLogos';
 import { Footer } from '@/components/shared/Footer';
 import { UpgradeModal } from '@/components/shared/UpgradeModal';
 import { NotificationInbox } from '@/components/shared/NotificationInbox';
+import { LanguageSelector } from '@/components/shared/LanguageSelector';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import { toast } from '@/hooks/use-toast';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 
 interface HomePageProps {
-  onStartBuilding: (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageUrls?: string[]) => Promise<boolean | void>;
+  onStartBuilding: (prompt: string, projectType: 'vite' | 'html', modelId?: string, imageUrls?: string[], buildKind?: 'website' | 'store') => Promise<boolean | void>;
   onShowAuth?: () => void;
 }
 
@@ -295,6 +296,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [buildKind, setBuildKind] = useState<'website' | 'store'>('website');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -317,7 +319,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         sessionStorage.removeItem('vivora_pending_color_theme');
       }
       try {
-        const started = await onStartBuilding(prompt, 'html', undefined, urls.length > 0 ? urls : undefined);
+        const started = await onStartBuilding(prompt, 'html', undefined, urls.length > 0 ? urls : undefined, buildKind);
         if (started) localStorage.removeItem('vivora_home_prompt');
       } finally {
         setIsSubmitting(false);
@@ -346,22 +348,28 @@ export const HomePage: React.FC<HomePageProps> = ({
       <header className="relative z-[100] px-4 md:px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between relative">
           {/* Logo Section - Right in AR, Left in EN */}
-          <div className={`flex items-center gap-2 ${isRTL ? 'order-3' : 'order-1'}`}>
+          <div className="flex items-center gap-2">
             <VivoraLogo
               size="sm"
               className="scale-90 origin-left"
             />
-            <span className="bg-white/20 text-white px-2.5 py-0.5 rounded-full hidden sm:inline text-[10px] font-semibold tracking-widest uppercase">{isRTL ? 'تجريبي' : 'BETA'}</span>
+            <span className="bg-white/20 text-white px-2.5 py-0.5 rounded-full hidden sm:inline text-[10px] font-semibold tracking-widest uppercase">{isRTL ? t('home.beta') : 'BETA'}</span>
           </div>
 
           {/* Actions Section */}
-          <div className={`flex items-center gap-2 md:gap-3 ${isRTL ? 'order-1' : 'order-3'}`}>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-[7.25rem] rounded-xl bg-white/[0.08] backdrop-blur-xl border border-white/[0.08]">
+              <LanguageSelector />
+            </div>
             {user ? (
               <>
-                <div className={`flex items-center gap-1 bg-white/[0.08] backdrop-blur-xl rounded-full p-1 border border-white/[0.08] ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="flex items-center gap-1 bg-white/[0.08] backdrop-blur-xl rounded-full p-1 border border-white/[0.08]">
+                  <a href="/stores" className="hidden md:flex items-center justify-center px-3 h-8 rounded-full text-white/75 hover:bg-white/10 hover:text-white transition-all text-xs font-semibold">
+                    {t('home.myStores')}
+                  </a>
                   {user.role === 'admin' && (
                     <a href="/admin" className="hidden md:flex items-center justify-center px-3 h-8 rounded-full bg-pink-500/20 text-pink-200 hover:bg-pink-500/30 transition-all text-xs font-semibold" title="Admin">
-                      {isRTL ? 'الإدارة' : 'Admin'}
+                      {t('home.admin')}
                     </a>
                   )}
                   <a href="/faq" className="hidden md:flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full transition-all duration-200" title="Help">
@@ -400,7 +408,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 md:mb-8"
         >
-          <div className={`flex items-center gap-2 px-4 md:px-5 py-2.5 bg-white/[0.08] backdrop-blur-xl rounded-full hover:bg-white/[0.12] transition-all duration-300 border border-white/[0.1] shadow-lg shadow-black/5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className="flex items-center gap-2 px-4 md:px-5 py-2.5 bg-white/[0.08] backdrop-blur-xl rounded-full hover:bg-white/[0.12] transition-all duration-300 border border-white/[0.1] shadow-lg shadow-black/5">
             <span className="px-2.5 py-0.5 bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">{t('home.newBadge')}</span>
             <span className="text-white/90 text-xs md:text-sm font-medium">{t('home.mobileAnnouncement')}</span>
           </div>
@@ -431,6 +439,12 @@ export const HomePage: React.FC<HomePageProps> = ({
           transition={{ delay: 0.2 }}
           className="w-full max-w-3xl"
         >
+          <div className="mb-3 flex justify-center" role="radiogroup" aria-label={t('home.projectType')}>
+            <div className="inline-flex rounded-2xl border border-white/15 bg-[#0b1020]/85 p-1.5 shadow-[0_14px_36px_rgba(0,0,0,.28)]">
+              <button type="button" role="radio" aria-checked={buildKind === 'website'} onClick={() => setBuildKind('website')} className={`flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition ${buildKind === 'website' ? 'bg-white text-[#11131a]' : 'text-white/65 hover:text-white'}`}><Globe2 size={16} />{t('home.website')}</button>
+              <button type="button" role="radio" aria-checked={buildKind === 'store'} onClick={() => setBuildKind('store')} className={`flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition ${buildKind === 'store' ? 'bg-pink-500 text-white' : 'text-white/65 hover:text-white'}`}><ShoppingBag size={16} />{t('home.store')}</button>
+            </div>
+          </div>
           <form onSubmit={handleSubmit}>
             {/* Hidden file input */}
             <input
@@ -461,7 +475,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               {/* Uploaded Images Preview */}
               {uploadedImages.length > 0 && (
                 <div className={`px-4 pt-4 ${isRTL ? 'text-right' : ''}`}>
-                  <div className={`flex flex-wrap items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className="flex flex-wrap items-center gap-2">
                     {uploadedImages.map((img, index) => (
                       <div key={index} className="relative group/upload">
                         <div className="relative w-16 h-16">
@@ -485,7 +499,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                         </button>
                       </div>
                     ))}
-                    <span className="text-[10px] text-muted-foreground self-end mb-1">صورة واحدة · 3MB بحد أقصى</span>
+                    <span className="text-[10px] text-muted-foreground self-end mb-1">{t('home.oneImage')}</span>
                   </div>
                 </div>
               )}
@@ -493,19 +507,19 @@ export const HomePage: React.FC<HomePageProps> = ({
               <textarea
                 value={prompt}
                 onChange={handlePromptChange}
-                placeholder={t('home.placeholder')}
+                placeholder={buildKind === 'store' ? t('home.storePlaceholder') : t('home.placeholder')}
                 className={`w-full px-4 md:px-8 py-4 md:py-6 text-gray-800 placeholder-gray-400 resize-none focus:outline-none text-base md:text-lg ${isRTL ? 'text-right' : ''}`}
                 dir={isRTL ? 'rtl' : 'ltr'}
                 rows={3}
               />
 
-              <div className={`flex items-center justify-between px-3 md:px-6 py-3 md:py-4 border-t border-gray-100/80 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="flex items-center justify-between px-3 md:px-6 py-3 md:py-4 border-t border-gray-100/80">
                 <div className="relative" ref={plusButtonRef}>
                   <button
                     type="button"
                     onClick={() => setShowPlusMenu(!showPlusMenu)}
                     className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all duration-200 group"
-                    title="Add"
+                    title={t('home.add')}
                   >
                     <Plus className={`w-5 h-5 text-gray-500 group-hover:text-gray-700 transition-all duration-200 ${showPlusMenu ? 'rotate-45' : ''}`} />
                   </button>
@@ -541,14 +555,14 @@ export const HomePage: React.FC<HomePageProps> = ({
                               }
                               fileInputRef.current?.click();
                             }}
-                            className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-all duration-200 ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                            className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-all duration-200 ${isRTL ? 'text-right' : 'text-left'}`}
                           >
                             <div className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center flex-shrink-0">
                               <ImageIcon className="w-4 h-4 text-pink-600" />
                             </div>
                             <div className={`flex-1 ${isRTL ? 'text-right' : ''}`}>
-                              <p className="text-sm font-semibold text-gray-700">Attach Image</p>
-                              <p className="text-[11px] text-gray-500">{isPaidPlan ? 'One image · max 3 MB' : 'Pro+ only'}</p>
+                              <p className="text-sm font-semibold text-gray-700">{t('home.attachImage')}</p>
+                              <p className="text-[11px] text-gray-500">{isPaidPlan ? t('home.oneImage') : t('home.proOnly')}</p>
                             </div>
                             {!isPaidPlan && (
                               <span className="px-1.5 py-0.5 bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white text-[9px] font-bold rounded-full uppercase tracking-wider">PRO</span>
@@ -562,14 +576,14 @@ export const HomePage: React.FC<HomePageProps> = ({
                               setShowPlusMenu(false);
                               setShowThemeMenu(true);
                             }}
-                            className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-all duration-200 ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
+                            className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-all duration-200 ${isRTL ? 'text-right' : 'text-left'}`}
                           >
                             <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
                               <Palette className="w-4 h-4 text-indigo-500" />
                             </div>
                             <div className={isRTL ? 'text-right' : ''}>
-                              <p className="text-sm font-semibold text-gray-700">Themes</p>
-                              <p className="text-[11px] text-gray-500">Choose color palette</p>
+                              <p className="text-sm font-semibold text-gray-700">{t('home.themes')}</p>
+                              <p className="text-[11px] text-gray-500">{t('home.choosePalette')}</p>
                             </div>
                           </button>
                         </motion.div>
@@ -594,7 +608,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                           }}
                         >
                           <div className="px-4 py-2.5 border-b border-gray-100">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Default themes</p>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('home.defaultThemes')}</p>
                           </div>
                           {COLOR_THEMES.map((theme) => (
                             <button
@@ -626,7 +640,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
 
                 {/* Selected theme chip + voice + controls */}
-                <div className={`flex items-center gap-1.5 md:gap-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className="flex items-center gap-1.5 md:gap-2.5">
                   {/* Theme chip */}
                   {selectedTheme && (
                     <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-100 rounded-full text-xs font-medium text-gray-600">
@@ -654,7 +668,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     onClick={isListening ? stopListening : startListening}
                     className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 flex-shrink-0 ${isListening ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/25 animate-pulse' : 'bg-gray-100 hover:bg-gray-200'
                       }`}
-                    title={isListening ? 'Stop listening' : 'Voice input'}
+                    title={isListening ? t('home.stopListening') : t('home.voiceInput')}
                   >
                     {isListening ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4 text-gray-500" />}
                   </button>
@@ -667,7 +681,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-40 flex-shrink-0 shadow-lg ${prompt.trim() ? 'bg-primary hover:bg-primary/90 shadow-primary/25' : 'bg-gray-200 hover:bg-gray-300 shadow-none'
                       }`}
                   >
-                    <ArrowRight className={`w-4 h-4 md:w-[18px] md:h-[18px] ${prompt.trim() ? 'text-primary-foreground' : 'text-gray-500'}`} />
+                    <ArrowRight className={`w-4 h-4 md:w-[18px] md:h-[18px] ${isRTL ? 'rotate-180' : ''} ${prompt.trim() ? 'text-primary-foreground' : 'text-gray-500'}`} />
                   </motion.button>
                 </div>
               </div>
@@ -697,10 +711,10 @@ export const HomePage: React.FC<HomePageProps> = ({
               transition={{ duration: 0.6 }}
               className="mb-16"
             >
-              <h2 className="text-4xl md:text-6xl font-bold text-white mb-4">Meet Vivora X</h2>
+              <h2 className="text-4xl md:text-6xl font-bold text-white mb-4">{t('home.meet')}</h2>
             </motion.div>
 
-            <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${isRTL ? 'lg:flex-row-reverse' : ''}`}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               {/* Video */}
               <motion.div
                 initial={{ opacity: 0, x: isRTL ? 40 : -40 }}
@@ -745,7 +759,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     step: '03',
                   },
                 ].map((item, i) => (
-                  <div key={i} className={`flex gap-6 ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
+                  <div key={i} className={`flex gap-6 ${isRTL ? 'text-right' : ''}`}>
                     <div className="flex-shrink-0 w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/40 text-sm font-mono">
                       {item.step}
                     </div>

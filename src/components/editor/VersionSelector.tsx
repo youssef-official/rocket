@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GitBranch, Clock, ChevronDown, Check, Sparkles } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { ProjectVersion } from '@/hooks/useVersions';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface VersionSelectorProps {
   versions: ProjectVersion[];
@@ -19,11 +20,12 @@ export const VersionSelector: React.FC<VersionSelectorProps> = ({
   isOpen,
   onToggle,
 }) => {
+  const { t } = useLanguage();
   if (versions.length === 0) {
     return (
       <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary/50 rounded-lg text-sm text-muted-foreground">
         <Sparkles className="w-4 h-4" />
-        <span>No versions yet</span>
+        <span>{t('versions.empty')}</span>
       </div>
     );
   }

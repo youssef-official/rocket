@@ -109,12 +109,12 @@ const Settings: React.FC = () => {
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#0d0d0d]/95 backdrop-blur-xl">
-        <div className={`max-w-4xl mx-auto px-4 h-16 flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-white/60 hover:text-white hover:bg-white/[0.06]">
               <ArrowLeft className={`w-5 h-5 ${isRTL ? 'rotate-180' : ''}`} />
             </Button>
-            <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <div className="flex items-center gap-3">
               <VivoraXLogo size="sm" showText={false} />
               <div className={isRTL ? 'text-right' : ''}>
                 <h1 className="text-lg font-bold text-white font-serif">{t('common.settings')}</h1>
@@ -130,7 +130,7 @@ const Settings: React.FC = () => {
 
         {/* ═══ Appearance ═══ */}
         <motion.div variants={sectionVariants} initial="hidden" animate="visible">
-          <div className={`flex items-center gap-3 mb-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className="flex items-center gap-3 mb-6">
             <div className="w-8 h-8 rounded-xl bg-pink-500/10 flex items-center justify-center">
               <Palette className="w-4 h-4 text-pink-400" />
             </div>
@@ -228,7 +228,7 @@ const Settings: React.FC = () => {
           {/* Wallpaper */}
           <Card className="bg-white/[0.03] border-white/[0.06] mb-4">
             <CardHeader className="pb-3">
-              <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-white/50" />
                 <CardTitle className="text-sm text-white/80">Wallpaper</CardTitle>
               </div>
@@ -260,21 +260,21 @@ const Settings: React.FC = () => {
           {/* Celebrations */}
           <Card className="bg-white/[0.03] border-white/[0.06]">
             <CardHeader className="pb-3">
-              <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="flex items-center gap-2">
                 <PartyPopper className="w-4 h-4 text-white/50" />
                 <CardTitle className="text-sm text-white/80">Celebrations</CardTitle>
               </div>
               <CardDescription className="text-white/30">Show seasonal celebration effects</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-white/70">Ramadan</p>
                   <p className="text-[11px] text-white/30">🌙 Crescent moon & lantern effects</p>
                 </div>
                 <Switch checked={showRamadan} onCheckedChange={setShowRamadan} />
               </div>
-              <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-white/70">Eid</p>
                   <p className="text-[11px] text-white/30">🎉 Confetti & celebration effects</p>

@@ -18,3 +18,7 @@ Use `Manrope` for interface and body copy and `Sora` for display text. The inter
 ## Interaction
 
 The product's memorable moment is the build prompt: an illuminated command surface that shows the active model as a fixed, trustworthy tool. Motion is limited to the build state's sweeping signal and respects reduced-motion preferences.
+
+## Commerce surfaces
+
+Storefront Studio inherits the dark Vivora X operating world and treats the live storefront as the primary artifact, with catalog and order tools arranged around it. Customer storefronts deliberately inherit their own AI-configured paper, ink, accent, typography, copy, and direction tokens; commerce controls remain familiar and the fixed engine stays visually quiet.

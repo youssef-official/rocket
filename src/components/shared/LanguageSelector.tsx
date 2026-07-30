@@ -7,7 +7,7 @@ export const LanguageSelector: React.FC = () => {
   const { language, setLanguage, isRTL } = useLanguage();
   const [showMenu, setShowMenu] = useState(false);
 
-  const languages: Language[] = ['en', 'zh', 'ja', 'fr'];
+  const languages: Language[] = ['en', 'ar', 'zh', 'ja', 'fr'];
 
   return (
     <div className="relative">
@@ -16,7 +16,7 @@ export const LanguageSelector: React.FC = () => {
         onClick={() => setShowMenu(!showMenu)}
         className="w-full flex items-center justify-between px-3 py-2 text-white hover:bg-white/10 rounded-lg transition-colors text-sm cursor-pointer"
       >
-        <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className="flex items-center gap-2">
           <Globe className="w-4 h-4" />
           <span>{languageNames[language]}</span>
         </div>
@@ -38,7 +38,7 @@ export const LanguageSelector: React.FC = () => {
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 5 }}
-              className={`absolute ${isRTL ? 'left-0' : 'right-0'} top-full mt-1 w-44 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[10004]`}
+              className="absolute right-0 top-full mt-1 w-44 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[10004]"
             >
               {languages.map((lang) => (
                 <button
@@ -50,7 +50,7 @@ export const LanguageSelector: React.FC = () => {
                   }}
                   className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-white/10 transition-colors text-sm ${
                     language === lang ? 'bg-white/5 text-pink-400' : 'text-white'
-                  } ${isRTL ? 'flex-row-reverse' : ''}`}
+                  }`}
                 >
                   <span>{languageNames[lang]}</span>
                   {language === lang && <Check className="w-4 h-4" />}

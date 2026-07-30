@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BarChart3, Globe2, Loader2, MousePointerClick, RefreshCw, Users } from 'lucide-react';
 import { api } from '@/services/api';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AnalyticsData {
   totals: { visitors: number; pageviews: number; clicks: number };
@@ -17,6 +18,7 @@ const emptyAnalytics: AnalyticsData = {
 };
 
 export const AnalyticsPanel = ({ projectId }: { projectId?: string; previewUrl?: string | null }) => {
+  const { t, language } = useLanguage();
   const [data, setData] = useState<AnalyticsData>(emptyAnalytics);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -43,15 +45,15 @@ export const AnalyticsPanel = ({ projectId }: { projectId?: string; previewUrl?:
   if (loading && data.totals.pageviews === 0) {
     return (
       <div className="flex h-full items-center justify-center bg-[#08111f] text-[#f5f7fa]">
-        <Loader2 className="h-5 w-5 animate-spin text-[#ec4899]" aria-label="Loading analytics" />
+        <Loader2 className="h-5 w-5 animate-spin text-[#ec4899]" aria-label={t('analytics.loading')} />
       </div>
     );
   }
 
   const metrics = [
-    { label: 'Visitors', value: data.totals.visitors, icon: Users },
-    { label: 'Page views', value: data.totals.pageviews, icon: BarChart3 },
-    { label: 'Total clicks', value: data.totals.clicks, icon: MousePointerClick },
+    { label: t('analytics.visitors'), value: data.totals.visitors, icon: Users },
+    { label: t('analytics.pageviews'), value: data.totals.pageviews, icon: BarChart3 },
+    { label: t('analytics.totalClicks'), value: data.totals.clicks, icon: MousePointerClick },
   ];
 
   return (
@@ -59,9 +61,9 @@ export const AnalyticsPanel = ({ projectId }: { projectId?: string; previewUrl?:
       <div className="mx-auto max-w-6xl">
         <header className="flex flex-col justify-between gap-5 border-b border-[#203b57] pb-6 sm:flex-row sm:items-end">
           <div>
-            <p className="text-sm font-semibold text-[#2bc48a]">Live preview analytics</p>
-            <h2 className="mt-2 text-2xl font-bold tracking-[-.02em]">Project activity</h2>
-            <p className="mt-2 text-sm text-[#9fb0c2]">Tracking is injected automatically. Publishing is not required.</p>
+            <p className="text-sm font-semibold text-[#2bc48a]">{t('analytics.live')}</p>
+            <h2 className="mt-2 text-2xl font-bold tracking-[-.02em]">{t('analytics.activity')}</h2>
+            <p className="mt-2 text-sm text-[#9fb0c2]">{t('analytics.description')}</p>
           </div>
           <button
             type="button"
@@ -69,7 +71,7 @@ export const AnalyticsPanel = ({ projectId }: { projectId?: string; previewUrl?:
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#183552] px-4 text-sm font-semibold text-[#e6edf4] transition hover:bg-[#204565] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ec4899]"
           >
             <RefreshCw size={15} />
-            Refresh
+            {t('analytics.refresh')}
           </button>
         </header>
 
@@ -88,9 +90,9 @@ export const AnalyticsPanel = ({ projectId }: { projectId?: string; previewUrl?:
         {data.totals.pageviews === 0 ? (
           <div className="flex min-h-64 flex-col items-center justify-center text-center">
             <BarChart3 className="text-[#5e7188]" size={30} />
-            <h3 className="mt-4 text-lg font-bold">No activity yet</h3>
+            <h3 className="mt-4 text-lg font-bold">{t('analytics.empty')}</h3>
             <p className="mt-2 max-w-md text-sm leading-6 text-[#9fb0c2]">
-              Open or refresh the Preview tab, then interact with the generated website. Visits and clicks will appear here.
+              {t('analytics.emptyDescription')}
             </p>
           </div>
         ) : (
@@ -98,11 +100,11 @@ export const AnalyticsPanel = ({ projectId }: { projectId?: string; previewUrl?:
             <section className="overflow-hidden rounded-2xl bg-[#10243c]">
               <div className="flex items-center gap-2 border-b border-[#203b57] px-5 py-4">
                 <Globe2 className="text-[#ec4899]" size={17} />
-                <h3 className="font-bold">Visitors by country</h3>
+                <h3 className="font-bold">{t('analytics.countries')}</h3>
               </div>
               {data.countries.map(country => (
                 <div key={country.country} className="flex items-center justify-between border-b border-[#1a3149] px-5 py-3.5 last:border-0">
-                  <span className="font-medium">{country.country === 'LOCAL' ? 'Local preview' : country.country}</span>
+                  <span className="font-medium">{country.country === 'LOCAL' ? t('analytics.localPreview') : country.country}</span>
                   <span className="tabular-nums text-[#b9c7d7]">{country.visitors}</span>
                 </div>
               ))}
@@ -111,28 +113,28 @@ export const AnalyticsPanel = ({ projectId }: { projectId?: string; previewUrl?:
             <section className="overflow-hidden rounded-2xl bg-[#10243c]">
               <div className="flex items-center gap-2 border-b border-[#203b57] px-5 py-4">
                 <MousePointerClick className="text-[#ec4899]" size={17} />
-                <h3 className="font-bold">Most clicked elements</h3>
+                <h3 className="font-bold">{t('analytics.clicks')}</h3>
               </div>
               {data.targets.length ? data.targets.map(target => (
                 <div key={target.target} className="flex items-center justify-between gap-4 border-b border-[#1a3149] px-5 py-3.5 last:border-0">
                   <span className="truncate text-sm">{target.target}</span>
                   <span className="shrink-0 tabular-nums text-[#b9c7d7]">{target.clicks}</span>
                 </div>
-              )) : <p className="px-5 py-8 text-sm text-[#9fb0c2]">No clicks recorded yet.</p>}
+              )) : <p className="px-5 py-8 text-sm text-[#9fb0c2]">{t('analytics.noClicks')}</p>}
             </section>
 
             <section className="overflow-hidden rounded-2xl bg-[#10243c] lg:col-span-2">
               <div className="grid grid-cols-[minmax(0,1fr)_100px_90px] border-b border-[#203b57] px-5 py-3 text-xs font-semibold text-[#8fa3b7]">
-                <span>Visitor</span><span>Country</span><span className="text-right">Events</span>
+                <span>{t('analytics.visitor')}</span><span>{t('analytics.country')}</span><span className="text-end">{t('analytics.events')}</span>
               </div>
               {data.visitors.map(visitor => (
                 <div key={`${visitor.visitorId}-${visitor.country}`} className="grid grid-cols-[minmax(0,1fr)_100px_90px] items-center border-b border-[#1a3149] px-5 py-3.5 text-sm last:border-0">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{visitor.visitorId}</p>
-                    <p className="mt-1 text-xs text-[#8296aa]">{new Date(visitor.lastSeen).toLocaleString()}</p>
+                    <p className="mt-1 text-xs text-[#8296aa]">{new Date(visitor.lastSeen).toLocaleString(language === 'ar' ? 'ar-EG' : language)}</p>
                   </div>
-                  <span>{visitor.country === 'LOCAL' ? 'Local' : visitor.country}</span>
-                  <span className="text-right tabular-nums text-[#b9c7d7]">{visitor.events}</span>
+                  <span>{visitor.country === 'LOCAL' ? t('analytics.local') : visitor.country}</span>
+                  <span className="text-end tabular-nums text-[#b9c7d7]">{visitor.events}</span>
                 </div>
               ))}
             </section>

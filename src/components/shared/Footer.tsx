@@ -18,7 +18,7 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* Social Links & Legal */}
-        <div className={`flex flex-wrap items-center justify-center gap-x-6 gap-y-4 mb-8 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 mb-8">
           <div className="flex items-center gap-4">
             <a 
               href="https://youtube.com" 
@@ -94,7 +94,7 @@ export const Footer: React.FC = () => {
           >
             WebMax
           </a>
-          . All Rights Reserved.
+          {isRTL ? '. جميع الحقوق محفوظة.' : '. All Rights Reserved.'}
         </p>
       </div>
     </footer>

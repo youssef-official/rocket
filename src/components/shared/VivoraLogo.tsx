@@ -1,6 +1,5 @@
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 interface VivoraLogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -24,7 +23,6 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(({
   onClick,
   showText = true,
 }) => {
-  const { isRTL } = useLanguage();
   const logoSizes = {
     sm: { width: '28px', height: '28px' },
     md: { width: '36px', height: '36px' },
@@ -48,7 +46,7 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(({
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={handleKeyDown}
       onClick={onClick}
-      className={`flex items-center gap-2 select-none ${onClick ? 'cursor-pointer transition-opacity hover:opacity-80' : ''} ${isRTL ? 'flex-row-reverse' : ''} ${className}`}
+      className={`flex items-center gap-2 select-none ${onClick ? 'cursor-pointer transition-opacity hover:opacity-80' : ''} ${className}`}
     >
       <div
         className="relative overflow-visible"
@@ -99,7 +97,7 @@ export const VivoraLogo: React.FC<VivoraLogoProps> = memo(({
       </div>
 
       {showText && (
-        <span className={`flex items-center gap-1 font-bold text-foreground ${textSizeClasses[size]} ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <span className={`flex items-center gap-1 font-bold text-foreground ${textSizeClasses[size]}`}>
           Vivora
           <motion.span
             variants={xVariants}

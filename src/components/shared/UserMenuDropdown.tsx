@@ -43,6 +43,7 @@ export const getWallpaperSrc = (id: string): string => {
 };
 
 const WallpaperSelector: React.FC = () => {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const current = localStorage.getItem('vivora_wallpaper') || 'space';
 
@@ -60,7 +61,7 @@ const WallpaperSelector: React.FC = () => {
         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer"
       >
         <ImageIcon className="w-4 h-4" />
-        Wallpaper
+        {t('menu.wallpaper')}
       </button>
       {open && (
         <div className="mt-1 p-2 bg-white/[0.06] rounded-xl border border-white/[0.08] space-y-1 max-h-48 overflow-y-auto">
@@ -189,15 +190,15 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
             {/* User Info */}
             <div className="p-4 border-b border-white/[0.06]">
               <p className={`text-sm font-semibold text-white truncate ${isRTL ? 'text-right' : ''}`}>{user.displayName || user.email}</p>
-              <div className={`flex items-center gap-2 mt-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="flex items-center gap-2 mt-1.5">
                 <span className="text-[11px] text-white/50 font-medium bg-white/[0.06] px-2 py-0.5 rounded-md">{planConfig.name}</span>
               </div>
             </div>
 
             {/* Credits */}
             <div className="p-4 border-b border-white/[0.06] bg-white/[0.02]">
-              <div className={`flex items-center justify-between mb-2.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-pink-500/10 flex items-center justify-center">
                     <Coins className="w-3.5 h-3.5 text-pink-400" />
                   </div>
@@ -255,7 +256,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                     setShowMenu(false);
                     onUpgradeClick();
                   }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 mb-1 bg-gradient-to-r from-pink-500 to-pink-500 text-white rounded-xl transition-all duration-200 text-sm font-semibold cursor-pointer shadow-lg shadow-pink-500/20 ${isRTL ? 'flex-row-reverse' : ''}`}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 mb-1 bg-gradient-to-r from-pink-500 to-pink-500 text-white rounded-xl transition-all duration-200 text-sm font-semibold cursor-pointer shadow-lg shadow-pink-500/20"
                 >
                   <Sparkles className="w-4 h-4" />
                   {t('models.upgradeAccess')}
@@ -275,10 +276,10 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                   e.stopPropagation();
                   window.dispatchEvent(new CustomEvent('vivora-music-toggle', { detail: 'open' }));
                 }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer"
               >
                 <Music className="w-4 h-4" />
-                Music
+                {t('menu.music')}
               </button>
 
               {/* Billing */}
@@ -290,10 +291,10 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                   setShowMenu(false);
                   navigate('/billing');
                 }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer"
               >
                 <Coins className="w-4 h-4" />
-                Billing
+                {t('menu.billing')}
               </button>
 
               {/* Account Settings (modal) */}
@@ -301,10 +302,10 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                 <button
                   type="button"
                   onClick={handleSettings}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer"
                 >
                   <Settings2 className="w-4 h-4" />
-                  Account Settings
+                  {t('common.settings')}
                 </button>
               )}
 
@@ -317,10 +318,10 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
                   setShowMenu(false);
                   navigate('/settings');
                 }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-white/80 hover:bg-white/[0.06] rounded-xl transition-all duration-200 text-sm cursor-pointer"
               >
                 <Settings2 className="w-4 h-4" />
-                Settings
+                {t('menu.settings')}
               </button>
 
               <div className="my-1 mx-3 border-t border-white/[0.06]" />
@@ -329,7 +330,7 @@ export const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({ user, signOu
               <button
                 type="button"
                 onClick={handleSignOut}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 text-sm cursor-pointer ${isRTL ? 'flex-row-reverse' : ''}`}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 text-sm cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
                 {t('common.signOut')}

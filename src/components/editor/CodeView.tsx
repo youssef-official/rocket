@@ -5,6 +5,7 @@ import { ChevronRight, ChevronDown, File, Folder, FileCode, FileJson, FileText, 
 import type { ProjectFile } from '@/types';
 import { useUserPlan, PLAN_CONFIG } from '@/hooks/useUserPlan';
 import { isBrowserProjectFile, normalizeBrowserProjectPath } from '@/lib/browserProject';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Vivora X's focused dark Monaco theme
 const defineWeboDarkTheme = (monaco: Monaco) => {
@@ -138,6 +139,7 @@ function parseStreamingFiles(content: string): { path: string; content: string; 
 export const CodeView: React.FC<CodeViewProps> = ({ 
   files, selectedFile, onSelectFile, onUpdateFile, streamingContent = '', isGenerating = false,
 }) => {
+  const { t } = useLanguage();
   const { userPlan } = useUserPlan();
   const canEditCode = userPlan ? (PLAN_CONFIG[userPlan.plan] || PLAN_CONFIG.free).features.codeEditing : false;
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -397,12 +399,12 @@ export const CodeView: React.FC<CodeViewProps> = ({
       {/* File Tree */}
       <div className="w-64 flex flex-col" style={{ background: '#010409', borderRight: '1px solid #21262d' }}>
         <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid #21262d' }}>
-          <h3 className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#8b949e' }}>Explorer</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#8b949e' }}>{t('code.explorer')}</h3>
           {isGenerating && <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: '#79b8ff' }} />}
         </div>
         <div className="flex-1 overflow-y-auto py-1.5 no-scrollbar">
           {allFiles.size === 0 ? (
-            <div className="p-4 text-center text-xs" style={{ color: '#484f58' }}>No files generated yet</div>
+            <div className="p-4 text-center text-xs" style={{ color: '#484f58' }}>{t('code.noFiles')}</div>
           ) : (
             renderTree(tree)
           )}
@@ -421,12 +423,12 @@ export const CodeView: React.FC<CodeViewProps> = ({
               </span>
               {currentFileData?.isNew && !currentFileData?.complete && (
                 <span className="text-[10px] flex items-center gap-1 ml-auto font-medium" style={{ color: '#d29922' }}>
-                  <Loader2 className="w-3 h-3 animate-spin" />Generating...
+                  <Loader2 className="w-3 h-3 animate-spin" />{t('code.generating')}
                 </span>
               )}
               {currentFileData?.isNew && currentFileData?.complete && (
                 <span className="text-[10px] flex items-center gap-1 ml-auto font-medium" style={{ color: '#3fb950' }}>
-                  <CheckCircle2 className="w-3 h-3" />New
+                  <CheckCircle2 className="w-3 h-3" />{t('code.new')}
                 </span>
               )}
 
@@ -435,12 +437,12 @@ export const CodeView: React.FC<CodeViewProps> = ({
                 <div className="flex items-center gap-1 ml-auto">
                   <button onClick={handleUndo} disabled={undoStack.length === 0}
                     className="w-7 h-7 rounded-md flex items-center justify-center transition-colors disabled:opacity-20 hover:bg-white/10"
-                    title="Undo (Ctrl+Z)">
+                    title={`${t('code.undo')} (Ctrl+Z)`}>
                     <Undo2 className="w-3.5 h-3.5" style={{ color: '#8b949e' }} />
                   </button>
                   <button onClick={handleRedo} disabled={redoStack.length === 0}
                     className="w-7 h-7 rounded-md flex items-center justify-center transition-colors disabled:opacity-20 hover:bg-white/10"
-                    title="Redo (Ctrl+Y)">
+                    title={`${t('code.redo')} (Ctrl+Y)`}>
                     <Redo2 className="w-3.5 h-3.5" style={{ color: '#8b949e' }} />
                   </button>
                   <button onClick={handleSave} disabled={!hasPendingChanges}
@@ -449,9 +451,9 @@ export const CodeView: React.FC<CodeViewProps> = ({
                         ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30'
                         : 'bg-white/5 text-white/20 border border-white/5'
                     }`}
-                    title="Save (Ctrl+S)">
+                    title={`${t('code.save')} (Ctrl+S)`}>
                     <Save className="w-3 h-3" />
-                    Save
+                    {t('code.save')}
                   </button>
                 </div>
               )}
@@ -516,7 +518,7 @@ export const CodeView: React.FC<CodeViewProps> = ({
               <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 flex items-end justify-center pointer-events-none">
                 <div className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 text-white/80 text-sm">
                   <Lock className="w-4 h-4 text-pink-400" />
-                  <span>Code editing requires a Pro or Business plan. Upgrade from your account menu.</span>
+                  <span>{t('code.proRequired')}</span>
                 </div>
               </div>
             )}
@@ -526,7 +528,7 @@ export const CodeView: React.FC<CodeViewProps> = ({
             <div className="text-center">
               <FileCode className="w-10 h-10 mx-auto mb-3" style={{ color: '#30363d' }} />
               <p className="text-sm" style={{ color: '#484f58' }}>
-                {isGenerating ? 'Generating files...' : 'Select a file to view'}
+                {isGenerating ? t('code.generatingFiles') : t('code.selectFile')}
               </p>
             </div>
           </div>

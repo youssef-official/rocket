@@ -67,9 +67,9 @@ export const MessageOptions: React.FC<MessageOptionsProps> = ({
             {/* Copy Link */}
             <button
               onClick={copyMessageLink}
-              className={`w-full flex items-center justify-between px-4 py-3 hover:bg-accent transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-accent transition-colors"
             >
-              <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="flex items-center gap-3">
                 {copied ? <Check className="w-4 h-4 text-green-500" /> : <Link className="w-4 h-4 text-muted-foreground" />}
                 <span className="text-sm text-foreground">{t('message.copyLink')}</span>
               </div>
@@ -83,7 +83,7 @@ export const MessageOptions: React.FC<MessageOptionsProps> = ({
                   onPreview();
                   setIsOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors ${isRTL ? 'flex-row-reverse' : ''}`}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors"
               >
                 <Eye className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-foreground">{t('message.preview')}</span>
@@ -95,8 +95,8 @@ export const MessageOptions: React.FC<MessageOptionsProps> = ({
 
             {/* Work Time */}
             {workTime !== undefined && (
-              <div className={`flex items-center justify-between px-4 py-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
                   <Clock className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">{t('message.workedFor')}</span>
                 </div>
@@ -106,8 +106,8 @@ export const MessageOptions: React.FC<MessageOptionsProps> = ({
 
             {/* Credits Used */}
             {creditsUsed !== undefined && (
-              <div className={`flex items-center justify-between px-4 py-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
                   <Coins className="w-4 h-4 text-pink-400" />
                   <span className="text-sm text-muted-foreground">{t('message.creditsUsed')}</span>
                 </div>

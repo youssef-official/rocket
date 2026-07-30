@@ -2,10 +2,11 @@ import { useEffect, useRef } from 'react';
 import { apiUrl, getToken } from '@/services/api';
 
 export type BackendEvent = {
-  type: 'project.created' | 'project.updated' | 'project.deleted' | 'message.updated' | 'version.created' | 'account.updated';
+  type: 'project.created' | 'project.updated' | 'project.deleted' | 'message.updated' | 'version.created' | 'store.created' | 'store.updated' | 'account.updated';
   projectId?: string;
   messageId?: string;
   versionId?: string;
+  storeId?: string;
   at: string;
 };
 

@@ -715,7 +715,7 @@ export interface AgentStepEvent {
   issues_count?: number;
 }
 
-async function readSSEStream(
+export async function readSSEStream(
   response: Response,
   onDelta?: (deltaText: string) => void,
   onAgentStep?: (event: AgentStepEvent) => void

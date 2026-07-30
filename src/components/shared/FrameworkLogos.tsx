@@ -57,11 +57,11 @@ export const FrameworkBar: React.FC = () => {
   const { t, isRTL } = useLanguage();
 
   return (
-    <div className={`hidden md:flex flex-wrap justify-center gap-4 bg-black/20 backdrop-blur-xl rounded-[2rem] p-3 border border-white/10 ${isRTL ? 'flex-row-reverse' : ''}`}>
+    <div className="hidden md:flex flex-wrap justify-center gap-4 bg-black/20 backdrop-blur-xl rounded-[2rem] p-3 border border-white/10">
       {/* Features Section - Right in Arabic, Left in English */}
-      <div className={`flex items-center gap-4 ${isRTL ? 'pl-4 border-l flex-row-reverse' : 'pr-4 border-r'} border-white/10`}>
+      <div className={`flex items-center gap-4 ${isRTL ? 'ps-4 border-s' : 'pe-4 border-e'} border-white/10`}>
         <span className="text-white/80 text-sm font-medium">{t('footer.features')}</span>
-        <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className="flex items-center gap-2">
           {['HTML', 'CSS', 'JavaScript'].map((language) => (
             <span
               key={language}
@@ -74,9 +74,9 @@ export const FrameworkBar: React.FC = () => {
       </div>
 
       {/* Integrations Section - Left in Arabic, Right in English */}
-      <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+      <div className="flex items-center gap-4">
         <span className="text-white/80 text-sm font-medium">{t('footer.integrations')}</span>
-        <div className={`flex items-center gap-2 overflow-x-auto ${isRTL ? 'flex-row-reverse' : ''}`}>
+        <div className="flex items-center gap-2 overflow-x-auto">
           {integrations.map((int) => (
             <div
               key={int}

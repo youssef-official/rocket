@@ -60,7 +60,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
             className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl"
           >
             {/* Header */}
-            <div className={`flex items-center justify-between p-6 border-b border-border ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <div className="flex items-center justify-between p-6 border-b border-border">
               <div>
                 <h2 className={`text-2xl font-bold text-foreground ${isRTL ? 'text-right' : ''}`}>
                   {t('upgrade.title')}
@@ -102,7 +102,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
                       </div>
                     )}
 
-                    <div className={`flex items-center gap-3 mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div className="flex items-center gap-3 mb-4">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                         color === 'gray' ? 'bg-gray-500/20 text-gray-400' :
                         color === 'purple' ? 'bg-purple-500/20 text-purple-400' :
@@ -125,7 +125,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
 
                     <ul className="space-y-2 mb-6">
                       {features.map((feature, i) => (
-                        <li key={i} className={`flex items-center gap-2 text-sm ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        <li key={i} className="flex items-center gap-2 text-sm">
                           {feature.included ? (
                             <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                           ) : (

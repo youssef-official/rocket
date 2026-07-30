@@ -9,6 +9,9 @@ import { AuthPage } from "@/components/auth/AuthPage";
 import { HomePage } from "@/components/home/HomePage";
 import { EditorLayout } from "@/components/editor/EditorLayout";
 import { AdminPanel } from "@/pages/Admin";
+import Storefront from "@/pages/Storefront";
+import StoreAdmin from "@/pages/StoreAdmin";
+import StoreHub from "@/pages/StoreHub";
 import { ThemeInitializer } from "@/components/shared/ThemeInitializer";
 import { useProjects } from "@/hooks/useProjects";
 import { useChatMessages } from "@/hooks/useChatMessages";
@@ -26,6 +29,7 @@ import {
 import type { ProjectData, ChatMessage, ProjectFile } from "@/types";
 import { toast } from "@/hooks/use-toast";
 import { browserFileLanguage, isBrowserProjectFile, normalizeBrowserProjectPath } from "@/lib/browserProject";
+import { generateStoreBlueprint, storeApi } from "@/services/storeService";
 
 const queryClient = new QueryClient();
 const isNativeGenerationStatus = (status: string) =>
@@ -1189,6 +1193,7 @@ const ProjectEditorRoute = () => {
 
 const AppContent = () => {
   const { user, loading: authLoading } = useAuth();
+  const { language } = useLanguage();
   const navigate = useNavigate();
   const {
     projects,
@@ -1199,7 +1204,7 @@ const AppContent = () => {
   } = useProjects();
 
   const [showAuth, setShowAuth] = useState(false);
-  const [pendingBuild, setPendingBuild] = useState<{ prompt:string; projectType:'vite'|'html'; imageUrls?:string[] } | null>(null);
+  const [pendingBuild, setPendingBuild] = useState<{ prompt:string; projectType:'vite'|'html'; imageUrls?:string[]; buildKind:'website'|'store' } | null>(null);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [localProject, setLocalProject] = useState<ProjectData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -1260,10 +1265,23 @@ const AppContent = () => {
     });
   }, []);
 
-  const handleStartBuilding = useCallback(async (prompt: string, projectType: 'vite' | 'html', _modelId?: string, imageUrls?: string[]) => {
+  const handleStartBuilding = useCallback(async (prompt: string, projectType: 'vite' | 'html', _modelId?: string, imageUrls?: string[], buildKind: 'website' | 'store' = 'website') => {
     if (!user) return false;
 
     isCancelled.current = false;
+
+    if (buildKind === 'store') {
+      const pendingThemeRaw = sessionStorage.getItem('vivora_pending_color_theme');
+      let pendingTheme: { name:string; colors:string[] } | null = null;
+      try { pendingTheme = pendingThemeRaw ? JSON.parse(pendingThemeRaw) : null; } catch { pendingTheme = null; }
+      toast({ title:'بنجهز محرك متجرك', description:'Vivora X بيحوّل وصفك لهوية متجر كاملة ولوحة تشغيل جاهزة.' });
+      const blueprint = await generateStoreBlueprint(prompt, language, pendingTheme);
+      const createdStore = await storeApi.create(prompt, blueprint);
+      sessionStorage.removeItem('vivora_pending_color_theme');
+      localStorage.removeItem('vivora_home_prompt');
+      navigate(`/stores/${createdStore.id}/admin`);
+      return true;
+    }
 
     // The server assigns a random system name; prompts are never used as names.
     const newProject = await createProject('', 'html', {}, prompt);
@@ -1300,13 +1318,13 @@ const AppContent = () => {
     localStorage.removeItem('vivora_home_prompt');
     navigate(`/projects/${newProject.id}`);
     return true;
-  }, [user, createProject, navigate]);
+  }, [user, createProject, navigate, language]);
 
   useEffect(() => {
     if (!user || !pendingBuild) return;
     const request = pendingBuild;
     setPendingBuild(null);
-    void handleStartBuilding(request.prompt, request.projectType, undefined, request.imageUrls);
+    void handleStartBuilding(request.prompt, request.projectType, undefined, request.imageUrls, request.buildKind);
   }, [user, pendingBuild, handleStartBuilding]);
 
   const handleNewProject = useCallback(() => {
@@ -1327,13 +1345,14 @@ const AppContent = () => {
   }
 
   // Handle build attempt - require login if not authenticated
-  const handleBuildAttempt = async (prompt: string, projectType: 'vite' | 'html', _modelId?: string, imageUrls?: string[]) => {
+  const handleBuildAttempt = async (prompt: string, projectType: 'vite' | 'html', _modelId?: string, imageUrls?: string[], buildKind: 'website' | 'store' = 'website') => {
     if (!user) {
-      setPendingBuild({ prompt, projectType, imageUrls });
+      setPendingBuild({ prompt, projectType, imageUrls, buildKind });
       setShowAuth(true);
       return false;
     }
-    return handleStartBuilding(prompt, projectType, undefined, imageUrls);
+    try { return await handleStartBuilding(prompt, projectType, undefined, imageUrls, buildKind); }
+    catch (error) { toast({ title:'تعذّر إنشاء المتجر', description:(error as Error).message, variant:'destructive' }); return false; }
   };
 
   // Show auth page only if explicitly requested
@@ -1386,6 +1405,9 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/billing" element={<Navigate to="/" replace />} />
               <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/shop/:slug" element={<Storefront />} />
+              <Route path="/stores/:id/admin" element={<StoreAdmin />} />
+              <Route path="/stores" element={<StoreHub />} />
               <Route path="/blog" element={<Navigate to="/" replace />} />
               <Route path="/blog/:slug" element={<Navigate to="/" replace />} />
               <Route path="/get-started" element={<Navigate to="/" replace />} />

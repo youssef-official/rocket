@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ExternalLink, Monitor, RotateCcw, Smartphone } from 'lucide-react';
 import type { ProjectFile } from '@/types';
 import { api } from '@/services/api';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   isHtmlProjectFile,
   normalizeBrowserProjectPath,
@@ -165,6 +166,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({
   onPreviewUrlChange,
   projectId,
 }) => {
+  const { t } = useLanguage();
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [refreshKey, setRefreshKey] = useState(0);
   const [previewPath, setPreviewPath] = useState('index.html');
@@ -285,12 +287,12 @@ export const PreviewView: React.FC<PreviewViewProps> = ({
   return (
     <div className="flex h-full w-full flex-col bg-editor-bg">
       <div className="flex shrink-0 items-center justify-between border-b border-border bg-editor-bg px-4 py-2">
-        <div className="flex items-center gap-1" aria-label="Preview size">
+        <div className="flex items-center gap-1" aria-label={t('preview.size')}>
           <button
             type="button"
             onClick={() => setViewMode('desktop')}
             className={`rounded-lg p-2 transition-colors ${viewMode === 'desktop' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-secondary/50'}`}
-            title="Desktop preview"
+            title={t('preview.desktop')}
             aria-pressed={viewMode === 'desktop'}
           >
             <Monitor className="h-4 w-4" />
@@ -299,7 +301,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({
             type="button"
             onClick={() => setViewMode('mobile')}
             className={`rounded-lg p-2 transition-colors ${viewMode === 'mobile' ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-secondary/50'}`}
-            title="Mobile preview"
+            title={t('preview.mobile')}
             aria-pressed={viewMode === 'mobile'}
           >
             <Smartphone className="h-4 w-4" />
@@ -312,13 +314,13 @@ export const PreviewView: React.FC<PreviewViewProps> = ({
           </span>
           <span className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className={`h-2 w-2 rounded-full ${previewDocument ? 'bg-emerald-500' : 'bg-pink-500'}`} />
-            {previewDocument ? 'Browser preview ready' : 'Waiting for index.html'}
+            {previewDocument ? t('preview.ready') : t('preview.waiting')}
           </span>
           <button
             type="button"
             onClick={() => setRefreshKey(key => key + 1)}
             className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
-            title="Refresh preview"
+            title={t('preview.refresh')}
             disabled={!previewDocument}
           >
             <RotateCcw className="h-4 w-4" />
@@ -327,7 +329,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({
             type="button"
             onClick={openInBrowser}
             className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground disabled:opacity-40"
-            title="Open in a browser tab"
+            title={t('preview.openTab')}
             disabled={!previewDocument}
           >
             <ExternalLink className="h-4 w-4" />
@@ -339,10 +341,10 @@ export const PreviewView: React.FC<PreviewViewProps> = ({
         {isWaiting ? (
           <div className="max-w-sm px-6 text-center">
             <p className="text-sm font-semibold text-foreground">
-              {isLoading ? 'Writing the website files…' : 'The preview starts when index.html is ready.'}
+              {isLoading ? t('preview.writing') : t('preview.startsWhenReady')}
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
-              Vivora X renders HTML, CSS, and JavaScript directly in your browser.
+              {t('preview.browserDescription')}
             </p>
           </div>
         ) : (
@@ -357,7 +359,7 @@ export const PreviewView: React.FC<PreviewViewProps> = ({
                 ? 'h-[667px] max-h-[calc(100%-2rem)] w-[375px] max-w-[calc(100%-2rem)] rounded-xl border-4 border-border shadow-xl'
                 : 'h-full w-full border-0'
             }`}
-            title="Browser preview"
+            title={t('preview.browser')}
           />
         )}
       </div>

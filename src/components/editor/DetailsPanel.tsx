@@ -76,11 +76,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
           onClick={onClose}
           className="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors bg-secondary text-muted-foreground hover:bg-accent hover:text-foreground border border-border"
         >
-          Close
+          {t('details.close')}
         </button>
-        <span className="text-sm font-semibold text-foreground">Details</span>
+        <span className="text-sm font-semibold text-foreground">{t('editor.details')}</span>
         <span className="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-primary/10 text-primary border border-primary/20">
-          Changes
+          {t('details.changes')}
         </span>
       </div>
 
@@ -121,7 +121,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
             <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-secondary border border-border">
               <FileCode className="w-5 h-5 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium text-muted-foreground">No details available</p>
+            <p className="text-sm font-medium text-muted-foreground">{t('editor.noDetails')}</p>
           </div>
         )}
 
@@ -130,7 +130,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ version, activities,
           <div className="flex items-center gap-3 mt-2 pt-3 px-5 border-t border-border">
             <Package className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-[11px] font-mono text-muted-foreground">
-              v{version.versionNumber} • {changeCount} changes • {activities.length} total
+              v{version.versionNumber} • {t('details.changeCount', { count: changeCount })} • {t('details.totalCount', { count: activities.length })}
             </span>
           </div>
         )}

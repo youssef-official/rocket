@@ -26,7 +26,9 @@ Users create projects from a written brief, inspect generated files and versions
 
 - A separate `server` Node application owns authentication, projects, chats, versions, backups, and generation requests.
 - SQLite is local to the server and is never exposed directly to the browser.
-- Generated websites are frontend-only and never receive database or backend instructions.
+- Free-form generated websites remain frontend-only. Ecommerce projects use Vivora X's fixed multi-tenant commerce engine instead of generated backend code.
+- Ecommerce stores share the private SQLite service while every product and order is isolated by store ownership. The AI may configure brand, theme, copy, categories, and social links, but it never rewrites commerce or authorization logic.
+- Every store includes a responsive storefront, local cart, cash-on-delivery checkout, inventory-aware products, order workflow, and an owner-only Storefront Studio.
 - Sending a home-page prompt creates a durable project immediately; generated files, chat messages, and restorable versions are then saved to that project.
 - Music playlists, playback preferences, and player position are stored only in the current browser through `localStorage`.
 - The editor preview injects first-party analytics events through the private server without requiring publication.

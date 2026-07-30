@@ -178,6 +178,7 @@ const normalizePublicImageUrl = (url: string): string => {
 // Feedback component for AI messages (like/dislike/copy/token info)
 // ═══════════════════════════════════════════════
 const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; tokensUsed?: number; content: string }> = ({ messageId, creditsUsed, tokensUsed, content }) => {
+  const { t, isRTL } = useLanguage();
   const [feedback, setFeedback] = useState<'like' | 'dislike' | null>(null);
   const [copied, setCopied] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -225,22 +226,22 @@ const MessageFeedback: React.FC<{ messageId: string; creditsUsed?: number; token
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="absolute bottom-full left-0 mb-1 w-48 bg-card rounded-xl shadow-2xl border border-border overflow-hidden z-50"
+              className={`absolute bottom-full ${isRTL ? 'right-0' : 'left-0'} mb-1 w-48 bg-card rounded-xl shadow-2xl border border-border overflow-hidden z-50`}
             >
               <div className="px-3 py-2 border-b border-border">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Points Consumption</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t('chat.pointsConsumption')}</span>
               </div>
               <div className="flex items-center justify-between px-3 py-2.5">
                 <div className="flex items-center gap-2">
                   <Coins className="w-3.5 h-3.5 text-pink-400" />
-                  <span className="text-xs text-muted-foreground">Site Credits</span>
+                  <span className="text-xs text-muted-foreground">{t('chat.siteCredits')}</span>
                 </div>
                 <span className="text-xs font-bold text-pink-400">{creditsUsed !== undefined ? Number(creditsUsed).toFixed(2) : '0.00'}</span>
               </div>
               <div className="flex items-center justify-between px-3 py-2.5 border-t border-border/50">
                 <div className="flex items-center gap-2">
                   <Zap className="w-3.5 h-3.5 text-purple-500" />
-                  <span className="text-xs text-muted-foreground">AI Tokens</span>
+                  <span className="text-xs text-muted-foreground">{t('chat.aiTokens')}</span>
                 </div>
                 <span className="text-xs font-bold text-purple-500">
                   {tokensUsed ? tokensUsed.toLocaleString() : `~${displayTokens.toLocaleString()}`}
@@ -276,7 +277,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onClarifyComplete,
   onDismissClarify,
 }) => {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { userPlan } = useUserPlan();
   const isPaidPlan = userPlan?.plan && userPlan.plan !== 'free';
   const [input, setInput] = useState(() => localStorage.getItem('vivora_chat_input') || '');
@@ -1021,7 +1022,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
             <div className="mb-6 opacity-30">
               <VivoraLogo size="md" showText={false} className="justify-center" />
             </div>
-            <p className="text-muted-foreground text-base font-medium">Your preview will appear here</p>
+            <p className="text-muted-foreground text-base font-medium">{t('editor.previewEmpty')}</p>
           </div>
         ) : (
           <>
@@ -1047,7 +1048,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 <div key={msg.id} className="flex w-full justify-start">
                   {isUser ? (
                     /* User message - refined bubble */
-                    <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-br-md shadow-sm text-[15px] break-words whitespace-pre-wrap overflow-hidden bg-primary text-primary-foreground ml-auto">
+                    <div className={`max-w-[85%] px-4 py-3 rounded-2xl shadow-sm text-[15px] break-words whitespace-pre-wrap overflow-hidden bg-primary text-primary-foreground ${isRTL ? 'rounded-bl-md mr-auto' : 'rounded-br-md ml-auto'}`}>
                       {msg.imageUrl && (
                         <div className="mb-2 flex flex-wrap gap-2">
                           {[msg.imageUrl]
@@ -1241,13 +1242,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 <button
                   type="button"
                   onClick={() => removeUploadedImage(index)}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-md opacity-0 group-hover/upload:opacity-100 transition-opacity"
+                  className={`absolute -top-1.5 ${isRTL ? '-left-1.5' : '-right-1.5'} w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center shadow-md opacity-0 group-hover/upload:opacity-100 transition-opacity`}
                 >
                   <X className="w-3 h-3" />
                 </button>
               </div>
             ))}
-            <span className="text-[10px] text-muted-foreground self-end mb-1">صورة واحدة · 3MB بحد أقصى</span>
+            <span className="text-[10px] text-muted-foreground self-end mb-1">{t('home.oneImage')}</span>
           </div>
         )}
 
@@ -1259,7 +1260,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowPlusMenu(!showPlusMenu)}
-                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mb-0.5 ml-0.5 transition-all ${
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mb-0.5 me-0.5 transition-all ${
                   showPlusMenu 
                     ? 'bg-primary/10 text-primary rotate-45' 
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent'
@@ -1275,7 +1276,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.96 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute bottom-full left-0 mb-2 w-56 bg-card rounded-xl overflow-hidden shadow-xl z-50 border border-border"
+                    className={`absolute bottom-full ${isRTL ? 'right-0' : 'left-0'} mb-2 w-56 bg-card rounded-xl overflow-hidden shadow-xl z-50 border border-border`}
                   >
                     <button
                       type="button"
@@ -1288,13 +1289,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         fileInputRef.current?.click();
                         setShowPlusMenu(false);
                       }}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left group/item"
+                      className={`flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full group/item ${isRTL ? 'text-right' : 'text-left'}`}
                     >
                       <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
                         {isPaidPlan ? <ImageIcon className="w-4 h-4 text-blue-500" /> : <Lock className="w-4 h-4 text-muted-foreground" />}
                       </div>
                       <span className="text-sm text-foreground/80 group-hover/item:text-foreground">{t('chat.uploadImage')}</span>
-                      {!isPaidPlan && <span className="text-[10px] font-semibold text-pink-400 ml-auto px-1.5 py-0.5 rounded-md bg-pink-500/10">PRO</span>}
+                      {!isPaidPlan && <span className="text-[10px] font-semibold text-pink-400 ms-auto px-1.5 py-0.5 rounded-md bg-pink-500/10">PRO</span>}
                     </button>
                     <button
                       type="button"
@@ -1306,7 +1307,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         setAtFilter('');
                         setTimeout(() => textareaRef.current?.focus(), 50);
                       }}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left border-t border-border/50 group/item"
+                      className={`flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full border-t border-border/50 group/item ${isRTL ? 'text-right' : 'text-left'}`}
                     >
                       <div className="w-7 h-7 rounded-lg bg-rose-500/10 flex items-center justify-center">
                         <AtSign className="w-4 h-4 text-rose-400" />
@@ -1319,7 +1320,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         setShowPlusMenu(false);
                         window.dispatchEvent(new CustomEvent('open-visual-edit'));
                       }}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full text-left border-t border-border/50 group/item"
+                      className={`flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors w-full border-t border-border/50 group/item ${isRTL ? 'text-right' : 'text-left'}`}
                     >
                       <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
                         <MousePointer className="w-4 h-4 text-emerald-500" />
@@ -1373,16 +1374,16 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       <button
                         key={fileName}
                         onClick={() => handleAtSelect(fileName)}
-                        className={`flex items-center gap-2.5 w-full px-3 py-2 text-left transition-colors ${i === atMenuIndex ? 'bg-accent' : 'hover:bg-accent/60'}`}
+                        className={`flex items-center gap-2.5 w-full px-3 py-2 transition-colors ${isRTL ? 'text-right' : 'text-left'} ${i === atMenuIndex ? 'bg-accent' : 'hover:bg-accent/60'}`}
                       >
                         {getFileIcon(fileName)}
                         <span className="text-sm text-foreground truncate">{shortName}</span>
-                        {dir && <span className="text-[10px] text-muted-foreground ml-auto truncate max-w-[120px]">{dir}</span>}
+                        {dir && <span className="text-[10px] text-muted-foreground ms-auto truncate max-w-[120px]">{dir}</span>}
                       </button>
                     );
                   }) : (
                     <div className="px-3 py-4 text-sm text-muted-foreground text-center">
-                      No files found
+                      {t('chat.noFiles')}
                     </div>
                   )}
                 </motion.div>
@@ -1420,7 +1421,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               <button
                 type="button"
                 onClick={onStop}
-                className="w-9 h-9 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center shrink-0 mb-0.5 mr-0.5 transition-all"
+                className="w-9 h-9 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center shrink-0 mb-0.5 ms-0.5 transition-all"
               >
                 <StopCircle className="w-5 h-5" />
               </button>
@@ -1430,7 +1431,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 disabled={!input.trim() || uploadedImages.some(img => img.uploading)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mb-0.5 mr-0.5 transition-all ${input.trim() && !uploadedImages.some(img => img.uploading)
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mb-0.5 ms-0.5 transition-all ${input.trim() && !uploadedImages.some(img => img.uploading)
                   ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30'
                   : 'bg-muted text-muted-foreground'
                   }`}

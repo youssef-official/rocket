@@ -30,7 +30,7 @@ export async function calculateRequestCredits(_userMessage: string): Promise<num
 // Main function to call AI through Vivora X's private Node API.
 // Supports adaptive timeouts for slow/thinking models
 export async function callingDirectAI(
-    mode: 'code' | 'status' | 'explanation' | 'suggestions' | 'chat' | 'version-name' | 'clarify',
+    mode: 'code' | 'status' | 'explanation' | 'suggestions' | 'chat' | 'version-name' | 'clarify' | 'store-config',
     messages: any[],
     signal?: AbortSignal,
     userPlan?: string,
@@ -48,6 +48,7 @@ export async function callingDirectAI(
         'version-name': 120_000,
         'suggestions': 120_000,
         'status': 60_000,
+        'store-config': 120_000,
     };
     const timeout = timeoutMs[mode] || 180_000;
 
