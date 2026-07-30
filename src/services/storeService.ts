@@ -15,6 +15,56 @@ const fallbackBlueprint = (prompt: string, theme?: { name: string; colors: strin
   social: {},
 });
 
+const asRecord = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+const safeText = (value: unknown, fallback: string, max: number) => typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : fallback;
+const safeHex = (value: unknown, fallback: string) => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+
+export function normalizeStoreBlueprint(value: unknown, prompt: string, theme?: { name: string; colors: string[] } | null): StoreBlueprint {
+  const fallback = fallbackBlueprint(prompt, theme);
+  const root = asRecord(value);
+  const config = asRecord(root.config);
+  const colors = asRecord(config.colors);
+  const typography = asRecord(config.typography);
+  const hero = asRecord(config.hero);
+  const social = asRecord(root.social);
+  const categories = Array.isArray(config.categories)
+    ? config.categories.filter((item): item is string => typeof item === 'string' && Boolean(item.trim())).slice(0, 8).map(item => item.trim().slice(0, 50))
+    : [];
+
+  return {
+    name: safeText(root.name, fallback.name, 80),
+    config: {
+      direction: config.direction === 'ltr' || config.direction === 'rtl' ? config.direction : fallback.config.direction,
+      currency: safeText(config.currency, fallback.config.currency, 8),
+      locale: safeText(config.locale, fallback.config.locale, 12),
+      style: safeText(config.style, fallback.config.style, 40),
+      colors: {
+        ink: safeHex(colors.ink, fallback.config.colors.ink),
+        paper: safeHex(colors.paper, fallback.config.colors.paper),
+        accent: safeHex(colors.accent, fallback.config.colors.accent),
+        muted: safeHex(colors.muted, fallback.config.colors.muted),
+      },
+      typography: {
+        display: safeText(typography.display, fallback.config.typography.display, 60),
+        body: safeText(typography.body, fallback.config.typography.body, 60),
+      },
+      hero: {
+        title: safeText(hero.title, fallback.config.hero.title, 140),
+        subtitle: safeText(hero.subtitle, fallback.config.hero.subtitle, 260),
+        cta: safeText(hero.cta, fallback.config.hero.cta, 40),
+      },
+      announcement: safeText(config.announcement, fallback.config.announcement, 120),
+      categories: categories.length ? categories : fallback.config.categories,
+    },
+    social: {
+      instagram: safeText(social.instagram, '', 300),
+      facebook: safeText(social.facebook, '', 300),
+      tiktok: safeText(social.tiktok, '', 300),
+      whatsapp: safeText(social.whatsapp, '', 50),
+    },
+  };
+}
+
 export async function generateStoreBlueprint(prompt: string, language: string, theme?: { name: string; colors: string[] } | null) {
   try {
     const response = await callingDirectAI('store-config', [{ role:'user', content:prompt }], undefined, undefined, language, theme);
@@ -22,7 +72,7 @@ export async function generateStoreBlueprint(prompt: string, language: string, t
     const { text } = await readSSEStream(response);
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) return fallbackBlueprint(prompt, theme);
-    return JSON.parse(match[0]) as StoreBlueprint;
+    return normalizeStoreBlueprint(JSON.parse(match[0]), prompt, theme);
   } catch { return fallbackBlueprint(prompt, theme); }
 }
 

@@ -1274,7 +1274,7 @@ const AppContent = () => {
       const pendingThemeRaw = sessionStorage.getItem('vivora_pending_color_theme');
       let pendingTheme: { name:string; colors:string[] } | null = null;
       try { pendingTheme = pendingThemeRaw ? JSON.parse(pendingThemeRaw) : null; } catch { pendingTheme = null; }
-      toast({ title:'بنجهز محرك متجرك', description:'Vivora X بيحوّل وصفك لهوية متجر كاملة ولوحة تشغيل جاهزة.' });
+      toast({ title:language === 'ar' ? 'بنجهز محرك متجرك' : 'Preparing your store engine', description:language === 'ar' ? 'Vivora X بيحوّل وصفك لهوية متجر كاملة ولوحة تشغيل جاهزة.' : 'Vivora X is turning your brief into a complete storefront and operating studio.' });
       const blueprint = await generateStoreBlueprint(prompt, language, pendingTheme);
       const createdStore = await storeApi.create(prompt, blueprint);
       sessionStorage.removeItem('vivora_pending_color_theme');
@@ -1352,7 +1352,7 @@ const AppContent = () => {
       return false;
     }
     try { return await handleStartBuilding(prompt, projectType, undefined, imageUrls, buildKind); }
-    catch (error) { toast({ title:'تعذّر إنشاء المتجر', description:(error as Error).message, variant:'destructive' }); return false; }
+    catch (error) { toast({ title:language === 'ar' ? 'تعذّر إنشاء المتجر' : 'Store creation failed', description:(error as Error).message, variant:'destructive' }); return false; }
   };
 
   // Show auth page only if explicitly requested

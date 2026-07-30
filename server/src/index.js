@@ -416,9 +416,11 @@ const productInput = z.object({
 
 app.get('/api/stores', auth, (req, res) => res.json(db.prepare('SELECT * FROM stores WHERE owner_user_id = ? ORDER BY updated_at DESC').all(req.auth.sub).map(store)));
 app.post('/api/stores', auth, (req, res) => {
-  const parsed = z.object({ prompt:z.string().min(3).max(100000), blueprint:storeBlueprintSchema.optional() }).safeParse(req.body);
+  const parsed = z.object({ prompt:z.string().trim().min(3).max(100000), blueprint:z.unknown().optional() }).safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error:'Describe the store you want to create.' });
-  const blueprint = parsed.data.blueprint || { name:'متجري الجديد', config:defaultStoreConfig, social:{} };
+  const checkedBlueprint = storeBlueprintSchema.safeParse(parsed.data.blueprint);
+  const fallbackName = parsed.data.prompt.split(/[،,.\n]/)[0].trim().slice(0, 80) || 'متجري الجديد';
+  const blueprint = checkedBlueprint.success ? checkedBlueprint.data : { name:fallbackName, config:defaultStoreConfig, social:{} };
   const record = { id:id(), owner_user_id:req.auth.sub, name:blueprint.name, slug:uniqueStoreSlug(blueprint.name), prompt:parsed.data.prompt, status:'published', config_json:JSON.stringify(blueprint.config), social_json:JSON.stringify(blueprint.social || {}), created_at:now(), updated_at:now() };
   const starterImages = [
     'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1000&q=85',
