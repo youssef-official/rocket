@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, Palette, ImageIcon,
-  Check, PartyPopper
+  Check, PartyPopper, Cpu, Loader2, Plus, X, User as UserIcon
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,8 +12,10 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { VivoraXLogo } from '@/components/shared/VivoraXLogo';
+import { AI_PROVIDER_PRESETS, getAiSettings, saveAiSettings, type AiSettings } from '@/services/aiSettings';
 import spaceHeroBg from '@/assets/space-hero-bg.jpg';
 import auroraGradientBg from '@/assets/aurora-gradient-bg.png';
+
 
 // ─── Color Presets ───
 const COLOR_PRESETS = [
@@ -56,6 +58,65 @@ const Settings: React.FC = () => {
   const [selectedWallpaper, setSelectedWallpaper] = useState(() => localStorage.getItem('vivora_wallpaper') || 'space');
   const [showRamadan, setShowRamadan] = useState(() => localStorage.getItem('vivora_show_ramadan') !== 'false');
   const [showEid, setShowEid] = useState(() => localStorage.getItem('vivora_show_eid') !== 'false');
+
+  // AI provider (stored on this device only)
+  const [ai, setAi] = useState<AiSettings>(() => getAiSettings());
+  const [newModel, setNewModel] = useState('');
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const activePreset = AI_PROVIDER_PRESETS.find(item => item.id === ai.providerId);
+
+  const updateAi = (changes: Partial<AiSettings>) => {
+    setAi(current => saveAiSettings({ ...current, ...changes }));
+    setTestResult(null);
+  };
+
+  const applyProviderPreset = (presetId: string) => {
+    const preset = AI_PROVIDER_PRESETS.find(item => item.id === presetId);
+    if (!preset) return;
+    updateAi({ providerId: preset.id, label: preset.label, baseUrl: preset.baseUrl, models: preset.models, model: preset.models[0] });
+  };
+
+  const addModel = () => {
+    const value = newModel.trim();
+    if (!value) return;
+    updateAi({ models: Array.from(new Set([...ai.models, value])), model: value });
+    setNewModel('');
+  };
+
+  const removeModel = (value: string) => {
+    const models = ai.models.filter(item => item !== value);
+    updateAi({ models: models.length ? models : [value], model: ai.model === value ? (models[0] || value) : ai.model });
+  };
+
+  const testConnection = async () => {
+    setTesting(true);
+    setTestResult(null);
+    const startedAt = Date.now();
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (ai.apiKey) headers.Authorization = `Bearer ${ai.apiKey}`;
+      const response = await fetch(`${ai.baseUrl.replace(/\/+$/, '')}/chat/completions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ model: ai.model, max_tokens: 8, messages: [{ role: 'user', content: 'ping' }] }),
+      });
+      const text = await response.text();
+      if (!response.ok) {
+        setTestResult({ ok: false, message: `HTTP ${response.status} — ${text.slice(0, 220)}` });
+      } else {
+        setTestResult({ ok: true, message: `Connected in ${Date.now() - startedAt}ms using ${ai.model}.` });
+      }
+    } catch (error) {
+      setTestResult({
+        ok: false,
+        message: `${(error as Error).message}. If the provider blocks browser requests, use a provider that allows them (OpenRouter, OpenAI, Groq, Gemini) or run Ollama/LM Studio on this machine.`,
+      });
+    } finally {
+      setTesting(false);
+    }
+  };
+
 
   // Save color preset
   const applyPreset = (preset: typeof COLOR_PRESETS[0]) => {
@@ -128,7 +189,149 @@ const Settings: React.FC = () => {
       {/* Content */}
       <main className="relative z-10 max-w-4xl mx-auto px-4 py-8 space-y-8">
 
+        {/* ═══ Profile ═══ */}
+        <motion.div variants={sectionVariants} initial="hidden" animate="visible">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 rounded-xl bg-sky-500/10 flex items-center justify-center">
+              <UserIcon className="w-4 h-4 text-sky-400" />
+            </div>
+            <h2 className="text-xl font-bold text-white font-serif">Profile</h2>
+          </div>
+          <Card className="bg-white/[0.03] border-white/[0.06]">
+            <CardContent className="pt-6 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-[11px] text-white/40 mb-1 block">Name</label>
+                <Input readOnly value={user?.displayName || '—'} className="h-9 text-xs bg-white/[0.03] border-white/[0.08] text-white/70" />
+              </div>
+              <div>
+                <label className="text-[11px] text-white/40 mb-1 block">Email</label>
+                <Input readOnly value={user?.email || '—'} className="h-9 text-xs bg-white/[0.03] border-white/[0.08] text-white/70" />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* ═══ AI provider ═══ */}
+        <motion.div variants={sectionVariants} initial="hidden" animate="visible">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+              <Cpu className="w-4 h-4 text-emerald-400" />
+            </div>
+            <h2 className="text-xl font-bold text-white font-serif">AI provider</h2>
+          </div>
+
+          <Card className="bg-white/[0.03] border-white/[0.06]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm text-white/80">Provider, key and models</CardTitle>
+              <CardDescription className="text-white/30">
+                Stored only on this device. Pick a preset or enter any OpenAI-compatible base URL.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {AI_PROVIDER_PRESETS.map(preset => (
+                  <button
+                    key={preset.id}
+                    onClick={() => applyProviderPreset(preset.id)}
+                    className={`p-3 rounded-xl border text-left transition-all duration-200 ${
+                      ai.providerId === preset.id
+                        ? 'border-emerald-500/50 bg-emerald-500/5'
+                        : 'border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <p className="text-xs font-medium text-white/70">{preset.label}</p>
+                    <p className="text-[10px] text-white/30">{preset.local ? 'No key needed' : 'API key'}</p>
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-[11px] text-white/40 mb-1 block">Base URL</label>
+                  <Input
+                    value={ai.baseUrl}
+                    onChange={e => updateAi({ baseUrl: e.target.value, providerId: 'custom', label: 'Custom' })}
+                    placeholder="https://api.example.com/v1"
+                    className="h-9 text-xs bg-white/[0.03] border-white/[0.08] text-white/70 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-white/40 mb-1 block">API key {activePreset?.local ? '(not required)' : ''}</label>
+                  <Input
+                    type="password"
+                    value={ai.apiKey}
+                    onChange={e => updateAi({ apiKey: e.target.value })}
+                    placeholder="sk-..."
+                    className="h-9 text-xs bg-white/[0.03] border-white/[0.08] text-white/70 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] text-white/40 block">Models</label>
+                <div className="flex flex-wrap gap-2">
+                  {ai.models.map(model => (
+                    <span
+                      key={model}
+                      className={`group inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs cursor-pointer ${
+                        ai.model === model ? 'border-emerald-500/50 bg-emerald-500/10 text-white/80' : 'border-white/[0.08] bg-white/[0.02] text-white/50'
+                      }`}
+                      onClick={() => updateAi({ model })}
+                    >
+                      {model}
+                      <button onClick={event => { event.stopPropagation(); removeModel(model); }} className="opacity-40 hover:opacity-100">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={newModel}
+                    onChange={e => setNewModel(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addModel(); } }}
+                    placeholder="Add a model id"
+                    className="h-9 text-xs bg-white/[0.03] border-white/[0.08] text-white/70 font-mono"
+                  />
+                  <Button onClick={addModel} variant="ghost" className="h-9 text-white/70 hover:text-white hover:bg-white/[0.06]">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Button onClick={testConnection} disabled={testing} className="h-9 text-xs">
+                  {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Test connection'}
+                </Button>
+                {activePreset?.keyUrl && (
+                  <a href={activePreset.keyUrl} target="_blank" rel="noreferrer" className="text-[11px] text-white/40 underline">
+                    Get an API key
+                  </a>
+                )}
+              </div>
+
+              <AnimatePresence>
+                {testResult && (
+                  <motion.p
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className={`text-xs p-3 rounded-xl border ${
+                      testResult.ok
+                        ? 'text-emerald-300 border-emerald-500/20 bg-emerald-500/5'
+                        : 'text-rose-300 border-rose-500/20 bg-rose-500/5'
+                    }`}
+                  >
+                    {testResult.message}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* ═══ Appearance ═══ */}
+
         <motion.div variants={sectionVariants} initial="hidden" animate="visible">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-8 h-8 rounded-xl bg-pink-500/10 flex items-center justify-center">
